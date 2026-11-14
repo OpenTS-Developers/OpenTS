@@ -33,6 +33,8 @@
 // lib includes here.
 #include "audio/audiomovie.h"
 
+#include <chrono>
+#include <thread>
 #include <unvq.h>
 #include <vqaplay.h>
 #include <vqaplayp.h>
@@ -520,7 +522,7 @@ int VQAClass::Play_VQA(int last_frame_to_play, bool nobreakout)
 
 		if (sleeping == true) {
 			if (!GameInFocus) {
-				Sleep((1000/30));
+				std::this_thread::sleep_for(std::chrono::milliseconds(1000 / 30));
 				continue;
 			} else {
 				sleeping = false;

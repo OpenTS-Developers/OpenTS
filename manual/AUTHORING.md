@@ -237,11 +237,13 @@ page already carries.
 
 ## Lifecycle records
 
-Check Git history, the release registry, and existing change records before creating a record. Establish whether the affected behavior was present in a released version or first added in the current development release.
+Check Git history, the release registry, and existing change records before creating a record. Establish whether the affected behavior shipped in a released version or was first added in an unreleased one.
 
-For a fix or adjustment to an addition in the current development release, do not create a separate record. Amend its existing addition record if the description no longer matches the final behavior; otherwise leave it unchanged. Update the owning reference pages when needed. Editorial corrections may clarify released prose and migration steps without changing the recorded engine history.
+For a new engine addition or a change to released behavior, create a record directly under `changes/`. It targets the development version of the branch you work on. Valid target types are `key`, `action`, `event`, `mission`, `format`, `enum`, `system`, and `command`. Valid effects are `added`, `changed`, `deprecated`, and `removed`.
 
-For a new engine addition or a change to released behavior, create a record directly under `changes/`. Valid target types are `key`, `action`, `event`, `mission`, `format`, `enum`, `system`, and `command`. Valid effects are `added`, `changed`, `deprecated`, and `removed`.
+A change that ports a Vinifera feature, or changes a ported one, also updates [Porting a Vinifera mod](content/using/porting-vinifera-mods.md) in the same commit. Add or amend a row when a file written for Vinifera needs an edit to keep its behavior, and remove the row when it no longer does. A decision never to implement a Vinifera feature also gets a row.
+
+A fix or adjustment to an unreleased addition needs no record of its own. Amend the addition's record if its description no longer matches the final behavior, and update the owning reference pages when needed.
 
 Do not create records for baseline documentation, prose edits, source-location
 fixes, extraction corrections, generated-catalog migrations, or other
@@ -257,10 +259,39 @@ Every record's `credit` list names its author first, followed by anyone else
 credited for the change; it cannot be empty. The published change page renders
 the list.
 
-New records target the current development release. Released records keep their release, category, targets and breaking state. Prose and migration steps may receive editorial corrections. Any change ID present in the base revision used by the check is immutable.
-Records still local to a branch may be reorganized until merge; verify them
-with `--base-ref` against that branch's own base. See
-[Maintaining](MAINTAINING.md) for release and route work.
+A released record keeps its release, category, targets and breaking state;
+editorial corrections to its prose and migration steps are allowed. A change ID
+present in the check's base revision cannot be removed or renamed. Records still
+local to a branch may be reorganized until merge; verify them with `--base-ref`
+against that branch's own base. See
+[Releases and lifecycle](MAINTAINING.md#releases-and-lifecycle) for the release
+procedure and the checks that enforce these rules.
+
+### Release candidates
+
+While a version is a release candidate, its release branch owns its records:
+
+- Add or amend a candidate record on the release branch. Main receives it
+  through a merge of the branch, and the check fails when main's copy differs
+  from the branch's.
+- A change made only on main takes a development record, even when it changes
+  an entity the candidate added.
+- A candidate record created on main that the release branch lacks fails the
+  check. Move it to the development version.
+
+When a candidate fix changes no record, add an RC note for testers on the
+release branch:
+
+```
+python manual/tools/manage.py scaffold change <id> --rc --title "<title>" --credit <author>
+```
+
+The note is written to `changes/rc/<id>.md` with a `title`, `category`,
+`release` and `credit`, and no targets or body. RC notes appear only in the next
+candidate's GitHub release notes, never on the manual site or in the final
+notes. Title a note with the fix a tester can check, such as "Fix the sidebar
+flicker after loading a save". The check validates a note's release only when
+the note is added, so it stays valid after the version is released.
 
 ### What a record says
 
@@ -284,11 +315,9 @@ answers "what can I do now."
   internal fields, refactors, and structures with no visible consequence.
 - Do not narrate the development cycle, work that landed in stages,
   interoperability between unreleased builds, or earlier drafts.
-- Write one record per visible change, not per commit or pull request. During a
-  development release, fold later work into the existing record when both
-  describe the same visible change.
-- Keep unreleased records true to the current code. Rewrite a record when later
-  work supersedes it instead of adding another.
+- Write one record per visible change, not per commit or pull request. Until the
+  release, fold later work on the same visible change into its record, and
+  rewrite the record when later work supersedes it.
 - If the names alone do not explain a credit, add one sentence saying what it
   is for, such as a prior implementation the change follows. One sentence is
   the limit.

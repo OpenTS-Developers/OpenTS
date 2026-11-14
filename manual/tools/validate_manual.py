@@ -10,7 +10,6 @@ import copy
 import json
 from pathlib import Path
 import re
-import sys
 
 import validate_manual_engine as _engine
 from validate_manual_engine import *  # noqa: F401,F403 - stable helper API
@@ -78,6 +77,7 @@ AUTHORED_CONTRACTS = (
     ("content/using", "*.md", "authored-using.schema.json"),
     ("content/internals", "*.md", "authored-internal.schema.json"),
     ("changes", "*.md", "authored-change.schema.json"),
+    ("changes/rc", "*.md", "authored-rc-note.schema.json"),
 )
 
 
@@ -260,43 +260,5 @@ def validate_all(base=None):
     validate_key_filenames(extra_errors, current)
     validate_placeholders(extra_errors)
 
-    summary["extraction_corrections"] = set(
-        (base or {}).get("extraction_corrections") or ())
     errors = contract_errors + core_errors + extra_errors
     return [_actionable(error) for error in errors], summary
-
-
-def main():
-    import argparse
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--base-data", type=Path,
-        help="compare against an ini-keys.yaml file from the target revision")
-    arguments = parser.parse_args()
-    base = _engine.read_yaml(arguments.base_data) if arguments.base_data else None
-    errors, summary = validate_all(base)
-    if errors:
-        print("ACTION REQUIRED")
-        for error in errors:
-            print(f"  - {error}")
-        return 1
-
-    scripting = summary["scripting"]
-    print(f"VERIFIED  {len(summary['keys']):,} current INI keys and stable routes")
-    print(
-        "VERIFIED  "
-        + ", ".join(
-            f"{len(scripting.get(table, []))} {label}"
-            for label, table in SCRIPTING_TABLES.items()))
-    print("VERIFIED  authored contracts, relations, lifecycle, and source links")
-    if summary["delta"] is not None:
-        delta = summary["delta"]
-        print(
-            f"VERIFIED  branch delta: {len(delta['added'])} added, "
-            f"{len(delta['changed'])} changed, {len(delta['removed'])} removed")
-    return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())

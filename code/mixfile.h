@@ -38,6 +38,8 @@ class MixFileClass : public Node<MixFileClass *>
 		static bool Cache(char const *filename, Buffer const * buffer=NULL);
 		static bool Offset(char const *filename, void ** realptr = 0, MixFileClass ** mixfile = 0, int * offset = 0, int * size = 0);
 		static void const * Retrieve(char const *filename);
+		void Search_After(MixFileClass * anchor);
+		void Search_Last(void);
 
 		struct SubBlock {
 			int CRC;				// CRC code for embedded file.

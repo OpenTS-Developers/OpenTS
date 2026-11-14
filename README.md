@@ -67,7 +67,8 @@ endorsed by Electronic Arts.
 
 OpenTS supports Windows 10 version 1903 (build 18362) and newer. Earlier
 Windows versions are untested and unsupported. Wine may work, but there is no
-supported native Linux build.
+supported native Linux build. The processor must support SSE4.2; see
+[Supported target](docs/BUILDING.md#supported-target).
 
 Keep a saved game with the platform that wrote it, and play a network game with
 peers on the same platform. The 32-bit and 64-bit builds write saves and

@@ -46,7 +46,7 @@ A music track or movie whose file is not found in any archive or folder is skipp
 
 ### Theater, side and speech archives
 
-Archives mounted after startup are searched after every startup archive.
+The theater and speech archives are searched after every startup archive. The side archives are searched after the patch and expansion archives, orders 1 to 4 in the table above, and before `TIBSUN.MIX` and every archive after it. A side's copy of a name therefore overrides the copy in the game's own archives and in the theater archives, while a copy in `PATCH.MIX`, `PCACHE.MIX` or an `EXPAND` or `ECACHE` archive overrides the side's.
 
 When a scenario or saved game uses a different theater from the one last loaded, the game drops the previous theater's archives and mounts the new theater's. These are `<Root>.MIX` and `<Suffix>.MIX`, both cached, then `<IsoRoot>.MIX`, not cached. [`Root`](/keys/root/), [`Suffix`](/keys/suffix/#scope-theater) and [`IsoRoot`](/keys/isoroot/) are set per theater.
 
@@ -58,14 +58,16 @@ Each time a scenario or saved game loads, the game drops the previous side's arc
 4. `SIDENC<nn>.MIX`, not cached. Optional.
 5. In a campaign only, one CD archive, not cached. Optional.
 
+When a match ends and the menus return, or a scenario or saved game started from the menus fails to load, the side's archives stay mounted but move behind every archive mounted so far. They stay there until the next scenario or saved game replaces them. An archive mounted later, such as `GMENU.MIX` when a menu opens, is searched after them.
+
+In a multiplayer game each player mounts the archives of their own side. Keep files that affect play, such as `RULES.INI` and `ART.INI`, out of the side archives of a multiplayer mod. Players whose side archives hold different copies play from different data and can go out of sync.
+
 For the CD archive, a campaign mission first tries `E<xx>SCD<nn>.MIX` while an expansion is enabled, where `<xx>` is the mission's [`RequiredAddOn`](/keys/requiredaddon-scenarios/) number: a Firestorm mission tries `E01SCD01.MIX` or `E01SCD02.MIX`. Without that archive it mounts `SIDECD<nn>.MIX`, so an installation that keeps the expansion's members in the base archive still plays the expansion's campaign.
 
 A campaign that finds neither CD archive still starts. The stock CD archives hold the score screen's picture and movie and the map selection's artwork, palettes and voice lines, so these must then come from another archive or folder:
 
 - A score picture or score movie that is not found is left out.
 - Map selection between missions cannot open without its artwork and palettes. The game reports "Unable to initiate Map Selection!" and replays the mission just won, unless that mission sets [`SkipMapSelect=yes`](/keys/skipmapselect/).
-
-Outside a match the game mounts the no-side archives in the same place: `E99SC00.MIX` down to `E00SC00.MIX` and `SIDEC00.MIX`, cached, then `E99SNC00.MIX` down to `E00SNC00.MIX` and `SIDENC00.MIX`, not cached. The expansion copies are mounted only while an expansion is enabled, and every one of these archives is optional. They are mounted at startup, give way to the player's side when a scenario or saved game loads, and are mounted again when a match ends and the menus return. [UI files](/systems/ui-files/#how-a-file-is-found) describes how a mod uses them for side-dependent interface files.
 
 If a required side archive is missing, the game mounts the first side's archives instead. If those are missing too, the scenario or saved game fails to load, and a scenario reports that it cannot be read.
 
@@ -80,7 +82,7 @@ Whether an archive is cached decides how its members can be read:
 - Many files are read only from cached archives. They include the shapes of object and animation types that are not [demand-loaded](/keys/demandload/), the game fonts, the theater palettes and the mouse cursor. A loose copy of such a file, or a copy in an archive mounted without caching, is not found.
 - Any file the game opens by name can come from either kind of archive.
 
-To replace a file of the first kind, put the replacement in `PCACHE.MIX` or an `ECACHE` archive. Do not also put a copy in an uncached archive that the game searches earlier: `PATCH.MIX` for a file in `PCACHE.MIX`, or `PATCH.MIX` or any `EXPAND` archive for a file in an `ECACHE` archive. The game finds that uncached copy first and treats the file as missing.
+To replace a file of the first kind, put the replacement in `PCACHE.MIX` or an `ECACHE` archive. Do not also put a copy in an uncached archive that the game searches earlier: `PATCH.MIX` for a file in `PCACHE.MIX`, or `PATCH.MIX` or any `EXPAND` archive for a file in an `ECACHE` archive. The game finds that uncached copy first and treats the file as missing. During a match, the uncached side archives, `E<xx>SNC<nn>.MIX`, `SIDENC<nn>.MIX` and the CD archive, are searched before `TIBSUN.MIX` and every archive after it, so a copy in one of them hides a cached copy in those archives in the same way.
 
 An archive may carry a digest of its member data. The game checks it when caching the archive and leaves the archive uncached if the digest does not match.
 

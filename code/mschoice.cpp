@@ -17,6 +17,7 @@
 #include "ccini.h"
 #include "data.h"
 #include "dbgprint.h"
+#include "gametext.h"
 #include "audio/audioengine.h"
 #include "globals.h"
 #include "goptions.h"
@@ -315,6 +316,7 @@ MapStage::MapStage(INIClass const & ini, char const * label) :
 			char const * desc = Fetch_String(txt);
 			Description = strdup(desc);
 		}
+		Game_Text_Lines_In_Place(Description);
 	}
 
 	VoiceOver = NULL;
@@ -520,6 +522,7 @@ MSTextEntry::MSTextEntry(char * string) :
 	token = strtok(NULL, ",");
 	if (token != NULL) {
 		String = strdup(token);
+		Game_Text_Lines_In_Place(String);
 	}
 }
 

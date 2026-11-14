@@ -13,14 +13,21 @@
 #include "utf8.h"
 
 #include <RmlUi/Core/CallbackTexture.h>
+#include <RmlUi/Core/Core.h>
+#include <RmlUi/Core/Factory.h>
+#include <RmlUi/Core/FileInterface.h>
 #include <RmlUi/Core/FontEffect.h>
+#include <RmlUi/Core/FontEffectInstancer.h>
 #include <RmlUi/Core/FontGlyph.h>
+#include <RmlUi/Core/Log.h>
 #include <RmlUi/Core/Mesh.h>
 #include <RmlUi/Core/MeshUtilities.h>
+#include <RmlUi/Core/PropertyDefinition.h>
 #include <RmlUi/Core/RenderManager.h>
 #include <RmlUi/Core/StringUtilities.h>
 #include <algorithm>
 #include <cmath>
+#include <map>
 #include <span>
 #include <unordered_map>
 
@@ -334,6 +341,215 @@ class UIRasterFaceClass
 };
 
 
+class UIFntFaceClass
+{
+	public:
+		UIFntFaceClass(void const * family, UIFntFont const & font, std::vector<UIFntCell> const & cells, int atlaswidth, int atlasheight, int advance, int lineheight, float scale, int magnification) :
+			Family(family),
+			Font(font),
+			Cells(cells),
+			AtlasWidth(atlaswidth),
+			AtlasHeight(atlasheight),
+			Spacing(advance),
+			Scale(scale),
+			Magnification(magnification < 1 ? 1 : magnification)
+		{
+			Measurements.size = (int)(Font.Height * scale);
+			Measurements.ascent = Font.Height * scale;
+			Measurements.descent = 0.0f;
+			Measurements.line_spacing = lineheight * scale;
+			Measurements.x_height = Font.Height * scale * 0.5f;
+			Measurements.underline_position = 0.0f;
+			Measurements.underline_thickness = 1.0f;
+			Measurements.has_ellipsis = false;
+		}
+
+		Rml::FontMetrics const & Metrics(void) const { return(Measurements); }
+		void const * Owner(void) const { return(Family); }
+
+		void Set_Magnification(int magnification)
+		{
+			magnification = magnification < 1 ? 1 : magnification;
+			if (magnification != Magnification) {
+				Magnification = magnification;
+				Atlases.clear();
+			}
+		}
+
+		int String_Width(Rml::StringView string) const
+		{
+			float width = 0.0f;
+			for (Rml::StringIteratorU8 character(string); character; ++character) {
+				width += Advance(*character) * Scale;
+			}
+			return((int)(width + 0.5f));
+		}
+
+		int Generate(Rml::RenderManager & manager, Rml::StringView string, Rml::Vector2f position, UIFntPalette const & palette, Rml::ColourbPremultiplied opacity, Rml::TexturedMeshList & meshes, std::size_t layer)
+		{
+			if (meshes.size() <= layer) {
+				meshes.resize(layer + 1);
+			}
+			meshes[layer].texture = Atlas(manager, palette);
+
+			Rml::Mesh & mesh = meshes[layer].mesh;
+			float const atlas = (float)AtlasWidth;
+			float const rows = (float)AtlasHeight;
+
+			float pen = position.x;
+			float const top = position.y - Font.Height * Scale;
+			float width = 0.0f;
+
+			for (Rml::StringIteratorU8 character(string); character; ++character) {
+				int const glyph = UI_Fnt_Glyph(Font, (char32_t)*character);
+				if (glyph < 0) {
+					continue;
+				}
+
+				UIFntGlyph const & picture = Font.Glyphs[(std::size_t)glyph];
+				if (picture.Width > 0) {
+					float const x = (float)Cells[(std::size_t)glyph].X;
+					float const y = (float)Cells[(std::size_t)glyph].Y;
+					Rml::Vector2f topleft(x / atlas, y / rows);
+					Rml::Vector2f bottomright((x + picture.Width) / atlas, (y + Font.Height) / rows);
+					Rml::Vector2f size(picture.Width * Scale, Font.Height * Scale);
+					Rml::MeshUtilities::GenerateQuad(mesh, Rml::Vector2f(pen, top), size, opacity, topleft, bottomright);
+				}
+
+				float const advance = (picture.Width + Spacing) * Scale;
+				pen += advance;
+				width += advance;
+			}
+
+			return((int)(width + 0.5f));
+		}
+
+	private:
+		int Advance(Rml::Character character) const
+		{
+			int const glyph = UI_Fnt_Glyph(Font, (char32_t)character);
+			return((glyph < 0) ? 0 : Font.Glyphs[(std::size_t)glyph].Width + Spacing);
+		}
+
+		Rml::Texture Atlas(Rml::RenderManager & manager, UIFntPalette const & palette)
+		{
+			std::map<UIFntPalette, Rml::CallbackTexture>::iterator found = Atlases.find(palette);
+			if (found != Atlases.end()) {
+				return(found->second);
+			}
+
+			std::vector<std::uint8_t> rgba;
+			if (!UI_Fnt_Atlas(Font, Cells, AtlasWidth, AtlasHeight, palette, rgba)) {
+				return(Rml::Texture());
+			}
+
+			int factor = Magnification;
+			while (factor > 1
+				&& (AtlasWidth * factor > UI_RASTER_ATLAS_LIMIT || AtlasHeight * factor > UI_RASTER_ATLAS_LIMIT)) {
+				factor--;
+			}
+
+			Rml::Vector2i dimensions(AtlasWidth, AtlasHeight);
+			if (factor > 1) {
+				std::vector<std::uint8_t> magnified;
+				if (!UI_Render_Magnify_RGBA(std::span<std::uint8_t const>(rgba.data(), rgba.size()), AtlasWidth, AtlasHeight, factor, magnified)) {
+					return(Rml::Texture());
+				}
+				rgba.swap(magnified);
+				dimensions = Rml::Vector2i(AtlasWidth * factor, AtlasHeight * factor);
+			}
+
+			Rml::CallbackTexture texture = manager.MakeCallbackTexture([rgba, dimensions](Rml::CallbackTextureInterface const & interface) {
+				return(interface.GenerateTexture(Rml::Span<const Rml::byte>(rgba.data(), rgba.size()), dimensions));
+			});
+			return(Atlases.emplace(palette, std::move(texture)).first->second);
+		}
+
+		void const * Family;
+		UIFntFont const & Font;
+		std::vector<UIFntCell> const & Cells;
+		int AtlasWidth;
+		int AtlasHeight;
+		int Spacing;
+		float Scale;
+		int Magnification;
+		Rml::FontMetrics Measurements;
+		std::map<UIFntPalette, Rml::CallbackTexture> Atlases;
+};
+
+
+// Colors one range of a Westwood font's pixel values; only a .FNT face draws it.
+class UIFntRoleEffectClass : public Rml::FontEffect
+{
+	public:
+		UIFntRoleEffectClass(int first, int last) : First(first), Last(last) {}
+
+		int First;
+		int Last;
+};
+
+
+class UIFntRoleInstancerClass : public Rml::FontEffectInstancer
+{
+	public:
+		UIFntRoleInstancerClass(int first, int last) :
+			First(first),
+			Last(last),
+			IndexId(Rml::PropertyId::Invalid),
+			ColorId(Rml::PropertyId::Invalid)
+		{
+			if (first == 0) {
+				IndexId = RegisterProperty("index", "2").AddParser("number").GetId();
+			}
+			ColorId = RegisterProperty("color", "black").AddParser("color").GetId();
+			RegisterShorthand("font-effect", (first == 0) ? "index, color" : "color", Rml::ShorthandType::FallThrough);
+		}
+
+		virtual Rml::SharedPtr<Rml::FontEffect> InstanceFontEffect(Rml::String const & name, Rml::PropertyDictionary const & properties) override
+		{
+			int first = First;
+			int last = Last;
+			if (first == 0) {
+				first = properties.GetProperty(IndexId)->Get<int>();
+				last = first;
+				if (first < UI_FNT_SHADOW || first >= UI_FNT_ROLES) {
+					return(nullptr);
+				}
+			}
+
+			Rml::SharedPtr<UIFntRoleEffectClass> effect = Rml::MakeShared<UIFntRoleEffectClass>(first, last);
+			effect->SetColour(properties.GetProperty(ColorId)->Get<Rml::Colourb>());
+			return(effect);
+		}
+
+	private:
+		int First;
+		int Last;
+		Rml::PropertyId IndexId;
+		Rml::PropertyId ColorId;
+};
+
+
+/// <summary>
+/// Registers the font effects that color a .FNT face's pixel values: ww-shadow(color) for value
+/// 2, ww-outline(color) for value 3, ww-gradient(color) for values 4 to 15, and
+/// ww-role(index color) for any one value from 2 to 15. A later effect overrides an earlier one
+/// for the values both name, and every other face draws its text without them.
+/// </summary>
+void UI_Register_Fnt_Effects(void)
+{
+	static UIFntRoleInstancerClass role(0, 0);
+	static UIFntRoleInstancerClass shadow(UI_FNT_SHADOW, UI_FNT_SHADOW);
+	static UIFntRoleInstancerClass outline(UI_FNT_OUTLINE, UI_FNT_OUTLINE);
+	static UIFntRoleInstancerClass gradient(UI_FNT_FIRST_SHADE, UI_FNT_ROLES - 1);
+
+	Rml::Factory::RegisterFontEffectInstancer("ww-role", &role);
+	Rml::Factory::RegisterFontEffectInstancer("ww-shadow", &shadow);
+	Rml::Factory::RegisterFontEffectInstancer("ww-outline", &outline);
+	Rml::Factory::RegisterFontEffectInstancer("ww-gradient", &gradient);
+}
+
+
 UIFontEngineClass::UIFontEngineClass(void) :
 	Fallback(nullptr)
 {
@@ -395,9 +611,78 @@ bool UIFontEngineClass::Load_Strikes(Rml::String const & family, std::vector<UIR
 }
 
 
+/// <summary>
+/// Adds or replaces a family drawn from a Westwood .FNT font. A font-size equal to the font's
+/// height in dp draws one font pixel per dp.
+/// </summary>
+/// <param name="spacing">The horizontal spacing override the game gives this font.</param>
+/// <param name="outlined">Was the font loaded as outlined, which narrows its spacing?</param>
+/// <param name="gradient">Does the game print shade values 4 to 15 in the text color?</param>
+/// <returns>bool; Was the family added? A font whose glyphs do not fit one atlas is refused.</returns>
+bool UIFontEngineClass::Load_Fnt(Rml::String const & family, UIFntFont const & font, int spacing, bool outlined, bool gradient)
+{
+	std::unique_ptr<FntFamily> fnt = std::make_unique<FntFamily>();
+	fnt->Name = Rml::StringUtilities::ToLower(family);
+	fnt->Font = font;
+	fnt->Gradient = gradient;
+	fnt->Advance = UI_Fnt_Spacing(font.MaxWidth, spacing, outlined);
+	fnt->LineHeight = font.Height + std::max(UI_Fnt_Spacing(font.Height, 0, outlined) + font.MaxWidth / 16, 0);
+	if (!UI_Fnt_Layout(fnt->Font, UI_RASTER_ATLAS_LIMIT, fnt->Cells, fnt->AtlasWidth, fnt->AtlasHeight)) {
+		return(false);
+	}
+
+	for (std::size_t entry = 0; entry < FntFamilies.size(); entry++) {
+		if (FntFamilies[entry]->Name == fnt->Name) {
+			std::erase_if(FntFaces, [&](std::unique_ptr<UIFntFaceClass> const & face) { return(face->Owner() == FntFamilies[entry].get()); });
+			FntFamilies[entry] = std::move(fnt);
+			return(true);
+		}
+	}
+
+	FntFamilies.push_back(std::move(fnt));
+	return(true);
+}
+
+
 bool UIFontEngineClass::Has_Family(Rml::String const & family) const
 {
-	return(Find_Family(family) != nullptr || Find_Raster_Family(family) != nullptr);
+	return(Find_Family(family) != nullptr || Find_Raster_Family(family) != nullptr || Find_Fnt_Family(family) != nullptr);
+}
+
+
+/// <summary>
+/// Refuses every later font file load into a family, so a style sheet cannot replace or add
+/// to one of the game's own families. Loads from memory are not affected.
+/// </summary>
+void UIFontEngineClass::Reserve_Family(Rml::String const & family)
+{
+	Reserved.push_back(Rml::StringUtilities::ToLower(family));
+}
+
+
+UIFontEngineClass::FntFamily const * UIFontEngineClass::Find_Fnt_Family(Rml::String const & family) const
+{
+	Rml::String wanted = Rml::StringUtilities::ToLower(family);
+
+	for (std::unique_ptr<FntFamily> const & fnt : FntFamilies) {
+		if (fnt->Name == wanted) {
+			return(fnt.get());
+		}
+	}
+
+	return(nullptr);
+}
+
+
+UIFntFaceClass * UIFontEngineClass::Find_Fnt_Face(Rml::FontFaceHandle handle) const
+{
+	for (std::unique_ptr<UIFntFaceClass> const & face : FntFaces) {
+		if ((Rml::FontFaceHandle)face.get() == handle) {
+			return(face.get());
+		}
+	}
+
+	return(nullptr);
 }
 
 
@@ -462,6 +747,9 @@ void UIFontEngineClass::Set_Magnification(int factor)
 	for (std::unique_ptr<UIRasterFaceClass> const & face : RasterFaces) {
 		face->Set_Magnification(Magnification);
 	}
+	for (std::unique_ptr<UIFntFaceClass> const & face : FntFaces) {
+		face->Set_Magnification(Magnification);
+	}
 }
 
 
@@ -474,23 +762,84 @@ void UIFontEngineClass::Shutdown(void)
 {
 	Faces.clear();
 	RasterFaces.clear();
+	FntFaces.clear();
 
 	if (Fallback != nullptr) {
 		Fallback->Shutdown();
 		Fallback = nullptr;
 	}
+
+	FileRequests.clear();
+	FontFiles.clear();
+	Reserved.clear();
+}
+
+
+/// <summary>
+/// Loads a TrueType or OpenType file through RmlUi's file interface, as RmlUi's own loader
+/// does, but keeps the file's bytes until shutdown. A request already made with the same
+/// file, family, style, weight and options returns its first result without reading again.
+/// </summary>
+bool UIFontEngineClass::Load_File_Face(Rml::String const & filename, int faceindex, Rml::String const & family, Rml::Style::FontStyle style, Rml::Style::FontWeight weight, bool fallbackface)
+{
+	if (Fallback == nullptr) {
+		return(false);
+	}
+
+	if (std::find(Reserved.begin(), Reserved.end(), Rml::StringUtilities::ToLower(family)) != Reserved.end()) {
+		Rml::Log::Message(Rml::Log::LT_WARNING, "Font face from %s was not loaded: %s is one of the game's font families.", filename.c_str(), family.c_str());
+		return(false);
+	}
+
+	Rml::String const key = Rml::StringUtilities::ToLower(filename) + '|' + std::to_string(faceindex) + '|' + Rml::StringUtilities::ToLower(family)
+		+ '|' + std::to_string((int)style) + '|' + std::to_string((int)weight) + (fallbackface ? "|fallback" : "");
+	auto const request = FileRequests.find(key);
+	if (request != FileRequests.end()) {
+		return(request->second);
+	}
+
+	Rml::FileInterface * files = Rml::GetFileInterface();
+	Rml::FileHandle handle = (files != nullptr) ? files->Open(filename) : 0;
+	if (handle == 0) {
+		Rml::Log::Message(Rml::Log::LT_ERROR, "Failed to load font face from %s, could not open file.", filename.c_str());
+		return(false);
+	}
+
+	std::vector<Rml::byte> bytes(files->Length(handle));
+	bytes.resize(files->Read(bytes.data(), bytes.size(), handle));
+	files->Close(handle);
+
+	// A file several families name is kept once.
+	std::vector<Rml::byte> const * kept = nullptr;
+	for (std::unique_ptr<std::vector<Rml::byte>> const & file : FontFiles) {
+		if (*file == bytes) {
+			kept = file.get();
+			break;
+		}
+	}
+	if (kept == nullptr) {
+		FontFiles.push_back(std::make_unique<std::vector<Rml::byte>>(std::move(bytes)));
+		kept = FontFiles.back().get();
+	}
+
+	bool const loaded = Fallback->LoadFontFace(Rml::Span<const Rml::byte>(kept->data(), kept->size()), faceindex, family, style, weight, fallbackface);
+	if (!loaded) {
+		Rml::Log::Message(Rml::Log::LT_ERROR, "Failed to load font face from %s.", filename.c_str());
+	}
+	FileRequests[key] = loaded;
+	return(loaded);
 }
 
 
 bool UIFontEngineClass::LoadFontFace(Rml::String const & filename, int faceindex, bool fallbackface, Rml::Style::FontWeight weight)
 {
-	return(Fallback != nullptr && Fallback->LoadFontFace(filename, faceindex, fallbackface, weight));
+	return(Load_File_Face(filename, faceindex, Rml::String(), Rml::Style::FontStyle::Normal, weight, fallbackface));
 }
 
 
 bool UIFontEngineClass::LoadFontFace(Rml::String const & filename, int faceindex, Rml::String const & family, Rml::Style::FontStyle style, Rml::Style::FontWeight weight, bool fallbackface)
 {
-	return(Fallback != nullptr && Fallback->LoadFontFace(filename, faceindex, family, style, weight, fallbackface));
+	return(Load_File_Face(filename, faceindex, family, style, weight, fallbackface));
 }
 
 
@@ -523,6 +872,19 @@ Rml::FontFaceHandle UIFontEngineClass::GetFontFaceHandle(Rml::String const & fam
 		return((Rml::FontFaceHandle)RasterFaces.back().get());
 	}
 
+	FntFamily const * fnt = Find_Fnt_Family(family);
+	if (fnt != nullptr) {
+		float const scale = (fnt->Font.Height > 0 && size > 0) ? (float)size / (float)fnt->Font.Height : 1.0f;
+		for (std::unique_ptr<UIFntFaceClass> const & face : FntFaces) {
+			if (face->Owner() == fnt && face->Metrics().size == (int)(fnt->Font.Height * scale)) {
+				return((Rml::FontFaceHandle)face.get());
+			}
+		}
+
+		FntFaces.push_back(std::make_unique<UIFntFaceClass>(fnt, fnt->Font, fnt->Cells, fnt->AtlasWidth, fnt->AtlasHeight, fnt->Advance, fnt->LineHeight, scale, Magnification));
+		return((Rml::FontFaceHandle)FntFaces.back().get());
+	}
+
 	SheetFamily const * sheets = Find_Family(family);
 	if (sheets == nullptr) {
 		return(Fallback != nullptr ? Fallback->GetFontFaceHandle(family, style, weight, size) : 0);
@@ -547,16 +909,29 @@ Rml::FontFaceHandle UIFontEngineClass::GetFontFaceHandle(Rml::String const & fam
 /// <summary>
 /// Prepares the effects a game face can draw. A shadow, which moves the glyphs and recolors
 /// them, is drawn on every face; an effect that builds glyphs of its own, such as an outline,
-/// glow or blur, is drawn only by a TrueType face and leaves a game face's text plain.
+/// glow or blur, is drawn only by a TrueType face and leaves a game face's text plain. The
+/// ww- effects recolor a .FNT face's pixel values and leave every other face unchanged.
 /// </summary>
 Rml::FontEffectsHandle UIFontEngineClass::PrepareFontEffects(Rml::FontFaceHandle handle, Rml::FontEffectList const & effects)
 {
-	if (Find_Face(handle) == nullptr && Find_Raster_Face(handle) == nullptr) {
+	if (Find_Face(handle) == nullptr && Find_Raster_Face(handle) == nullptr && Find_Fnt_Face(handle) == nullptr) {
 		return(Fallback != nullptr ? Fallback->PrepareFontEffects(handle, effects) : 0);
 	}
 
 	EffectSet set;
+	bool roles = false;
 	for (Rml::SharedPtr<const Rml::FontEffect> const & effect : effects) {
+		UIFntRoleEffectClass const * role = dynamic_cast<UIFntRoleEffectClass const *>(effect.get());
+		if (role != nullptr) {
+			for (int value = role->First; value <= role->Last; value++) {
+				set.RoleSet[(std::size_t)value] = true;
+				set.Roles[(std::size_t)value] = role->GetColour();
+			}
+			set.Fingerprints.push_back(role->GetFingerprint());
+			roles = true;
+			continue;
+		}
+
 		Rml::FontGlyph glyph;
 		Rml::Vector2i origin(0, 0);
 		Rml::Vector2i dimensions(1, 1);
@@ -571,7 +946,7 @@ Rml::FontEffectsHandle UIFontEngineClass::PrepareFontEffects(Rml::FontFaceHandle
 		set.Fingerprints.push_back(effect->GetFingerprint());
 	}
 
-	if (set.Back.empty() && set.Front.empty()) {
+	if (set.Back.empty() && set.Front.empty() && !roles) {
 		return(0);
 	}
 
@@ -595,6 +970,10 @@ Rml::FontMetrics const & UIFontEngineClass::GetFontMetrics(Rml::FontFaceHandle h
 	if (strike != nullptr) {
 		return(strike->Metrics());
 	}
+	UIFntFaceClass * fnt = Find_Fnt_Face(handle);
+	if (fnt != nullptr) {
+		return(fnt->Metrics());
+	}
 	return(Fallback->GetFontMetrics(handle));
 }
 
@@ -609,6 +988,10 @@ int UIFontEngineClass::GetStringWidth(Rml::FontFaceHandle handle, Rml::StringVie
 	if (strike != nullptr) {
 		return(strike->String_Width(string));
 	}
+	UIFntFaceClass * fnt = Find_Fnt_Face(handle);
+	if (fnt != nullptr) {
+		return(fnt->String_Width(string));
+	}
 	return(Fallback != nullptr ? Fallback->GetStringWidth(handle, string, shaping, prior) : 0);
 }
 
@@ -617,11 +1000,15 @@ int UIFontEngineClass::GenerateString(Rml::RenderManager & manager, Rml::FontFac
 {
 	UISheetFaceClass * face = Find_Face(handle);
 	UIRasterFaceClass * strike = Find_Raster_Face(handle);
-	if (face == nullptr && strike == nullptr) {
+	UIFntFaceClass * fnt = Find_Fnt_Face(handle);
+	if (face == nullptr && strike == nullptr && fnt == nullptr) {
 		return(Fallback != nullptr ? Fallback->GenerateString(manager, handle, effects, string, position, color, opacity, shaping, meshes) : 0);
 	}
 
 	EffectSet const * set = (effects > 0 && (std::size_t)effects <= EffectSets.size()) ? &EffectSets[(std::size_t)effects - 1] : nullptr;
+	if (fnt != nullptr) {
+		return(Generate_Fnt(*fnt, manager, set, string, position, color, opacity, meshes));
+	}
 	auto draw = [&](Rml::Vector2f at, Rml::ColourbPremultiplied tint, std::size_t layer) {
 		return((face != nullptr) ? face->Generate(manager, string, at, tint, meshes, layer) : strike->Generate(manager, string, at, tint, meshes, layer));
 	};
@@ -643,9 +1030,65 @@ int UIFontEngineClass::GenerateString(Rml::RenderManager & manager, Rml::FontFac
 }
 
 
+/// <summary>
+/// Draws a string in a .FNT face. Each pixel value takes its color from the text color, the
+/// family's defaults and the ww- effects, and each moved shadow draws every visible pixel in
+/// the shadow's color.
+/// </summary>
+int UIFontEngineClass::Generate_Fnt(UIFntFaceClass & face, Rml::RenderManager & manager, EffectSet const * set, Rml::StringView string, Rml::Vector2f position, Rml::ColourbPremultiplied color, float opacity, Rml::TexturedMeshList & meshes)
+{
+	FntFamily const * family = static_cast<FntFamily const *>(face.Owner());
+	float const visible = std::clamp(opacity, 0.0f, 1.0f);
+	std::uint8_t const fade = (std::uint8_t)(visible * 255.0f + 0.5f);
+	Rml::ColourbPremultiplied const tint(fade, fade, fade, fade);
+
+	int const alpha = color.alpha;
+	std::uint8_t const red = (std::uint8_t)(alpha > 0 ? std::min(255, color.red * 255 / alpha) : 0);
+	std::uint8_t const green = (std::uint8_t)(alpha > 0 ? std::min(255, color.green * 255 / alpha) : 0);
+	std::uint8_t const blue = (std::uint8_t)(alpha > 0 ? std::min(255, color.blue * 255 / alpha) : 0);
+	std::uint8_t const textalpha = (std::uint8_t)(visible > 0.0f ? std::min(255.0f, alpha / visible + 0.5f) : 0.0f);
+
+	UIFntPalette palette;
+	UI_Fnt_Default_Palette(UI_Fnt_Color(red, green, blue, textalpha), family->Gradient, palette);
+	if (set != nullptr) {
+		for (std::size_t value = UI_FNT_SHADOW; value < UI_FNT_ROLES; value++) {
+			if (set->RoleSet[value]) {
+				Rml::Colourb const & role = set->Roles[value];
+				palette[value] = UI_Fnt_Color(role.red, role.green, role.blue, role.alpha);
+			}
+		}
+	}
+
+	auto silhouette = [&](Rml::Colourb shade) {
+		UIFntPalette moved;
+		moved.fill(0);
+		for (std::size_t value = UI_FNT_TEXT; value < UI_FNT_ROLES; value++) {
+			if ((palette[value] & 0xFF) != 0) {
+				moved[value] = UI_Fnt_Color(shade.red, shade.green, shade.blue, shade.alpha);
+			}
+		}
+		return(moved);
+	};
+
+	std::size_t layer = 0;
+	if (set != nullptr) {
+		for (Shadow const & shadow : set->Back) {
+			face.Generate(manager, string, position + shadow.Offset, silhouette(shadow.Colour), tint, meshes, layer++);
+		}
+	}
+	int const width = face.Generate(manager, string, position, palette, tint, meshes, layer++);
+	if (set != nullptr) {
+		for (Shadow const & shadow : set->Front) {
+			face.Generate(manager, string, position + shadow.Offset, silhouette(shadow.Colour), tint, meshes, layer++);
+		}
+	}
+	return(width);
+}
+
+
 int UIFontEngineClass::GetVersion(Rml::FontFaceHandle handle)
 {
-	if (Find_Face(handle) != nullptr || Find_Raster_Face(handle) != nullptr) {
+	if (Find_Face(handle) != nullptr || Find_Raster_Face(handle) != nullptr || Find_Fnt_Face(handle) != nullptr) {
 		return(0);
 	}
 	return(Fallback != nullptr ? Fallback->GetVersion(handle) : 0);
@@ -656,6 +1099,7 @@ void UIFontEngineClass::ReleaseFontResources(void)
 {
 	Faces.clear();
 	RasterFaces.clear();
+	FntFaces.clear();
 
 	if (Fallback != nullptr) {
 		Fallback->ReleaseFontResources();

@@ -34,7 +34,7 @@ const pageHeadings = [
 	<Breadcrumb crumbs={[
 		{ label: UI.navigation.changes, href: '/changes/' },
 		{
-			label: `${entry.data.release}${release?.status === 'development' ? ' (in development)' : ''}`,
+			label: `${entry.data.release}${release?.status === 'development' ? ' (in development)' : release?.status === 'candidate' ? ' (release candidate)' : ''}`,
 			href: `/changes/${entry.data.release}/`,
 		},
 	]} />

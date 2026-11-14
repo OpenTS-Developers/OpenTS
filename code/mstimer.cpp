@@ -22,15 +22,22 @@
 
 // One request for the life of the process gives every timer millisecond resolution. Without
 // the opt-out, Windows 11 drops it while the window is minimized and each sleep lasts about 16 ms.
+// SetProcessInformation is looked up at runtime because Windows 7 lacks it and would refuse to
+// load the game; Windows 7 also lacks the throttling it opts out of.
 static struct MillisecondResolutionClass
 {
 	MillisecondResolutionClass(void)
 	{
-		PROCESS_POWER_THROTTLING_STATE state = {};
-		state.Version = PROCESS_POWER_THROTTLING_CURRENT_VERSION;
-		state.ControlMask = PROCESS_POWER_THROTTLING_IGNORE_TIMER_RESOLUTION;
-		state.StateMask = 0;
-		SetProcessInformation(GetCurrentProcess(), ProcessPowerThrottling, &state, sizeof(state));
+		using SetProcessInformationType = BOOL (WINAPI *)(HANDLE, PROCESS_INFORMATION_CLASS, LPVOID, DWORD);
+		auto set_process_information = reinterpret_cast<SetProcessInformationType>(
+			GetProcAddress(GetModuleHandleW(L"kernel32.dll"), "SetProcessInformation"));
+		if (set_process_information != NULL) {
+			PROCESS_POWER_THROTTLING_STATE state = {};
+			state.Version = PROCESS_POWER_THROTTLING_CURRENT_VERSION;
+			state.ControlMask = PROCESS_POWER_THROTTLING_IGNORE_TIMER_RESOLUTION;
+			state.StateMask = 0;
+			set_process_information(GetCurrentProcess(), ProcessPowerThrottling, &state, sizeof(state));
+		}
 		timeBeginPeriod(1);
 	}
 	~MillisecondResolutionClass(void) { timeEndPeriod(1); }

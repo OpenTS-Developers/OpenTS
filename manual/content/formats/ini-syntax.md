@@ -33,6 +33,12 @@ Text is UTF-8, and a byte order mark at the start of a file is ignored. A line t
 
 A line may be any length. When a setting stores its value in fixed-size storage, the value is cut to fit, and the debug log records the cut once per key.
 
+## Line breaks in text
+
+An at sign (`@`) starts a new line in the text of a sidebar or map tooltip, a mission's written briefing, and the map selection screens. Write `\@` to print an at sign there, and `\\` to print a backslash. Any other backslash prints as written. For example, `Drop at LZ\@2@Hold` prints `Drop at LZ@2` and then `Hold` on the next line, and `C:\\@Next` prints `C:\` and then `Next`.
+
+The rule covers everything those places print, such as a unit's name in its tooltip. The same text shown anywhere else, such as a name under a cameo, prints `@` and `\` as written.
+
 ## Repeats and later files
 
 A repeated section header continues the section already read, and a repeated key replaces the value read earlier. The same happens when a file is loaded on top of an earlier one. A section the earlier file lacks is added, and an existing section gains or replaces keys. With Firestorm enabled, for example, `ARTFS.INI` is loaded on top of `ART.INI`.

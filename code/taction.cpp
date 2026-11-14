@@ -103,8 +103,10 @@
 #include "draw.hh"
 #include "need.hh"
 
+#include <chrono>
 #include <cstdio>
 #include <limits>
+#include <thread>
 
 DynamicVectorClass<TActionClass *> Actions;
 
@@ -2068,7 +2070,7 @@ bool TActionClass::TAction_ZOOM_IN(HouseClass * , ObjectClass * , TriggerClass *
 	Map.Flag_To_Redraw();
 	Map.Render();
 
-	Sleep(1000);
+	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	return(true);
 }
 

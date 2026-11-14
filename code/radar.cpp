@@ -268,16 +268,6 @@ void RadarClass::Init_For_House(void)
 }
 
 
-/// <summary>
-/// Drops the artwork Init_For_House fetched, so that nothing points into the side's archives
-/// once they are released. The map must not be drawn until Init_For_House runs again.
-/// </summary>
-void RadarClass::Clear_For_House(void)
-{
-	RadarAnim = NULL;
-}
-
-
 /***********************************************************************************************
  * RadarClass::Draw_It -- Displays the radar map of the terrain.                               *
  *                                                                                             *

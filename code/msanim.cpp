@@ -880,7 +880,7 @@ int MSPrintAnim::Word_Wrap(char * string, MSFont * font, int line_width)
 		int current_width = 0;
 
 		/// Calculate the width of the current line
-		while (current_width < line_width && *char_ptr != '\0' && *char_ptr != '\n' && *char_ptr != '@') {
+		while (current_width < line_width && *char_ptr != '\0' && *char_ptr != '\n') {
 			int char_width = font->Get_Character_Width(UTF8::Decode(char_ptr));
 			current_width += char_width;
 		}
@@ -940,7 +940,7 @@ int MSPrintAnim::Word_Wrap(char * string, int length, MSFont * font, int line_wi
 		char *start_ptr = char_ptr;
 
 		/// Calculate the width of the current line
-		while (current_width < line_width && *char_ptr != '\0' && *char_ptr != '\n' && *char_ptr != '@') {
+		while (current_width < line_width && *char_ptr != '\0' && *char_ptr != '\n') {
 			int char_width = font->Get_Character_Width(UTF8::Decode(char_ptr));
 			current_width += char_width;
 		}
@@ -954,7 +954,7 @@ int MSPrintAnim::Word_Wrap(char * string, int length, MSFont * font, int line_wi
 		}
 
 		if (char_ptr == start_ptr) {
-			while (current_width < line_width && *char_ptr != '\0' && *char_ptr != ' ' && *char_ptr != '\n' && *char_ptr != '@' && *char_ptr != '-') {
+			while (current_width < line_width && *char_ptr != '\0' && *char_ptr != ' ' && *char_ptr != '\n' && *char_ptr != '-') {
 				int char_width = font->Get_Character_Width(UTF8::Decode(char_ptr));
 				current_width += char_width;
 			}
