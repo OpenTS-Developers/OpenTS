@@ -7,6 +7,10 @@ project(OpenTS VERSION 0.2.0 LANGUAGES C CXX)
 # version.
 set(OPENTS_VERSION_PRERELEASE "")
 
+# A release candidate's label, such as "rc1", normally taken from a v<version>-<label> tag at
+# HEAD. The release workflow sets it from the tag it builds.
+set(OPENTS_VERSION_LABEL "" CACHE STRING "Prerelease label to build with, such as rc1")
+
 # An official build displays its version alone. Any other build also displays its commit when
 # git reports one.
 option(OPENTS_OFFICIAL_BUILD "Build as an official release of the declared version" OFF)
@@ -75,6 +79,7 @@ set(OPENTS_STAMP_ARGS
     "-DOPENTS_VERSION_MINOR=${PROJECT_VERSION_MINOR}"
     "-DOPENTS_VERSION_PATCH=${PROJECT_VERSION_PATCH}"
     "-DOPENTS_VERSION_PRERELEASE=${OPENTS_VERSION_PRERELEASE}"
+    "-DOPENTS_VERSION_LABEL=${OPENTS_VERSION_LABEL}"
     "-DOPENTS_OFFICIAL_BUILD=${OPENTS_OFFICIAL_BUILD}"
     "-DOPENTS_SOURCE_DIR=${CMAKE_SOURCE_DIR}"
     "-DOPENTS_VERSION_HEADER=${OPENTS_VERSION_HEADER}"

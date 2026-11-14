@@ -6,8 +6,30 @@
 # rewritten only when its contents change.
 #
 # Expects OPENTS_VERSION_MAJOR, OPENTS_VERSION_MINOR, OPENTS_VERSION_PATCH,
-# OPENTS_VERSION_PRERELEASE, OPENTS_OFFICIAL_BUILD, OPENTS_ARCH, OPENTS_SOURCE_DIR,
-# OPENTS_VERSION_HEADER, and OPENTS_STAMP_HEADER to be set.
+# OPENTS_VERSION_PRERELEASE, OPENTS_VERSION_LABEL, OPENTS_OFFICIAL_BUILD, OPENTS_ARCH,
+# OPENTS_SOURCE_DIR, OPENTS_VERSION_HEADER, and OPENTS_STAMP_HEADER to be set.
+
+find_package(Git QUIET)
+set(OPENTS_HAVE_GIT FALSE)
+if(GIT_FOUND AND EXISTS "${OPENTS_SOURCE_DIR}/.git")
+    set(OPENTS_HAVE_GIT TRUE)
+endif()
+
+# Sets <out> to the trimmed output of git run in the source tree, or to "" when git fails.
+function(opents_git out)
+    execute_process(
+        COMMAND "${GIT_EXECUTABLE}" ${ARGN}
+        WORKING_DIRECTORY "${OPENTS_SOURCE_DIR}"
+        OUTPUT_VARIABLE output
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+        RESULT_VARIABLE result
+    )
+    if(NOT result EQUAL 0)
+        set(output "")
+    endif()
+    set(${out} "${output}" PARENT_SCOPE)
+endfunction()
 
 # Saves and network sessions compare the packed version for equality. It holds one byte per
 # component, so a component above 255 would give two versions the same stamp.
@@ -24,9 +46,41 @@ math(EXPR OPENTS_VERSION_PACKED
     OUTPUT_FORMAT HEXADECIMAL)
 
 set(OPENTS_VERSION "${OPENTS_VERSION_MAJOR}.${OPENTS_VERSION_MINOR}.${OPENTS_VERSION_PATCH}")
+
+# The label is OPENTS_VERSION_PRERELEASE, else OPENTS_VERSION_LABEL, else the label of a
+# v<version>-<label> tag at HEAD. A plain v<version> tag at HEAD means no tag label, and of
+# several label tags the highest in natural order wins.
+set(label "${OPENTS_VERSION_PRERELEASE}")
+if(label STREQUAL "")
+    set(label "${OPENTS_VERSION_LABEL}")
+endif()
+if(label STREQUAL "" AND OPENTS_HAVE_GIT)
+    opents_git(head_tags tag --points-at HEAD)
+    string(REPLACE "\n" ";" head_tags "${head_tags}")
+    string(REPLACE "." "\\." version_pattern "${OPENTS_VERSION}")
+    set(tag_labels "")
+    set(final_tag FALSE)
+    foreach(tag IN LISTS head_tags)
+        string(STRIP "${tag}" tag)
+        if(tag STREQUAL "v${OPENTS_VERSION}")
+            set(final_tag TRUE)
+        elseif(tag MATCHES "^v${version_pattern}-([0-9A-Za-z.-]+)$")
+            list(APPEND tag_labels "${CMAKE_MATCH_1}")
+        endif()
+    endforeach()
+    list(LENGTH tag_labels tag_label_count)
+    if(tag_label_count GREATER 0 AND NOT final_tag)
+        list(SORT tag_labels COMPARE NATURAL)
+        list(GET tag_labels -1 label)
+    endif()
+endif()
+if(NOT label MATCHES "^[0-9A-Za-z.-]*$")
+    message(FATAL_ERROR "OpenTS prerelease label '${label}' may contain only [0-9A-Za-z.-].")
+endif()
+
 set(OPENTS_IS_PRERELEASE 0)
-if(NOT OPENTS_VERSION_PRERELEASE STREQUAL "")
-    string(APPEND OPENTS_VERSION "-${OPENTS_VERSION_PRERELEASE}")
+if(NOT label STREQUAL "")
+    string(APPEND OPENTS_VERSION "-${label}")
     set(OPENTS_IS_PRERELEASE 1)
 endif()
 
@@ -74,27 +128,9 @@ set(OPENTS_BRANCH "unknown")
 set(OPENTS_COMMIT_DATE "unknown")
 set(OPENTS_COMMIT_DIRTY 0)
 
-find_package(Git QUIET)
-
-# Sets <out> to the trimmed output of git run in the source tree, or to "" when git fails.
-function(opents_git out)
-    execute_process(
-        COMMAND "${GIT_EXECUTABLE}" ${ARGN}
-        WORKING_DIRECTORY "${OPENTS_SOURCE_DIR}"
-        OUTPUT_VARIABLE output
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-        ERROR_QUIET
-        RESULT_VARIABLE result
-    )
-    if(NOT result EQUAL 0)
-        set(output "")
-    endif()
-    set(${out} "${output}" PARENT_SCOPE)
-endfunction()
-
 # Without git or a repository, as in a build from a source archive, the commit, branch and
 # date stay "unknown".
-if(GIT_FOUND AND EXISTS "${OPENTS_SOURCE_DIR}/.git")
+if(OPENTS_HAVE_GIT)
 
     opents_git(GIT_COMMIT rev-parse --short HEAD)
     if(GIT_COMMIT)

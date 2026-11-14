@@ -196,6 +196,15 @@ SemVer prerelease label goes in `OPENTS_VERSION_PRERELEASE`. Both values must
 match the development entry in the manual's release registry;
 `python manual/tools/manage.py check` verifies this.
 
+A release candidate's label comes from its tag instead. When
+`OPENTS_VERSION_PRERELEASE` is empty, a build whose commit carries a tag such
+as `v0.2.0-rc1` reports `0.2.0-rc1`, unless the same commit also carries the
+plain `v0.2.0` tag. `-DOPENTS_VERSION_LABEL=rc1` sets the label explicitly; the
+release workflow uses it. The setting stays in that build directory's cache for
+later builds, so clear it with `-DOPENTS_VERSION_LABEL=` when it no longer
+applies. The label is shown with the version but is not part of the packed
+version.
+
 Each build writes two generated headers from that version and the repository
 state:
 
