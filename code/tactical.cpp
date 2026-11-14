@@ -42,6 +42,7 @@
 #include "font.h"
 #include "globals.h"
 #include "house.h"
+#include "houstype.h"
 #include "incdec.h"
 #include "inline.h"
 #include "ionblast.h"
@@ -67,6 +68,7 @@
 
 #include "ramp.hh"
 #include "scrspeed.hh"
+#include "side.h"
 
 #include <utility>
 
@@ -1356,7 +1358,8 @@ void Tactical::Clear_Caption_Text(void)
 
 
 /// <summary>
-/// Draws white caption text with a black shadow across the middle of the tactical view.
+/// Draws caption text with a black shadow across the middle of the tactical view.
+/// Its color is drawn from the side-specific ScreenTextColor, or white if none is defined for the player's side.
 /// </summary>
 /// <param name="text">The text to display. A NULL or empty string draws nothing.</param>
 void Tactical::Draw_Screen_Text(char const * text)
@@ -1379,8 +1382,15 @@ void Tactical::Draw_Screen_Text(char const * text)
 			SetTextAlign(hdc, TA_CENTER);
 			SetTextColor(hdc, RGB(0, 0, 0));
 			TextOut(hdc, rect.X + point.X + 3, rect.Y + point.Y + 3, text, strlen(text));
-			SetTextColor(hdc, RGB(255, 255, 255));
+
+			RGBClass text_color = SCREEN_TEXT_DEFAULT_COLOR;
+			if (PlayerPtr != nullptr && PlayerPtr->Class->Side != SIDE_NONE) {
+				text_color = Sides[PlayerPtr->Class->Side]->ScreenTextColor;
+			}
+
+			SetTextColor(hdc, RGB(text_color.Get_Red(), text_color.Get_Green(), text_color.Get_Blue()));
 			TextOut(hdc, rect.X + point.X, rect.Y + point.Y, text, strlen(text));
+
 			SelectObject(hdc, h);
 			DeleteObject(font);
 			surface->ReleaseDC(hdc);
@@ -3382,7 +3392,15 @@ void Tactical::Reset_Dirty_Rectangles(void)
 /// <param name="inshroud">Should the line be drawn through shrouded/unmapped cells?</param>
 void Tactical::Draw_Rally_Points(bool inshroud)
 {
-	static bool _pattern[8] = {
+	static bool _pattern[16] = {
+		true,
+		true,
+		true,
+		true,
+		true,
+		false,
+		false,
+		false,
 		true,
 		true,
 		true,
@@ -3467,7 +3485,15 @@ void Tactical::Draw_Rally_Points(bool inshroud)
 /*
  * Dash pattern for the animated "marching" line that joins the selected waypoint path.
  */
-static bool Draw_WaypointPoint_Line_Style[8] = {
+static bool Draw_WaypointPoint_Line_Style[16] = {
+	true,
+	true,
+	true,
+	true,
+	true,
+	false,
+	false,
+	false,
 	true,
 	true,
 	true,

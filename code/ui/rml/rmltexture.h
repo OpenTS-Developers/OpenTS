@@ -26,4 +26,6 @@ UIImageResult UI_Load_Image(char const * name, std::vector<unsigned char> & rgba
 
 bool UI_Read_File(char const * path, std::vector<unsigned char> & bytes);
 
+bool UI_Read_Game_File(char const * name, std::vector<unsigned char> & bytes);
+
 bool UI_Load_Indexed_Image(char const * name, UIImageIndexed & image);

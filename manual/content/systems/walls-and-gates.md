@@ -21,6 +21,8 @@ keys:
   - DeployTime
   - GateUp
   - GateDown
+  - GateUpSound
+  - GateDownSound
   - GDIGateOne
   - GDIGateTwo
   - NodGateOne
@@ -242,7 +244,7 @@ Idle infantry standing in a gate's cell scatter unless the gate is open.
 
 ### Holding and closing
 
-The door takes [`DeployTime`](/keys/deploytime/) game minutes to open and the same time to close. [`GateDown`](/keys/gatedown/) plays as it opens and [`GateUp`](/keys/gateup/) as it closes.
+The door takes [`DeployTime`](/keys/deploytime/) game minutes to open and the same time to close. Once the gate starts opening or closing, it plays its type's [`GateDownSound`](/keys/gatedownsound/) and [`GateUpSound`](/keys/gateupsound/) sounds if they are set. If they are not set, the gate will play the global [`GateDown`](/keys/gatedown/) and [`GateUp`](/keys/gateup/) sounds instead.
 
 A timer of [`GateCloseDelay`](/keys/gateclosedelay/) game minutes starts when the door starts to open. Reaching the fully open position does not restart it. An unblocked gate therefore stays fully open for `GateCloseDelay` minus `DeployTime`, and a gate whose `DeployTime` is at least its `GateCloseDelay` starts closing as soon as it is fully open.
 

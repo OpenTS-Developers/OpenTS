@@ -10,13 +10,16 @@ opents_add_test(UIShell
     ENGINE
         ui/uiscreen.cpp
         ui/uiinput.cpp
+        ui/uifonts.cpp
         ui/uishell.cpp
         ui/uireveal.cpp
+        gametext.cpp
         utf8.cpp
         hsv.cpp
         rgb.cpp
         ui/rml/rmlfont.cpp
         ui/rml/rmlfontfon.cpp
+        ui/rml/rmlfontfnt.cpp
         ui/rml/rmlfontsheet.cpp
         ui/rml/rmlimage.cpp
         ui/rml/rmlkeys.cpp
@@ -29,6 +32,7 @@ opents_add_test(UIShell
         ui/screens/campaign/uicampaign.cpp
         ui/screens/display/uidisplay.cpp
         ui/screens/gamectrl/uigamectrl.cpp
+        ui/screens/gametip/uigametip.cpp
         ui/screens/gameopt/uigameopt.cpp
         ui/screens/keyboard/uikeyboard.cpp
         ui/screens/mainopt/uimainopt.cpp

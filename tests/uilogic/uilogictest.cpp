@@ -7,6 +7,8 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
+#include "gametext.h"
+#include "ui/rml/rmlfontfnt.h"
 #include "ui/rml/rmlfontsheet.h"
 #include "ui/rml/rmlimage.h"
 #include "ui/rml/rmlrendermath.h"
@@ -20,6 +22,7 @@
 #include <cstdint>
 #include <cstring>
 #include <limits>
+#include <span>
 #include <vector>
 
 namespace {
@@ -691,6 +694,231 @@ TEST_CASE("the dirty marks decide what a present uploads, survive a refused pres
 	CHECK_MESSAGE(!reset.Game, "a reset forgets the marks and the upload");
 	CHECK_MESSAGE(!reset.Overlay, "a reset forgets the marks and the upload");
 	CHECK_MESSAGE(reset.Upload, "a reset forgets the marks and the upload");
+}
+
+
+struct FntGlyphSpec
+{
+	int Index = 0;
+	int Width = 0;
+	int FirstRow = 0;
+	int Rows = 0;
+	std::vector<std::uint8_t> Pixels;
+};
+
+
+void Put_Word(std::vector<std::uint8_t> & data, std::size_t at, int value)
+{
+	data[at] = (std::uint8_t)(value & 0xFF);
+	data[at + 1] = (std::uint8_t)((value >> 8) & 0xFF);
+}
+
+
+// Lays a font out as the game's files are: header, info, offsets, widths, heights, then pixels.
+std::vector<std::uint8_t> Build_Fnt(int count, int height, int maxwidth, bool newstyle, std::vector<FntGlyphSpec> const & glyphs)
+{
+	std::size_t const info = 14;
+	std::size_t const offsets = info + 6;
+	std::size_t const widths = offsets + (std::size_t)count * 2;
+	std::size_t const heights = widths + (std::size_t)count;
+	std::size_t const pixels = heights + (std::size_t)count * 2;
+
+	std::vector<std::uint8_t> data(pixels + 1, 0);
+	data[2] = newstyle ? 2 : 0;
+	Put_Word(data, 4, (int)info);
+	Put_Word(data, 6, (int)offsets);
+	Put_Word(data, 8, (int)widths);
+	Put_Word(data, 10, (int)pixels);
+	Put_Word(data, 12, (int)heights);
+	data[info + 4] = (std::uint8_t)height;
+	data[info + 5] = (std::uint8_t)maxwidth;
+
+	for (FntGlyphSpec const & glyph : glyphs) {
+		std::size_t const start = data.size();
+		Put_Word(data, offsets + (std::size_t)glyph.Index * 2, (int)(newstyle ? start - pixels : start));
+		data[widths + (std::size_t)glyph.Index] = (std::uint8_t)glyph.Width;
+		Put_Word(data, heights + (std::size_t)glyph.Index * 2, (glyph.Rows << 8) | glyph.FirstRow);
+
+		if (newstyle) {
+			data.insert(data.end(), glyph.Pixels.begin(), glyph.Pixels.end());
+		} else {
+			int const stride = (glyph.Width + 1) / 2;
+			for (int y = 0; y < glyph.Rows; y++) {
+				for (int x = 0; x < stride; x++) {
+					std::uint8_t low = glyph.Pixels[(std::size_t)y * glyph.Width + x * 2];
+					std::uint8_t high = (x * 2 + 1 < glyph.Width) ? glyph.Pixels[(std::size_t)y * glyph.Width + x * 2 + 1] : 0;
+					data.push_back((std::uint8_t)(low | (high << 4)));
+				}
+			}
+		}
+	}
+
+	return(data);
+}
+
+
+UIFntFont Read_Built_Fnt(std::vector<std::uint8_t> const & data)
+{
+	UIFntFont font;
+	REQUIRE(UI_Read_Fnt(std::span<std::uint8_t const>(data.data(), data.size()), font));
+	return(font);
+}
+
+
+TEST_CASE("a byte-per-pixel font reads each glyph's width, rows and pixel values, and a full table is Windows-1252")
+{
+	FntGlyphSpec glyph { 'A', 3, 1, 2, { 1, 2, 3, 11, 0, 15 } };
+	UIFntFont font = Read_Built_Fnt(Build_Fnt(256, 6, 5, true, { glyph }));
+
+	CHECK_MESSAGE(font.Height == 6, "the font's height and widest glyph come from its info block");
+	CHECK_MESSAGE(font.MaxWidth == 5, "the font's height and widest glyph come from its info block");
+	CHECK_MESSAGE(font.Windows1252, "a font with the full table is laid out as Windows-1252");
+	REQUIRE(font.Glyphs.size() == 256);
+
+	UIFntGlyph const & read = font.Glyphs['A'];
+	CHECK_MESSAGE(read.Defined, "a glyph with pixel data is defined");
+	CHECK_MESSAGE(read.Width == 3, "a glyph keeps its width, first row and row count");
+	CHECK_MESSAGE(read.FirstRow == 1, "a glyph keeps its width, first row and row count");
+	CHECK_MESSAGE(read.Rows == 2, "a glyph keeps its width, first row and row count");
+	CHECK_MESSAGE(read.Pixels == glyph.Pixels, "every pixel value from 0 to 15 is kept as stored");
+	CHECK_MESSAGE(!font.Glyphs['B'].Defined, "a printable glyph with no pixel data is not defined");
+	CHECK_MESSAGE(font.Glyphs[' '].Defined, "the space and the control glyphs are always defined");
+}
+
+
+TEST_CASE("a nibble-packed font reads the low nibble first, and a short table is code page 437")
+{
+	FntGlyphSpec glyph { 'A', 3, 0, 2, { 1, 2, 3, 4, 5, 6 } };
+	UIFntFont font = Read_Built_Fnt(Build_Fnt(219, 4, 3, false, { glyph }));
+
+	CHECK_MESSAGE(!font.Windows1252, "a font that stops short of the full table follows code page 437");
+	CHECK_MESSAGE(font.Glyphs['A'].Pixels == glyph.Pixels, "each byte holds two pixels, the left one in its low nibble");
+}
+
+
+TEST_CASE("a font that is short of a block or of a glyph's pixels is refused and left empty")
+{
+	FntGlyphSpec glyph { 'A', 4, 0, 4, std::vector<std::uint8_t>(16, 1) };
+	std::vector<std::uint8_t> data = Build_Fnt(256, 4, 4, true, { glyph });
+
+	UIFntFont font;
+	std::vector<std::uint8_t> cut(data.begin(), data.end() - 1);
+	CHECK_MESSAGE(!UI_Read_Fnt(std::span<std::uint8_t const>(cut.data(), cut.size()), font), "a glyph whose pixels run past the end is refused");
+	CHECK_MESSAGE(font.Glyphs.empty(), "a refused font is left empty");
+
+	std::vector<std::uint8_t> header(data.begin(), data.begin() + 10);
+	CHECK_MESSAGE(!UI_Read_Fnt(std::span<std::uint8_t const>(header.data(), header.size()), font), "a file shorter than the header is refused");
+
+	std::vector<std::uint8_t> crossed = data;
+	Put_Word(crossed, 8, 20);
+	CHECK_MESSAGE(!UI_Read_Fnt(std::span<std::uint8_t const>(crossed.data(), crossed.size()), font), "a width block that does not follow the offset block is refused");
+}
+
+
+TEST_CASE("a character finds its glyph in the font's code page, and one the font lacks draws as a question mark")
+{
+	std::vector<FntGlyphSpec> glyphs;
+	for (int index : { (int)'A', (int)'?', 0x82, 0xCE, 0xE9 }) {
+		glyphs.push_back(FntGlyphSpec { index, 1, 0, 1, { 1 } });
+	}
+
+	UIFntFont western = Read_Built_Fnt(Build_Fnt(256, 1, 1, true, glyphs));
+	CHECK_MESSAGE(UI_Fnt_Glyph(western, U'A') == 'A', "a plain letter is its own glyph");
+	CHECK_MESSAGE(UI_Fnt_Glyph(western, U'\u00E9') == 0xE9, "a Windows-1252 font finds e-acute at 0xE9");
+	CHECK_MESSAGE(UI_Fnt_Glyph(western, U'B') == '?', "a glyph the font does not define draws as a question mark");
+	CHECK_MESSAGE(UI_Fnt_Glyph(western, U'\u4E2D') == '?', "a character outside the code page draws as a question mark");
+	CHECK_MESSAGE(UI_Fnt_Glyph(western, U'\n') == -1, "a control character has no glyph");
+
+	glyphs.pop_back();
+	UIFntFont metal = Read_Built_Fnt(Build_Fnt(219, 1, 1, true, glyphs));
+	CHECK_MESSAGE(UI_Fnt_Glyph(metal, U'\u00E9') == 0x82, "a code page 437 font finds e-acute at 0x82");
+	CHECK_MESSAGE(UI_Fnt_Glyph(metal, U'\u0153') == 0xCE, "a code page 437 font finds the oe ligature in Westwood's slot at 0xCE");
+}
+
+
+TEST_CASE("a font's spacing settles as the game's font class settles it")
+{
+	CHECK_MESSAGE(UI_Fnt_Spacing(6, 1, false) == 1, "a narrow font keeps the spacing it is given");
+	CHECK_MESSAGE(UI_Fnt_Spacing(10, 1, true) == -1, "an outlined font is pulled two pixels closer");
+	CHECK_MESSAGE(UI_Fnt_Spacing(16, 2, true) == 1, "a font sixteen pixels wide gains a pixel");
+	CHECK_MESSAGE(UI_Fnt_Spacing(30, 3, false) == 5, "the gain counts the spacing already set");
+}
+
+
+TEST_CASE("a font's default colors follow the game's printing, with shades colored only for a gradient font")
+{
+	std::uint32_t const green = UI_Fnt_Color(0, 255, 0, 255);
+	UIFntPalette plain;
+	UI_Fnt_Default_Palette(green, false, plain);
+	CHECK_MESSAGE(plain[UI_FNT_CLEAR] == 0, "pixel value 0 is always clear");
+	CHECK_MESSAGE(plain[UI_FNT_TEXT] == green, "pixel value 1 takes the text color");
+	CHECK_MESSAGE(plain[UI_FNT_SHADOW] == 0, "the shadow and outline values are clear unless asked for");
+	CHECK_MESSAGE(plain[UI_FNT_OUTLINE] == 0, "the shadow and outline values are clear unless asked for");
+	CHECK_MESSAGE(plain[11] == 0, "a plain font's shade values are clear");
+
+	UIFntPalette gradient;
+	UI_Fnt_Default_Palette(green, true, gradient);
+	CHECK_MESSAGE(gradient[UI_FNT_FIRST_SHADE] == green, "a gradient font's shade values take the text color");
+	CHECK_MESSAGE(gradient[UI_FNT_ROLES - 1] == green, "a gradient font's shade values take the text color");
+	CHECK_MESSAGE(gradient[UI_FNT_SHADOW] == 0, "a gradient font's shadow value is still clear");
+}
+
+
+TEST_CASE("a font's atlas gives every glyph its own cell and colors each pixel value from the palette")
+{
+	FntGlyphSpec first { 'A', 2, 1, 3, { 1, 2, 3, 0, 1, 1 } };
+	FntGlyphSpec second { 'B', 2, 0, 1, { 1, 1 } };
+	UIFntFont font = Read_Built_Fnt(Build_Fnt(256, 3, 2, true, { first, second }));
+
+	std::vector<UIFntCell> cells;
+	int width = 0;
+	int height = 0;
+	REQUIRE(UI_Fnt_Layout(font, 4096, cells, width, height));
+	CHECK_MESSAGE(cells.size() == font.Glyphs.size(), "every glyph has a cell");
+	CHECK_MESSAGE(cells['B'].X - cells['A'].X == 3, "neighboring cells are a clear pixel apart");
+	CHECK_MESSAGE(!UI_Fnt_Layout(font, 16, cells, width, height), "an atlas larger than the limit is refused");
+	REQUIRE(UI_Fnt_Layout(font, 4096, cells, width, height));
+
+	UIFntPalette palette {};
+	palette[UI_FNT_TEXT] = UI_Fnt_Color(255, 0, 0, 255);
+	palette[UI_FNT_SHADOW] = UI_Fnt_Color(0, 0, 255, 128);
+
+	std::vector<std::uint8_t> rgba;
+	REQUIRE(UI_Fnt_Atlas(font, cells, width, height, palette, rgba));
+	REQUIRE(rgba.size() == (std::size_t)width * height * 4);
+
+	auto pixel = [&](int x, int y) { return(rgba.data() + ((std::size_t)y * width + x) * 4); };
+	std::uint8_t const * text = pixel(cells['A'].X, cells['A'].Y + 1);
+	CHECK_MESSAGE(text[0] == 255, "a pixel of value 1 takes the text color, starting at the glyph's first row");
+	CHECK_MESSAGE(text[3] == 255, "a pixel of value 1 takes the text color, starting at the glyph's first row");
+
+	std::uint8_t const * shadow = pixel(cells['A'].X + 1, cells['A'].Y + 1);
+	CHECK_MESSAGE(shadow[2] == 128, "a translucent color is stored premultiplied");
+	CHECK_MESSAGE(shadow[3] == 128, "a translucent color is stored premultiplied");
+
+	std::uint8_t const * outline = pixel(cells['A'].X, cells['A'].Y + 2);
+	CHECK_MESSAGE(outline[3] == 0, "a value the palette leaves clear draws nothing");
+
+	CHECK_MESSAGE(pixel(cells['A'].X, cells['A'].Y)[3] == 0, "the rows above a glyph's first row are clear");
+	CHECK_MESSAGE(pixel(cells['A'].X + 1, cells['A'].Y + 3)[3] == 0, "a row below the font's height is clipped");
+
+	std::vector<UIFntCell> fewer(cells.begin(), cells.end() - 1);
+	CHECK_MESSAGE(!UI_Fnt_Atlas(font, fewer, width, height, palette, rgba), "cells that do not match the font are refused");
+}
+
+
+TEST_CASE("game text breaks its lines at an at sign, and a backslash writes an at sign or a backslash as written")
+{
+	CHECK_MESSAGE(Game_Text_Lines("Power@Low") == "Power\nLow", "an at sign breaks the line");
+	CHECK_MESSAGE(Game_Text_Lines("mail\\@example") == "mail@example", "a backslash and an at sign give an at sign");
+	CHECK_MESSAGE(Game_Text_Lines("C:\\\\@next") == "C:\\\nnext", "two backslashes give one, and the at sign after them still breaks the line");
+	CHECK_MESSAGE(Game_Text_Lines("C:\\GAME\\") == "C:\\GAME\\", "any other backslash, a trailing one included, is kept");
+	CHECK_MESSAGE(Game_Text_Lines("a\nb") == "a\nb", "a newline is kept");
+
+	char text[] = "mail\\@a@b\\\\c\\d\\";
+	Game_Text_Lines_In_Place(text);
+	CHECK_MESSAGE(std::strcmp(text, "mail@a\nb\\c\\d\\") == 0, "the in-place form gives the same text");
+	Game_Text_Lines_In_Place(nullptr);
 }
 
 }

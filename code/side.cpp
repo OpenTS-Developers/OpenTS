@@ -13,13 +13,13 @@
 
 #include "builtype.h"
 #include "ccini.h"
-#include "unittype.h"
 #include "crc.h"
 #include "findmake.h"
 #include "globals.h"
 #include "savestream.h"
 #include "sun.h"
 #include "tracker.h"
+#include "unittype.h"
 
 
 /// <summary>
@@ -40,7 +40,8 @@ SideClass::SideClass(char const * ininame) :
 	AIWallDefenseCoefficient(0.0),
 	IsAIBuildsWalls(true),
 	AIBaseDefensePlaceholders(2),
-	IsAIBaseDefensesWithWalls(false)
+	IsAIBaseDefensesWithWalls(false),
+	ScreenTextColor(SCREEN_TEXT_DEFAULT_COLOR)
 {
 	Create_ID();
 	Sides.Add(this);
@@ -127,6 +128,8 @@ bool SideClass::Read_INI(CCINIClass const & ini)
 	IsAIBuildsWalls = ini.Get_Bool(Name(), "AIBuildsWalls", IsAIBuildsWalls);
 	AIBaseDefensePlaceholders = ini.Get_Int(Name(), "AIBaseDefensePlaceholders", AIBaseDefensePlaceholders);
 	IsAIBaseDefensesWithWalls = ini.Get_Bool(Name(), "AIBaseDefensesWithWalls", IsAIBaseDefensesWithWalls);
+	ScreenTextColor = ini.Get_RGBClass(Name(), "ScreenTextColor", ScreenTextColor);
+
 	return(true);
 }
 
@@ -157,4 +160,5 @@ void SideClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsAIBuildsWalls);
 	stream.Serialize(AIBaseDefensePlaceholders);
 	stream.Serialize(IsAIBaseDefensesWithWalls);
+	stream.Serialize(ScreenTextColor);
 }

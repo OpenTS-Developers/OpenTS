@@ -18,14 +18,16 @@
 #include "rect.h"
 #include "vector.h"
 
+#include <string>
+
 struct WindowEvent;
 
 class ToolTip
 {
 public:
-	ToolTip(void) : ID(0), Region(0, 0, 0, 0), Text(0) {}
+	ToolTip(void) : ID(0), Region(0, 0, 0, 0), Text(0), TracksPointer(false) {}
 	~ToolTip(void){}
-	ToolTip(ToolTip const &that) : ID(that.ID), Region(that.Region), Text(that.Text) {}
+	ToolTip(ToolTip const &that) : ID(that.ID), Region(that.Region), Text(that.Text), TracksPointer(that.TracksPointer) {}
 
 	/*
 	 * This is the identifier the tooltip is registered under. No two tooltips held by one
@@ -45,6 +47,10 @@ public:
 	 * no text of its own and the manager is asked to supply some for this identifier.
 	 */
 	int Text;
+
+	// Set when the text depends on the spot under the pointer: the tooltip then always waits
+	// the full hover delay and goes away on any mouse movement.
+	bool TracksPointer;
 };
 
 
@@ -53,7 +59,7 @@ struct ToolTipText
 	Point2D Pos;
 	int TextWidth;
 	int TextHeight;
-	char Text[256];
+	std::string Text;
 };
 
 class ToolTipManager
@@ -96,10 +102,23 @@ class ToolTipManager
 		enum {
 			TOOLTIP_DELAY = 1000, /// 1 second
 			TOOLTIP_LIFETIME = 10000, /// 10 seconds
+			TOOLTIP_RESHOW = 1000, // how long after a tooltip goes away the next one shows at once
 		};
+
+	protected:
+		ToolTip const * Current_Tool_Tip(void) const { return(CurrentToolTip); }
 
 	private:
 		void Start_Timer(int delay);
+		void Follow_Pointer(int x, int y);
+
+		// When the last tooltip went away, while WasShown is set.
+		bool WasShown;
+		unsigned long HiddenAt;
+
+		// The tooltip a click or its lifetime took down; it stays hidden until the mouse leaves its region.
+		bool IsDismissed;
+		unsigned DismissedID;
 
 		// The time Service next acts, while TimerRunning is set.
 		bool TimerRunning;

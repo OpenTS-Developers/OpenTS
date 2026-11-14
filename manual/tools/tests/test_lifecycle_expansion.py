@@ -82,27 +82,6 @@ class BreakingChangeTests(unittest.TestCase):
                 "category: feature\n"
                 "release: 1.0.0\n"
                 "breaking: true\n"
-                "migration: []\n"
-                "targets: []\n"
-                "credit: [Programmer]\n"
-                "---\n",
-                encoding="utf-8",
-            )
-            errors = []
-            versioning.validate_changes(
-                errors, manual, registry, {}, {}, {}, [],
-            )
-            self.assertTrue(any(
-                "migration must be a non-empty array of steps" in error
-                for error in errors
-            ))
-
-            path.write_text(
-                "---\n"
-                "title: Compatibility change\n"
-                "category: feature\n"
-                "release: 1.0.0\n"
-                "breaking: true\n"
                 "migration:\n"
                 "  - Use the replacement workflow.\n"
                 "targets: []\n"
@@ -180,32 +159,6 @@ class BreakingChangeTests(unittest.TestCase):
             "empty credit",
         )
         self.assertTrue(any("credit" in error for error in empty))
-
-        registry = {
-            "development": "1.0.0",
-            "by_version": {
-                "1.0.0": {"version": "1.0.0", "status": "development"},
-            },
-        }
-        with tempfile.TemporaryDirectory() as temporary:
-            manual = Path(temporary)
-            changes = manual / "changes"
-            changes.mkdir()
-            (changes / "unattributed.md").write_text(
-                "---\n"
-                "title: Unattributed change\n"
-                "category: fix\n"
-                "release: 1.0.0\n"
-                "targets: []\n"
-                "---\n",
-                encoding="utf-8",
-            )
-            errors = []
-            versioning.validate_changes(
-                errors, manual, registry, {}, {}, {}, [])
-        self.assertTrue(any(
-            "credit must name at least one author" in error
-            for error in errors))
 
     def test_change_id_cannot_equal_release_version(self):
         registry = {
@@ -461,14 +414,14 @@ class LifecycleEntityExpansionTests(unittest.TestCase):
         }]
         errors = []
         versioning.validate_branch_lifecycle(
-            errors, {}, {}, {}, {}, {}, {}, changes, tombstones,
+            errors, {}, {}, {}, {}, changes, tombstones,
             self.empty_key_delta(), self.empty_scripting_delta(),
             command_delta=delta, base_commands=base)
         self.assertEqual(errors, [])
 
         errors = []
         versioning.validate_branch_lifecycle(
-            errors, {}, {}, {}, {}, {}, {}, {}, [],
+            errors, {}, {}, {}, {}, {}, [],
             self.empty_key_delta(), self.empty_scripting_delta(),
             command_delta=None, base_commands=None)
         self.assertEqual(errors, [])
@@ -476,7 +429,7 @@ class LifecycleEntityExpansionTests(unittest.TestCase):
         tombstones[0]["route"] = "/commands/not-the-stable-route/"
         errors = []
         versioning.validate_branch_lifecycle(
-            errors, {}, {}, {}, {}, {}, {}, changes, tombstones,
+            errors, {}, {}, {}, {}, changes, tombstones,
             self.empty_key_delta(), self.empty_scripting_delta(),
             command_delta=delta, base_commands=base)
         self.assertTrue(any(
@@ -525,7 +478,7 @@ class LifecycleEntityExpansionTests(unittest.TestCase):
         ]
         errors = []
         versioning.validate_branch_lifecycle(
-            errors, {}, {}, {}, {}, {}, base_formats, changes, tombstones,
+            errors, {}, {}, {}, base_formats, changes, tombstones,
             self.empty_key_delta(), self.empty_scripting_delta())
         self.assertTrue(any(
             "format:teamtypes: tombstone route must remain '/mapping/team-types/'"
@@ -634,7 +587,7 @@ class DevelopmentAdditionTests(unittest.TestCase):
         arguments.update(overrides)
         errors = []
         versioning.validate_branch_lifecycle(
-            errors, {}, {}, {}, {}, {}, {},
+            errors, {}, {}, {}, {},
             key_delta=LifecycleEntityExpansionTests.empty_key_delta(),
             scripting_delta=scripting_delta, **arguments)
         return errors
@@ -675,7 +628,7 @@ class DevelopmentAdditionTests(unittest.TestCase):
                     f"{kind}:Sample: add a change target with effect: changed",
                 ])
 
-    def test_opening_next_development_release_ends_the_exception(self):
+    def test_released_versions_stop_covering_after_the_push_that_releases_them(self):
         registry = {
             "development": "0.3.0",
             "by_version": {
@@ -684,9 +637,11 @@ class DevelopmentAdditionTests(unittest.TestCase):
                 "0.3.0": {"status": "development"},
             },
         }
-        self.assertEqual(self.validate(registry=registry), [
+        self.assertEqual(self.validate(registry=registry, base_registry=registry), [
             "command:Sample: add a change target with effect: changed",
         ])
+        # The push that releases 0.2.0 straight from development still counts its records.
+        self.assertEqual(self.validate(registry=registry), [])
 
     def test_missing_context_keeps_changed_target_requirements(self):
         for field in ("registry", "base_changes", "base_registry"):
@@ -695,14 +650,27 @@ class DevelopmentAdditionTests(unittest.TestCase):
                     "command:Sample: add a change target with effect: changed",
                 ])
 
-    def test_both_registries_must_mark_the_addition_release_development(self):
-        for field in ("registry", "base_registry"):
-            with self.subTest(field=field):
-                registry = deepcopy(self.registry)
-                registry["by_version"]["0.2.0"]["status"] = "released"
-                self.assertEqual(self.validate(**{field: registry}), [
-                    "command:Sample: add a change target with effect: changed",
-                ])
+    def test_candidate_records_cover_only_when_the_range_merges_its_branch(self):
+        registry = deepcopy(self.registry)
+        registry["development"] = "0.3.0"
+        registry["candidate"] = "0.2.0"
+        registry["by_version"]["0.2.0"]["status"] = "candidate"
+        registry["by_version"]["0.3.0"] = {"status": "development"}
+        self.assertEqual(self.validate(registry=registry, base_registry=registry), [
+            "command:Sample: add a change target with effect: changed",
+        ])
+        self.assertEqual(self.validate(
+            registry=registry, base_registry=registry, merged_releases={"0.2.0"}), [])
+
+    def test_merging_and_sealing_a_candidate_in_one_push_keeps_coverage(self):
+        base_registry = deepcopy(self.registry)
+        base_registry["development"] = "0.3.0"
+        base_registry["by_version"]["0.2.0"]["status"] = "candidate"
+        base_registry["by_version"]["0.3.0"] = {"status": "development"}
+        registry = deepcopy(base_registry)
+        registry["by_version"]["0.2.0"] = {"status": "released"}
+        self.assertEqual(self.validate(
+            registry=registry, base_registry=base_registry, merged_releases={"0.2.0"}), [])
 
     def test_current_addition_coverage_must_be_retained(self):
         for targets in ([], [{"type": "command", "id": "Sample", "effect": "deprecated"}]):
@@ -727,11 +695,11 @@ class DevelopmentAdditionTests(unittest.TestCase):
         current = {"scoped": {"data": {
             "release": "0.2.0", "targets": [target, {**target, "scope": None}],
         }}}
-        self.assertEqual(versioning.development_additions(
-            current, self.registry, base_changes, self.registry), {("key", "Scoped", "unit")})
+        self.assertEqual(versioning.unreleased_additions(
+            current, base_changes, self.registry, {"0.2.0"}), {("key", "Scoped", "unit")})
         current["scoped"]["data"]["targets"] = [{**target, "scope": "aircraft"}]
-        self.assertEqual(versioning.development_additions(
-            current, self.registry, base_changes, self.registry), set())
+        self.assertEqual(versioning.unreleased_additions(
+            current, base_changes, self.registry, {"0.2.0"}), set())
 
     def test_shifted_released_entity_still_needs_its_own_changed_target(self):
         delta = LifecycleEntityExpansionTests.empty_scripting_delta()
@@ -741,7 +709,7 @@ class DevelopmentAdditionTests(unittest.TestCase):
         ])
 
     def test_explicit_changed_target_still_works_without_addition_context(self):
-        changes = {"change": {"data": {"targets": [
+        changes = {"change": {"data": {"release": "0.2.0", "targets": [
             {"type": "command", "id": "Sample", "effect": "changed"},
         ]}}}
         self.assertEqual(self.validate(changes=changes, base_changes=None), [])

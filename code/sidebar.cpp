@@ -88,7 +88,6 @@
 #include "bench.h"
 #include "building.h"
 #include "builtype.h"
-#include "cctooltip.h"
 #include "conquer.h"
 #include "convert.h"
 #include "data.h"
@@ -117,6 +116,7 @@
 #include "surface.h"
 #include "techtype.h"
 #include "ui/uishell.h"
+#include "uitooltip.h"
 #include "utf8.h"
 #include "voc.h"
 #include "vox.h"
@@ -545,29 +545,6 @@ void SidebarClass::Init_For_House(void)
 		StripClass::DownButton[i].Set_Shape((ShapeSet *)MFCD::Retrieve("R-DN.SHP"));
 		StripClass::DownButton[i].ShapeDrawer = SidebarDrawer;
 	}
-}
-
-
-void SidebarClass::Clear_For_House(void)
-{
-	// A strip removes as many buttons as the artwork's height let it add, so it goes first.
-	Activate(false);
-
-	Upgrade.Set_Shape(NULL);
-	Power.Set_Shape(NULL);
-	Waypoint.Set_Shape(NULL);
-	Repair.Set_Shape(NULL);
-	for (int i = 0; i < COLUMNS; i++) {
-		StripClass::UpButton[i].Set_Shape(NULL);
-		StripClass::DownButton[i].Set_Shape(NULL);
-	}
-
-	SidebarShape = NULL;
-	SidebarMiddleShape = NULL;
-	SidebarBottomShape = NULL;
-	SidebarAddonShape = NULL;
-
-	BASECLASS::Clear_For_House();
 }
 
 

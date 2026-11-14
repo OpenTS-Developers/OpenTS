@@ -65,6 +65,6 @@ Vinifera reads the same eight keys from `[Ingame]`, so move them to `[Pips]` whe
 
 ## When the file is read
 
-The game reads the file at startup, after it registers the game archives. It reads the file again each time a scenario or saved game loads, after mounting the archives of the player's side, so a copy inside a side's archive applies to games played as that side. It reads the file once more when a match ends and the menus return, after mounting the [no-side archives](/formats/mix/#theater-side-and-speech-archives). Each read starts from the defaults, so only the keys in the copy read last take effect.
+The game reads the file at startup, after it registers the game archives. It reads the file again each time a scenario or saved game loads, after mounting the archives of the player's side, so a copy inside a side's archive applies to games played as that side. It reads the file once more when a match ends and the menus return, after the side's archives [move behind the other archives](/formats/mix/#theater-side-and-speech-archives). Each read starts from the defaults, so only the keys in the copy read last take effect.
 
 The file is opened through the game's file search, so it may be a loose file in any folder the game searches or be inside an archive. A loose copy is used ahead of an archived one. [OPENTS.INI](/formats/opents-ini/#the-order-files-are-searched-for-in) lists the folders and the order they are searched in, and its [`[Files]` section](/formats/opents-ini/#the-files-it-reads) can change the file name.

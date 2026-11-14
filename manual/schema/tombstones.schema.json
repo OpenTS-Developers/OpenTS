@@ -15,7 +15,7 @@
         "uniqueItems": true,
         "items": { "type": "string", "minLength": 1 }
       },
-      "summary": { "type": "string", "minLength": 1 },
+      "summary": { "type": "string", "pattern": "\\S" },
       "replacement": {
         "type": "object",
         "additionalProperties": false,

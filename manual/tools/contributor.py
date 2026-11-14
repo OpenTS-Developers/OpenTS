@@ -90,28 +90,39 @@ def scaffold_using(identifier, category):
     return contributor_catalogs.scaffold_using(_engine, identifier, category)
 
 
-def release_notes(version):
+def release_notes(version, tag=None):
     _sync()
-    return _engine.release_notes(version)
+    return _engine.release_notes(version, tag)
 
 
 def command_release_notes(arguments):
     try:
-        sys.stdout.write(release_notes(arguments.version))
+        sys.stdout.write(release_notes(arguments.version, arguments.tag))
     except (OSError, ValueError) as error:
         print(f"ACTION REQUIRED\n  - {error}", file=sys.stderr)
         return 1
     return 0
 
 
+def scaffold_rc_note(arguments):
+    _sync()
+    path = MANUAL / "changes" / "rc" / f"{_engine._slugify(arguments.identifier)}.md"
+    _engine._write(path, {
+        "title": arguments.title or "TODO: describe the fix for testers",
+        "category": arguments.category or "fix",
+        "release": _engine._development_release(),
+        "credit": arguments.credit or ["TODO: name the author"],
+    }, None)
+
+
 def scaffold_change(arguments):
     _sync()
+    if getattr(arguments, "rc", False):
+        return scaffold_rc_note(arguments)
     if arguments.scope and arguments.target_type != "key":
         raise ValueError("--scope is allowed only for key lifecycle targets")
     breaking = bool(getattr(arguments, "breaking", False))
     migration = list(getattr(arguments, "migration", []) or [])
-    if migration and not breaking:
-        raise ValueError("--migration requires --breaking")
     path = MANUAL / "changes" / f"{_engine._slugify(arguments.identifier)}.md"
     frontmatter = {
         "title": arguments.title or _engine._display_name(arguments.identifier),
@@ -193,17 +204,34 @@ def add_parsers(commands):
     scaffold.add_argument("--credit", action="append", default=[])
     scaffold.add_argument("--breaking", action="store_true")
     scaffold.add_argument("--migration", action="append", default=[])
+    scaffold.add_argument(
+        "--rc", action="store_true",
+        help="with change: write an RC note, shown only in release candidate notes")
 
     notes = commands.add_parser(
         "release-notes",
         help="render one release's change records as Markdown on stdout")
     notes.add_argument("version", help="release version, such as 0.1.0")
+    notes.add_argument(
+        "--tag",
+        help="render the notes for this release tag, such as v0.2.0-rc2, with the "
+             "changes since the previous candidate")
 
 
 def validate_scaffold_arguments(parser, arguments):
     if arguments.command != "scaffold":
         return
     entity_type = arguments.entity_type
+    if arguments.rc:
+        if entity_type != "change":
+            parser.error("--rc is valid only for scaffold change")
+        if any((arguments.target_type, arguments.target_id, arguments.scope,
+                arguments.kind, arguments.effect != "added", arguments.breaking,
+                arguments.migration)):
+            parser.error("an RC note takes only --title, --category and --credit")
+        if arguments.category and arguments.category not in LIFECYCLE_CATEGORIES:
+            parser.error("scaffold change --category must be a lifecycle category")
+        return
     if entity_type == "change":
         if not arguments.target_type or not arguments.target_id:
             parser.error("scaffold change requires --target-type and --target-id")

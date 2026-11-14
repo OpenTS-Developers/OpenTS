@@ -14,9 +14,12 @@
 #pragma once
 
 #include "abstype.h"
+#include "rgb.h"
 #include "typelist.h"
 
 #include "side.hh"
+
+#define SCREEN_TEXT_DEFAULT_COLOR RGBClass(255, 255, 255)
 
 class BuildingTypeClass;
 class UnitTypeClass;
@@ -67,4 +70,9 @@ class SideClass : public AbstractTypeClass
 		bool IsAIBuildsWalls;
 		int AIBaseDefensePlaceholders;
 		bool IsAIBaseDefensesWithWalls;
+
+		/*
+         * Color to be used for screen text for this side.
+         */
+		RGBClass ScreenTextColor;
 };

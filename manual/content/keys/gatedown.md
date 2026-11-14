@@ -1,12 +1,12 @@
 ---
 key: GateDown
-summary: The sound played at a gate as its door starts opening.
+summary: The default sound played at a gate as its door starts going down.
 see_also: ["system:walls-and-gates", "Gate"]
 when_omitted:
   kind: value
   value: none
 ---
 
-The sound plays once, at the gate, when its door starts to open from rest. It does not play when a closing door reverses to open again, or when the gate is told to open while it is already opening or open.
+The sound plays once, at the gate's position, when its door starts going down. It does not play when a gate going up shifts to going down again, or when the gate is already going down or down.
 
-Despite the names, this is the opening sound and [`GateUp`](/keys/gateup/) is the closing one.
+This sound is only played if the gate did not set [`GateDownSound`](/keys/gatedownsound/). If it did, it would play its specific sound instead.

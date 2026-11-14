@@ -60,6 +60,16 @@ class BuildingTypeClass : public TechnoTypeClass
 		Point3D HalfDamageSmokeLocation2;
 
 		/*
+		 * This is the sound effect to play when the animation of the gate is rising.
+		 */
+		VocType GateUpSound;
+
+		/*
+		 * This is the sound effect to play when the animation of the gate is lowering.
+		 */
+		VocType GateDownSound;
+
+		/*
 		 * This is the time, expressed in minutes, that a gate stays open after the last thing
 		 * has passed through it. When it expires the gate closes again of its own accord.
 		 */
