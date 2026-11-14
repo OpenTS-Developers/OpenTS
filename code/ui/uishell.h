@@ -24,7 +24,7 @@ namespace Rml
 	class FileInterface;
 }
 
-class UIFontEngineClass;
+class UIFontRegistryClass;
 class UIRmlRenderClass;
 class UIRmlSystemClass;
 class UIViewClass;
@@ -117,21 +117,12 @@ class UIShellClass
 		std::unique_ptr<UIRmlSystemClass> System;
 		std::unique_ptr<Rml::FileInterface> File;
 		std::unique_ptr<UIRmlRenderClass> Render;
-		std::unique_ptr<UIFontEngineClass> Fonts;
+		std::unique_ptr<UIFontRegistryClass> Fonts;
 
 		Rml::Context * Context = nullptr;
 		bool Ready = false;
-		bool FontLoaded = false;
-		bool DialogFontTried = false;
 		int Side = -1;
 
-		std::vector<unsigned char> SystemFontData;
-		std::vector<unsigned char> PrintFontData;
-
-		void Register_Fonts(void);
-		void Ensure_Dialog_Font(void);
-		void Apply_Font_Policy(void);
-		bool Load_Sheet_Font(char const * family);
 		bool Advance_Reveal(UIViewClass & view, float full, int start, float & shown);
 		void Advance_Shown_Reveal(UIViewClass & view);
 
@@ -165,5 +156,4 @@ class UIShellClass
 		bool DevWasActive = false;
 
 		int ArtMagnification = 1;
-		float PixelRatio = 1.0f;
 };

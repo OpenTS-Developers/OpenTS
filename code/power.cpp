@@ -51,7 +51,6 @@
 #include "bench.h"
 #include "building.h"
 #include "builtype.h"
-#include "cctooltip.h"
 #include "data.h"
 #include "draw.h"
 #include "globals.h"
@@ -60,6 +59,7 @@
 #include "mixfile.h"
 #include "savestream.h"
 #include "surface.h"
+#include "uitooltip.h"
 
 #include "bench.hh"
 
@@ -185,13 +185,6 @@ void PowerClass::Init_For_House(void)
 {
 	BASECLASS::Init_For_House();
 	PowerPipShape = MFCD::Retrieve("POWERP.SHP");
-}
-
-
-void PowerClass::Clear_For_House(void)
-{
-	PowerPipShape = NULL;
-	BASECLASS::Clear_For_House();
 }
 
 

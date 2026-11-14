@@ -55,7 +55,6 @@
 #include "_tooltip.h"
 #include "_xmouse.h"
 #include "bench.h"
-#include "cctooltip.h"
 #include "gadget.h"
 #include "goptions.h"
 #include "keyboard.h"
@@ -63,6 +62,7 @@
 #include "session.h"
 #include "surface.h"
 #include "tactical.h"
+#include "uitooltip.h"
 #include "video.h"
 
 #include "bench.hh"

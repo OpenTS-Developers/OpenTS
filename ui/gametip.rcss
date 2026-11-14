@@ -1,0 +1,34 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+
+/* The pointer passes through to the game under the tooltip. */
+body
+{
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
+}
+
+/* The box the game drew over the map and the sidebar, in the Green color scheme's text color. */
+#gametip
+{
+	position: absolute;
+	box-sizing: border-box;
+	display: block;
+	max-width: 360dp;
+	padding: 0 1dp 1dp 1dp;
+	font-family: wwfont-kia6pt;
+	font-size: 9dp;
+	white-space: pre-wrap;
+	color: #66c466;
+	background-color: #000000;
+	border: 1dp #00ff00;
+	pointer-events: none;
+}

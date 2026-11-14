@@ -324,17 +324,17 @@ bool SpawnerConfigClass::Is_Playable(int countries, int colors, std::string & fa
 		(kind == LaunchType::Resume && HumanCount > 1);
 
 	if (kind != LaunchType::Campaign && HumanCount == 0) {
-		return(Fault(fault, "SPAWN.INI has no [Settings] or [OtherN] section, so it seats nobody."));
+		return(Fault(fault, "SPAWN.INI has no [Settings] or [OtherN] section."));
 	}
 
 	if (AIDifficulty < 0 || AIDifficulty >= DIFF_COUNT) {
-		return(Fault(fault, "SPAWN.INI sets AIDifficulty=%d; it must be 0 to %d.",
+		return(Fault(fault, "SPAWN.INI: AIDifficulty=%d is outside 0 to %d.",
 			AIDifficulty, DIFF_COUNT - 1));
 	}
 
 	int free_seats = SLOT_COUNT - HumanCount;
 	if (AIPlayers < 0 || AIPlayers > free_seats) {
-		return(Fault(fault, "SPAWN.INI sets AIPlayers=%d; it must be 0 to %d, the seats no person holds.",
+		return(Fault(fault, "SPAWN.INI: AIPlayers=%d is outside 0 to %d, the free seats.",
 			AIPlayers, free_seats));
 	}
 
@@ -343,21 +343,21 @@ bool SpawnerConfigClass::Is_Playable(int countries, int colors, std::string & fa
 	if (multiplayer) {
 		if (TunnelPort != 0) {
 			if (TunnelPort < 1 || TunnelPort > 65535) {
-				return(Fault(fault, "SPAWN.INI sets [Tunnel] Port=%d; it must be 1 to 65535, or 0 for no tunnel.",
+				return(Fault(fault, "SPAWN.INI: [Tunnel] Port=%d is outside 0 to 65535.",
 					TunnelPort));
 			}
 
 			if (!Is_Address(TunnelAddress)) {
-				return(Fault(fault, "SPAWN.INI sets [Tunnel] Ip=%s; it must be a dotted IPv4 address other than 0.0.0.0.",
+				return(Fault(fault, "SPAWN.INI: [Tunnel] Ip=%s is not a usable IPv4 address.",
 					TunnelAddress.c_str()));
 			}
 
 			if (!Is_Tunnel_Number(TunnelId)) {
-				return(Fault(fault, "SPAWN.INI sets [Settings] Port=%d; through a tunnel it must be a nonzero number from -65535 to 65535.",
+				return(Fault(fault, "SPAWN.INI: with a tunnel, [Settings] Port=%d must be nonzero and within -65535 to 65535.",
 					TunnelId));
 			}
 		} else if (ListenPort < 1 || ListenPort > 65535) {
-			return(Fault(fault, "SPAWN.INI sets [Settings] Port=%d; it must be 1 to 65535.", ListenPort));
+			return(Fault(fault, "SPAWN.INI: [Settings] Port=%d is outside 1 to 65535.", ListenPort));
 		}
 	}
 
@@ -375,35 +375,35 @@ bool SpawnerConfigClass::Is_Playable(int countries, int colors, std::string & fa
 		// A computer seat may leave its country and color to the game; a person's seat names both.
 		if ((human || slot.Country != -1) && (slot.Country < 0 || slot.Country >= countries)) {
 			if (human) {
-				return(Fault(fault, "SPAWN.INI sets [%s] Side=%d, but the rules have %d countries, numbered from 0.",
+				return(Fault(fault, "SPAWN.INI: [%s] Side=%d, but the rules have %d countries, numbered from 0.",
 					section.c_str(), slot.Country, countries));
 			}
-			return(Fault(fault, "SPAWN.INI sets [HouseCountries] Multi%d=%d, but the rules have %d countries, numbered from 0; -1 lets the game choose.",
+			return(Fault(fault, "SPAWN.INI: [HouseCountries] Multi%d=%d, but the rules have %d countries, numbered from 0. Use -1 to let the game pick.",
 				entry, slot.Country, countries));
 		}
 
 		// A computer seat may leave its color to the game; only a color the rules lack refuses.
 		if ((human || slot.Color != -1) && (slot.Color < 0 || slot.Color >= colors)) {
 			if (human) {
-				return(Fault(fault, "SPAWN.INI sets [%s] Color=%d, but the rules have %d colors, numbered from 0.",
+				return(Fault(fault, "SPAWN.INI: [%s] Color=%d, but the rules have %d colors, numbered from 0.",
 					section.c_str(), slot.Color, colors));
 			}
-			return(Fault(fault, "SPAWN.INI sets [HouseColors] Multi%d=%d, but the rules have %d colors, numbered from 0; -1 lets the game choose.",
+			return(Fault(fault, "SPAWN.INI: [HouseColors] Multi%d=%d, but the rules have %d colors, numbered from 0. Use -1 to let the game pick.",
 				entry, slot.Color, colors));
 		}
 
 		if (slot.Handicap < -1 || slot.Handicap > 6) {
-			return(Fault(fault, "SPAWN.INI sets [HouseHandicaps] Multi%d=%d; it must be -1 to 6.",
+			return(Fault(fault, "SPAWN.INI: [HouseHandicaps] Multi%d=%d is outside -1 to 6.",
 				entry, slot.Handicap));
 		}
 
 		for (int ally : slot.Alliances) {
 			if (ally < -1 || ally >= SLOT_COUNT) {
-				return(Fault(fault, "[Multi%d_Alliances] in SPAWN.INI names seat %d; seats are numbered 0 to %d.",
+				return(Fault(fault, "SPAWN.INI: [Multi%d_Alliances] names seat %d, outside 0 to %d.",
 					index + 1, ally, SLOT_COUNT - 1));
 			}
 			if (ally >= 0 && Slots[ally].Occupancy == OccupancyType::Empty) {
-				return(Fault(fault, "[Multi%d_Alliances] in SPAWN.INI names seat %d, which nobody holds.",
+				return(Fault(fault, "SPAWN.INI: [Multi%d_Alliances] names empty seat %d.",
 					index + 1, ally));
 			}
 		}
@@ -412,7 +412,7 @@ bool SpawnerConfigClass::Is_Playable(int countries, int colors, std::string & fa
 		// they would swap start positions and alliances.
 		if (human && multiplayer) {
 			if (slot.Name.empty()) {
-				return(Fault(fault, "SPAWN.INI gives [%s] no Name; a network game needs every player named.",
+				return(Fault(fault, "SPAWN.INI: [%s] needs a Name in a network game.",
 					section.c_str()));
 			}
 
@@ -424,12 +424,12 @@ bool SpawnerConfigClass::Is_Playable(int countries, int colors, std::string & fa
 				std::string other_section = Seat_Section(Slots[other].FilePosition);
 
 				if (_stricmp(Slots[other].Name.c_str(), slot.Name.c_str()) == 0) {
-					return(Fault(fault, "SPAWN.INI gives [%s] and [%s] the same Name, %s; a network game needs a different name for each player.",
+					return(Fault(fault, "SPAWN.INI: [%s] and [%s] have the same Name, %s.",
 						other_section.c_str(), section.c_str(), slot.Name.c_str()));
 				}
 
 				if (Slots[other].Color == slot.Color) {
-					return(Fault(fault, "SPAWN.INI gives [%s] and [%s] the same Color, %d; a network game needs a different color for each player.",
+					return(Fault(fault, "SPAWN.INI: [%s] and [%s] have the same Color, %d.",
 						other_section.c_str(), section.c_str(), slot.Color));
 				}
 			}
@@ -437,17 +437,17 @@ bool SpawnerConfigClass::Is_Playable(int countries, int colors, std::string & fa
 			// Through a tunnel the port carries the tunnel number, so every other seat needs one.
 			if (index != LocalSlot) {
 				if (TunnelPort != 0 && !Is_Tunnel_Number(slot.Port)) {
-					return(Fault(fault, "SPAWN.INI sets [%s] Port=%d; through a tunnel it must be a nonzero number from -65535 to 65535.",
+					return(Fault(fault, "SPAWN.INI: with a tunnel, [%s] Port=%d must be nonzero and within -65535 to 65535.",
 						section.c_str(), slot.Port));
 				}
 
 				if (TunnelPort == 0 && (slot.Port < 1 || slot.Port > 65535)) {
-					return(Fault(fault, "SPAWN.INI sets [%s] Port=%d; it must be 1 to 65535.",
+					return(Fault(fault, "SPAWN.INI: [%s] Port=%d is outside 1 to 65535.",
 						section.c_str(), slot.Port));
 				}
 
 				if (TunnelPort == 0 && !Is_Address(slot.Address)) {
-					return(Fault(fault, "SPAWN.INI sets [%s] Ip=%s; it must be a dotted IPv4 address other than 0.0.0.0.",
+					return(Fault(fault, "SPAWN.INI: [%s] Ip=%s is not a usable IPv4 address.",
 						section.c_str(), slot.Address.c_str()));
 				}
 			}

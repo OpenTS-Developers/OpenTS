@@ -13,7 +13,6 @@
 #include "_tooltip.h"
 #include "_ui.h"
 #include "audio/audioengine.h"
-#include "cctooltip.h"
 #include "data.h"
 #include "gamedlg.h"
 #include "globals.h"
@@ -25,6 +24,7 @@
 #include "ui/uienginehost.h"
 #include "ui/uishell.h"
 #include "ui/uiview.h"
+#include "uitooltip.h"
 
 
 namespace

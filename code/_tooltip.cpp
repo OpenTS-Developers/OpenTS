@@ -11,4 +11,4 @@
 
 #include "_tooltip.h"
 
-CCToolTip * ToolTips;
+UIToolTip * ToolTips;
