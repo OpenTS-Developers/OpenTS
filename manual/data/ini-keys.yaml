@@ -11561,6 +11561,24 @@ InfantryGroupNumberOffset:
       source: code/uicontrol.cpp
       guard: null
     level: UIControlsClass
+InfantryHealthBarPos:
+  key: InfantryHealthBarPos
+  scopes:
+  - applies_to:
+    - UI controls
+    file: ui.ini
+    section:
+      kind: literal
+      name: Ingame
+    value_type: point (x,y)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: UIControlsClass
+      member: InfantryHealthBarPos
+      source: code/uicontrol.cpp
+      guard: null
+    level: UIControlsClass
 InfantryReserve:
   key: InfantryReserve
   scopes:
@@ -25035,6 +25053,24 @@ UnitGroupNumberOffset:
       default_candidate: null
       declared_in: UIControlsClass
       member: UnitGroupNumberOffset
+      source: code/uicontrol.cpp
+      guard: null
+    level: UIControlsClass
+UnitHealthBarPos:
+  key: UnitHealthBarPos
+  scopes:
+  - applies_to:
+    - UI controls
+    file: ui.ini
+    section:
+      kind: literal
+      name: Ingame
+    value_type: point (x,y)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: UIControlsClass
+      member: UnitHealthBarPos
       source: code/uicontrol.cpp
       guard: null
     level: UIControlsClass
