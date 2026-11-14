@@ -1856,7 +1856,7 @@ bool BuildingClass::Unlimbo(Coord const & coord, Dir256 dir)
 			if (o && o->Unlimbo(coord)) {
 				Map[coord].Owner = House->HeapID;
 				Transmit_Message(RADIO_OVER_OUT);
-				Map.Sight_From(coord, Class->SightRange, House);
+				Map.Sight_From(coord, Get_Sight_Range(), House);
 				Delete_Me();
 				return(true);
 			}

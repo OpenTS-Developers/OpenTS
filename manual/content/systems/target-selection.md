@@ -365,7 +365,7 @@ Damage is answered without a scan. The engine tests the rows below in order, and
 
 The computer-owned comparison uses the unrounded threat score, so a fraction can decide it.
 
-An object that retaliates switches to attacking the attacker, whatever its mission. It does so at once when the attacker is in range. Out of range, a computer-owned object still retaliates, but a human-owned one does so only when the attacker is within [`Sight`](/keys/sight/) plus half a cell.
+An object that retaliates switches to attacking the attacker, whatever its mission. It does so at once when the attacker is in range. Out of range, a computer-owned object still retaliates, but a human-owned one does so only when the attacker is within its [sight range](/systems/map-visibility/#sight-range) plus half a cell.
 
 ### A damaged building
 
@@ -387,7 +387,7 @@ An object allowed to retaliate still scatters if it ends up with neither a targe
 - [`PlayerScatter=yes`](/keys/playerscatter/) in `[CombatDamage]`;
 - the object holds the `SCATTER` ability.
 
-Retaliating sets a target at once, so this happens only when an allowed retaliation produced no attack. There are two such cases: a `Veinhole=yes` warhead with no veinhole monster to turn on, and a human-owned object whose attacker is beyond both weapon range and `Sight` plus half a cell.
+Retaliating sets a target at once, so this happens only when an allowed retaliation produced no attack. There are two such cases: a `Veinhole=yes` warhead with no veinhole monster to turn on, and a human-owned object whose attacker is beyond both weapon range and its sight range plus half a cell.
 
 An object refused retaliation scatters when **all of** these hold:
 

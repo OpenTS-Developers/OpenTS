@@ -8,8 +8,10 @@ keys:
   - Elite
   - EliteAbilities
   - EliteFlashTimer
+  - EliteSight
   - IRepairRate
   - InitialVeteran
+  - Sight
   - Trainable
   - UpgradeEliteSound
   - UpgradeVeteranSound
@@ -125,7 +127,7 @@ The training time is set by [`IRepairRate`](/keys/irepairrate/), which also cont
 
 ## What a rank changes
 
-Promotion bonuses depend on the type's ability lists. A veteran with no abilities gains only a rank insignia. Elite objects can also use an elite weapon and cause other objects in their cell to scatter, as described below.
+Promotion bonuses depend on the type's ability lists and sight ranges. A veteran whose type gives it no abilities and no positive sight range gains only a rank insignia. Elite objects can also use an elite weapon and make other objects in their cell scatter, as described below.
 
 ### Abilities
 
@@ -148,7 +150,7 @@ Ability names are case-insensitive. The table lists all eighteen abilities and t
 | `FIREPOWER` | Weapon damage is multiplied by [`VeteranCombat`](/keys/veterancombat/) plus one. |
 | `SCATTER` | The object scatters from incoming fire even when the owner's units would otherwise hold position. |
 | `ROF` | Reload delay is divided by [`VeteranROF`](/keys/veteranrof/) plus one. |
-| `SIGHT` | Sight range is multiplied by [`VeteranSight`](/keys/veteransight/) plus one. |
+| `SIGHT` | The sight range for the object's rank is multiplied by the rules-wide [`VeteranSight`](/keys/veteransight/#scope-global-rules) plus one. |
 | `CLOAK` | The object cloaks and recloaks without [`Cloakable=yes`](/keys/cloakable/), and stays cloaked while immobilized. |
 | `TIBERIUM_PROOF` | Infantry take no damage from standing in Tiberium, as with [`TiberiumProof=yes`](/keys/tiberiumproof/). |
 | `VEIN_PROOF` | Veins do not damage the object, as with [`ImmuneToVeins=yes`](/keys/immunetoveins/). |
@@ -182,13 +184,19 @@ Set the five bonuses below in `rules.ini` under `[General]`. Each applies only w
 | --- | --- |
 | [`VeteranCombat`](/keys/veterancombat/) | Damage is multiplied by the value plus one, after the house and object firepower biases. |
 | [`VeteranSpeed`](/keys/veteranspeed/) | Speed is multiplied by the value plus one, after the house's ground-speed or air-speed bias. |
-| [`VeteranSight`](/keys/veteransight/) | Sight range is multiplied by the value plus one. |
+| [`VeteranSight`](/keys/veteransight/#scope-global-rules) | The sight range for the object's rank is multiplied by the value plus one, after the height bonus. |
 | [`VeteranArmor`](/keys/veteranarmor/) | Incoming damage is divided by the value plus one. |
 | [`VeteranROF`](/keys/veteranrof/) | Reload delay is divided by the value plus one. |
 
 `VeteranArmor=1` halves incoming damage, and `VeteranROF=1` halves reload delay. For the other three settings, `1` doubles the affected statistic. A value of `0` gives no bonus. All five default to `1`.
 
 Sonic weapons and weapons using fire particles receive no firepower bonus. Sonic weapons also receive no reload bonus, as do weapons with an attached spark, fire, or railgun particle system. The reload bonus shortens the delay after a burst, not the gaps between its shots.
+
+### Sight range
+
+A type can give its veterans and elites their own sight ranges. [`VeteranSight`](/keys/veteransight/#scope-aircrafttype) in the type's section replaces [`Sight=`](/keys/sight/) for its veterans, and [`EliteSight`](/keys/elitesight/) replaces both for its elites. Only a positive value takes effect. An elite whose type leaves `EliteSight` unset or non-positive uses the type's `VeteranSight` when that is positive, and `Sight=` otherwise.
+
+The `SIGHT` ability then multiplies whichever range applies. [Sight range](/systems/map-visibility/#sight-range) gives the full calculation and the ten-cell cap.
 
 ### The elite weapon
 
@@ -204,7 +212,7 @@ A building upgrade that supplies a weapon takes priority over the building's own
 
 Promotion bonuses apply the next time the object fires, takes damage, or moves. The game checks its current rank and abilities whenever it calculates those effects.
 
-Extra sight reveals more terrain at once: a promotion makes the object reveal its surroundings again, so a `SIGHT` bonus uncovers the larger area immediately.
+Extra sight reveals more terrain at once: a promotion makes the object reveal its surroundings again, so a larger range for the new rank, and any `SIGHT` bonus, uncovers the wider area immediately.
 
 ## Promotion feedback
 
