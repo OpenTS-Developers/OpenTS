@@ -241,6 +241,8 @@ Check Git history, the release registry, and existing change records before crea
 
 For a new engine addition or a change to released behavior, create a record directly under `changes/`. It targets the development version of the branch you work on. Valid target types are `key`, `action`, `event`, `mission`, `format`, `enum`, `system`, and `command`. Valid effects are `added`, `changed`, `deprecated`, and `removed`.
 
+A change that ports a Vinifera feature, or changes a ported one, also updates [Porting a Vinifera mod](content/using/porting-vinifera-mods.md) in the same commit. Add or amend a row when a file written for Vinifera needs an edit to keep its behavior, and remove the row when it no longer does. A decision never to implement a Vinifera feature also gets a row.
+
 A fix or adjustment to an unreleased addition needs no record of its own. Amend the addition's record if its description no longer matches the final behavior, and update the owning reference pages when needed.
 
 Do not create records for baseline documentation, prose edits, source-location
