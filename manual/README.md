@@ -72,8 +72,8 @@ The launcher commands are:
 | `update` | Regenerates `data/ini-keys.yaml`, `data/scripting.yaml`, and `data/commands.yaml` as one transaction, reports changes against a Git base, and runs structural and lifecycle validation. It changes tracked generated files when the engine catalog changes. |
 | `serve` | Runs `update` and validation, then starts the Astro development server. |
 | `check` | Regenerates into a temporary directory to detect drift, validates all contracts and lifecycle rules, runs the Python and site tests, and builds the site once with render, search, and link checks. `--skip-build` leaves out the build and its checks. It does not update the tracked catalogs. |
-| `scaffold` | Creates minimal authored content for a supported page or change type and refuses to overwrite an existing file. Scaffolds remain invalid until every `TODO:` is replaced. |
-| `release-notes` | Renders the change records assigned to one release as Markdown on standard output, for the release workflow and release authors. It changes nothing. |
+| `scaffold` | Creates minimal authored content for a supported page or change type, or an RC note with `scaffold change --rc`, and refuses to overwrite an existing file. Scaffolds remain invalid until every `TODO:` is replaced. |
+| `release-notes` | Renders the change records assigned to one release as Markdown on standard output, for the release workflow and release authors. With `--tag`, it reads the records at that tag and adds what changed since the previous release candidate. It changes nothing. |
 
 `update`, `serve`, and `check` accept `--base-ref <revision>`. The default is
 `HEAD`; continuous integration supplies the pull-request or pre-push revision.

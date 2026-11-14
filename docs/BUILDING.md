@@ -243,8 +243,9 @@ the version without one.
 
 ## Continuous integration
 
-The `Engine` workflow runs for ready pull requests and pushes to `main` when
-their changed paths match its engine and build filters. Draft pull requests do
+The `Engine` workflow runs for ready pull requests and for pushes to `main`
+and `release/*` branches when their changed paths match its engine and build
+filters. Draft pull requests do
 not build until marked ready; the workflow then builds their current commit.
 
 `Engine nightly` runs daily. A scheduled run cancels itself when the newest
@@ -262,14 +263,16 @@ fails the workflow.
 After a successful pull-request build, `Engine build comment` maintains one
 pull-request comment with direct nightly.link downloads.
 
-Publishing a GitHub release runs `Engine release`. It builds the release commit
-for both platforms with `-DOPENTS_OFFICIAL_BUILD=ON`, and packages each one's
+Publishing a GitHub release runs `Engine release`. After its preflight checks
+pass, it builds the release commit for both platforms with
+`-DOPENTS_OFFICIAL_BUILD=ON` and the tag's prerelease label, and packages each one's
 `Game.exe`, `Language.dll`, `Game.pdb`, `ui/`, and the project and third-party
 license notices in a zip named after the release tag and the platform, such as
 `OpenTS-v0.2.0-x64.zip`. It attaches both to the release, and appends notes
 generated from the manual's change records by
 `python manual/tools/manage.py release-notes`. See
-[Maintaining](../manual/MAINTAINING.md) for the full release procedure.
+[Releases and lifecycle](../manual/MAINTAINING.md#releases-and-lifecycle) for
+the checks and the full release procedure.
 
 CI collects the uploaded artifacts from `build/bin/<configuration>/`.
 

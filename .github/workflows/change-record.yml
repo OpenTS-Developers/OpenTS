@@ -1,7 +1,7 @@
 name: Change record
 
 # Requires a pull request that changes code/** to add or amend a record under
-# manual/changes/, unless it has the `no change record` label. This is a separate
+# manual/changes/, or an RC note in a pull request into a release branch, unless it has the `no change record` label. This is a separate
 # workflow so that changing the label re-runs it without the Windows build.
 on:
   pull_request:
@@ -29,12 +29,13 @@ jobs:
     # A draft pull request runs no checks; the ready_for_review trigger above
     # starts this one when the pull request is marked ready.
     if: github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Look for a change record on the pull request
         env:
           GH_TOKEN: ${{ github.token }}
           NUMBER: ${{ github.event.pull_request.number }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
           WAIVED: ${{ contains(github.event.pull_request.labels.*.name, 'no change record') }}
           CONTRIBUTING: ${{ github.server_url }}/${{ github.repository }}/blob/${{ github.event.pull_request.base.ref }}/CONTRIBUTING.md#validation
         shell: bash
@@ -51,7 +52,12 @@ jobs:
           files="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${NUMBER}/files" \
             --paginate --jq '.[] | select(.status != "removed") | .filename')"
 
-          records="$(printf '%s\n' "${files}" | grep -E '^manual/changes/[^/]+\.md$' || true)"
+          # RC notes are read only from a release branch, so only there do they count.
+          pattern='^manual/changes/[^/]+\.md$'
+          if [[ "${BASE_REF}" == release/* ]]; then
+            pattern='^manual/changes/(rc/)?[^/]+\.md$'
+          fi
+          records="$(printf '%s\n' "${files}" | grep -E "${pattern}" || true)"
           if [ -n "${records}" ]; then
             echo "Change records in this pull request:"
             printf '%s\n' "${records}" | sed 's/^/  /'
