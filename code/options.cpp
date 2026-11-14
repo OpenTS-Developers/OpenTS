@@ -627,3 +627,20 @@ int OptionsClass::Get_Scroll_Method(void) const
 {
 	return(ScrollMethod);
 }
+
+
+/// <summary>
+/// Sets the game speed directly or as an event when it is a multiplayer game.
+/// If the speed that was requested is beyond the allowed ranges of 0-6, it is clamped.
+/// </summary>
+void OptionsClass::Set_Game_Speed(int speed)
+{
+	speed = std::clamp(speed, 0, MAX_SPEED_SETTING - 1);
+	if (GameSpeed == speed) return;
+
+	if (GameActive && Session.Is_Network_Game()) {
+		OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::GAMESPEED, speed));
+	} else {
+		GameSpeed = speed;
+	}
+}

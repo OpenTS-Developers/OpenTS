@@ -1086,6 +1086,10 @@ BEGIN
     TXT_CONTROL_WITHDRAWN   "%s no longer lets %s command their units."
     TXT_DIPLOMACY           "Diplomacy"
     TXT_DIPLOMACY_DESC      "Opens or closes the panel of players, alliances, shared control, chat and connections."
+    TXT_INCREASE_GAME_SPEED "Increase Game Speed"
+    TXT_INCREASE_GAME_SPEED_DESC "Increase game speed by one step."
+    TXT_DECREASE_GAME_SPEED	"Decrease Game Speed"
+    TXT_DECREASE_GAME_SPEED_DESC "Decrease game speed by one step."
 END
 
 #endif    // English (U.S.) resources
