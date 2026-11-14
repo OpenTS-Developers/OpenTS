@@ -275,10 +275,13 @@ def _markdown_at_ref(reference, directory):
     return texts_at_ref(reference, paths)
 
 
-def change_records_at_ref(reference):
-    """Return {change ID: {"data": frontmatter, "text": file text}} at *reference*."""
+def change_records_at_ref(reference, directory="manual/changes"):
+    """Return {record ID: {"data": frontmatter, "text": file text}} at *reference*.
+
+    The default *directory* holds change records; manual/changes/rc holds RC notes.
+    """
     records = {}
-    for path, source in _markdown_at_ref(reference, "manual/changes").items():
+    for path, source in _markdown_at_ref(reference, directory).items():
         match = re.match(r"^---\r?\n([\s\S]*?)\r?\n---", source or "")
         if match:
             records[Path(path).stem] = {
@@ -435,6 +438,7 @@ def load_base(reference=None):
         "release_refs": release_refs(selected, releases),
         "aliases": yaml_at_ref(selected, "manual/data/scripting-route-aliases.yaml"),
         "changes": changes_at_ref(selected),
+        "rc_notes": set(change_records_at_ref(selected, "manual/changes/rc")),
         "enums": enums_at_ref(selected),
         "enum_signatures": enum_drift.signatures_from_sources(enum_sources),
     }

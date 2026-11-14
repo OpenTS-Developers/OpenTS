@@ -185,6 +185,8 @@ def load_changes(errors, manual):
     folder = manual / "changes"
     changes = {}
     for path in folder.rglob("*.md"):
+        if path.parent == folder / "rc":
+            continue
         if path.parent != folder:
             errors.append(
                 f"{path.relative_to(manual)}: change fragments must be flat; "
@@ -204,6 +206,35 @@ def load_changes(errors, manual):
             continue
         changes[change_id] = {"id": change_id, "path": path, "data": data}
     return changes
+
+
+def validate_rc_notes(
+        errors, manual, registry, base_registry=None, base_notes=None, change_ids=()):
+    """Check the RC notes in changes/rc.
+
+    A note's release is checked only when the note is new since the base, so a note stays
+    valid after its version is released.
+    """
+    open_versions = open_releases(registry, base_registry)
+    for path in sorted((manual / "changes" / "rc").glob("*.md")):
+        context = path.relative_to(manual).as_posix()
+        if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", path.stem):
+            errors.append(f"{context}: filename must be a kebab-case note ID")
+        if path.stem in change_ids:
+            errors.append(f"{context}: note ID is also a change record ID; rename the note")
+        if not base_registry or path.stem in (base_notes or ()):
+            continue
+        try:
+            data = frontmatter(path, manual)
+        except ValueError as error:
+            errors.append(str(error))
+            continue
+        if isinstance(data, dict) and data.get("release") not in open_versions:
+            errors.append(
+                f"{context}: a new RC note must target the development release "
+                f"{registry['development']}"
+                + (f" or the candidate release {registry['candidate']}"
+                   if registry.get("candidate") else ""))
 
 
 def normalize_target(raw):

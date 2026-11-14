@@ -77,6 +77,7 @@ AUTHORED_CONTRACTS = (
     ("content/using", "*.md", "authored-using.schema.json"),
     ("content/internals", "*.md", "authored-internal.schema.json"),
     ("changes", "*.md", "authored-change.schema.json"),
+    ("changes/rc", "*.md", "authored-rc-note.schema.json"),
 )
 
 

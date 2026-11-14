@@ -136,6 +136,46 @@ class ChangeAssignmentTests(unittest.TestCase):
         self.assertEqual(self.validate({"late-fix": "0.2.0"}, current, base, {}), [])
 
 
+class RcNoteTests(unittest.TestCase):
+    def test_only_new_notes_must_target_an_open_version(self):
+        state = registry(**{"0_1_0": "released", "0_2_0": "candidate", "0_3_0": "development"})
+        with tempfile.TemporaryDirectory() as temporary:
+            manual = Path(temporary)
+            notes = manual / "changes" / "rc"
+            notes.mkdir(parents=True)
+            for name, release in (("open", "0.2.0"), ("kept", "0.1.0"), ("late", "0.1.0")):
+                (notes / f"{name}.md").write_text(
+                    f"---\ntitle: T\ncategory: fix\nrelease: {release}\ncredit: [A]\n---\n",
+                    encoding="utf-8")
+            errors = []
+            versioning.validate_rc_notes(errors, manual, state, state, {"kept"}, {"open"})
+            self.assertEqual(errors, [
+                "changes/rc/late.md: a new RC note must target the development release "
+                "0.3.0 or the candidate release 0.2.0",
+                "changes/rc/open.md: note ID is also a change record ID; rename the note"])
+            self.assertEqual(versioning.load_changes([], manual), {})
+
+    def test_scaffold_writes_a_note_without_targets(self):
+        import contributor
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "manual" / "data").mkdir(parents=True)
+            (root / "manual" / "data" / "releases.yaml").write_text(
+                "releases:\n  - version: 0.2.0\n    status: development\n", encoding="utf-8")
+            arguments = mock.Mock(
+                identifier="Menu flicker", title=None, category=None, credit=["A"], rc=True)
+            with mock.patch.object(contributor, "ROOT", root), \
+                    mock.patch.object(contributor, "MANUAL", root / "manual"), \
+                    mock.patch.object(contributor, "DATA", root / "manual" / "data"), \
+                    mock.patch("sys.stdout"):
+                contributor.scaffold_change(arguments)
+            text = (root / "manual" / "changes" / "rc" / "menu-flicker.md").read_text(
+                encoding="utf-8")
+            self.assertEqual(text, (
+                "---\ntitle: 'TODO: describe the fix for testers'\ncategory: fix\n"
+                "release: 0.2.0\ncredit:\n- A\n---\n"))
+
+
 class ReleaseRefTests(unittest.TestCase):
     def changes(self, manual, **records):
         (manual / "changes").mkdir(exist_ok=True)

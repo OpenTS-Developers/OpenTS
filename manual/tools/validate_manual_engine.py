@@ -488,6 +488,9 @@ def validate_all(base=None):
         entities=entities,
     )
     versioning.validate_history(errors, registry, changes, tombstones)
+    versioning.validate_rc_notes(
+        errors, MANUAL, registry, base_registry, base.get("rc_notes") if base else None,
+        set(changes))
     if base and base.get("release_refs"):
         versioning.validate_release_refs(errors, changes, base["release_refs"])
     validate_required_omission_targets(

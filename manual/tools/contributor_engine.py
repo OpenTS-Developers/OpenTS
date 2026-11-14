@@ -2,6 +2,7 @@
 
 import importlib.metadata
 import json
+import os
 from pathlib import Path
 import platform
 import re
@@ -139,7 +140,8 @@ def _document(frontmatter, body):
     import yaml
     header = yaml.safe_dump(
         frontmatter, sort_keys=False, allow_unicode=True, width=100).rstrip()
-    return f"---\n{header}\n---\n\n{body.rstrip()}\n"
+    document = f"---\n{header}\n---\n"
+    return f"{document}\n{body.rstrip()}\n" if body else document
 
 
 def _write(path, frontmatter, body):
@@ -270,14 +272,102 @@ RELEASE_NOTE_SECTIONS = (
 )
 
 
-def release_notes(version):
-    """Render the change records assigned to one release as Markdown."""
+def _note_line(row):
+    credit = ", ".join(row.get("credit") or ())
+    return f"- {row['title']}" + (f" (by {credit})" if credit else "")
+
+
+def _label_order(label):
+    """Sort key for a tag's prerelease label; a final release (no label) sorts last."""
+    if label is None:
+        return (1, [])
+    return (0, [(0, int(run)) if run.isdigit() else (1, run)
+                for run in re.findall(r"\d+|\D+", label)])
+
+
+def release_notes(version, tag=None):
+    """Render the change records assigned to one release as Markdown.
+
+    With *tag*, the records come from that tag. A release candidate after the first also
+    gets the records and RC notes that are new or edited since the previous candidate, and
+    a final gets the records edited since the last candidate.
+    """
+    if tag:
+        return _tagged_release_notes(version, tag)
     import validate_manual
     records = []
     for path in sorted((MANUAL / "changes").glob("*.md")):
         data = validate_manual.frontmatter(path)
         if data.get("release") == version:
             records.append(data)
+    return _render_records(version, records)
+
+
+def _tagged_release_notes(version, tag):
+    import manage_engine
+
+    match = re.fullmatch(r"v([0-9]+\.[0-9]+\.[0-9]+)(?:-([0-9A-Za-z.-]+))?", tag)
+    if not match or match.group(1) != version:
+        raise ValueError(f"tag {tag!r} is not v{version} or v{version}-<label>")
+    label = match.group(2)
+    if not manage_engine._commit(f"refs/tags/{tag}"):
+        raise ValueError(f"tag {tag!r} does not exist")
+
+    listed = manage_engine.git_output(
+        "tag", "--merged", f"refs/tags/{tag}", "--list", f"v{version}-*").stdout.split()
+    earlier = []
+    for name in listed:
+        found = re.fullmatch(rf"v{re.escape(version)}-([0-9A-Za-z.-]+)", name)
+        if found and _label_order(found.group(1)) < _label_order(label):
+            earlier.append(found.group(1))
+    previous = max(earlier, key=_label_order) if earlier else None
+
+    def in_release(records):
+        return {
+            record_id: record for record_id, record in records.items()
+            if record["data"].get("release") == version}
+
+    def text(record):
+        return record["text"].replace("\r\n", "\n")
+
+    try:
+        records = in_release(manage_engine.change_records_at_ref(tag))
+        notes = in_release(manage_engine.change_records_at_ref(tag, "manual/changes/rc"))
+        if previous:
+            previous_tag = f"v{version}-{previous}"
+            old_records = manage_engine.change_records_at_ref(previous_tag)
+            old_notes = manage_engine.change_records_at_ref(previous_tag, "manual/changes/rc")
+    except manage_engine.ManualCommandError as error:
+        raise ValueError(str(error)) from error
+
+    full = _render_records(version, [record["data"] for record in records.values()])
+    if previous is None:
+        return full
+
+    updated = [
+        record["data"] for record_id, record in sorted(records.items())
+        if record_id not in old_records or text(record) != text(old_records[record_id])]
+    if label is not None:
+        updated += [
+            note["data"] for note_id, note in sorted(notes.items()) if note_id not in old_notes]
+    lines = [f"### Updated since {version}-{previous}", ""]
+    lines += [_note_line(row) for row in sorted(updated, key=lambda row: row["title"])] or [
+        "No change records changed." if label is None
+        else "No change records or RC notes changed."]
+    server = os.environ.get("GITHUB_SERVER_URL")
+    repository = os.environ.get("GITHUB_REPOSITORY")
+    if server and repository:
+        lines += ["", f"[Commits since {version}-{previous}]"
+                      f"({server}/{repository}/compare/{previous_tag}...{tag})"]
+    updated_section = "\n".join(lines) + "\n"
+
+    if label is None:
+        return f"{full}\n{updated_section}"
+    return (f"{updated_section}\n<details>\n<summary>All changes in {version}</summary>\n\n"
+            f"{full}\n</details>\n")
+
+
+def _render_records(version, records):
     if not records:
         raise ValueError(f"no change records target release {version!r}")
 
@@ -298,9 +388,5 @@ def release_notes(version):
             key=lambda row: row["title"])
         if not rows:
             continue
-        lines += [f"### {heading}", ""]
-        for row in rows:
-            credit = ", ".join(row.get("credit") or ())
-            lines.append(f"- {row['title']}" + (f" (by {credit})" if credit else ""))
-        lines.append("")
+        lines += [f"### {heading}", "", *map(_note_line, rows), ""]
     return "\n".join(lines).rstrip() + "\n"
