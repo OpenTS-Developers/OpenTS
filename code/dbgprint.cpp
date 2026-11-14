@@ -22,6 +22,8 @@
 
 #include <conio.h>
 #include <shellapi.h>
+#else
+#include <unistd.h>
 #endif
 
 #ifdef __APPLE__
@@ -35,6 +37,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <iostream>
 #include <mutex>
@@ -503,9 +506,12 @@ void DebugPrint::Init_Locked(void)
 
 		// A second process started in the same second must not disturb the first one's log.
 		if (File == NULL) {
-			std::stringstream thread_id_ss;
-			thread_id_ss << std::this_thread::get_id();
-			FilePath = Directory / std::format("DEBUG_{:%d-%m-%Y_%H-%M-%S}_{}.LOG", now_local_sec, thread_id_ss.str());
+#ifdef _WIN32
+			DWORD process_id = GetCurrentProcessId();
+#else
+			pid_t process_id = getpid();
+#endif
+			FilePath = Directory / std::format("DEBUG_{:%d-%m-%Y_%H-%M-%S}_{}.LOG", now_local_sec, process_id);
 
 #ifdef _WIN32
 			File = _wfopen(FilePath.c_str(), L"wxb");
