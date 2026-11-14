@@ -201,7 +201,9 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	ZFudgeColumn(5),
 	ZFudgeTunnel(10),
 	ZFudgeBridge(0),
-	Description("")
+	Description(""),
+	CloakSound(VOC_NONE),
+	UncloakSound(VOC_NONE)
 {
 	IsSentient = true;
 
@@ -676,6 +678,8 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		TargetDistanceCoefficient = ini.Get_Float(Name(), "TargetDistanceCoefficient", TargetDistanceCoefficient == 0 ? Rule->TargetDistanceCoefficientDefault : TargetDistanceCoefficient);
 		SpecialThreatValue = ini.Get_Float(Name(), "SpecialThreatValue", SpecialThreatValue);
 		Description = ini.Get_String(Name(), "Description", Description.c_str());
+		CloakSound = ini.Get_VocType(Name(), "CloakSound", CloakSound);
+		UncloakSound = ini.Get_VocType(Name(), "UncloakSound", UncloakSound);
 
 		IsLeader = false;
 		if (Weapons[0].Weapon != NULL && Weapons[0].Weapon->Attack > 0) {
@@ -1084,6 +1088,8 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ZFudgeTunnel);
 	stream.Serialize(ZFudgeBridge);
 	stream.Serialize(Description);
+	stream.Serialize(CloakSound);
+	stream.Serialize(UncloakSound);
 }
 
 
@@ -1186,6 +1192,8 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(IsVisibleLoad);
 	crc(IsLightningRod);
 	crc(Description.c_str());
+	crc(CloakSound);
+	crc(UncloakSound);
 }
 
 
