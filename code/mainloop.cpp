@@ -71,6 +71,8 @@
 #include "special.hh"
 
 #include <algorithm>
+#include <chrono>
+#include <thread>
 
 //
 // Special module globals for recording and playback
@@ -173,7 +175,7 @@ static void Check_For_Focus_Loss(void)
 			Windows_Message_Handler();
 			break;
 		}
-		Sleep(10);
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		Windows_Message_Handler();
 	}
 }
@@ -557,7 +559,7 @@ void Sync_Delay(void)
 				TacticalMap->AI();
 				Map.Render();
 			} else {
-				Sleep(0);
+				std::this_thread::yield();
 			}
 			if (!FrameTimer()) {
 				break;
@@ -567,7 +569,11 @@ void Sync_Delay(void)
 		}
 
 		// Out of focus nothing is drawn, so the wait gives the processor back.
-		Sleep(GameInFocus ? 0 : 1);
+		if (GameInFocus) {
+			std::this_thread::yield();
+		} else {
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		}
 	}
 
 	static CDTimerClass<MillisecondSystemTimerClass> fps_timer;

@@ -11,6 +11,7 @@ TOOLS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(TOOLS))
 
 import manage
+import schema_validation
 import versioning
 import validate_manual
 
@@ -96,8 +97,6 @@ class DeltaTests(unittest.TestCase):
             base,
             {},
             {},
-            {},
-            {},
             changes,
             tombstones,
             delta,
@@ -132,8 +131,6 @@ class DeltaTests(unittest.TestCase):
             errors,
             current,
             base,
-            {},
-            {},
             {},
             {},
             {},
@@ -204,12 +201,11 @@ class DeltaTests(unittest.TestCase):
             )
             errors = []
             versioning.validate_releases(errors, root / "manual", root)
-            self.assertTrue(any("released entries require an ISO date" in error
-                                for error in errors))
-            self.assertTrue(any("development entries cannot have a date" in error
-                                for error in errors))
             self.assertTrue(any("must match the development SemVer core" in error
                                 for error in errors))
+            schema_errors = schema_validation.errors_for(
+                versioning.read_yaml(releases), "releases.schema.json", "releases")
+            self.assertTrue(any("date" in error for error in schema_errors))
 
             releases.write_text(
                 "releases:\n"
@@ -438,15 +434,7 @@ class DeltaTests(unittest.TestCase):
                     },
                 },
             }
-            base = {
-                "development": "1.0.0",
-                "by_version": {
-                    "1.0.0": {
-                        "version": "1.0.0",
-                        "status": "development",
-                    },
-                },
-            }
+            base = copy.deepcopy(registry)
             base_changes = {
                 "restamped": {
                     "title": "Restamped",
@@ -557,8 +545,6 @@ class DeltaTests(unittest.TestCase):
             {},
             {},
             {},
-            {},
-            {},
             [],
             empty_key_delta,
             scripting_delta,
@@ -585,8 +571,6 @@ class DeltaTests(unittest.TestCase):
             errors,
             empty_keys,
             empty_keys,
-            {},
-            {},
             {},
             {},
             changes,

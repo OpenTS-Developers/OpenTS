@@ -25,7 +25,7 @@ An `[Actions]` line holds `count` followed by one group of eight fields per acti
 | 1 | `Action` | The `TActionType` number |
 | 2 | parameter code | How field 3 is read: `0` a number into `Data`, `1` a TeamType, `2` a TriggerType, `3` a TagType, `4` a TeamType with field 8 as a time |
 | 3 | `Data`, `Team`, `Trigger` or `Tag` | The first parameter |
-| 4 to 7 | `TriggerRect` | Resize Player View uses the rectangle. Give Credits uses `X` for the amount, and Create Building At uses `X` for the building type and `Y` for the force flag |
+| 4 to 7 | `TriggerRect` | Resize Player View uses the rectangle. Give Credits uses `X` for the amount, Create Building At uses `X` for the building type and `Y` for the force flag, and Text Trigger uses `X` for a color position and `Y` for a display time in seconds |
 | 8 | `EffectLocation` | The waypoint, or the time under parameter code `4` |
 
 Under parameter codes `1` to `4`, field 3 names a type. `-1` names nothing, text of one or two characters is an index into that type list, and longer text is an ID. An ID that no type has yet creates a new type of that name.

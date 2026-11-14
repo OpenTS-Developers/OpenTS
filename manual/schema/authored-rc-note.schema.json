@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opents.example/manual/authored-rc-note.schema.json",
+  "title": "Authored release candidate note frontmatter",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["title", "category", "release", "credit"],
+  "properties": {
+    "title": { "type": "string", "pattern": "\\S" },
+    "category": { "enum": ["feature", "fix", "balance", "performance", "internal"] },
+    "release": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$" },
+    "credit": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}

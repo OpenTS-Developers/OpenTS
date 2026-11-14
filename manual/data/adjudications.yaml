@@ -69,6 +69,10 @@ Bright:
   "WeaponTypeClass::IsBright": {verdict: distinct}
   "WarheadTypeClass::IsBright": {verdict: distinct}
 
+CloakSound:
+  "RulesClass::CloakSound": {verdict: distinct}
+  "TechnoTypeClass::CloakSound": {verdict: distinct}
+
 Color:
   "BulletTypeClass::Color": {verdict: distinct}
   "HouseTypeClass::Scheme": {verdict: distinct}

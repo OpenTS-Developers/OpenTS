@@ -8,7 +8,6 @@ the installed Python toolchain.
 import argparse
 import copy
 import os
-from pathlib import Path
 import sys
 import tempfile
 import time
@@ -16,11 +15,6 @@ import time
 import contributor
 from extraction_history import historical_corrections
 
-
-ROOT = Path(__file__).resolve().parents[2]
-MANUAL = ROOT / "manual"
-DATA = MANUAL / "data"
-SITE = MANUAL / "site"
 
 _ENGINE = None
 
@@ -38,10 +32,6 @@ def _engine():
 
 def __getattr__(name):
     return getattr(_engine(), name)
-
-
-def generator_runner(script, arguments, output):
-    return _engine().generator_runner(script, arguments, output)
 
 
 def generate_files(directory, runner=None):
@@ -68,10 +58,6 @@ def drift_errors(generated, data_directory=None):
     core = _engine()
     return core.drift_errors(
         generated, core.DATA if data_directory is None else data_directory)
-
-
-def load_base(reference=None):
-    return _engine().load_base(reference)
 
 
 def _attach_extraction_history(core, reference, base, current_keys):
@@ -258,19 +244,11 @@ def main():
         return contributor.command_scaffold(arguments)
     if arguments.command == "release-notes":
         return contributor.command_release_notes(arguments)
-
-    try:
-        if arguments.command == "update":
-            return command_update(arguments)
-        if arguments.command == "serve":
-            return command_update(arguments, serve=True)
-        return command_check(arguments)
-    except Exception as error:
-        core = _ENGINE
-        if core is not None and isinstance(error, core.ManualCommandError):
-            print(f"ACTION REQUIRED\n  - {error}")
-            return 1
-        raise
+    if arguments.command == "update":
+        return command_update(arguments)
+    if arguments.command == "serve":
+        return command_update(arguments, serve=True)
+    return command_check(arguments)
 
 
 if __name__ == "__main__":

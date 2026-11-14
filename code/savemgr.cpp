@@ -42,8 +42,10 @@
 #include "dialog.hh"
 
 #include <algorithm>
+#include <chrono>
 #include <cstdio>
 #include <string>
+#include <thread>
 #include <vector>
 
 
@@ -602,7 +604,7 @@ void SaveManagerClass::Process_Pending_Load_Game(void)
 		}
 		UI_Service_Game();
 		UIShell.Tick();
-		Sleep(10);
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}
 
 	box.Hide();

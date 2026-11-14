@@ -56,6 +56,7 @@ const statusBadge = latestState?.effect === 'removed'
 							</span>
 							<strong>{event.release}</strong>
 							{release?.status === 'development' && <small>In development</small>}
+							{release?.status === 'candidate' && <small>Release candidate</small>}
 							{release?.date && <time datetime={release.date}>{release.date}</time>}
 						</div>
 						<p>
