@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.23)
 
-project(OpenTS VERSION 0.2.0 LANGUAGES C CXX)
+project(OpenTS VERSION 0.3.0 LANGUAGES C CXX)
 
 # The SemVer prerelease label, set apart because project() accepts only numbers. With "beta1",
 # version 1.2.3 reads 1.2.3-beta1. manual/data/releases.yaml must match this and the project
