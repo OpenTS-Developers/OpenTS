@@ -434,15 +434,7 @@ class DeltaTests(unittest.TestCase):
                     },
                 },
             }
-            base = {
-                "development": "1.0.0",
-                "by_version": {
-                    "1.0.0": {
-                        "version": "1.0.0",
-                        "status": "development",
-                    },
-                },
-            }
+            base = copy.deepcopy(registry)
             base_changes = {
                 "restamped": {
                     "title": "Restamped",

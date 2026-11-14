@@ -370,11 +370,16 @@ def normalize_base_registry(raw):
         row["version"]: row for row in raw["releases"]
         if isinstance(row, dict) and isinstance(row.get("version"), str)
     }
-    development = next(
-        (version for version, row in by_version.items()
-         if row.get("status") == "development"),
-        None)
-    return {"by_version": by_version, "development": development}
+    def with_status(status):
+        return next(
+            (version for version, row in by_version.items() if row.get("status") == status),
+            None)
+
+    return {
+        "by_version": by_version,
+        "development": with_status("development"),
+        "candidate": with_status("candidate"),
+    }
 
 
 def classify_enum_deltas(current, base_records, base_signatures):
@@ -483,6 +488,8 @@ def validate_all(base=None):
         entities=entities,
     )
     versioning.validate_history(errors, registry, changes, tombstones)
+    if base and base.get("release_refs"):
+        versioning.validate_release_refs(errors, changes, base["release_refs"])
     validate_required_omission_targets(
         errors,
         current,
@@ -533,6 +540,7 @@ def validate_all(base=None):
             registry=registry,
             base_changes=base.get("changes"),
             base_registry=base_registry,
+            merged_releases=(base.get("release_refs") or {}).get("merged", ()),
         )
 
     validate_routes(errors)

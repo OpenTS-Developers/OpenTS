@@ -742,6 +742,7 @@ for (const release of releaseExpectations(base)) {
 		...release.credits.map(escapeHtml),
 	];
 	if (release.status === 'development') required.push('In development');
+	if (release.status === 'candidate') required.push('Release candidate');
 	for (const text of required) {
 		if (!changesIndex.includes(text)) {
 			throw new Error(`Changes index does not contain ${JSON.stringify(text)}`);

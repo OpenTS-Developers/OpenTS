@@ -263,15 +263,11 @@ def texts_at_ref(reference, paths):
 
 
 def _markdown_at_ref(reference, directory):
-    """Return {path: text} for the Markdown files directly in *directory*.
-
-    The result is None when git cannot list *reference*.
-    """
-
+    """Return {path: text} for the Markdown files directly in *directory* at *reference*."""
     listing = git_output(
         "ls-tree", "-r", "--name-only", reference, directory)
     if listing.returncode != 0:
-        return None
+        raise ManualCommandError(f"cannot list {directory} at {reference}")
     paths = [
         path for path in listing.stdout.splitlines()
         if Path(path).suffix == ".md" and Path(path).parent.as_posix() == directory
@@ -279,14 +275,22 @@ def _markdown_at_ref(reference, directory):
     return texts_at_ref(reference, paths)
 
 
-def changes_at_ref(reference):
-    sources = _markdown_at_ref(reference, "manual/changes")
-    changes = {}
-    for path, source in (sources or {}).items():
+def change_records_at_ref(reference):
+    """Return {change ID: {"data": frontmatter, "text": file text}} at *reference*."""
+    records = {}
+    for path, source in _markdown_at_ref(reference, "manual/changes").items():
         match = re.match(r"^---\r?\n([\s\S]*?)\r?\n---", source or "")
         if match:
-            changes[Path(path).stem] = load_yaml(match.group(1)) or {}
-    return changes
+            records[Path(path).stem] = {
+                "data": load_yaml(match.group(1)) or {}, "text": source}
+    return records
+
+
+def changes_at_ref(reference):
+    return {
+        change_id: record["data"]
+        for change_id, record in change_records_at_ref(reference).items()
+    }
 
 
 def enums_at_ref(reference):
@@ -303,13 +307,110 @@ def enums_at_ref(reference):
 
 def formats_at_ref(reference):
     sources = _markdown_at_ref(reference, "manual/content/formats")
-    if sources is None:
-        return None
     documents = [
         (path, source) for path, source in sources.items() if source is not None]
     if not documents:
         return None
     return format_catalogs.parse_catalog(documents)
+
+
+def _commit(reference):
+    result = git_output("rev-parse", "--verify", "--quiet", f"{reference}^{{commit}}")
+    return result.stdout.strip() if result.returncode == 0 else None
+
+
+def _is_ancestor(ancestor, descendant):
+    return git_output("merge-base", "--is-ancestor", ancestor, descendant).returncode == 0
+
+
+def _merge_base(first, second):
+    result = git_output("merge-base", first, second)
+    return result.stdout.strip() if result.returncode == 0 else None
+
+
+def release_branch_name(version):
+    parsed = semantic_version.Version(version)
+    return f"release/{parsed.major}.{parsed.minor}"
+
+
+def _branch_copies(name):
+    listing = git_output("for-each-ref", "--format=%(refname)", "refs/heads", "refs/remotes")
+    pattern = re.compile(rf"refs/(?:heads|remotes/[^/]+)/{re.escape(name)}")
+    return [ref for ref in listing.stdout.split() if pattern.fullmatch(ref)]
+
+
+def _latest_fork(tips, branches):
+    """Return the newest commit of any copy of a branch that one of *tips* contains."""
+    forks = {fork for tip in tips for ref in branches if (fork := _merge_base(tip, ref))}
+    if not forks:
+        return None
+    return max(forks, key=lambda fork: sum(_is_ancestor(other, fork) for other in forks))
+
+
+def release_refs(base_reference, base_releases):
+    """Read the tags and release branches the release checks compare against.
+
+    Returns released versions' tag records, the candidate's records at its release branch,
+    the candidates whose branch the range from *base_reference* to HEAD merges, a
+    development version that is already tagged, and an error for each missing ref. Every
+    local and remote copy of a release branch counts, and an unfinished merge counts as
+    merged.
+    """
+    def statuses(registry):
+        rows = registry.get("releases") if isinstance(registry, dict) else None
+        return {
+            row.get("version"): row.get("status")
+            for row in rows or () if isinstance(row, dict)}
+
+    status = statuses(validate_manual.read_yaml(DATA / "releases.yaml"))
+    base_status = statuses(base_releases)
+    refs = {"errors": [], "tags": {}, "branches": {}, "merged": set(), "closed": None}
+    head = _commit("HEAD")
+    if not head:
+        return refs
+    tips = [head, *filter(None, [_commit("MERGE_HEAD")])]
+
+    for version, state in status.items():
+        tag = f"v{version}"
+        tag_commit = _commit(f"refs/tags/{tag}")
+        if state == "released":
+            if not tag_commit:
+                refs["errors"].append(
+                    f"released version {version}: tag {tag} is missing; "
+                    "fetch the tags from the OpenTS repository")
+                continue
+            refs["tags"][version] = {
+                "tag": tag,
+                "merged": any(_is_ancestor(tag_commit, tip) for tip in tips),
+                "records": change_records_at_ref(tag_commit),
+            }
+        elif state == "development" and tag_commit and tag_commit != head and _is_ancestor(
+                tag_commit, head):
+            refs["closed"] = version
+
+    candidates = {
+        version for snapshot in (status, base_status)
+        for version, state in snapshot.items() if state == "candidate"}
+    for version in sorted(candidates):
+        try:
+            name = release_branch_name(version)
+        except (TypeError, ValueError):
+            continue
+        branches = _branch_copies(name)
+        if not branches:
+            refs["errors"].append(
+                f"candidate version {version}: branch {name} is missing; "
+                "fetch it from the OpenTS repository")
+            continue
+        fork = _latest_fork(tips, branches)
+        if status.get(version) == "candidate":
+            refs["branches"][version] = {
+                "branch": name,
+                "records": change_records_at_ref(fork) if fork else {},
+            }
+        if base_reference and fork and fork != _latest_fork([base_reference], branches):
+            refs["merged"].add(version)
+    return refs
 
 
 def load_base(reference=None):
@@ -323,13 +424,15 @@ def load_base(reference=None):
         return selected, None
 
     enum_sources = texts_at_ref(selected, enum_drift.source_paths())
+    releases = yaml_at_ref(selected, "manual/data/releases.yaml")
 
     return selected, {
         "keys": yaml_at_ref(selected, "manual/data/ini-keys.yaml", required=True),
         "scripting": yaml_at_ref(selected, "manual/data/scripting.yaml"),
         "commands": yaml_at_ref(selected, "manual/data/commands.yaml"),
         "formats": formats_at_ref(selected),
-        "releases": yaml_at_ref(selected, "manual/data/releases.yaml"),
+        "releases": releases,
+        "release_refs": release_refs(selected, releases),
         "aliases": yaml_at_ref(selected, "manual/data/scripting-route-aliases.yaml"),
         "changes": changes_at_ref(selected),
         "enums": enums_at_ref(selected),

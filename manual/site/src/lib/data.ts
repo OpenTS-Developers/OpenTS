@@ -49,7 +49,7 @@ export interface LifecycleTarget extends EntityReference<LifecycleEntityType> {
 }
 export interface ReleaseRecord {
 	version: string;
-	status: 'development' | 'released';
+	status: 'development' | 'candidate' | 'released';
 	date?: string;
 }
 
