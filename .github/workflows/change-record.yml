@@ -1,10 +1,8 @@
 name: Change record
 
-# A pull request that changes engine source carries the manual change record for
-# what players and modders will see. Mechanical work that changes no visible
-# behavior is waived by the `no change record` label. This is a workflow of its
-# own rather than a job in Engine so that applying the label re-runs the check
-# without repeating the Windows build.
+# Requires a pull request that changes code/** to add or amend a record under
+# manual/changes/, unless it has the `no change record` label. This is a separate
+# workflow so that changing the label re-runs it without the Windows build.
 on:
   pull_request:
     types:
@@ -48,9 +46,8 @@ jobs:
             exit 0
           fi
 
-          # The pull request's file list is the whole branch against its merge
-          # base, so a record added by any commit of the branch counts, and a
-          # record the branch amends counts as well.
+          # The file list covers the whole pull request, so a record added or
+          # amended by any of its commits counts.
           files="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${NUMBER}/files" \
             --paginate --jq '.[] | select(.status != "removed") | .filename')"
 

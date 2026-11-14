@@ -110,8 +110,6 @@ def scaffold_change(arguments):
         raise ValueError("--scope is allowed only for key lifecycle targets")
     breaking = bool(getattr(arguments, "breaking", False))
     migration = list(getattr(arguments, "migration", []) or [])
-    if migration and not breaking:
-        raise ValueError("--migration requires --breaking")
     path = MANUAL / "changes" / f"{_engine._slugify(arguments.identifier)}.md"
     frontmatter = {
         "title": arguments.title or _engine._display_name(arguments.identifier),

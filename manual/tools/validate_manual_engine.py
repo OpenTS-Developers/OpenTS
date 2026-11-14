@@ -4,11 +4,11 @@ import json
 from pathlib import Path
 import re
 
-from io_utils import load_yaml
 import enum_drift
 import catalog_validation
 import formats as format_catalogs
 import versioning
+from versioning import key_route, read_yaml, scope_route_base, slugify
 
 
 MANUAL = Path(__file__).resolve().parents[1]
@@ -18,38 +18,13 @@ SEMANTIC_SCOPE_FIELDS = (
 )
 OMISSION_KINDS = {"value", "computed", "inherited", "unchanged", "context-dependent"}
 SCRIPTING_TABLES = {
-    "actions": "trigger_actions",
-    "events": "trigger_events",
-    "missions": "team_missions",
+    plural: table for plural, (table, _) in versioning.SCRIPTING_TYPES.items()
 }
-
-
-def read_yaml(path):
-    with Path(path).open(encoding="utf-8") as stream:
-        return load_yaml(stream)
+scope_route_ids = versioning.scope_ids
 
 
 def frontmatter(path):
-    source = path.read_text(encoding="utf-8")
-    match = re.match(r"^---\r?\n([\s\S]*?)\r?\n---", source)
-    if not match:
-        raise ValueError(f"{path.relative_to(MANUAL)}: missing YAML frontmatter")
-    return load_yaml(match.group(1)) or {}
-
-
-def slugify(text):
-    return re.sub(r"^-|-+$", "", re.sub(r"[^a-z0-9]+", "-", str(text).lower()))
-
-
-def key_route(name, entry):
-    route = name.lower()
-    if entry.get("case_collides_with"):
-        route += "-" + slugify(entry["scopes"][0]["applies_to"][0] or "global")
-    return route
-
-
-def scope_route_base(scope):
-    return slugify((scope.get("applies_to") or [scope.get("section", "global")])[0])
+    return versioning.frontmatter(path, MANUAL)
 
 
 def scope_route_signature(scope):
@@ -89,18 +64,6 @@ def scope_route_order_errors(name, scopes):
                 "extraction order; run manual/tools/manage.py update")
         ordered_bases[base] = signature
     return errors
-
-
-def scope_route_ids(entry):
-    routes = []
-    for raw in entry.get("scopes", []):
-        base = scope_route_base(raw)
-        candidate, suffix = base, 2
-        while candidate in routes:
-            candidate = f"{base}-{suffix}"
-            suffix += 1
-        routes.append(candidate)
-    return routes
 
 
 def semantic_key(entry):
@@ -403,24 +366,15 @@ def validate_formats(errors, keys):
 def normalize_base_registry(raw):
     if not isinstance(raw, dict) or not isinstance(raw.get("releases"), list):
         return None
-    rows = []
-    development = None
-    for row in raw["releases"]:
-        if not isinstance(row, dict) or not isinstance(row.get("version"), str):
-            continue
-        normalized = dict(row)
-        try:
-            normalized["_parsed"] = versioning.Version(row["version"])
-        except ValueError:
-            normalized["_parsed"] = None
-        rows.append(normalized)
-        if row.get("status") == "development":
-            development = row["version"]
-    return {
-        "rows": rows,
-        "by_version": {row["version"]: row for row in rows},
-        "development": development,
+    by_version = {
+        row["version"]: row for row in raw["releases"]
+        if isinstance(row, dict) and isinstance(row.get("version"), str)
     }
+    development = next(
+        (version for version, row in by_version.items()
+         if row.get("status") == "development"),
+        None)
+    return {"by_version": by_version, "development": development}
 
 
 def classify_enum_deltas(current, base_records, base_signatures):
@@ -436,17 +390,7 @@ def classify_enum_deltas(current, base_records, base_signatures):
         if signatures.get(enum_id) is not None
         and tuple(current[enum_id].get("_signature") or ()) != tuple(signatures[enum_id])
     }
-    removed = base_ids - current_ids
-    route_changed = {
-        enum_id for enum_id in current_ids & base_ids
-        if current[enum_id].get("slug") != base_records[enum_id].get("slug")
-    }
-    return {
-        "added": added,
-        "changed": changed,
-        "removed": removed,
-        "route_changed": route_changed,
-    }
+    return {"added": added, "changed": changed, "removed": base_ids - current_ids}
 
 
 def classify_command_deltas(current, base):
@@ -503,12 +447,9 @@ def validate_routes(errors):
 
 def validate_all(base=None):
     errors = []
-    if base is not None and "keys" not in base:
-        base = {"keys": base}
-
     current, omission_claims = validate_keys(errors)
     validate_authored(errors, current)
-    internals = validate_internals(errors)
+    validate_internals(errors)
     enums = enum_drift.validate_enums(errors, MANUAL, MANUAL.parent)
     scripting = validate_scripting(errors)
     formats = validate_formats(errors, current)
@@ -521,7 +462,7 @@ def validate_all(base=None):
 
     tombstones = versioning.validate_tombstones(
         errors, MANUAL, current, scripting, formats, enums, entities)
-    aliases = versioning.validate_aliases(
+    versioning.validate_aliases(
         errors,
         MANUAL,
         scripting,
@@ -541,7 +482,7 @@ def validate_all(base=None):
         enums=enums,
         entities=entities,
     )
-    history = versioning.validate_history(errors, registry, changes, tombstones)
+    versioning.validate_history(errors, registry, changes, tombstones)
     validate_required_omission_targets(
         errors,
         current,
@@ -551,10 +492,6 @@ def validate_all(base=None):
     catalog_validation.validate_relations(
         errors, MANUAL, current, scripting, formats, tombstones, enums, entities)
 
-    delta = None
-    scripting_delta = None
-    command_delta = None
-    enum_delta = None
     if base and base.get("keys") is not None:
         base_keys = base["keys"]
         delta = classify_key_deltas(current, base_keys)
@@ -571,12 +508,11 @@ def validate_all(base=None):
                 }
                 for plural in SCRIPTING_TABLES
             }
-        # Before the August 27, 2026 public launch, command identity lives in
-        # the id field and routes may change freely. Every route present at
-        # launch becomes stable; see manual/MAINTAINING.md.
         base_commands = base.get("commands")
+        command_delta = None
         if base_commands is not None:
             command_delta = classify_command_deltas(commands, base_commands)
+        enum_delta = None
         if "enum_signatures" in base:
             enum_delta = classify_enum_deltas(
                 enums, base.get("enums") or {}, base.get("enum_signatures") or {})
@@ -585,8 +521,6 @@ def validate_all(base=None):
             errors,
             current,
             base_keys,
-            scripting,
-            base_scripting or scripting,
             formats,
             formats if base.get("formats") is None else base["formats"],
             changes,
@@ -594,7 +528,6 @@ def validate_all(base=None):
             delta,
             scripting_delta,
             enum_delta,
-            base.get("enums") or {},
             command_delta,
             base_commands,
             registry=registry,
@@ -605,19 +538,8 @@ def validate_all(base=None):
     validate_routes(errors)
     return errors, {
         "keys": current,
-        "internals": internals,
         "enums": enums,
         "scripting": scripting,
         "formats": formats,
         "commands": commands,
-        "entities": entities,
-        "releases": registry,
-        "changes": changes,
-        "history": history,
-        "tombstones": tombstones,
-        "aliases": aliases,
-        "delta": delta,
-        "scripting_delta": scripting_delta,
-        "enum_delta": enum_delta,
-        "command_delta": command_delta,
     }

@@ -1,22 +1,16 @@
-# Writes the build identity headers that the version resources, the version displays, and the
-# debug log's startup banner report.
+# Writes the version header and the build header. CMakeLists.txt runs this script at configure
+# time and on every build, so the recorded commit follows HEAD without a reconfigure.
 #
-# The version header follows the project version and so changes only when a release cycle
-# opens; the build header follows HEAD and changes with every commit. They are separate so
-# that a new commit does not recompile everything that merely needs the version.
-#
-# Run both at configure time and once per build, so the recorded commit follows HEAD without
-# a reconfigure. A header is only rewritten when its contents change, so an ordinary rebuild
-# does not force a recompile.
+# The version header changes only with the declared version and the build header with every
+# commit, so code that needs only the version is not recompiled after a commit. A header is
+# rewritten only when its contents change.
 #
 # Expects OPENTS_VERSION_MAJOR, OPENTS_VERSION_MINOR, OPENTS_VERSION_PATCH,
-# OPENTS_VERSION_PRERELEASE, OPENTS_OFFICIAL_BUILD, OPENTS_SOURCE_DIR, OPENTS_VERSION_HEADER,
-# and OPENTS_STAMP_HEADER to be set.
+# OPENTS_VERSION_PRERELEASE, OPENTS_OFFICIAL_BUILD, OPENTS_ARCH, OPENTS_SOURCE_DIR,
+# OPENTS_VERSION_HEADER, and OPENTS_STAMP_HEADER to be set.
 
-# The packed form spends one byte on each component, and the save and network stamps are
-# compared for exact equality. Development snapshots in one cycle deliberately share it;
-# the separate commit stamp identifies the build for diagnostics. A component that does not
-# fit would silently collide with another release-cycle version.
+# Saves and network sessions compare the packed version for equality. It holds one byte per
+# component, so a component above 255 would give two versions the same stamp.
 foreach(part MAJOR MINOR PATCH)
     if(OPENTS_VERSION_${part} GREATER 255)
         message(FATAL_ERROR
@@ -54,8 +48,8 @@ set(VERSION_CONTENT
 #define OPENTS_VERSION_MINOR  ${OPENTS_VERSION_MINOR}
 #define OPENTS_VERSION_PATCH  ${OPENTS_VERSION_PATCH}
 
-/* The save and network stamps. A prerelease is not distinguished here: it carries the
-   identity of the release it leads up to. */
+/* Saves and network sessions compare this value. It leaves out the prerelease label, so a
+   prerelease and its final release share it. */
 #define OPENTS_VERSION_PACKED ${OPENTS_VERSION_PACKED}
 
 #define OPENTS_VERSION        \"${OPENTS_VERSION}\"
@@ -82,46 +76,40 @@ set(OPENTS_COMMIT_DIRTY 0)
 
 find_package(Git QUIET)
 
-# A build from a source archive has no repository, and git need not be installed at all.
-# Neither is an error; the banner simply reports what it does not know.
-if(GIT_FOUND AND EXISTS "${OPENTS_SOURCE_DIR}/.git")
-
+# Sets <out> to the trimmed output of git run in the source tree, or to "" when git fails.
+function(opents_git out)
     execute_process(
-        COMMAND "${GIT_EXECUTABLE}" rev-parse --short HEAD
+        COMMAND "${GIT_EXECUTABLE}" ${ARGN}
         WORKING_DIRECTORY "${OPENTS_SOURCE_DIR}"
-        OUTPUT_VARIABLE GIT_COMMIT
+        OUTPUT_VARIABLE output
         OUTPUT_STRIP_TRAILING_WHITESPACE
         ERROR_QUIET
-        RESULT_VARIABLE GIT_COMMIT_RESULT
+        RESULT_VARIABLE result
     )
-    if(GIT_COMMIT_RESULT EQUAL 0 AND GIT_COMMIT)
+    if(NOT result EQUAL 0)
+        set(output "")
+    endif()
+    set(${out} "${output}" PARENT_SCOPE)
+endfunction()
+
+# Without git or a repository, as in a build from a source archive, the commit, branch and
+# date stay "unknown".
+if(GIT_FOUND AND EXISTS "${OPENTS_SOURCE_DIR}/.git")
+
+    opents_git(GIT_COMMIT rev-parse --short HEAD)
+    if(GIT_COMMIT)
         set(OPENTS_COMMIT "${GIT_COMMIT}")
     endif()
 
-    execute_process(
-        COMMAND "${GIT_EXECUTABLE}" rev-parse --abbrev-ref HEAD
-        WORKING_DIRECTORY "${OPENTS_SOURCE_DIR}"
-        OUTPUT_VARIABLE GIT_BRANCH
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-        ERROR_QUIET
-        RESULT_VARIABLE GIT_BRANCH_RESULT
-    )
-    if(GIT_BRANCH_RESULT EQUAL 0 AND GIT_BRANCH AND NOT GIT_BRANCH STREQUAL "HEAD")
+    opents_git(GIT_BRANCH rev-parse --abbrev-ref HEAD)
+    if(GIT_BRANCH AND NOT GIT_BRANCH STREQUAL "HEAD")
         set(OPENTS_BRANCH "${GIT_BRANCH}")
     else()
-        # A detached HEAD reports its branch as the word HEAD, which names nothing. Checking
-        # out a tag does that, and so does a continuous integration build of a pull request.
-        # Report a ref that points at the commit instead, preferring a tag.
-        execute_process(
-            COMMAND "${GIT_EXECUTABLE}" for-each-ref --points-at HEAD "--format=%(refname)"
-                    refs/tags refs/heads refs/remotes
-            WORKING_DIRECTORY "${OPENTS_SOURCE_DIR}"
-            OUTPUT_VARIABLE GIT_POINTING_REFS
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-            ERROR_QUIET
-            RESULT_VARIABLE GIT_POINTING_RESULT
-        )
-        if(GIT_POINTING_RESULT EQUAL 0 AND GIT_POINTING_REFS)
+        # A detached HEAD, as on a tag checkout or a pull-request build, has no branch name.
+        # Use a ref that points at the commit: a tag first, then a local branch, then a remote one.
+        opents_git(GIT_POINTING_REFS for-each-ref --points-at HEAD "--format=%(refname)"
+                   refs/tags refs/heads refs/remotes)
+        if(GIT_POINTING_REFS)
             string(REPLACE "\n" ";" GIT_POINTING_REFS "${GIT_POINTING_REFS}")
             foreach(prefix "refs/tags/" "refs/heads/" "refs/remotes/")
                 foreach(ref IN LISTS GIT_POINTING_REFS)
@@ -139,44 +127,27 @@ if(GIT_FOUND AND EXISTS "${OPENTS_SOURCE_DIR}/.git")
         endif()
     endif()
 
-    execute_process(
-        COMMAND "${GIT_EXECUTABLE}" log -1 "--format=%cd" "--date=format:%Y-%m-%d %H:%M:%S"
-        WORKING_DIRECTORY "${OPENTS_SOURCE_DIR}"
-        OUTPUT_VARIABLE GIT_DATE
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-        ERROR_QUIET
-        RESULT_VARIABLE GIT_DATE_RESULT
-    )
-    if(GIT_DATE_RESULT EQUAL 0 AND GIT_DATE)
+    opents_git(GIT_DATE log -1 "--format=%cd" "--date=format:%Y-%m-%d %H:%M:%S")
+    if(GIT_DATE)
         set(OPENTS_COMMIT_DATE "${GIT_DATE}")
     endif()
 
-    # Untracked files are excluded deliberately: a scratch file beside the sources does not
-    # make the built code differ from the commit.
-    execute_process(
-        COMMAND "${GIT_EXECUTABLE}" status --porcelain --untracked-files=no
-        WORKING_DIRECTORY "${OPENTS_SOURCE_DIR}"
-        OUTPUT_VARIABLE GIT_STATUS
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-        ERROR_QUIET
-        RESULT_VARIABLE GIT_STATUS_RESULT
-    )
-    if(GIT_STATUS_RESULT EQUAL 0 AND NOT GIT_STATUS STREQUAL "")
+    # Only changes to tracked files mark the build as modified.
+    opents_git(GIT_STATUS status --porcelain --untracked-files=no)
+    if(NOT GIT_STATUS STREQUAL "")
         set(OPENTS_COMMIT_DIRTY 1)
     endif()
 
 endif()
 
-# What the player sees. An official build is the version alone; anything else names the commit
-# it came from, because a version number alone cannot identify a build taken from mid-cycle.
 set(OPENTS_BUILD_DESCRIPTION "${OPENTS_COMMIT} on ${OPENTS_BRANCH}")
 if(OPENTS_COMMIT_DIRTY)
     string(APPEND OPENTS_BUILD_DESCRIPTION " (modified)")
 endif()
 
-if(OPENTS_OFFICIAL_BUILD)
-    set(OPENTS_VERSION_DISPLAY "${OPENTS_VERSION} (${OPENTS_ARCH})")
-elseif(OPENTS_COMMIT STREQUAL "unknown")
+# The displayed version includes the commit unless the build is official or the commit is
+# unknown.
+if(OPENTS_OFFICIAL_BUILD OR OPENTS_COMMIT STREQUAL "unknown")
     set(OPENTS_VERSION_DISPLAY "${OPENTS_VERSION} (${OPENTS_ARCH})")
 elseif(OPENTS_COMMIT_DIRTY)
     set(OPENTS_VERSION_DISPLAY "${OPENTS_VERSION} (${OPENTS_COMMIT}, modified, ${OPENTS_ARCH})")
@@ -208,7 +179,8 @@ set(STAMP_CONTENT
 /* The commit and branch as one line, for reports with no room to lay the parts out. */
 #define OPENTS_BUILD_DESCRIPTION \"${OPENTS_BUILD_DESCRIPTION}\"
 
-/* The version as the player sees it. A build that is not marked official names its commit. */
+/* The version shown to the player. It includes the commit unless the build is official or
+   the commit is unknown. */
 #define OPENTS_VERSION_DISPLAY   \"${OPENTS_VERSION_DISPLAY}\"
 ")
 

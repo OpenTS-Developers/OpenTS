@@ -210,32 +210,24 @@ def git_output(*arguments):
     )
 
 
-def yaml_at_ref(reference, paths, required):
-    for path in paths:
-        result = git_output("show", f"{reference}:{path}")
-        if result.returncode == 0:
-            return load_yaml(result.stdout)
-    if required:
-        joined = " or ".join(paths)
-        raise ManualCommandError(
-            f"{reference} does not contain {joined}")
-    return None
-
-
-def text_at_ref(reference, path, required=False):
+def text_at_ref(reference, path):
     result = git_output("show", f"{reference}:{path}")
-    if result.returncode == 0:
-        return result.stdout
-    if required:
-        raise ManualCommandError(f"{reference} does not contain {path}")
-    return None
+    return result.stdout if result.returncode == 0 else None
+
+
+def yaml_at_ref(reference, path, required=False):
+    text = text_at_ref(reference, path)
+    if text is None:
+        if required:
+            raise ManualCommandError(f"{reference} does not contain {path}")
+        return None
+    return load_yaml(text)
 
 
 def texts_at_ref(reference, paths):
-    """Return each path's text at *reference*, or None where it is absent.
+    """Return each path's text at *reference*, or None where the path is absent.
 
-    One ``git cat-file`` process serves every path, and line endings are
-    normalized as ``git show`` read in text mode normalizes them.
+    Line endings are normalized to LF, as text_at_ref returns them.
     """
 
     paths = list(paths)
@@ -333,22 +325,12 @@ def load_base(reference=None):
     enum_sources = texts_at_ref(selected, enum_drift.source_paths())
 
     return selected, {
-        "keys": yaml_at_ref(
-            selected, ("manual/data/ini-keys.yaml",), required=True),
-        "scripting": yaml_at_ref(
-            selected, ("manual/data/scripting.yaml",), required=False),
-        "commands": yaml_at_ref(
-            selected, ("manual/data/commands.yaml",), required=False),
+        "keys": yaml_at_ref(selected, "manual/data/ini-keys.yaml", required=True),
+        "scripting": yaml_at_ref(selected, "manual/data/scripting.yaml"),
+        "commands": yaml_at_ref(selected, "manual/data/commands.yaml"),
         "formats": formats_at_ref(selected),
-        "releases": yaml_at_ref(
-            selected, ("manual/data/releases.yaml",), required=False),
-        "tombstones": yaml_at_ref(
-            selected, ("manual/data/tombstones.yaml",), required=False),
-        "aliases": yaml_at_ref(
-            selected,
-            ("manual/data/scripting-route-aliases.yaml",),
-            required=False,
-        ),
+        "releases": yaml_at_ref(selected, "manual/data/releases.yaml"),
+        "aliases": yaml_at_ref(selected, "manual/data/scripting-route-aliases.yaml"),
         "changes": changes_at_ref(selected),
         "enums": enums_at_ref(selected),
         "enum_signatures": enum_drift.signatures_from_sources(enum_sources),

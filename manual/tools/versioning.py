@@ -1,4 +1,7 @@
-"""Structured release, lifecycle, tombstone, and route-alias validation."""
+"""Structured release, lifecycle, tombstone, and route-alias validation.
+
+The JSON schemas report malformed data; these checks skip what a schema rejects.
+"""
 
 from datetime import date
 from pathlib import Path
@@ -9,10 +12,8 @@ from semantic_version import Version
 from io_utils import load_yaml
 
 
-CHANGE_CATEGORIES = {"feature", "fix", "balance", "internal", "performance"}
 ENTITY_TYPES = {"key", "action", "event", "mission", "format", "enum", "system", "command"}
 RELATION_TYPES = ENTITY_TYPES | {"guide", "using", "internal"}
-LIFECYCLE_EFFECTS = {"added", "changed", "deprecated", "removed"}
 SCRIPTING_TYPES = {
     "actions": ("trigger_actions", "action"),
     "events": ("trigger_events", "event"),
@@ -25,14 +26,7 @@ FORMAT_ROUTES = {
     "scripts": "/mapping/scripts/",
 }
 COMMAND_TABLES = ("registered_commands", "fixed_controls", "launch_options")
-CHANGE_FIELDS = {
-    "title", "category", "release", "breaking", "migration", "targets", "credit"
-}
-TARGET_FIELDS = {"type", "id", "scope", "effect"}
 REFERENCE_FIELDS = {"type", "id", "scope"}
-TOMBSTONE_FIELDS = {
-    "type", "id", "route", "search_aliases", "summary", "replacement"
-}
 
 
 def read_yaml(path):
@@ -70,61 +64,43 @@ def key_route(name, entry):
     route = name.lower()
     if entry.get("case_collides_with"):
         applies = entry.get("scopes", [{}])[0].get("applies_to") or ["global"]
-        route += "-" + slugify(applies[0])
+        route += "-" + slugify(applies[0] or "global")
     return route
 
 
 def validate_releases(errors, manual, root):
     data = read_yaml(manual / "data" / "releases.yaml")
-    if not isinstance(data, dict) or set(data) != {"releases"}:
-        errors.append("manual/data/releases.yaml must contain only a releases array")
-        return {"rows": [], "by_version": {}, "development": None}
-
-    rows = data.get("releases")
-    if not isinstance(rows, list) or not rows:
-        errors.append("release registry must contain at least one release")
-        return {"rows": [], "by_version": {}, "development": None}
+    rows = data.get("releases") if isinstance(data, dict) else None
+    if not isinstance(rows, list):
+        return {"by_version": {}, "development": None}
 
     normalized = []
     seen = set()
     development = []
     for position, row in enumerate(rows, start=1):
-        context = f"release registry entry {position}"
         if not isinstance(row, dict):
-            errors.append(f"{context}: expected a mapping")
             continue
-        allowed = {"version", "status", "date"}
-        unexpected = set(row) - allowed
-        if unexpected:
-            errors.append(f"{context}: unexpected fields {sorted(unexpected)}")
+        context = f"release registry entry {position}"
         version_text = row.get("version")
         parsed = semver(version_text, context, errors)
         if version_text in seen:
             errors.append(f"{context}: duplicate version {version_text}")
         seen.add(version_text)
-        status = row.get("status")
-        if status not in {"development", "released"}:
-            errors.append(f"{context}: status must be development or released")
         release_date = row.get("date")
-        if status == "released":
-            if not isinstance(release_date, str):
-                errors.append(f"{context}: released entries require an ISO date")
-            else:
-                try:
-                    parsed_date = date.fromisoformat(release_date)
-                    if parsed_date.isoformat() != release_date:
-                        raise ValueError
-                except ValueError:
-                    errors.append(f"{context}: invalid ISO date {release_date!r}")
-        elif "date" in row:
-            errors.append(f"{context}: development entries cannot have a date")
-        if status == "development":
+        if isinstance(release_date, str):
+            try:
+                if date.fromisoformat(release_date).isoformat() != release_date:
+                    raise ValueError
+            except ValueError:
+                errors.append(f"{context}: invalid ISO date {release_date!r}")
+        if row.get("status") == "development":
             development.append((version_text, parsed))
         normalized.append({**row, "_parsed": parsed})
 
+    development_version = None
+    development_parsed = None
     if len(development) != 1:
         errors.append("release registry must contain exactly one development release")
-        development_version = None
     else:
         development_version, development_parsed = development[0]
         parsed_versions = [row["_parsed"] for row in normalized if row["_parsed"]]
@@ -133,11 +109,6 @@ def validate_releases(errors, manual, root):
 
     if development_version:
         cmake = (root / "CMakeLists.txt").read_text(encoding="utf-8")
-        development_parsed = next(
-            (row["_parsed"] for row in normalized
-             if row.get("version") == development_version),
-            None,
-        )
         match = re.search(
             r"project\s*\(\s*OpenTS\s+VERSION\s+([0-9]+(?:\.[0-9]+){2,3})",
             cmake,
@@ -175,7 +146,6 @@ def validate_releases(errors, manual, root):
         if isinstance(row.get("version"), str)
     }
     return {
-        "rows": normalized,
         "by_version": by_version,
         "development": development_version,
     }
@@ -235,12 +205,10 @@ def scripting_catalog(scripting):
 
 
 def command_catalog(commands):
-    """Return command records keyed by their stable, case-preserved IDs.
+    """Return command records keyed by ID.
 
-    Working-tree validation already supplies a flattened catalog, while Git
-    snapshots retain the three generated command arrays. Lifecycle comparison
-    accepts either representation so a missing historical dataset can remain a
-    distinct ``None`` baseline rather than looking like an empty catalog.
+    *commands* is either the generated file's three arrays or an already
+    flattened mapping; any other value gives an empty catalog.
     """
     if not isinstance(commands, dict):
         return {}
@@ -257,11 +225,15 @@ def command_catalog(commands):
     }
 
 
+def scope_route_base(scope):
+    return slugify((scope.get("applies_to") or [scope.get("section", "global")])[0])
+
+
 def scope_ids(key_entry):
     result = []
     used = set()
     for scope in key_entry.get("scopes", []):
-        base = slugify((scope.get("applies_to") or [scope.get("section", "global")])[0])
+        base = scope_route_base(scope)
         candidate = base
         suffix = 2
         while candidate in used:
@@ -347,45 +319,31 @@ def validate_tombstones(
         errors, manual, keys, scripting, formats, enums=None, entities=None):
     rows = read_yaml(manual / "data" / "tombstones.yaml") or []
     if not isinstance(rows, list):
-        errors.append("manual/data/tombstones.yaml must be an array")
         return []
     scripts = scripting_catalog(scripting)
     seen_targets = set()
     seen_routes = set()
     result = []
     for position, row in enumerate(rows, start=1):
-        context = f"tombstone entry {position}"
         if not isinstance(row, dict):
-            errors.append(f"{context}: expected a mapping")
             continue
-        unexpected = set(row) - TOMBSTONE_FIELDS
-        missing = {"type", "id", "route", "search_aliases", "summary"} - set(row)
-        if unexpected:
-            errors.append(f"{context}: unexpected fields {sorted(unexpected)}")
-        if missing:
-            errors.append(f"{context}: missing fields {sorted(missing)}")
+        context = f"tombstone entry {position}"
         entity_type, entity_id = row.get("type"), row.get("id")
-        if entity_type not in ENTITY_TYPES:
-            errors.append(f"{context}: invalid entity type {entity_type!r}")
         if not isinstance(entity_id, str) or not entity_id:
-            errors.append(f"{context}: id must be a non-empty string")
+            continue
         identity = (entity_type, entity_id)
         if identity in seen_targets:
             errors.append(f"{context}: duplicate tombstone target {entity_type}:{entity_id}")
         seen_targets.add(identity)
         route = row.get("route")
-        if (not isinstance(route, str) or not route.startswith("/")
-                or not route.endswith("/")):
-            errors.append(f"{context}: route must be an absolute trailing-slash path")
-        elif route in seen_routes:
+        if route in seen_routes:
             errors.append(f"{context}: duplicate tombstone route {route}")
         seen_routes.add(route)
         expected_route = None
         expected_family = None
         if entity_type == "command":
-            # A launch option is published under its own family and keeps a route_id
-            # that the catalog no longer carries once the option is removed, so only
-            # the family can be checked here. The removal delta pins the whole route.
+            # A removed launch option's route_id is gone from the catalog, so only the
+            # route prefix is checked here; validate_branch_lifecycle checks the full route.
             if entity_id.startswith("launch:"):
                 expected_family = "/using/command-line/"
             else:
@@ -402,11 +360,6 @@ def validate_tombstones(
             errors.append(
                 f"{context}: {entity_type} route must stay under {expected_family!r}, "
                 f"found {route!r}")
-        if not isinstance(row.get("search_aliases"), list) or not all(
-                isinstance(alias, str) and alias for alias in row.get("search_aliases", [])):
-            errors.append(f"{context}: search_aliases must be an array of strings")
-        if not isinstance(row.get("summary"), str) or not row.get("summary", "").strip():
-            errors.append(f"{context}: summary must be a non-empty string")
         target = {"type": entity_type, "id": entity_id, "scope": None}
         if active_entity(target, keys, scripts, formats, enums, entities):
             errors.append(f"{context}: tombstone target is still active")
@@ -442,10 +395,7 @@ def validate_tombstones(
 
 def validate_aliases(errors, manual, scripting, tombstones, base_aliases=None):
     data = read_yaml(manual / "data" / "scripting-route-aliases.yaml")
-    if not isinstance(data, dict) or set(data) != set(SCRIPTING_TYPES):
-        errors.append(
-            "manual/data/scripting-route-aliases.yaml must contain "
-            "actions, events, and missions mappings")
+    if not isinstance(data, dict):
         return {}
     scripts = scripting_catalog(scripting)
     tombstone_ids = {(row.get("type"), row.get("id")) for row in tombstones}
@@ -453,19 +403,14 @@ def validate_aliases(errors, manual, scripting, tombstones, base_aliases=None):
     for plural, (_, singular) in SCRIPTING_TYPES.items():
         mapping = data.get(plural)
         if not isinstance(mapping, dict):
-            errors.append(f"scripting aliases {plural}: expected a mapping")
             continue
         normalized[plural] = {}
         for raw_index, entity_id in mapping.items():
             index = str(raw_index)
-            context = f"scripting alias {plural}/{index}"
-            if not re.fullmatch(r"0|[1-9][0-9]*", index):
-                errors.append(f"{context}: route index must be a canonical non-negative integer")
-            if not isinstance(entity_id, str) or not entity_id:
-                errors.append(f"{context}: target must be a stable engine ID")
-            elif (entity_id not in scripts.get(singular, {})
+            if (entity_id not in scripts.get(singular, {})
                     and (singular, entity_id) not in tombstone_ids):
-                errors.append(f"{context}: unknown target {singular}:{entity_id}")
+                errors.append(
+                    f"scripting alias {plural}/{index}: unknown target {singular}:{entity_id}")
             normalized[plural][index] = entity_id
 
         for entity_id, row in scripts.get(singular, {}).items():
@@ -518,63 +463,23 @@ def validate_changes(
             errors.append(
                 f"{context}: change ID collides with release upgrade route /changes/{change_id}/")
         if not isinstance(data, dict):
-            errors.append(f"{context}: frontmatter must be a mapping")
             continue
-        unexpected = set(data) - CHANGE_FIELDS
-        missing = {"title", "category", "release", "targets", "credit"} - set(data)
-        if unexpected:
-            errors.append(f"{context}: unexpected fields {sorted(unexpected)}")
-        if missing:
-            errors.append(f"{context}: missing fields {sorted(missing)}")
-        if not isinstance(data.get("title"), str) or not data.get("title", "").strip():
-            errors.append(f"{context}: title must be a non-empty string")
-        if data.get("category") not in CHANGE_CATEGORIES:
-            errors.append(f"{context}: invalid category {data.get('category')!r}")
         release = data.get("release")
         if release not in versions:
             errors.append(f"{context}: unknown release {release!r}")
-        breaking = data.get("breaking", False)
-        if not isinstance(breaking, bool):
-            errors.append(f"{context}: breaking must be a boolean")
-            breaking = False
-        migration = data.get("migration")
-        if "migration" in data:
-            if (not isinstance(migration, list) or not migration
-                    or not all(isinstance(step, str) and step.strip()
-                               for step in migration)):
-                errors.append(
-                    f"{context}: migration must be a non-empty array of steps")
-            if not breaking:
-                errors.append(
-                    f"{context}: migration is allowed only when breaking is true")
         targets = data.get("targets")
         if not isinstance(targets, list):
-            errors.append(f"{context}: targets must be an array")
             targets = []
         normalized_targets = []
         for position, raw in enumerate(targets, start=1):
-            target_context = f"{context} target {position}"
             if not isinstance(raw, dict):
-                errors.append(f"{target_context}: expected a mapping")
                 continue
-            unexpected_target = set(raw) - TARGET_FIELDS
-            missing_target = {"type", "id", "effect"} - set(raw)
-            if unexpected_target:
-                errors.append(
-                    f"{target_context}: unexpected fields {sorted(unexpected_target)}")
-            if missing_target:
-                errors.append(f"{target_context}: missing fields {sorted(missing_target)}")
+            target_context = f"{context} target {position}"
             target = normalize_target(raw)
-            if target["effect"] not in LIFECYCLE_EFFECTS:
-                errors.append(
-                    f"{target_context}: invalid lifecycle effect {target['effect']!r}")
-            if target["scope"] is not None and target["type"] != "key":
-                errors.append(f"{target_context}: scope is allowed only for key targets")
-            if target["type"] not in ENTITY_TYPES:
-                errors.append(f"{target_context}: invalid entity type {target['type']!r}")
+            normalized_targets.append(target)
             if not isinstance(target["id"], str) or not target["id"]:
-                errors.append(f"{target_context}: id must be a non-empty string")
-            elif target["effect"] == "removed":
+                continue
+            if target["effect"] == "removed":
                 if target["scope"] is None:
                     if (target["type"], target["id"]) not in tombstone_map:
                         errors.append(
@@ -588,19 +493,12 @@ def validate_changes(
             elif (not active_entity(target, keys, scripts, formats, enums, entities)
                     and (target["scope"] is not None
                          or (target["type"], target["id"]) not in tombstone_map)):
-                # History may cite an entity that was removed later; the lifecycle
-                # ordering check keeps such events ahead of the removal.
+                # A target may name a removed entity that has a tombstone;
+                # validate_history rejects events at or after its removal.
                 errors.append(
                     f"{target_context}: unknown active entity "
                     f"{target_description(target)}")
-            normalized_targets.append(target)
         data["targets"] = normalized_targets
-        credits = data.get("credit")
-        if (not isinstance(credits, list) or not credits or not all(
-                isinstance(value, str) and value for value in credits)):
-            errors.append(
-                f"{context}: credit must name at least one author "
-                "as a non-empty array of strings")
 
         base_change = (base_changes or {}).get(change_id)
         if base_registry and base_change is None and release != development:
@@ -742,9 +640,8 @@ def key_scope_sets(keys):
 
 
 def validate_branch_lifecycle(
-        errors, current_keys, base_keys, current_scripting, base_scripting,
-        current_formats, base_formats, changes, tombstones, key_delta,
-        scripting_delta, enum_delta=None, base_enums=None,
+        errors, current_keys, base_keys, current_formats, base_formats,
+        changes, tombstones, key_delta, scripting_delta, enum_delta=None,
         command_delta=None, base_commands=None, registry=None,
         base_changes=None, base_registry=None):
     additions = development_additions(changes, registry, base_changes, base_registry)
@@ -783,10 +680,8 @@ def validate_branch_lifecycle(
 
     current_format_ids = set(current_formats)
     base_format_ids = set(base_formats or {})
-    # Like the enum catalog, the format catalog is a curated documentation
-    # selection: most formats predate OpenTS, so a new page records a decision
-    # to document one rather than an engine addition. Removal stays an engine
-    # lifecycle event because the published route has to survive it.
+    # A new format page needs no record, because most formats predate OpenTS. A removed
+    # page needs a removal record and a tombstone so that its route still resolves.
     for entity_id in sorted(base_format_ids - current_format_ids):
         require_target(errors, changes, "format", entity_id, "removed")
         record = tombstone_map.get(("format", entity_id))
@@ -798,9 +693,8 @@ def validate_branch_lifecycle(
                 f"format:{entity_id}: tombstone route must remain {expected!r}, "
                 f"found {record.get('route')!r}")
     if enum_delta:
-        # The enum catalog is a curated documentation selection: adding or
-        # removing a page is a docs decision, not an engine lifecycle event.
-        # Only signature drift on a selected domain reflects the engine.
+        # Adding or removing an enum page needs no record; a change to a documented
+        # enum's values does.
         for entity_id in sorted(enum_delta["changed"]):
             require_changed_target(errors, changes, "enum", entity_id, additions)
 

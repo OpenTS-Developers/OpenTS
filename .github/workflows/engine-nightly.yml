@@ -20,11 +20,9 @@ jobs:
       contents: read
       actions: write
     steps:
-      # The public nightly download link resolves the latest successful scheduled
-      # run, so a quiet night must not conclude successfully with no artifacts.
-      # A scheduled run that finds nothing new cancels itself, leaving the last
-      # real build as the latest successful nightly. A run started by hand always
-      # builds.
+      # The public nightly link resolves to the latest successful scheduled run, so a
+      # scheduled run with no new commits cancels itself instead of succeeding without
+      # artifacts. A run started by hand always builds.
       - name: Cancel the run when nothing new landed
         if: github.event_name == 'schedule'
         env:
@@ -34,8 +32,8 @@ jobs:
             --jq '.commit.committer.date')"
           age=$(( $(date --utc +%s) - $(date --utc -d "${committed}" +%s) ))
           echo "Last commit ${committed}, $(( age / 3600 ))h ago."
-          # The window is a little over a day, so a run that starts late still sees the
-          # commits of the day it covers.
+          # 90000 seconds is 25 hours, so a run that starts late still counts the
+          # previous day's commits.
           if [ "${age}" -ge 90000 ]; then
             echo "Nothing new since the last nightly; cancelling this run."
             gh api --method POST \

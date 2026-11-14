@@ -82,27 +82,6 @@ class BreakingChangeTests(unittest.TestCase):
                 "category: feature\n"
                 "release: 1.0.0\n"
                 "breaking: true\n"
-                "migration: []\n"
-                "targets: []\n"
-                "credit: [Programmer]\n"
-                "---\n",
-                encoding="utf-8",
-            )
-            errors = []
-            versioning.validate_changes(
-                errors, manual, registry, {}, {}, {}, [],
-            )
-            self.assertTrue(any(
-                "migration must be a non-empty array of steps" in error
-                for error in errors
-            ))
-
-            path.write_text(
-                "---\n"
-                "title: Compatibility change\n"
-                "category: feature\n"
-                "release: 1.0.0\n"
-                "breaking: true\n"
                 "migration:\n"
                 "  - Use the replacement workflow.\n"
                 "targets: []\n"
@@ -180,32 +159,6 @@ class BreakingChangeTests(unittest.TestCase):
             "empty credit",
         )
         self.assertTrue(any("credit" in error for error in empty))
-
-        registry = {
-            "development": "1.0.0",
-            "by_version": {
-                "1.0.0": {"version": "1.0.0", "status": "development"},
-            },
-        }
-        with tempfile.TemporaryDirectory() as temporary:
-            manual = Path(temporary)
-            changes = manual / "changes"
-            changes.mkdir()
-            (changes / "unattributed.md").write_text(
-                "---\n"
-                "title: Unattributed change\n"
-                "category: fix\n"
-                "release: 1.0.0\n"
-                "targets: []\n"
-                "---\n",
-                encoding="utf-8",
-            )
-            errors = []
-            versioning.validate_changes(
-                errors, manual, registry, {}, {}, {}, [])
-        self.assertTrue(any(
-            "credit must name at least one author" in error
-            for error in errors))
 
     def test_change_id_cannot_equal_release_version(self):
         registry = {
@@ -461,14 +414,14 @@ class LifecycleEntityExpansionTests(unittest.TestCase):
         }]
         errors = []
         versioning.validate_branch_lifecycle(
-            errors, {}, {}, {}, {}, {}, {}, changes, tombstones,
+            errors, {}, {}, {}, {}, changes, tombstones,
             self.empty_key_delta(), self.empty_scripting_delta(),
             command_delta=delta, base_commands=base)
         self.assertEqual(errors, [])
 
         errors = []
         versioning.validate_branch_lifecycle(
-            errors, {}, {}, {}, {}, {}, {}, {}, [],
+            errors, {}, {}, {}, {}, {}, [],
             self.empty_key_delta(), self.empty_scripting_delta(),
             command_delta=None, base_commands=None)
         self.assertEqual(errors, [])
@@ -476,7 +429,7 @@ class LifecycleEntityExpansionTests(unittest.TestCase):
         tombstones[0]["route"] = "/commands/not-the-stable-route/"
         errors = []
         versioning.validate_branch_lifecycle(
-            errors, {}, {}, {}, {}, {}, {}, changes, tombstones,
+            errors, {}, {}, {}, {}, changes, tombstones,
             self.empty_key_delta(), self.empty_scripting_delta(),
             command_delta=delta, base_commands=base)
         self.assertTrue(any(
@@ -525,7 +478,7 @@ class LifecycleEntityExpansionTests(unittest.TestCase):
         ]
         errors = []
         versioning.validate_branch_lifecycle(
-            errors, {}, {}, {}, {}, {}, base_formats, changes, tombstones,
+            errors, {}, {}, {}, base_formats, changes, tombstones,
             self.empty_key_delta(), self.empty_scripting_delta())
         self.assertTrue(any(
             "format:teamtypes: tombstone route must remain '/mapping/team-types/'"
@@ -634,7 +587,7 @@ class DevelopmentAdditionTests(unittest.TestCase):
         arguments.update(overrides)
         errors = []
         versioning.validate_branch_lifecycle(
-            errors, {}, {}, {}, {}, {}, {},
+            errors, {}, {}, {}, {},
             key_delta=LifecycleEntityExpansionTests.empty_key_delta(),
             scripting_delta=scripting_delta, **arguments)
         return errors

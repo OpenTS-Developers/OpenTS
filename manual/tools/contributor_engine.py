@@ -123,20 +123,6 @@ def doctor(verbose=False):
     return verified, actions
 
 
-def command_doctor(arguments):
-    verified, actions = doctor(arguments.verbose)
-    print("VERIFIED")
-    for message in verified:
-        print(f"  OK  {message}")
-    if actions:
-        print("ACTION REQUIRED")
-        for message in actions:
-            print(f"  - {message}")
-        return 1
-    print("ACTION REQUIRED\n  none")
-    return 0
-
-
 def _slugify(text):
     return re.sub(r"^-|-+$", "", re.sub(r"[^a-z0-9]+", "-", str(text).lower()))
 
@@ -167,7 +153,6 @@ def _write(path, frontmatter, body):
 
 
 def _read_yaml(path):
-    import yaml
     with path.open(encoding="utf-8") as stream:
         return load_yaml(stream)
 
@@ -209,15 +194,10 @@ def scaffold_key(identifier, scope=None):
 
 
 def scaffold_scripting(identifier):
-    import validate_manual
+    import versioning
     data = _read_yaml(DATA / "scripting.yaml")
-    kinds = {
-        "actions": ("trigger_actions", "action"),
-        "events": ("trigger_events", "event"),
-        "missions": ("team_missions", "mission"),
-    }
     matches = []
-    for folder, (table, singular) in kinds.items():
+    for folder, (table, singular) in versioning.SCRIPTING_TYPES.items():
         for row in data.get(table, []):
             if row.get("id") == identifier:
                 matches.append((folder, singular, row))
