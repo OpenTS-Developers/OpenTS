@@ -1147,10 +1147,13 @@ void Debug_Console_Hold(void)
 	if (dbg.Destroyed) {
 		return;
 	}
-	std::lock_guard<std::recursive_mutex> lock(dbg.Lock);
+	// Lock scope
+	{
+		std::lock_guard<std::recursive_mutex> lock(dbg.Lock);
 
-	if (!dbg.ConsoleActive) {
-		return;
+		if (!dbg.ConsoleActive) {
+			return;
+		}
 	}
 	std::cout << "Press any key to close this window." << std::endl;
 	_getch();
