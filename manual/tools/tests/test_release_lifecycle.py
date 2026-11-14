@@ -10,6 +10,7 @@ sys.path.insert(0, str(TOOLS))
 
 import manage_engine
 import versioning
+from git_sandbox import isolate
 
 
 def record(release, category="feature", title="Title"):
@@ -272,6 +273,7 @@ class ReleaseRefGitTests(unittest.TestCase):
             return manage_engine.release_refs(base, base_releases)
 
     def setUp(self):
+        isolate(self)
         self.temporary = tempfile.TemporaryDirectory()
         self.root = Path(self.temporary.name)
         self.git("init", "-q", "-b", "main")

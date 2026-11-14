@@ -11,6 +11,7 @@ sys.path.insert(0, str(TOOLS))
 
 import contributor_engine
 import manage_engine
+from git_sandbox import isolate
 
 
 def record(name, directory, title, category, release, breaking=False,
@@ -110,6 +111,7 @@ class TaggedReleaseNotesTests(unittest.TestCase):
             return contributor_engine.release_notes("0.2.0", tag)
 
     def setUp(self):
+        isolate(self)
         self.temporary = tempfile.TemporaryDirectory()
         self.root = Path(self.temporary.name)
         self.git("init", "-q", "-b", "main")
