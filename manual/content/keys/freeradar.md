@@ -12,4 +12,4 @@ when_omitted:
 FreeRadar=yes
 ```
 
-The player has the radar map without owning a working [`Radar=yes`](/keys/radar/) structure. The radar map still goes off during an ion storm and while the player's house uses more power than it produces.
+The player has the radar map without owning a working [`Radar=yes`](/keys/radar/) structure. The radar map goes off during an ion storm. It also goes off while the player's house is short of power, unless the map sets [`FreeRadarOnLowPower=yes`](/keys/freeradaronlowpower/).
