@@ -36,6 +36,7 @@
 #include <cstdarg>
 #include <cstdint>
 #include <cstdio>
+#include <ctime>
 #include <filesystem>
 #include <format>
 #include <fstream>
@@ -94,7 +95,7 @@ class DebugPrint
 			ConsoleActive(false),
 			File(NULL),
 			FileBytesWritten(0),
-			UTCtoLocal_ms(0),
+			UTCtoLocal_sec(0),
 			ArgsConsoleRequested(false),
 			ArgsFullCommandLine(u8"(unknown)")
 		{
@@ -138,7 +139,7 @@ class DebugPrint
 		FILE * File;
 		uint64_t FileBytesWritten;
 		// Needed for fast timestamp evaluation. Not accurate when running the game during a DST switch.
-		std::chrono::milliseconds::rep UTCtoLocal_ms;
+		std::chrono::seconds::rep UTCtoLocal_sec;
 
 		// Information collected from command-line arguments.
 		bool ArgsConsoleRequested;
@@ -456,6 +457,41 @@ bool DebugPrint::Enable_Console_Locked(void)
 }
 #endif
 
+
+/// <summary>
+/// Determines the time difference in seconds between the specified reference time in UTC
+/// and the local time. Useful for determining the current local time from system_clock
+/// timestamps, but only accurate until the next DST switch.
+/// </summary>
+static std::chrono::seconds Get_UTC_Local_Offset(system_time_point reference_time)
+{
+	time_t utc_time = std::chrono::system_clock::to_time_t(reference_time);
+	struct tm buf;
+
+#ifdef _WIN32
+	errno_t rc = localtime_s(&buf, &utc_time);
+	if (rc != 0) {
+		return std::chrono::seconds(0);
+	}
+#else
+	struct tm * ret = localtime_r(&utc_time, &buf);
+	if (ret == NULL) {
+		return std::chrono::seconds(0);
+	}
+#endif
+	system_time_point ref_time_rounded = std::chrono::system_clock::from_time_t(utc_time);
+	const auto ref_time_sec_tp = std::chrono::time_point_cast<std::chrono::seconds>(ref_time_rounded);
+	const auto ref_time_secs = ref_time_sec_tp.time_since_epoch().count();
+
+	// C++20 specifies that system_clock timestamps are in Unix time, so the following calculations should be accurate:
+	int delta_secs  = buf.tm_sec  - (ref_time_secs % 60);
+	int delta_mins  = buf.tm_min  - ((ref_time_secs / 60) % 60);
+	int delta_hours = buf.tm_hour - (((ref_time_secs / 60) / 60) % 24);
+
+	return std::chrono::seconds((((delta_hours * 60) + delta_mins) * 60) + delta_secs);
+}
+
+
 /// <summary>
 /// Prepares the log directory and this run's log file, then opens the console if the command
 /// line asks for it. The caller holds the logging lock. A log that cannot be opened leaves the
@@ -474,15 +510,13 @@ void DebugPrint::Init_Locked(void)
 	} else {
 		now_utc = std::chrono::system_clock::now();
 	}
-	const auto now_local = std::chrono::current_zone()->to_local(now_utc);
 
 	// Evaluate local timezone offset needed for fast timestamp generation.
-	const auto now_utc_ms = std::chrono::time_point_cast<std::chrono::milliseconds>(now_utc);
-	const auto now_local_ms = std::chrono::time_point_cast<std::chrono::milliseconds>(now_local);
-	UTCtoLocal_ms = now_local_ms.time_since_epoch().count() - now_utc_ms.time_since_epoch().count();
+	const auto utc_offset = Get_UTC_Local_Offset(now_utc);
+	UTCtoLocal_sec = utc_offset.count();
 
 	// Round down the time to seconds, to avoid showing decimal digits in formatted string.
-	const auto now_local_sec = std::chrono::time_point_cast<std::chrono::seconds>(now_local);
+	const auto now_local_sec = std::chrono::time_point_cast<std::chrono::seconds>(now_utc + utc_offset);
 	Directory = Get_Logging_Directory();
 
 	if (File != NULL) {
@@ -646,8 +680,8 @@ void DebugPrint::Write_Message_Locked(char const * buffer, size_t length, bool w
 
 		// Evaluation using std::chrono::current_zone()->to_local() and std::format() too slow under Debug build.
 		// This approach trades accuracy for speed, e.g. showing the wrong time if a DST switch happens while the game is running.
-		auto millis = now_utc_millis.time_since_epoch().count() + UTCtoLocal_ms;
-		auto secs = millis / 1000;
+		auto millis = now_utc_millis.time_since_epoch().count();
+		auto secs = (millis / 1000) + UTCtoLocal_sec;
 		auto mins = secs / 60;
 		auto hours = mins / 60;
 
@@ -954,8 +988,8 @@ R"ART(
 
 
 	// Display the started time in the local timezone, rounded down to seconds.
-	const auto started_local = std::chrono::current_zone()->to_local(started_utc);
-	const auto started_local_sec = std::chrono::time_point_cast<std::chrono::seconds>(started_local);
+	const auto started_utc_sec = std::chrono::time_point_cast<std::chrono::seconds>(started_utc);
+	const auto started_local_sec = started_utc_sec + std::chrono::seconds(UTCtoLocal_sec);
 
 	std::format_to(std::back_inserter(line), "Started  : {}\n", started_local_sec);
 	Write_Message_Locked(line.data(), line.size(), false);
