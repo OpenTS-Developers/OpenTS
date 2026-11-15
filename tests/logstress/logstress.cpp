@@ -83,7 +83,7 @@ TEST_CASE("the logger keeps up with many threads and writes every record whole, 
 
 	// The timings below describe the sinks a released game actually runs with, so the console
 	// stays shut until they are done.
-	Debug_Init();
+	Debug_Init(0, (const char **)NULL);
 
 	std::filesystem::path const log = Debug_Log_File_Path();
 	REQUIRE_MESSAGE(!log.empty(), "the log file opened");
@@ -273,7 +273,7 @@ TEST_CASE("the console sink allocates a console with its close button disabled")
 {
 	// A console subsystem program already owns a console, which would turn AllocConsole away.
 	FreeConsole();
-	Debug_Init();
+	Debug_Init(0, (const char **)NULL);
 	Debug_Enable_Console();
 	DebugString("the console sink is reachable\n");
 

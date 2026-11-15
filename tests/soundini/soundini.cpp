@@ -13,6 +13,7 @@
 
 #include "audio/audiodefs.hh"
 #include "audio/audioevent.h"
+#include "dbgprint.h"
 #include "ini.h"
 #include "voc.h"
 #include "xstraw.h"
@@ -316,6 +317,7 @@ TEST_CASE_FIXTURE(ViniferaFixture, "SHROUDED is the hidden type, with an integer
 
 TEST_CASE("a priority is a name or clamped points, and anything else keeps the fallback")
 {
+	Debug_Init(0, (const char **)NULL);
 	CHECK(Sound_Parse_Priority("LOWEST", 7) == 0);
 	CHECK(Sound_Parse_Priority("low", 7) == 10);
 	CHECK(Sound_Parse_Priority("Normal", 7) == 50);
@@ -343,6 +345,7 @@ TEST_CASE("a volume is a fraction or a percentage, clamped, and anything else ke
 
 TEST_CASE("type flags combine, unknown ones are ignored, and an empty type keeps the fallback")
 {
+	Debug_Init(0, (const char **)NULL);
 	CHECK_MESSAGE(Sound_Parse_Type("NORMAL", 99) == 0u, "NORMAL is no flags");
 	CHECK(Sound_Parse_Type("SCREEN SHROUD", 99) == (SOUND_TYPE_SCREEN | SOUND_TYPE_SHROUD));
 	CHECK(Sound_Parse_Type("SCREEN WIBBLE", 99) == SOUND_TYPE_SCREEN);

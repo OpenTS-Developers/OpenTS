@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "cdfile.h"
+#include "dbgprint.h"
 #include "deploymentconfig.h"
 #include "gamedirs.h"
 #include "rawfile.h"
@@ -108,6 +109,7 @@ void Remove_Directory(std::string const & path)
  */
 void Reset(void)
 {
+	Debug_Init(0, (const char **)NULL);
 	CDFileClass::Clear_Search_Drives();
 	Set_Data_Directory("");
 	Set_User_Directory("");

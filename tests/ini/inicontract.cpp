@@ -244,7 +244,7 @@ struct Fixture
 {
 	Fixture(void)
 	{
-		Debug_Init();
+		Debug_Init(0, (const char **)NULL);
 	}
 };
 

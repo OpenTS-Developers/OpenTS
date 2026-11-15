@@ -103,6 +103,9 @@ class DebugPrint
 
 		~DebugPrint()
 		{
+			if (!Initialized && EarlyLogReplay.has_value()) {
+				std::cerr << "Warning: Messages logged with DebugString(), but Debug_Init() was never called!" << std::endl;
+			}
 			if (File) {
 				fclose(File);
 				File = NULL;
