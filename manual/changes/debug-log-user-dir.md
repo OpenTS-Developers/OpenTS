@@ -1,7 +1,7 @@
 ---
 title: Store logs into the user directory when specified
 category: feature
-release: 0.2.0
+release: 0.3.0
 targets:
 - type: command
   id: launch:console-debug
