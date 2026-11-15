@@ -174,7 +174,7 @@ static void Assign_Arg_String(std::u8string & arg_str, const std::wstring_view &
 		int conv_count = WideCharToMultiByte(CP_UTF8, 0, val_str.data(), val_str.size(), reinterpret_cast<char *>(arg_str.data()), arg_str.size(), NULL, NULL);
 		if (conv_count > 0) {
 			// Should realistically never happen, but just to be sure.
-			if (conv_count < arg_str.size()) {
+			if ((size_t)conv_count < arg_str.size()) {
 				arg_str.resize(conv_count);
 			}
 
