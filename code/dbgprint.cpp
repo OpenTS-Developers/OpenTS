@@ -482,16 +482,13 @@ static std::chrono::seconds Get_UTC_Local_Offset(system_time_point reference_tim
 		return std::chrono::seconds(0);
 	}
 #endif
-	system_time_point ref_time_rounded = std::chrono::system_clock::from_time_t(utc_time);
-	const auto ref_time_sec_tp = std::chrono::time_point_cast<std::chrono::seconds>(ref_time_rounded);
-	const auto ref_time_secs = ref_time_sec_tp.time_since_epoch().count();
+	const std::chrono::hh_mm_ss time_local {std::chrono::seconds((((buf.tm_hour * 60) + buf.tm_min) * 60) + buf.tm_sec)};
+	const std::chrono::year_month_day date_local {std::chrono::year(buf.tm_year + 1900) / (buf.tm_mon + 1) / buf.tm_mday};
 
-	// C++20 specifies that system_clock timestamps are in Unix time, so the following calculations should be accurate:
-	int delta_secs  = buf.tm_sec  - (ref_time_secs % 60);
-	int delta_mins  = buf.tm_min  - ((ref_time_secs / 60) % 60);
-	int delta_hours = buf.tm_hour - (((ref_time_secs / 60) / 60) % 24);
+	const system_time_point ref_time_utc_rounded = std::chrono::system_clock::from_time_t(utc_time);
+	const system_time_point ref_time_local = std::chrono::sys_days {date_local} + time_local.to_duration();
 
-	return std::chrono::seconds((((delta_hours * 60) + delta_mins) * 60) + delta_secs);
+	return std::chrono::duration_cast<std::chrono::seconds>(ref_time_local - ref_time_utc_rounded);
 }
 
 
