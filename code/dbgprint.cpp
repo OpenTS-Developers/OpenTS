@@ -95,7 +95,7 @@ class DebugPrint
 			ConsoleActive(false),
 			File(NULL),
 			FileBytesWritten(0),
-			UTCtoLocal_sec(0),
+			UTCtoLocal(std::chrono::seconds(0)),
 			ArgsConsoleRequested(false),
 			ArgsFullCommandLine(u8"(unknown)")
 		{
@@ -142,7 +142,7 @@ class DebugPrint
 		FILE * File;
 		uint64_t FileBytesWritten;
 		// Needed for fast timestamp evaluation. Not accurate when running the game during a DST switch.
-		std::chrono::seconds::rep UTCtoLocal_sec;
+		std::chrono::seconds UTCtoLocal;
 
 		// Information collected from command-line arguments.
 		bool ArgsConsoleRequested;
@@ -512,11 +512,10 @@ void DebugPrint::Init_Locked(void)
 	}
 
 	// Evaluate local timezone offset needed for fast timestamp generation.
-	const auto utc_offset = Get_UTC_Local_Offset(now_utc);
-	UTCtoLocal_sec = utc_offset.count();
+	UTCtoLocal = Get_UTC_Local_Offset(now_utc);
 
 	// Round down the time to seconds, to avoid showing decimal digits in formatted string.
-	const auto now_local_sec = std::chrono::time_point_cast<std::chrono::seconds>(now_utc + utc_offset);
+	const auto now_local_sec = std::chrono::time_point_cast<std::chrono::seconds>(now_utc + UTCtoLocal);
 	Directory = Get_Logging_Directory();
 
 	if (File != NULL) {
@@ -676,19 +675,41 @@ void DebugPrint::Write_Message_Locked(char const * buffer, size_t length, bool w
 		} else {
 			now_utc = std::chrono::system_clock::now();
 		}
-		const auto now_utc_millis = std::chrono::time_point_cast<std::chrono::milliseconds>(now_utc);
 
 		// Evaluation using std::chrono::current_zone()->to_local() and std::format() too slow under Debug build.
 		// This approach trades accuracy for speed, e.g. showing the wrong time if a DST switch happens while the game is running.
+		const auto now_utc_millis = std::chrono::time_point_cast<std::chrono::milliseconds>(now_utc + UTCtoLocal);
+
 		auto millis = now_utc_millis.time_since_epoch().count();
-		auto secs = (millis / 1000) + UTCtoLocal_sec;
-		auto mins = secs / 60;
-		auto hours = mins / 60;
+		auto secs   = millis / 1000;
+		auto mins   = secs / 60;
+		auto hours  = mins / 60;
+
+		// snprintf() is too slow on the 32-bit Debug build, construct timestamp string manually.
+		unsigned int hours_field  = hours  % 24;
+		unsigned int mins_field   = mins   % 60;
+		unsigned int secs_field   = secs   % 60;
+		unsigned int millis_field = millis % 1000;
 
 		char timestamp_buf[16];
-		snprintf(timestamp_buf, sizeof(timestamp_buf), "[%.2u:%.2u:%.2u.%.3u] ", (unsigned int)(hours % 24), (unsigned int)(mins % 60), (unsigned int)(secs % 60), (unsigned int)(millis % 1000));
-		timestamp_buf[sizeof(timestamp_buf) - 1] = '\0';
-		Write_Text_Locked(timestamp_buf, strlen(timestamp_buf));
+		timestamp_buf[0]  = '[';
+		timestamp_buf[1]  = '0' + hours_field / 10;
+		timestamp_buf[2]  = '0' + hours_field % 10;
+		timestamp_buf[3]  = ':';
+		timestamp_buf[4]  = '0' + mins_field / 10;
+		timestamp_buf[5]  = '0' + mins_field % 10;
+		timestamp_buf[6]  = ':';
+		timestamp_buf[7]  = '0' + secs_field / 10;
+		timestamp_buf[8]  = '0' + secs_field % 10;
+		timestamp_buf[9]  = ':';
+		timestamp_buf[10] = '0' + millis_field / 100;
+		timestamp_buf[11] = '0' + (millis_field / 10) % 10;
+		timestamp_buf[12] = '0' + millis_field % 10;
+		timestamp_buf[13] = ']';
+		timestamp_buf[14] = ' ';
+		timestamp_buf[15] = '\0';
+
+		Write_Text_Locked(timestamp_buf, 15);
 	}
 
 	Write_Text_Locked(buffer, length);
@@ -989,7 +1010,7 @@ R"ART(
 
 	// Display the started time in the local timezone, rounded down to seconds.
 	const auto started_utc_sec = std::chrono::time_point_cast<std::chrono::seconds>(started_utc);
-	const auto started_local_sec = started_utc_sec + std::chrono::seconds(UTCtoLocal_sec);
+	const auto started_local_sec = started_utc_sec + UTCtoLocal;
 
 	std::format_to(std::back_inserter(line), "Started  : {}\n", started_local_sec);
 	Write_Message_Locked(line.data(), line.size(), false);
