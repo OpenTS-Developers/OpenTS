@@ -352,8 +352,6 @@ void ScenarioClass::Reset(void)
  *=============================================================================================*/
 bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 {
-	Reset_Float_State();
-
 	if ((name == NULL || strlen(name) == 0) && campaign != CAMPAIGN_NONE) {
 		if (Debug_ForceScenario == true) {
 			name = Debug_ScenarioName;
@@ -377,6 +375,8 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 	}
 
 	DebugString("Reading scenario: %s\n", name);
+
+	Reset_Float_State();
 
 	if (!Read_Scenario(name)) {
 		return(false);
