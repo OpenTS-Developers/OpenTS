@@ -3709,6 +3709,7 @@ bool ScenarioClass::Read_Local_INI(CCINIClass const & ini)
 
 	for (index = 0; index < ARRAY_SIZE(LocalFlags); index++) {
 		LocalFlags[index].VariableName[0] = '\0';
+		LocalFlags[index].Value = false;
 	}
 
 	char const * const SECTION = "VariableNames";
