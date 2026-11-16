@@ -192,7 +192,7 @@ fbd78310e4acaa2c code/savestream.h Serialize(std::vector<T>&value,std::source_lo
 dfb7668cf94b47de code/scenario.cpp ScenarioClass::Compute_CRC(CRCEngine&crc)
 a530174cfd2ebfc9 code/scenario.cpp ScenarioClass::Load(SaveStreamClass&stream)
 c5a9cc126e614317 code/scenario.cpp ScenarioClass::Save(SaveStreamClass&stream)
-866d313ceea40a76 code/scenario.cpp ScenarioClass::Serialize(SaveStreamClass&stream)
+30183c7d96ea232e code/scenario.cpp ScenarioClass::Serialize(SaveStreamClass&stream)
 e35f2b906fa0edbb code/scenario.h Serialize(S&stream)
 10956545dba2e402 code/scenfile.h Serialize(StreamType&stream)
 8bec13990a918f10 code/script.cpp ScriptClass::Compute_CRC(CRCEngine&crc)

@@ -103,9 +103,9 @@ The game reads these palettes only from archives it caches at startup, such as `
 CarryScenarioFile=yes
 ```
 
-With `CarryScenarioFile=yes`, the game keeps a copy of the scenario file when a mission loads and stores it in every [saved game](/formats/save-games/#what-the-file-holds) of that mission. A generated random map has no file, so its saves hold no copy. Restarting the mission reads that copy, including after the save is loaded. With the default, `no`, a save holds no copy and a restart reads the scenario file from disk again.
+The game keeps a copy of the scenario file when a mission loads, and restarting the mission reads that copy. With `CarryScenarioFile=yes`, the copy is also stored in every [saved game](/formats/save-games/#what-the-file-holds) of that mission, and a restart after the save is loaded reads it too. With the default, `no`, a save contains no copy, so a restart after loading it reads the scenario file from disk. A generated random map has no file, so its saves contain no copy.
 
-Use the copy where the file on disk may have changed since the mission started. A client resuming a save replaces `spawnmap.ini` with a stub, and a restart that reads the stub fails.
+Turn it on where the scenario file on disk may have changed by the time a save is loaded. A client resuming a save replaces `spawnmap.ini` with a stub, and a restart that reads the stub fails.
 
 The copy makes every save larger, by about the compressed size of the scenario file.
 

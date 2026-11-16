@@ -883,6 +883,9 @@ restart:
 	Special.IsFromInstall = from_install;
 	Special.IsInert = Debug_Inert;
 	Special.IsSpeedBuild = Debug_SpeedBuild;
+
+	// A new game must not read an earlier game's copy of a scenario file with the same name.
+	Scen->SourceFile.Clear();
 #ifdef _DEBUG
 	Debug_Unshroud = false;
 #endif

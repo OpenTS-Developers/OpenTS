@@ -1553,9 +1553,8 @@ static int Load_Held_Scenario_File(CCINIClass & ini, char const * name, bool wit
 
 
 /// <summary>
-/// Fills the database from the scenario file named: from the copy the scenario holds when
-/// that is the file, and otherwise from disk, which the scenario then holds in its place
-/// where the deployment asked for the file to travel in the save.
+/// Fills the database from the scenario file with the given name: from the copy the scenario
+/// keeps when that is the file, and otherwise from disk, whose bytes then replace the kept copy.
 /// </summary>
 /// <returns>What the INI load returned: 0 when nothing loaded.</returns>
 static int Load_Scenario_File(CCINIClass & ini, char const * name, bool withdigest)
@@ -1586,7 +1585,7 @@ static int Load_Scenario_File(CCINIClass & ini, char const * name, bool withdige
 
 	BufferStraw straw(bytes.data(), (int)bytes.size());
 	int result = ini.Load(straw, withdigest, false, file.File_Name());
-	if (result != 0 && DeploymentConfig.CarryScenarioFile) {
+	if (result != 0) {
 		Scen->SourceFile.Assign(name, std::move(bytes));
 	}
 	return(result);
@@ -3471,7 +3470,13 @@ void ScenarioClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Stage);
 	stream.Serialize(IsInputLocked);
 	stream.Serialize(IsMPAIBaseNodes);
-	stream.Serialize(SourceFile);
+	// The scenario file is always kept, but a save includes it only where the deployment asks.
+	if (stream.Is_Loading() || DeploymentConfig.CarryScenarioFile) {
+		stream.Serialize(SourceFile);
+	} else {
+		ScenarioFileClass none;
+		stream.Serialize(none);
+	}
 }
 
 

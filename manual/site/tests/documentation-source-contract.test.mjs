@@ -743,9 +743,14 @@ test('The scenario file is kept from its first read and carried in the save', ()
 		'Scen->SourceFile.Matches(name)',
 		'Load_Held_Scenario_File(ini, name, withdigest)',
 		'CCFileClass file(name);',
-		'DeploymentConfig.CarryScenarioFile',
 		'Scen->SourceFile.Assign(name, std::move(bytes));',
-	], 'a name the scenario already holds is served from memory, and a fresh read is kept where the deployment asked for it');
+	], 'a file the scenario already has is read from memory, and a fresh read is kept');
+
+	assert.match(
+		functionBody(source('code/init.cpp'), 'bool Select_Game(bool )'),
+		/Scen->SourceFile\.Clear\(\);/,
+		'a new game starts with no file kept from an earlier one',
+	);
 
 	assertOrdered(functionBody(scenario, 'bool Read_Scenario(char const * fname)'), [
 		'file_read = Load_Scenario_File(requested, name, true) != 0;',
@@ -759,11 +764,10 @@ test('The scenario file is kept from its first read and carried in the save', ()
 		'Load_Held_Scenario_File(mini, buffer, false);',
 	], 'a generated map holds no file, and the sidecar comes from the holder when it is the same file');
 
-	assert.match(
-		functionBody(scenario, 'void ScenarioClass::Serialize(SaveStreamClass & stream)'),
-		/stream\.Serialize\(SourceFile\);/,
-		'the held file travels with the scenario record',
-	);
+	assertOrdered(functionBody(scenario, 'void ScenarioClass::Serialize(SaveStreamClass & stream)'), [
+		'stream.Is_Loading() || DeploymentConfig.CarryScenarioFile',
+		'stream.Serialize(SourceFile);',
+	], 'a save includes the held file where the deployment asked for it, and a load always reads it');
 
 	assert.match(
 		functionBody(source('code/deploymentconfig.cpp'), 'void DeploymentConfigClass::Read_INI(INIClass const & ini)'),

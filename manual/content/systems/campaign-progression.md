@@ -168,7 +168,7 @@ Losing plays the mission's [`Lose`](/keys/lose/) movie and asks whether to repla
 
 A reload skips the briefing: the `Intro`, `Brief` and `Action` movies do not play, and a mission without a briefing movie does not open with its objectives page. The difficulty message appears on every load.
 
-A reload reads the mission file from disk again, so a file edited or replaced since the mission started takes effect. With the deployment's [`CarryScenarioFile=yes`](/formats/opents-ini/#what-a-save-carries), it reads the copy kept when the mission was loaded instead. That copy is what lets a client restart a mission after resuming a [saved game](/formats/save-games/#what-the-file-holds), because the client replaces `spawnmap.ini` with a stub when it resumes one.
+A reload reads the copy of the mission file kept when the mission was loaded, so editing or replacing the file since then has no effect. After a [saved game](/formats/save-games/#what-the-file-holds) is loaded, a reload reads the copy stored in the save, which is there only with the deployment's [`CarryScenarioFile=yes`](/formats/opents-ini/#what-a-save-carries). Without one it reads the mission file from disk. The stored copy is what lets a client restart a mission after resuming a saved game, because the client replaces `spawnmap.ini` with a stub when it resumes one.
 
 Declining the replay ends the game. Abandoning the mission from the in-game menu also ends it, and sets the campaign level number back to `1`.
 
