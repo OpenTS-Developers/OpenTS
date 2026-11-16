@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "play": {
+    "launch": {
+      "kind": "GAME_KIND_MULTIPLAYER",
+      "seed": 0,
+      "players": [
+        {
+          "name": "Alpha",
+          "human": true,
+          "start": -1
+        },
+        {
+          "name": "Bravo",
+          "human": true,
+          "country": -1,
+          "color": 3,
+          "start": 1,
+          "allies": [
+            0
+          ]
+        }
+      ],
+      "options": [
+        {
+          "key": "Credits",
+          "number": "10000"
+        },
+        {
+          "key": "Crates",
+          "flag": false
+        }
+      ]
+    },
+    "mapPath": "maps/vector.map",
+    "session": {
+      "localPlayer": 0,
+      "host": true,
+      "mapName": "Carte",
+      "gameMode": "Bataille"
+    },
+    "network": {
+      "port": 1234,
+      "peers": [
+        {
+          "player": 1,
+          "address": "10.0.0.2",
+          "port": 1235
+        }
+      ],
+      "connectTimeout": 30000
+    },
+    "recording": {
+      "enabled": true,
+      "files": [
+        {
+          "path": "rules.ini",
+          "hash": "sha1:00"
+        }
+      ],
+      "embedMap": false
+    }
+  },
+  "resultPath": "launch-result.bin",
+  "requestId": "vector-1"
+}

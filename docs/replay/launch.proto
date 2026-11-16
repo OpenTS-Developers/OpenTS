@@ -1,0 +1,389 @@
+// Launch request. One file, named on the command line with
+// -LAUNCH=<path>, tells the engine what to do. Exactly one verb is set.
+//
+// The file uses the record encoding of REPLAY-FORMAT.md section 1.
+//
+// Versions. `version` is 1. A launcher raises it only when an older engine
+// must not run the request. A field that an older engine may skip is added
+// without raising it. The engine refuses a request whose version it does not
+// know, 0 included, a request with no verb or with a verb it does not know,
+// and a request with a string that is not valid UTF-8. A refused request
+// applies nothing. Fields 1, 7, and 9 of LaunchRequest and fields 1 to 3 of
+// LaunchResult keep their meaning in every version, so that a refusal can be
+// reported.
+//
+// Paths. Paths are UTF-8 and use '/' or '\'. A relative path is relative to
+// the game's folder. The files the engine writes for the launcher
+// (result_path, Recording.file_out, Verify.out_path, Capture.out_path) are
+// the exception: when -USERDIR= is set, a relative path is relative to that
+// folder, as it is for stats.dmp. An absolute path is used as given. Paths
+// in a LaunchResult are absolute.
+//
+// Field numbers 100 to 199 are engine-private in every message that reserves
+// them.
+
+syntax = "proto3";
+
+package cnclaunch;
+
+import "replay.proto";
+
+message LaunchRequest {
+  uint32 version = 1;            // 1
+  oneof verb {
+    Play    play    = 2;
+    Load    load    = 3;
+    Replay  replay  = 4;
+    Verify  verify  = 5;
+    Capture capture = 6;
+  }
+  string result_path = 7;        // where the engine writes a LaunchResult; empty for none
+  string channel     = 8;        // name of a live channel to the launcher; not used yet
+  string request_id  = 9;        // any text; the result repeats it
+
+  reserved 100 to 199;
+}
+
+// ---- play ----
+
+// Starts a game.
+//
+// `launch` is the replay format's Launch message in its request form. It
+// has only values shared by every machine in the game, and the launcher
+// gives every machine the same bytes. The engine decodes it, checks it, and
+// writes the LNCH section from what it applied, adding what it assigns.
+// Machines in a network game compare a hash of `launch` at the start, and the
+// game ends when it differs.
+//
+// Rules for the request form. The engine refuses a request that breaks one.
+//
+// - kind is GAME_KIND_MULTIPLAYER exactly when more than one player is
+//   human, observers included.
+// - seed is required for a multiplayer game and is used as given, 0
+//   included. When a campaign or skirmish request leaves it out, the engine
+//   draws one and writes it in LNCH.
+// - players has at most 8 entries. In a skirmish or multiplayer game a
+//   player's house number is its position in `players`, for human and
+//   computer players. The launcher leaves out Player.house, country_name,
+//   and the resolved fields, and the engine ignores them.
+// - Player.name is at most 63 bytes. A human player needs one. For a
+//   computer player it is the name to show; when it is empty the engine
+//   shows a name it chooses, which LNCH does not record.
+// - Player.country is a position in the rules' country list, from 0. color is
+//   a position in the rules' player colors, from 0, and human players need
+//   different colors. start is 0 to 7. Each may be -1: the engine then draws
+//   a value, for a human or a computer player, and writes it in the resolved
+//   field. A field left out means 0, because the encoding leaves out a zero.
+// - Player.observer is set only on a human player.
+// - Player.ai_level is set only on a computer player, to 0 for the hardest,
+//   1, or 2 for the easiest. For a computer player without it, the game's
+//   AIDifficulty option sets the difficulty, and its numbers run the other
+//   way.
+// - Player.allies lists other players that are not observers, by position,
+//   ascending, each once.
+// - The number of computer players is the number of entries with `human`
+//   unset. The request sends no AIPlayers option.
+// - options lists each key once, in any order. Every setting that changes
+//   the game and must be the same on every machine goes there under the
+//   engine's option name. OpenTS publishes its keys, value types, and
+//   defaults in a table beside the spec. LNCH lists every option the engine
+//   applied, defaults included, in ascending key order.
+// - anonymous is set when the game shows "Player N" in place of names.
+//
+// A campaign request lists one human player, the person playing, whose
+// country, color, and start are ignored, and session.local_player is 0. The
+// player's house is the one the mission gives them. map_path names the first
+// mission. The seed and options apply to that mission, and the engine carries
+// the rest over to the missions that follow.
+message Play {
+  cncreplay.Launch launch = 1;
+  string    map_path  = 2;       // a name the game's file search opens; required.
+                                 // Recorded in RecordingInfo.map_path when it is
+                                 // relative and stays inside the game's folder
+  Session   session   = 3;       // required
+  Network   network   = 4;       // set exactly when kind is GAME_KIND_MULTIPLAYER
+  Recording recording = 5;
+  Fixture   fixture   = 6;       // development use
+
+  reserved 100 to 199;
+}
+
+// This machine's part of the game. Nothing here is recorded in LNCH.
+//
+// "The player list" is launch.players in a play request and Load.players in
+// a load request.
+message Session {
+  optional uint32 local_player = 1; // position in the player list of the human playing
+                                 // on this machine. OpenTS requires it for play
+                                 // and for a multiplayer load
+  bool   host              = 2;  // this machine announces itself as master after a
+                                 // load; set on exactly one machine
+  uint32 autosave_interval = 3;  // frames, 0 for none; in a multiplayer game the same
+                                 // on every machine
+  uint32 next_campaign_autosave = 4; // position in the autosave ring, counted from zero
+  uint32 next_skirmish_autosave = 5;
+  bool   skip_score_screen = 6;
+  bool   write_statistics  = 7;  // write stats.dmp
+  uint32 game_id           = 8;  // for the statistics packet
+  string map_hash          = 9;  // for the statistics packet, as the launcher computes it
+  string map_name          = 10; // the map's name, which the launcher may translate. Shown,
+                                 // written to RecordingInfo.map_name and stats.dmp,
+                                 // and used in the save's description and the
+                                 // recording's file name. Absent: the map's own
+                                 // name, and in a load the save's description
+  string game_mode         = 11; // the game mode's name, which the launcher may translate,
+                                 // for RecordingInfo.game_mode; absent: empty
+  LoadScreen load_screen   = 12; // absent: the game's load screen
+  string difficulty_name   = 13; // shown in place of the campaign difficulty's name;
+                                 // empty: the game's name for it
+
+  reserved 100 to 199;
+}
+
+message LoadScreen {
+  string image      = 1;         // a name the game's file search opens
+  optional sint32 x = 2;         // position of the picture; absent: the game's position
+  optional sint32 y = 3;
+
+  reserved 100 to 199;
+}
+
+// What this machine needs to reach the others. `peers` has one entry for
+// each human player other than the local one, observers included.
+message Network {
+  sint32 port               = 1; // SPAWN.INI's Port. Without a tunnel, this machine's UDP
+                                 // port, 1 to 65535. With one, its number on the
+                                 // tunnel, nonzero
+  repeated Peer peers       = 2;
+  Tunnel tunnel             = 3;  // set: play through this tunnel; both fields required
+  uint32 protocol           = 4; // fields 4 to 6: read by the YR spawner, the same on
+  uint32 frame_send_rate    = 5; // every machine, 0 for its default. OpenTS ignores them.
+  uint32 max_ahead          = 6;
+  uint32 connect_timeout    = 7; // milliseconds, 0 for the engine's default: the longest
+                                 // wait at the start without loading progress from
+                                 // another machine. OpenTS rounds down to 16 ms
+                                 // and clamps to 960..576000
+  uint32 reconnect_timeout  = 8; // the same, for the longest silence from a machine
+                                 // once the game is running
+
+  reserved 100 to 199;
+}
+
+message Peer {
+  uint32 player  = 1;            // position in the player list
+  string address = 2;            // dotted IPv4; ignored when a tunnel is set
+  sint32 port    = 3;            // that player's UDP port, or its number on the tunnel
+
+  reserved 100 to 199;
+}
+
+message Tunnel {
+  string address = 1;
+  uint32 port    = 2;
+
+  reserved 100 to 199;
+}
+
+message Recording {
+  optional bool enabled   = 1;   // absent: the engine's default, which is on
+  string file_out         = 2;   // absent: the engine names the file. An existing file
+                                 // is replaced. A launch that writes several
+                                 // recordings numbers the later ones. The engine
+                                 // never deletes a file named here
+  string package          = 3;   // RecordingInfo.package
+  string package_version  = 4;   // RecordingInfo.package_version
+  repeated cncreplay.FileHash files = 5; // RecordingInfo.files
+  optional bool embed_map = 6;   // absent: embed a map that was a loose file
+
+  reserved 100 to 199;
+}
+
+// Runs a game without a window for a fixed length, for tests.
+message Fixture {
+  bool   headless    = 1;
+  optional uint32 stop_frame = 2; // end the game after this frame; absent: no limit
+  string script_path = 3;        // events to inject, in the reference reader's script
+                                 // format; optional
+  CheckpointCheck checkpoint_check = 4; // run the save-continuity check; absent: none
+
+  reserved 100 to 199;
+}
+
+// Saves the game at `save_frame`, runs `run_frames` more frames, loads the
+// save, runs the same frames again, and compares the two runs frame by
+// frame. The engine reports a difference as RESULT_CODE_FAILED.
+message CheckpointCheck {
+  uint32 save_frame = 1;
+  uint32 run_frames = 2;
+
+  reserved 100 to 199;
+}
+
+// ---- load ----
+
+// Resumes a saved game. A resumed game is not recorded.
+//
+// Each machine loads its own save file. For a multiplayer save, `players`
+// lists every seat that rejoins, the same set on every machine, and
+// `network` is set. session.local_player and Peer.player are positions in
+// that list, and local_player must be the seat whose machine wrote the save.
+// The engine matches each seat to a saved human house by Player.name,
+// ignoring ASCII case, and by Player.observer, and reads nothing else from
+// the entries. The computer plays a saved human house that no seat names.
+// For a single-player save, `players` and `network` are absent and
+// local_player is ignored.
+//
+// Every game option comes from the save, the game speed included, so the
+// machines start at the same speed. `game_speed` is the one override: the
+// host's value is applied through the game's speed-change event, so every
+// machine changes on the same frame, and the value in another machine's
+// request is ignored.
+message Load {
+  string  save      = 1;         // a file name in the saves folder, with no folder part
+  Session session   = 2;
+  Network network   = 3;
+  repeated cncreplay.Player players = 4;
+  optional sint32 game_speed = 5;
+
+  reserved 100 to 199;
+}
+
+// ---- replay, verify ----
+
+// Plays a replay back in a window. A start state or frame hash that differs
+// from the file does not stop playback; the result reports it.
+message Replay {
+  string file = 1;
+  optional uint32 watch_player = 2; // position in LNCH's players; absent: the recording
+                                 // player, or a free view when the file names none
+  bool   free_view    = 3;       // show the whole map and every player. The view
+                                 // starts where watch_player's would
+  uint32 start_frame  = 4;       // refused until the engine can seek
+  string map_path     = 5;       // the map the game was played on, for a
+                                 // replay that does not embed it
+  LoadScreen load_screen = 6;
+
+
+  reserved 100 to 199;
+}
+
+// Plays a replay back with no window and compares the start state, every
+// frame hash, and every seal. A file with no END section is checked as far
+// as it goes.
+message Verify {
+  string file     = 1;
+  string out_path = 2;           // where to keep the re-recorded file, optional
+  string map_path = 3;           // as Replay.map_path
+
+  reserved 100 to 199;
+}
+
+// ---- capture ----
+
+// Renders a map to an image, as -CAPTUREMAP=, -CAPTUREOUT=, and -CAPTURE= do.
+// Set map_path and out_path, or description_path alone. The engine refuses a
+// request that sets description_path with either of the others.
+message Capture {
+  string map_path         = 1;
+  string out_path         = 2;
+  string description_path = 3;   // a capture description file
+
+  reserved 100 to 199;
+}
+
+// ---- result ----
+
+// Written to LaunchRequest.result_path when the engine exits, and by the
+// crash handler when it crashes.
+//
+// The engine deletes any file at that path once it has read the request, and
+// writes the result to a temporary file that it renames over the path, so a
+// reader never reads part of one. A launcher deletes the path before it
+// starts the engine. No file after the engine exits means that it was
+// killed, that it stopped without reaching its crash handler, or that it
+// could not read the request or write the path.
+//
+// When result_path is set, the engine reports a refusal here and exits
+// without showing a message. A game started through SPAWN.INI or a shorthand
+// switch names no result path, and none is written.
+message LaunchResult {
+  string request_id   = 1;       // LaunchRequest.request_id
+  ResultCode code     = 2;
+  string message      = 3;       // English, for a person, when code is not
+                                 // RESULT_CODE_OK. A launcher does not parse it
+
+  // play, load
+  repeated ScenarioResult scenarios = 4; // every scenario this launch started, in order.
+                                 // A campaign launch can play several missions.
+                                 // After a crash, the scenarios up to the crash
+  string statistics_path = 5;    // stats.dmp, when written
+
+  // replay, verify
+  bool   different_build = 6;    // the file's build identity is not this build's
+  bool   unverified      = 7;    // replay: the start state or a frame hash differed
+                                 // from the file, and playback went on
+  optional uint32 mismatch_frame = 8; // the first frame whose hash differed. For a seal
+                                 // mismatch, `through` of the first seal that
+                                 // differed
+
+  // capture
+  string output_path  = 9;
+
+  string crash_path   = 10;      // the crash report folder, when the engine crashed
+
+  reserved 100 to 199;
+}
+
+message ScenarioResult {
+  string map_path     = 1;       // the scenario, as the engine opened it
+  GameOutcome outcome = 2;       // for the local player
+  bool   completed    = 3;       // the game decided the result: a win, a loss, or a
+                                 // draw. False when a player left, on a desync,
+                                 // and on a lost connection
+  optional uint32 last_frame = 4; // the last frame the simulation ran; absent: none
+  string replay_path  = 5;       // the recording; empty when none was written
+  NotRecorded not_recorded = 6;  // why replay_path is empty
+
+  reserved 100 to 199;
+}
+
+enum ResultCode {
+  RESULT_CODE_UNKNOWN        = 0;
+  RESULT_CODE_OK             = 1;
+  RESULT_CODE_REFUSED        = 2; // the request was not accepted and nothing ran. This
+                                  // includes a replay from another engine or data
+                                  // version
+  RESULT_CODE_FAILED         = 3; // the request was accepted and could not be completed
+  RESULT_CODE_CRASHED        = 4;
+  RESULT_CODE_UNREADABLE     = 5; // replay, verify: the file is missing or is not a
+                                  // readable replay
+  RESULT_CODE_MAP_MISSING    = 6; // replay, verify: no map was found for a file that
+                                  // does not embed one
+  RESULT_CODE_START_MISMATCH = 7; // play: the machines' start states or launch
+                                  // descriptions differed, and the game ended.
+                                  // verify: the start state differed from the file
+  RESULT_CODE_HASH_MISMATCH  = 8; // verify: a frame hash differed
+  RESULT_CODE_SEAL_MISMATCH  = 9; // verify: the hashes matched and a seal did not
+}
+
+enum GameOutcome {
+  GAME_OUTCOME_UNKNOWN         = 0; // also for an observer
+  GAME_OUTCOME_WON             = 1;
+  GAME_OUTCOME_LOST            = 2; // the local house was defeated, a surrender included
+  GAME_OUTCOME_DRAW            = 3;
+  GAME_OUTCOME_ABORTED         = 4; // the local player left a game that went on or was
+                                    // never decided
+  GAME_OUTCOME_DESYNC          = 5; // the game ended on a desync
+  GAME_OUTCOME_CONNECTION_LOST = 6;
+  GAME_OUTCOME_NOT_STARTED     = 7; // the game ended before its first frame: a machine
+                                    // did not join, or the start comparison failed
+}
+
+enum NotRecorded {
+  NOT_RECORDED_NONE         = 0; // a recording was written
+  NOT_RECORDED_DISABLED     = 1; // the launcher or the player turned recording off
+  NOT_RECORDED_RESUMED      = 2; // the game was resumed from a save
+  NOT_RECORDED_CHEATS       = 3;
+  NOT_RECORDED_TIME_LIMIT   = 4; // a -TIME= game
+  NOT_RECORDED_WRITE_FAILED = 5;
+}
