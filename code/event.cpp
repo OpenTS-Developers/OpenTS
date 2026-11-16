@@ -794,6 +794,7 @@ void EventClass::Execute(void)
 		case PROCESS_TIME:  Execute_PROCESS_TIME(); break;
 		case NETWORK_REPORT: Execute_NETWORK_REPORT(); break;
 		case GRANT_CONTROL: Execute_GRANT_CONTROL(); break;
+		case SELECTED:      Execute_SELECTED(); break;
 		default:            break;
 	}
 }
@@ -860,6 +861,7 @@ TechnoClass * EventClass::Subject(SubjectRule & rule) const
 		case REPAIR:
 		case PRIMARY:
 		case SELL:
+		case SELECTED:
 			rule = SubjectRule::OWNER;
 			return(Data.Target.Whom.As_Techno());
 
@@ -1603,5 +1605,21 @@ void EventClass::Execute_GRANT_CONTROL(void)
 		snprintf(msg, sizeof(msg), Fetch_String(granted ? TXT_CONTROL_GRANTED : TXT_CONTROL_WITHDRAWN),
 			Session.Shown_Name(house).c_str(), Session.Shown_Name(grantee).c_str());
 		Session.Messages.Add_Message(NULL, 0, msg, house->Scheme, TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), Rule->MessageDelay * TICKS_PER_MINUTE);
+	}
+}
+
+
+/// <summary>
+/// Springs the "selected by player" event on the tag of the object the sender selected. Nothing
+/// happens when the object is gone, has no tag, or no longer belongs to the sender.
+/// </summary>
+void EventClass::Execute_SELECTED(void)
+{
+	TechnoClass * techno = Data.Target.Whom.As_Techno();
+	if (techno == NULL || !techno->IsActive || techno->Strength <= 0 || techno->House != Houses[ID]) {
+		return;
+	}
+	if (techno->Tag != NULL) {
+		techno->Tag->Spring(TEVENT_SELECTED, techno);
 	}
 }

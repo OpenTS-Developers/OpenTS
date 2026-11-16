@@ -302,7 +302,8 @@ TEST_CASE("the inherited events keep their numbers, and the new ones append afte
 	CHECK(EventClass::ABANDON_COUNT == 37);
 	CHECK(EventClass::GRANT_CONTROL == 38);
 	CHECK(EventClass::CHAT_PROOF == 39);
-	CHECK(EventClass::LAST_EVENT == 40);
+	CHECK(EventClass::SELECTED == 40);
+	CHECK(EventClass::LAST_EVENT == 41);
 }
 
 
@@ -318,6 +319,9 @@ TEST_CASE("the appended events have their payload sizes and diagnostic names")
 	CHECK(std::string(EventClass::EventNames[EventClass::GRANT_CONTROL]) == "GRANT_CONTROL");
 	CHECK_MESSAGE(EventClass::EventLength[EventClass::CHAT_PROOF] == 16u, "CHAT_PROOF has a 16-byte digest");
 	CHECK(std::string(EventClass::EventNames[EventClass::CHAT_PROOF]) == "CHAT_PROOF");
+	CHECK_MESSAGE(EventClass::EventLength[EventClass::SELECTED] == EventClass::EventLength[EventClass::IDLE],
+		"SELECTED has one object, as IDLE does");
+	CHECK(std::string(EventClass::EventNames[EventClass::SELECTED]) == "SELECTED");
 }
 
 

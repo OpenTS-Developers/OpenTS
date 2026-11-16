@@ -3474,9 +3474,10 @@ bool TechnoClass::Select(void)
 		**	Speak a confirmation of selection.
 		*/
 		if (House->Is_Player_Commanded() && AllowVoice) {
-			// A shared control commander hears the unit, but only its owner springs the trigger.
+			// A shared control commander hears the unit, but only its owner springs the trigger,
+			// through an event so that every machine and a replay spring it on the same frame.
 			if (Tag != NULL && House->Is_Player_Control()) {
-				Tag->Spring(TEVENT_SELECTED, this);
+				OutList.push_back(EventClass(House->HeapID, EventClass::SELECTED, TargetClass(this)));
 			}
 			Response_Select();
 		}

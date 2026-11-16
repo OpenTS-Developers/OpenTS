@@ -113,6 +113,7 @@ class EventClass
 			ABANDON_COUNT,
 			GRANT_CONTROL,		// Grant or withdraw shared control of the sender's units.
 			CHAT_PROOF,			// A chat line's fingerprint. Reserved: nothing sends it, and executing it changes nothing.
+			SELECTED,			// The owner selected the object, which springs its tag's "selected by player" event.
 
 			LAST_EVENT,			// one past the last event
 		};
@@ -377,5 +378,6 @@ class EventClass
 		void Execute_PROCESS_TIME(void);
 		void Execute_NETWORK_REPORT(void);
 		void Execute_GRANT_CONTROL(void);
+		void Execute_SELECTED(void);
 };
 #pragma pack(pop)
