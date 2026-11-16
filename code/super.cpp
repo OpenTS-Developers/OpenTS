@@ -688,8 +688,8 @@ void SuperClass::Place(Cell const & cell, bool player)
 
 		case SUPER_FIRESTORM:
 			House->Activate_Firestorm();
+			House->IsRecalcNeeded = true;
 			if (player) {
-				House->IsRecalcNeeded = true;
 				Map.Column[1].IsToRedraw = true;
 			}
 			break;
@@ -801,8 +801,8 @@ void SuperClass::Deactivate_Firestorm(int, bool player) const
 {
 	if (Class->Type == SUPER_FIRESTORM) {
 		House->Deactivate_Firestorm();
+		House->IsRecalcNeeded = true;
 		if (player) {
-			House->IsRecalcNeeded = true;
 			Map.Column[1].IsToRedraw = true;
 		}
 	}
