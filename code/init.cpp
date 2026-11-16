@@ -879,6 +879,9 @@ restart:
 	Special.IsInert = Debug_Inert;
 	Special.IsSpeedBuild = Debug_SpeedBuild;
 
+	// Only a launch file or a save sets these, so a menu game must not keep a loaded save's values.
+	Session.Options.PlayMovies = false;
+
 	// A new game must not read an earlier game's copy of a scenario file with the same name.
 	Scen->SourceFile.Clear();
 #ifdef _DEBUG

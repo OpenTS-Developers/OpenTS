@@ -181,6 +181,7 @@ SessionClass::SessionClass(void)
 	Options.AttackNeutralUnits = false;
 	Options.ScrapMetal = false;
 	Options.SharedControl = false;
+	Options.PlayMovies = false;
 	Options.AIDifficulty = DIFF_NORMAL;
 
 	UniqueID = 0;
@@ -231,7 +232,6 @@ SessionClass::SessionClass(void)
 
 	NetStealth = 0;
 	NetOpen = 0;
-	PlayMovies = false;
 	SkipScoreScreen = false;
 	QuickMatch = false;
 	LoadScreen[0] = '\0';
@@ -1541,6 +1541,7 @@ void GameOptionsType::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AttackNeutralUnits);
 	stream.Serialize(ScrapMetal);
 	stream.Serialize(SharedControl);
+	stream.Serialize(PlayMovies);
 	stream.Serialize(ScenarioDescription);
 }
 

@@ -429,6 +429,7 @@ struct GameOptionsType {
 	bool		AttackNeutralUnits;	// A target scan considers a neutral house's objects.
 	bool		ScrapMetal;			// A wreck leaves the animations its type names in ScrapExplosion.
 	bool		SharedControl;		// A player may let an ally order their units.
+	bool		PlayMovies;			// A launch file asked for movies outside a campaign.
 	char		ScenarioDescription [DESCRIP_MAX];	//Used on client machines only
 
 	bool Save(SaveStreamClass & stream);
@@ -737,7 +738,6 @@ class SessionClass
 		//.....................................................................
 		bool NetStealth;                                // makes us invisible
 		bool NetOpen;                                   // 1 = game is open for joining
-		bool PlayMovies;                                // a launch file asked for movies outside a campaign
 		bool SkipScoreScreen;                           // a launch file asked that the score screen be passed over
 		bool QuickMatch;                                // a launch file asked that players be shown by number
 		char LoadScreen[_MAX_PATH];                     // the picture to show while the scenario loads, or empty

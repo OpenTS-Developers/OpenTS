@@ -230,6 +230,7 @@ static void Spawner_Bind_Options(void)
 	Session.Options.AttackNeutralUnits = SpawnConfig.AttackNeutralUnits;
 	Session.Options.ScrapMetal = SpawnConfig.ScrapMetal;
 	Session.Options.SharedControl = SpawnConfig.SharedControl;
+	Session.Options.PlayMovies = SpawnConfig.PlayMoviesInMultiplayer;
 
 	// AutoSurrender=no hands a departing player's base to the computer.
 	Session.Options.AITakeover = !SpawnConfig.AutoSurrender;
@@ -238,7 +239,6 @@ static void Spawner_Bind_Options(void)
 	Session.Options.HarvTruce = SpawnConfig.HarvesterTruce;
 
 	BuildLevel = SpawnConfig.TechLevel;
-	Session.PlayMovies = SpawnConfig.PlayMoviesInMultiplayer;
 	Session.ConnTimeout = SpawnConfig.ConnTimeout;
 	Session.ReconnectTimeout = SpawnConfig.ReconnectTimeout;
 
@@ -400,9 +400,8 @@ static bool Spawner_Resume(bool & gameloaded)
 		return(Spawner_Refuse("SPAWN.INI does not seat the same players as the saved game %s.", SpawnConfig.SaveGameName.c_str()));
 	}
 
-	// The save's options apply, except game speed, movies and this machine's waits.
+	// The save's options apply, except game speed and this machine's waits.
 	Session.Options.GameSpeed = SpawnConfig.GameSpeed;
-	Session.PlayMovies = SpawnConfig.PlayMoviesInMultiplayer;
 	Session.ConnTimeout = SpawnConfig.ConnTimeout;
 	Session.ReconnectTimeout = SpawnConfig.ReconnectTimeout;
 

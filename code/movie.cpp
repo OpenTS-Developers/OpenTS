@@ -78,7 +78,7 @@ unsigned			PaletteCounter;
 void Play_Movie(char const * name, ThemeType theme, bool clrscrn_after, bool stretch, bool clrscrn_before)
 {
 	// Outside a campaign, movies play only when the launch file asked for them.
-	if (Session.Type != GAME_NORMAL && !Session.PlayMovies) {
+	if (Session.Type != GAME_NORMAL && !Session.Options.PlayMovies) {
 		return;
 	}
 
@@ -203,7 +203,7 @@ void Play_Movie(VQType vq, ThemeType theme, bool clrscrn, bool stretch)
 void Play_Ingame_Movie(const char * name)
 {
 	bool notavailable = CCFileClass(name).Is_Available() == false;
-	if (!notavailable && (Session.Type == GAME_NORMAL || Session.PlayMovies)) {
+	if (!notavailable && (Session.Type == GAME_NORMAL || Session.Options.PlayMovies)) {
 		VQHandle * vqa = Movie_Create(name, SidebarSurface, Rect(0,0,0,0), SidebarSurface->Get_Rect(), 255, false);
 		if (vqa != NULL) {
 			Movie_Queue_Ingame(vqa);
