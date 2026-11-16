@@ -103,6 +103,12 @@ that had finished loading have already taken their place in the map or a side
 table. A failed load therefore leaves a partly built game that the caller has
 to clear, not one it can carry on from.
 
+Pointers are filled in once every record has been read. A pointer whose
+identity no record announced fails the load at that point, with each such
+pointer's slot type, record and source line in the debug log. The pointers
+that did match are filled in and the unmatched ones stay null, so the caller
+is left with the same kind of partly built game.
+
 A character buffer travels as its text: a length and that many characters, and
 a load clears the rest of the buffer. How much room a build keeps for a string
 is its own business, so the file carries neither the capacity nor whatever the

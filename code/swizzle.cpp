@@ -11,13 +11,9 @@
 
 #include "swizzle.h"
 
-#include "conquer.h"
 #include "dbgprint.h"
-#include "msgbox.h"
 
 #include <algorithm>
-#include <stdio.h>
-#include <stdlib.h>
 #include <unordered_map>
 
 
@@ -148,20 +144,18 @@ void SwizzleManagerClass::Here_I_Am(SwizzleIDType id, void * pointer)
 
 
 /// <summary>
-/// Fills in every outstanding pointer request.
-/// The requests registered by Swizzle are matched
-/// against the addresses announced by Here_I_Am, and each real address is written into the
-/// pointer that asked for it. Both tables are emptied once the matching is done.
+/// Writes the announced address into every pointer registered by Swizzle, then empties both
+/// tables.
 /// </summary>
-/// <remarks>Every ID handed to Swizzle must have been announced by Here_I_Am. An unmatched
-/// request is fatal: by this point the game state it belonged to has already been replaced,
-/// so the orphans are reported and the game exits rather than run on dangling pointers.
-/// </remarks>
-void SwizzleManagerClass::Resolve(void)
+/// <remarks>A request whose ID nobody announced is logged and its pointer stays null. The
+/// requests that did match are still written, so on failure the caller has a partly built
+/// game, as after a failed record.</remarks>
+/// <returns>bool; Was every request matched?</returns>
+bool SwizzleManagerClass::Resolve(void)
 {
 	if (RequestTable.empty()) {
 		Discard();
-		return;
+		return(true);
 	}
 
 	std::sort(PointerTable.begin(), PointerTable.end(),
@@ -180,7 +174,6 @@ void SwizzleManagerClass::Resolve(void)
 	}
 
 	int orphans = 0;
-	SwizzleRequestClass const * first_orphan = NULL;
 
 	for (SwizzleRequestClass const & request : RequestTable) {
 
@@ -200,32 +193,15 @@ void SwizzleManagerClass::Resolve(void)
 			Base_Name(request.File),
 			request.Line);
 
-		if (orphans == 0) {
-			first_orphan = &request;
-		}
 		orphans++;
 	}
 
 	if (orphans > 0) {
-		char txt[512];
-		sprintf(txt, "Save game load failed!  %d pointer(s) could not be remapped.\n\n"
-			"The first names ID %08X, wanted by a %s slot in %s record %08X,\n"
-			"serialized at %s(%u).\n\n"
-			"The game will now exit.",
-			orphans,
-			first_orphan->ID,
-			first_orphan->SlotType != NULL ? first_orphan->SlotType : "<unknown>",
-			first_orphan->OwnerType != NULL ? first_orphan->OwnerType : "<unknown>",
-			first_orphan->OwnerID,
-			Base_Name(first_orphan->File),
-			first_orphan->Line);
-		WWMessageBox()._Process(txt, 0);
-
-		Emergency_Exit();
-		exit(EXIT_FAILURE);
+		DebugString("SWIZZLE: %d pointer(s) could not be remapped.\n", orphans);
 	}
 
 	Discard();
+	return(orphans == 0);
 }
 
 

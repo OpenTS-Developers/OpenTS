@@ -1173,7 +1173,10 @@ bool Load_Game(const char *file_name)
 		DebugString("Save carries %u bytes past its last record\n", stream.Size() - stream.Offset());
 	}
 
-	Swizzler.Resolve();
+	if (!Swizzler.Resolve()) {
+		DebugString("\t***** FAILED! (pointers left unresolved)\n");
+		return(false);
+	}
 
 	/*
 	**	Fixup any expediency data that can be inferred from the physical
