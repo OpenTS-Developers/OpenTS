@@ -2308,7 +2308,7 @@ void TeamClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
 
-	crc(Class->Fetch_ID());
+	crc(Class->HeapID);
 
 	crc(House->Fetch_ID());
 
@@ -2326,9 +2326,8 @@ void TeamClass::Compute_CRC(CRCEngine & crc) const
 	crc((int)TimeOut);
 	crc((int)SuspendTimer);
 
-	if (Tag != NULL) {
-		crc(Tag->Fetch_ID());
-	}
+	// Tags and scripts are never given an ID, so only whether one is set is hashed.
+	crc(Tag != NULL);
 
 	crc(IsForcedActive);
 	crc(IsHasBeen);
@@ -2347,7 +2346,7 @@ void TeamClass::Compute_CRC(CRCEngine & crc) const
 		crc(Quantity[i]);
 	}
 
-	if (Script != NULL) crc(Script->Fetch_ID());
+	crc(Script != NULL);
 	if (HouseToScout != NULL) crc(HouseToScout->Fetch_ID());
 	if (Zone != NULL) crc(Zone->Fetch_ID());
 	if (MissionTarget != NULL) crc(MissionTarget->Fetch_ID());

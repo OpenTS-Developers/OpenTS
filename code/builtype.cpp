@@ -1806,7 +1806,7 @@ void BuildingTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(PrimaryFirePixelOffset.X);
 	crc(PrimaryFirePixelOffset.Y);
 	if (ToOverlay != NULL) crc(ToOverlay->Fetch_ID());
-	if (ToTile != NULL) crc(ToTile->Fetch_ID());
+	if (ToTile != NULL) crc(ToTile->HeapID);
 	if (FreeUnit != NULL) crc(FreeUnit->Fetch_ID());
 	crc(ExitCoordinate.X);
 	crc(ExitCoordinate.Y);

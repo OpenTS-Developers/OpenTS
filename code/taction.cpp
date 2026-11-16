@@ -3021,11 +3021,11 @@ void TActionClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
 
-	if (Next != NULL) crc(Next->Fetch_ID());
+	if (Next != NULL) crc(Next->HeapID);
 	crc(Action);
-	if (Team != NULL) crc(Team->Fetch_ID());
-	if (Tag != NULL) crc(Tag->Fetch_ID());
-	if (Trigger != NULL) crc(Trigger->Fetch_ID());
+	if (Team != NULL) crc(Team->HeapID);
+	if (Tag != NULL) crc(Tag->HeapID);
+	if (Trigger != NULL) crc(Trigger->HeapID);
 	crc((int)Data.Value);
 
 	crc(TriggerRect.X);

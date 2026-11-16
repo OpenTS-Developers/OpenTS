@@ -488,8 +488,9 @@ void TriggerClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
 
-	crc(Class->Fetch_ID());
-	if (LinkedTo != NULL) crc(LinkedTo->Fetch_ID());
+	crc(Class->HeapID);
+	// A trigger is never given an ID, so only whether one is linked is hashed.
+	crc(LinkedTo != NULL);
 
 	crc(IsToDelete);
 	crc(IsActive);

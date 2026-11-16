@@ -2254,9 +2254,8 @@ void ObjectClass::Compute_CRC(CRCEngine & crc) const
 		crc(Next->Fetch_ID());
 	}
 
-	if (Tag != NULL) {
-		crc(Tag->Fetch_ID());
-	}
+	// A tag is never given an ID, so only whether one is attached is hashed.
+	crc(Tag != NULL);
 
 	crc(Strength);
 	crc(IsDown);

@@ -2719,7 +2719,7 @@ void IsometricTileTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(NonMarbleMadness);
 	crc(TileSetBaseID);
 	if (NextTileTypeInSet != NULL) {
-		crc(NextTileTypeInSet->Fetch_ID());
+		crc(NextTileTypeInSet->HeapID);
 	}
 	crc(ToSnowTheater);
 	crc(ToTemperateTheater);

@@ -171,8 +171,8 @@ void AITriggerTypeClass::Compute_CRC(CRCEngine & crc) const
 
 	crc(IsEnabled);
 	if (ConditionObject != NULL) crc(ConditionObject->Fetch_ID());
-	if (TeamTypeOne != NULL) crc(TeamTypeOne->Fetch_ID());
-	if (TeamTypeTwo != NULL) crc(TeamTypeTwo->Fetch_ID());
+	if (TeamTypeOne != NULL) crc(TeamTypeOne->HeapID);
+	if (TeamTypeTwo != NULL) crc(TeamTypeTwo->HeapID);
 	crc(TimesSucceded);
 	crc(TimesExecuted);
 }

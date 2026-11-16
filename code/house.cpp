@@ -6535,7 +6535,7 @@ void HouseClass::Compute_CRC(CRCEngine & crc) const
 	crc((int)HeapID);
 	crc(HouseTags.Count());
 	for (int i = 0; i < HouseTags.Count(); i++) {
-		if (HouseTags[i] != NULL) crc(HouseTags[i]->Fetch_ID());
+		crc(HouseTags[i] != NULL);
 	}
 	crc(ConYards.Count());
 	for (int i = 0; i < ConYards.Count(); i++) {

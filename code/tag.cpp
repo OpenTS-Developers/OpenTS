@@ -439,8 +439,9 @@ void TagClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
 
-	crc(Class->Fetch_ID());
-	if (Trigger != NULL) crc(Trigger->Fetch_ID());
+	crc(Class->HeapID);
+	// A trigger is never given an ID, so only whether one is attached is hashed.
+	crc(Trigger != NULL);
 
 	crc(IsToDie);
 

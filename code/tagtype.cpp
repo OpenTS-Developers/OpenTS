@@ -392,7 +392,7 @@ void TagTypeClass::Compute_CRC(CRCEngine & crc) const
 
 	crc(Persistence);
 
-	if (FirstTrigger != NULL) crc(FirstTrigger->Fetch_ID());
+	if (FirstTrigger != NULL) crc(FirstTrigger->HeapID);
 }
 
 

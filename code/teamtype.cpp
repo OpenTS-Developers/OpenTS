@@ -928,18 +928,18 @@ void TeamTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(TechLevel);
 
 	if (Tag != NULL) {
-		crc(Tag->Fetch_ID());
+		crc(Tag->HeapID);
 	}
 
 	crc(Origin);
 	crc(Number);
 
 	if (Script != NULL) {
-		crc(Script->Fetch_ID());
+		crc(Script->HeapID);
 	}
 
 	if (TaskForce != NULL) {
-		crc(TaskForce->Fetch_ID());
+		crc(TaskForces.ID(TaskForce));
 	}
 
 	crc(VeteranLevel);
