@@ -3806,9 +3806,11 @@ static void Compute_Game_CRC(void)
 	}
 
 	//------------------------------------------------------------------------
-	//	A random #
+	//	The synchronized generator's position and next value. Drawing here
+	// would make the random sequence depend on whether the checksum runs.
 	//------------------------------------------------------------------------
-	Add_CRC(&GameCRC, Scen->RandomNumber);
+	Add_CRC(&GameCRC, (unsigned int)Scen->RandomNumber.Index_1());
+	Add_CRC(&GameCRC, (unsigned int)Scen->RandomNumber.Peek());
 
 }	/* end of Compute_Game_CRC */
 

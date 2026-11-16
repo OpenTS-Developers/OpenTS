@@ -122,7 +122,7 @@ b8cc89ebab5d3248 code/point.h Serialize(S&stream) #2
 f61403d807ab2b0b code/ptype.cpp ParticleTypeClass::Compute_CRC(CRCEngine&crc)
 3ca4347ba00114c9 code/ptype.cpp ParticleTypeClass::Serialize(SaveStreamClass&stream)
 a369eb68cd704911 code/quat.h Serialize(S&stream)
-de5472f041577799 code/queue.cpp Compute_Game_CRC(void)
+3ec47a6493f67e8a code/queue.cpp Compute_Game_CRC(void)
 ff08e2239b41bf40 code/radar.cpp RadarClass::Serialize(SaveStreamClass&stream)
 f58df094ed88169d code/radio.cpp RadioClass::Compute_CRC(CRCEngine&crc)
 b86e04f68e59d5b3 code/radio.cpp RadioClass::Serialize(SaveStreamClass&stream)

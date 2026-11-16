@@ -96,6 +96,9 @@ class Random2Class {
 		int Index_1(void) const {return(Index1);}
 		int Index_2(void) const {return(Index2);}
 
+		// The value the next draw returns, read without advancing the generator.
+		int Peek(void) const {return(Table[Index1] ^ Table[Index2]);}
+
 		enum {
 			TABLE_SIZE = 250,
 			SIGNIFICANT_BITS=32				// Random number bit significance.
