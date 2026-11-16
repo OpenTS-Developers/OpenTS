@@ -2292,7 +2292,7 @@ bool InfantryClass::Do_Action(DoType todo, bool force, bool randomize)
 			Set_Rate(MasterDoControls[Doing].Rate);
 		}
 		if (randomize) {
-			Set_Stage(Sim_Random_Pick(0,std::max((int)Class->DoControls[todo].Count, 1) - 1));
+			Set_Stage(Random_Pick(0,std::max((int)Class->DoControls[todo].Count, 1) - 1));
 		} else {
 			Set_Stage(0);
 		}
