@@ -22,7 +22,7 @@ The game controls dialog offers `0` through `6`, and confirming it saves the val
 
 A campaign mission started from the main menu plays at this value. A skirmish plays at the speed chosen in its setup screen, and that choice replaces the value. A multiplayer game plays at the speed the host chooses in its setup screen and leaves the value alone. The skirmish setup screen and the host's multiplayer setup screen start at this value, or at `0` or `6` when the value is below `0` or above `6`.
 
-A game started from [`SPAWN.INI`](/formats/spawn-ini/) plays at the speed that file names and leaves the value alone.
+A game started from [`SPAWN.INI`](/formats/spawn-ini/) plays at the speed that file sets and leaves the value alone. A resumed game against other machines is the exception: it starts at the speed it was saved with, and the lowest seat's file then sets the speed, as [Resuming a saved game](/formats/spawn-ini/#resuming-a-saved-game) describes.
 
 A speed picked in the game controls dialog during a game is sent as an order. In a campaign mission or skirmish, it takes effect after the next frame and replaces the value, including in one started from `SPAWN.INI`. In a multiplayer game, it changes the speed for every player and leaves the value alone.
 
