@@ -7,10 +7,8 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-// Holds simulation value types that need no game data to a defined state after default
-// construction, so that a save or a checksum never reads memory nothing wrote.
-//
-// Needs no game data.
+// Checks that simulation value types that need no game data start in a defined state after
+// default construction, so that a save or a checksum never reads memory nothing wrote.
 
 #include "tmission.h"
 

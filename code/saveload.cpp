@@ -355,9 +355,11 @@ CRCEngine Object_CRCs(void)
 
 
 /// <summary>
-/// Writes a per-heap checksum table to the out-of-sync report: one summary line per heap, then
-/// a row per live object keyed by its stable identifier. Two peers' tables are directly
-/// comparable.
+/// Writes a per-heap checksum table to the out-of-sync report: one summary line per heap, then a
+/// row per live instance with its heap position, its ID, and the running checksum of its heap
+/// through that instance. Comparing two peers' tables finds the first instance whose checksum
+/// differs. It is not yet verified that every hashed member is the same on every machine, so a
+/// difference can also come from state that only one machine keeps.
 /// </summary>
 void Print_Heap_CRCs(FILE * fp)
 {
