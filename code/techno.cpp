@@ -5552,8 +5552,16 @@ void TechnoClass::Do_Shimmer(void)
  *=============================================================================================*/
 VisualType TechnoClass::Visual_Character(bool raw, HouseClass const * house) const
 {
-	if (TClass->IsInvisible && IsOwnedByPlayer) return(VISUAL_NORMAL);
-	if (TClass->IsInvisible && !IsOwnedByPlayer && !Debug_Map) return(VISUAL_HIDDEN);
+	if (TClass->IsInvisible) {
+		if (raw) {
+			// The simulation uses this result, so it must depend on the observing house and never on
+			// the local player.
+			if (house != NULL) return((house == House) ? VISUAL_NORMAL : VISUAL_HIDDEN);
+		} else {
+			if (IsOwnedByPlayer) return(VISUAL_NORMAL);
+			if (!Debug_Map) return(VISUAL_HIDDEN);
+		}
+	}
 
 	/*
 	**	When uncloaked or in map editor mode, always draw the object normally.

@@ -15,6 +15,4 @@ A [hunter-seeker drone](/keys/hunterseeker/#scope-aircrafttype) never chooses it
 
 A BuildingType with [`InvisibleInGame=yes`](/keys/invisibleingame/) has this key turned on, even when its section sets `Invisible=no`.
 
-:::danger[Firing decisions differ between machines]
-Do not set `Invisible=yes` on a type that another player's objects can attack in a multiplayer game; otherwise the game desyncs. Each machine decides whether an attack is allowed by whether its own player can see the target. The attack on an `Invisible=yes` object therefore goes ahead on its owner's machine and is refused on every other. A sensor of the attacking house that covers the object's cell makes the attack allowed on every machine.
-:::
+Another house's weapons refuse to fire at the object unless a sensor of the attacking house covers its cell. The one exception is the [weapon test for hidden objects](/systems/cloaking/#targeting-a-hidden-object): a shot that would do no damage goes through when the object's owner considers the attacking house allied.
