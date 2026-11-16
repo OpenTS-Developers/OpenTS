@@ -101,6 +101,7 @@
 #include "chat.h"
 #include "command.h"
 #include "conquer.h"
+#include "ctrlgroup.h"
 #include "data.h"
 #include "dbgprint.h"
 #include "deploymentconfig.h"
@@ -2960,7 +2961,7 @@ static void Select_Team_Members(int team)
 {
 	for (int i = 0; i < Technos.Count(); i++) {
 		TechnoClass * obj = Technos[i];
-		if (obj && !obj->IsInLimbo && obj->Group == team - 1 && obj->House->Is_Player_Commanded()) {
+		if (obj && !obj->IsInLimbo && ControlGroups.Group_Of(obj) == team - 1 && obj->House->Is_Player_Commanded()) {
 			if (!obj->IsSelected) {
 				obj->Select();
 				AllowVoice = false;
@@ -2975,11 +2976,11 @@ static void Assign_Selection_To_Team(int team)
 	for (int i = 0; i < Technos.Count(); i++) {
 		TechnoClass * obj = Technos[i];
 		if (obj && !obj->IsInLimbo && obj->House->Is_Player_Commanded()) {
-			if (obj->Group == team - 1) {
-				obj->Group = -1;
+			if (ControlGroups.Group_Of(obj) == team - 1) {
+				ControlGroups.Remove(obj);
 			}
 			if (obj->IsSelected) {
-				obj->Group = team - 1;
+				ControlGroups.Assign(obj, team - 1);
 			}
 		}
 	}
@@ -3041,7 +3042,7 @@ class SelectTeamCommandClass : public CommandClass
 			Map.Repair_Mode_Control(0);
 			Map.Sell_Mode_Control(0);
 
-			bool already = CurrentObject.Count() > 0 && CurrentObject[0]->Is_Foot() && ((FootClass *)CurrentObject[0])->Group == (Team - 1);
+			bool already = CurrentObject.Count() > 0 && CurrentObject[0]->Is_Foot() && ControlGroups.Group_Of((FootClass *)CurrentObject[0]) == (Team - 1);
 			if (CurrentObject.Count() > 0 && !already) {
 				Unselect_All();
 			}
@@ -3173,7 +3174,7 @@ class CenterTeamCommandClass : public CommandClass
 			Map.Repair_Mode_Control(0);
 			Map.Sell_Mode_Control(0);
 
-			if (CurrentObject.Count() && (!CurrentObject[0]->Is_Foot() || ((TechnoClass *)CurrentObject[0])->Group != Team - 1)) {
+			if (CurrentObject.Count() && (!CurrentObject[0]->Is_Foot() || ControlGroups.Group_Of((TechnoClass *)CurrentObject[0]) != Team - 1)) {
 				Unselect_All();
 			}
 

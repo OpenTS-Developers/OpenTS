@@ -127,6 +127,7 @@
 #include "classids.h"
 #include "combat.h"
 #include "conquer.h"
+#include "ctrlgroup.h"
 #include "dbgprint.h"
 #include "draw.h"
 #include "drive.h"
@@ -5147,6 +5148,7 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 							unit->Strength = std::max(unit->Strength, 1);
 							unit->ActLike = ActLike;
 							unit->Group = Group;
+							ControlGroups.Transfer(this, unit);
 							unit->Veterancy.Set_Experience(Veterancy.Get_Experience(), false);
 							unit->LimpetType = LimpetType;
 							unit->LimpetSpeedFactor = LimpetSpeedFactor;

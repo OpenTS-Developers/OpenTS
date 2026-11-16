@@ -155,6 +155,7 @@
 #include "ccrand.h"
 #include "cell.h"
 #include "combat.h"
+#include "ctrlgroup.h"
 #include "data.h"
 #include "dbgprint.h"
 #include "dialog.h"
@@ -794,13 +795,14 @@ void TechnoClass::Init(void)
 /// <summary>
 /// Destroys the techno object and unlinks it from the game.
 /// The object gives up its house and drops out of the global techno lists that were holding
-/// it.
+/// it and out of the player's control groups.
 /// </summary>
 TechnoClass::~TechnoClass(void)
 {
 	House=0;
 	Technos.Delete(this);
 	HousePtrTracker.Delete(this);
+	ControlGroups.Remove(this);
 }
 
 
@@ -7699,8 +7701,9 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 	**	Display what group this unit belongs to. This corresponds to the team
 	**	number assigned with the <CTRL> key.
 	*/
-	if (Group >= 0 && Group < 10) {
-		int group = Group+1;
+	int control_group = ControlGroups.Group_Of(this);
+	if (control_group >= 0 && control_group < ControlGroupsClass::COUNT) {
+		int group = control_group+1;
 
 		if (group == 10) group = 0;
 
@@ -8397,6 +8400,7 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 void TechnoClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
+	crc(Group);
 	crc(ActLike);
 	crc(ArmorBias);
 	crc(FirepowerBias);

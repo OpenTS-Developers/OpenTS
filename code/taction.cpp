@@ -1116,8 +1116,7 @@ bool TActionClass::TAction_CHANGE_HOUSE(HouseClass * , ObjectClass * , TriggerCl
 
 /// <summary>
 /// Assigns the triggering object to a numbered group.
-/// This routine handles the trigger action that drops an object into one of the player's
-/// team hotkey groups. Anything that is not a techno is quietly ignored.
+/// Anything that is not a techno is ignored.
 /// </summary>
 /// <param name="object">The object that sprung the trigger.</param>
 bool TActionClass::TAction_SET_GROUP_ID(HouseClass * , ObjectClass * object, TriggerClass *, Cell const & )

@@ -35,6 +35,7 @@
 #include "classids.h"
 
 #include "_voxel.h"
+#include "ctrlgroup.h"
 #include "globals.h"
 #include "goptions.h"
 #include "ipxmgr.h"
@@ -203,6 +204,8 @@ RandomStraw CryptRandom;
 **	are used to control access to this list. Do not modify it directly.
 */
 DynamicVectorClass<ObjectClass *> CurrentObject;
+
+ControlGroupsClass ControlGroups;
 
 
 /***************************************************************************

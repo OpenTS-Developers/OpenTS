@@ -44,7 +44,7 @@ Write a color as three numbers from 0 to 255 for red, green and blue, separated 
 
 ## Control group numbers
 
-An object whose pips are drawn also shows its group number when its group is one of the ten the player's control groups use. The number is the group's key, `1` to `9`, or `0` for the tenth group. Eight `[Pips]` keys set where it is printed, one pair for each kind of object:
+An object whose pips are drawn also shows its control group number when it is in one of the player's ten control groups. The number is the group's key, `1` to `9`, or `0` for the tenth group. Eight `[Pips]` keys set where it is printed, one pair for each kind of object:
 
 | Object | Without pips | With pips |
 | --- | --- | --- |

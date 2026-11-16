@@ -92,6 +92,7 @@
 #include "conquer.h"
 #include "convert.h"
 #include "crc.h"
+#include "ctrlgroup.h"
 #include "data.h"
 #include "dbgprint.h"
 #include "deploymentconfig.h"
@@ -1149,6 +1150,7 @@ void Clear_Scenario(void)
 
 	DebugString("CurrentObjects.Clear()\n");
 	CurrentObject.Clear();
+	ControlGroups.Clear();
 
 	DebugString("Scen->Clear_All_Waypoints()\n");
 	Scen->Clear_All_Waypoints();

@@ -123,6 +123,7 @@
 #include "classids.h"
 #include "combat.h"
 #include "conquer.h"
+#include "ctrlgroup.h"
 #include "draw.h"
 #include "drive.h"
 #include "fog.h"
@@ -1966,6 +1967,7 @@ bool UnitClass::Try_To_Deploy(void)
 
 					building->ActLike = ActLike;
 					building->Group = Group;
+					ControlGroups.Transfer(this, building);
 					building->Veterancy.Set_Experience(Veterancy.Get_Experience(), false);
 					building->LimpetType = LimpetType;
 					building->LimpetSpeedFactor = LimpetSpeedFactor;

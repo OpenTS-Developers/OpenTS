@@ -128,10 +128,10 @@ class TechnoClass :	public RadioClass,
 		HouseSet SpiedBy;
 
 		/*
-		**	If this object is part of a pseudo-team that the player is managing, then
-		**	this will be set to the team number (0 - 9). If it is not part of any
-		**	pseudo-team, then the number will be -1.
-		*/
+		 * This is the group number the scenario gave the object: from the map, a trigger
+		 * action, or the team that recruited it. Teams recruit by it and triggers wake objects
+		 * by it. It is -1 when the object belongs to no group.
+		 */
 		int Group;
 
 		/*
