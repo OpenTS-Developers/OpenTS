@@ -1978,7 +1978,8 @@ bool UnitClass::Try_To_Deploy(void)
 					*/
 					if (building->House->Is_Player_Control()) {
 						Sound_Effect(Rule->BuildingDrop, Center_Coord());
-					} else {
+					}
+					if (!building->House->Is_Human_Player()) {
 						building->IsToRebuild = true;
 						building->IsToRepair = true;
 					}
