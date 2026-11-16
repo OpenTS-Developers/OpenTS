@@ -15,4 +15,4 @@ The first step comes as soon as the target changes, unless the wait after an ear
 At `0` the ambient level never changes again. A scripted lighting change and a storm's darkening both set a new target that never shows on the map.
 :::
 
-The [Set ambient rate...](/mapping/actions/taction-set-ambient-rate/) trigger action changes this value, and a saved game keeps the change. The change lasts until a later scenario loads a rules file or map that sets the key. If none sets `AmbientChangeRate`, later scenarios in the same session keep the changed value.
+The [Set ambient rate...](/mapping/actions/taction-set-ambient-rate/) trigger action changes this value, and a saved game keeps the change. The next scenario starts again from the value its rules files and map give.

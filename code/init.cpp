@@ -803,6 +803,8 @@ static bool Init_Rules(void)
 		Rule->Addition(lang_ini);
 	}
 
+	Rule->Set_Baseline();
+
 	CCFileClass ai_file(DeploymentConfig.AIFile.c_str());
 	AIINI.Load(ai_file, true);
 

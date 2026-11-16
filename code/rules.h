@@ -102,6 +102,7 @@ class RulesClass
 		~RulesClass(void);
 
 		void Initialize(CCINIClass const & ini);
+		void Set_Baseline(void) const;
 
 		bool Addition(CCINIClass const & ini);
 

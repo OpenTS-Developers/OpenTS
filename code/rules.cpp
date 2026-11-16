@@ -103,6 +103,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <memory>
 
 
 void Difficulty_Get(CCINIClass const & ini, DifficultyClass & diff, char const * section);
@@ -673,6 +674,28 @@ RulesClass::~RulesClass(void)
 }
 
 
+namespace {
+	// The rule values as they stood before the first scenario.
+	std::unique_ptr<RulesClass> Baseline;
+}
+
+
+/// <summary>
+/// Records the current rule values, land types, crate settings and mission controls as the ones
+/// every later Initialize starts from. Call it once, after the startup rule files are read and
+/// before the first scenario.
+/// </summary>
+void RulesClass::Set_Baseline(void) const
+{
+	std::unique_ptr<RulesClass> baseline = std::make_unique<RulesClass>(*this);
+	// Initialize deletes every type these values could refer to, so the copy refers to none.
+	for (int index = 0; index < AbstractTypes.Count(); index++) {
+		baseline->Detach(AbstractTypes[index], true);
+	}
+	Baseline = std::move(baseline);
+}
+
+
 /// <summary>
 /// Builds the game's rule data from scratch.
 /// This routine wipes every object type heap clean, reloads the art database, and then
@@ -681,10 +704,15 @@ RulesClass::~RulesClass(void)
 /// caller's own overrides are applied after this returns, so a scenario outranks them all.
 /// </summary>
 /// <remarks>Every type object in the game is destroyed here, so nothing may be holding a
-/// pointer to one when this routine is called. The scalars are not reset first, so one no
-/// file names keeps the value the last game left it with.</remarks>
+/// pointer to one when this routine is called. The rule values, land types, crate settings and
+/// mission controls first return to the ones Set_Baseline recorded, so a value an earlier
+/// scenario set there does not reach the next game.</remarks>
 void RulesClass::Initialize(CCINIClass const & ini)
 {
+	if (Baseline != nullptr) {
+		*this = *Baseline;
+	}
+
 	while (ColorSchemes.Count()) {
 		delete ColorSchemes[0];
 	}
@@ -2704,6 +2732,18 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 }
 
 
+namespace {
+	// A rules list may name the same type more than once.
+	template<class T>
+	void Delete_Every(TypeList<T const *> & list, AbstractClass const * target)
+	{
+		T const * const entry = static_cast<T const *>(target);
+		while (list.Delete(entry)) {
+		}
+	}
+}
+
+
 /// <summary>
 /// Removes all references to the specified object from the rules.
 /// The rules hold direct pointers to a great many object types and warheads, and keep
@@ -2934,54 +2974,61 @@ void RulesClass::Detach(AbstractClass const * target, bool all)
 	if (target == WebbedInfantry) {
 		WebbedInfantry = NULL;
 	}
+	if (target == WoodCrateImg) {
+		WoodCrateImg = NULL;
+	}
+	if (target == CrateImg) {
+		CrateImg = NULL;
+	}
 
-	BarrelDebris.Delete((VoxelAnimTypeClass const *)target);
+	Delete_Every(BarrelDebris, target);
+	Delete_Every(ExplosiveVoxelDebris, target);
 
-	OnFire.Delete((AnimTypeClass const *)target);
+	Delete_Every(OnFire, target);
 
-	TreeFire.Delete((AnimTypeClass const *)target);
+	Delete_Every(TreeFire, target);
 
-	SplashList.Delete((AnimTypeClass const *)target);
+	Delete_Every(SplashList, target);
 
-	Scorches.Delete((SmudgeTypeClass const *)target);
-	Scorches1.Delete((SmudgeTypeClass const *)target);
-	Scorches2.Delete((SmudgeTypeClass const *)target);
-	Scorches3.Delete((SmudgeTypeClass const *)target);
-	Scorches4.Delete((SmudgeTypeClass const *)target);
+	Delete_Every(Scorches, target);
+	Delete_Every(Scorches1, target);
+	Delete_Every(Scorches2, target);
+	Delete_Every(Scorches3, target);
+	Delete_Every(Scorches4, target);
 
-	Craters.Delete((SmudgeTypeClass const *)target);
+	Delete_Every(Craters, target);
 
-	HarvesterUnit.Delete((UnitTypeClass const *)target);
-	BaseUnit.Delete((UnitTypeClass const *)target);
+	Delete_Every(HarvesterUnit, target);
+	Delete_Every(BaseUnit, target);
 
-	BuildConst.Delete((BuildingTypeClass const *)target);
-	BuildPower.Delete((BuildingTypeClass const *)target);
-	BuildRefinery.Delete((BuildingTypeClass const *)target);
-	BuildBarracks.Delete((BuildingTypeClass const *)target);
-	BuildTech.Delete((BuildingTypeClass const *)target);
-	BuildWeapons.Delete((BuildingTypeClass const *)target);
-	BuildDefense.Delete((BuildingTypeClass const *)target);
-	BuildPDefense.Delete((BuildingTypeClass const *)target);
-	BuildAA.Delete((BuildingTypeClass const *)target);
-	BuildHelipad.Delete((BuildingTypeClass const *)target);
-	BuildRadar.Delete((BuildingTypeClass const *)target);
+	Delete_Every(BuildConst, target);
+	Delete_Every(BuildPower, target);
+	Delete_Every(BuildRefinery, target);
+	Delete_Every(BuildBarracks, target);
+	Delete_Every(BuildTech, target);
+	Delete_Every(BuildWeapons, target);
+	Delete_Every(BuildDefense, target);
+	Delete_Every(BuildPDefense, target);
+	Delete_Every(BuildAA, target);
+	Delete_Every(BuildHelipad, target);
+	Delete_Every(BuildRadar, target);
 
-	ConcreteWalls.Delete((BuildingTypeClass const *)target);
+	Delete_Every(ConcreteWalls, target);
 
-	NSGates.Delete((BuildingTypeClass const *)target);
-	EWGates.Delete((BuildingTypeClass const *)target);
+	Delete_Every(NSGates, target);
+	Delete_Every(EWGates, target);
 
-	PadAircraft.Delete((AircraftTypeClass const *)target);
+	Delete_Every(PadAircraft, target);
 
-	DeadBodies.Delete((AnimTypeClass const *)target);
+	Delete_Every(DeadBodies, target);
 
-	DropPod.Delete((AnimTypeClass const *)target);
+	Delete_Every(DropPod, target);
 
-	MetallicDebris.Delete((AnimTypeClass const *)target);
+	Delete_Every(MetallicDebris, target);
 
-	BridgeExplosions.Delete((AnimTypeClass const *)target);
+	Delete_Every(BridgeExplosions, target);
 
-	HSBuilding.Delete((BuildingTypeClass const *)target);
+	Delete_Every(HSBuilding, target);
 }
 
 
