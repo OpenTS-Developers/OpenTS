@@ -118,8 +118,8 @@ void Reset_Float_State(void)
 	unsigned int const mask = _MCW_EM | _MCW_RC | _MCW_DN;
 #endif
 
-	unsigned int previous = 0;
-	_controlfp_s(&previous, _CW_DEFAULT, mask);
+	unsigned int current = 0;
+	_controlfp_s(&current, _CW_DEFAULT, mask);
 
 #if defined(_M_X64)
 	(void)_set_FMA3_enable(0);

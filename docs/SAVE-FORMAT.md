@@ -144,8 +144,9 @@ every raise of the serial:
 - Raise the serial by one in a commit that changes what a `Serialize` function
   writes or what the simulation computes. Development builds of one version
   then refuse each other's saves instead of misreading them.
-- Reset it to 0 when the version is raised for a release, so a released
-  build's internal version is its packed version.
+- Reset it to 0 in the commit that changes the project version number. The
+  packed version changes in the same commit, so the internal versions of two
+  different versions never match.
 
 `tests/saveserial` hashes the text of every function whose parameter list
 uses `SaveStreamClass` or whose name contains `Serialize`, of `Compute_CRC`,

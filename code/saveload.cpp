@@ -158,8 +158,8 @@
 ********************************** Defines **********************************
 */
 // Separates development builds of one version whose saves or simulation differ. Raise it by one
-// for a change to the save layout or to what the simulation computes, and reset it to 0 at each
-// release.
+// for a change to the save layout or to what the simulation computes, and reset it to 0 in the
+// commit that changes the project version number, so that stamps of different versions differ.
 static constexpr unsigned int GameVersionSerial = 2;
 static_assert(GameVersionSerial <= 0xFF, "the serial takes the byte the packed version leaves free");
 
