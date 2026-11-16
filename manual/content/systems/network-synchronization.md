@@ -101,4 +101,6 @@ When a timing event executes with a target in a different tier from the previous
 
 `NETWORK_REPORT` is a network event that OpenTS adds, and it appears in multiplayer recordings. Every player therefore needs the same OpenTS snapshot, and a recording should be played by the snapshot that wrote it. The events that Tiberian Sun already had keep their IDs.
 
+Builds with different network protocols ignore each other's network games. Neither lists a LAN game the other hosts, and in a game a client starts across the two, the machines never connect.
+
 The timing reads the measured round trips directly. `LATENCYFUDGE` keeps its event ID and its session setting so that recordings still play, but nothing sends it, and the timing does not read it.

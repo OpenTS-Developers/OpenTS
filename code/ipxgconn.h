@@ -129,9 +129,10 @@ class IPXGlobalConnClass : public IPXConnClass
 			COMMAND_AND_CONQUER1 = 0xaa01, /// TD
 			COMMAND_AND_CONQUER0 = 0xaa00, /// RA
 
-			// Give OpenTS a new value whenever a global channel packet's layout changes, so
-			// builds that disagree on it ignore each other's games.
-			OPENTS = 0x4f02,
+			// Give OpenTS a new value whenever a global channel packet, the event table, or
+			// what a network game computes changes, so builds that disagree ignore each
+			// other's games.
+			OPENTS = 0x4f03,
 		};
 
 		//.....................................................................

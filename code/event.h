@@ -112,6 +112,7 @@ class EventClass
 			NETWORK_REPORT,
 			ABANDON_COUNT,
 			GRANT_CONTROL,		// Grant or withdraw shared control of the sender's units.
+			CHAT_PROOF,			// A chat line's fingerprint. Reserved: nothing sends it, and executing it changes nothing.
 
 			LAST_EVENT,			// one past the last event
 		};
@@ -252,6 +253,10 @@ class EventClass
 				std::uint16_t WorstRoundTripMilliseconds;
 				std::uint16_t StallMilliseconds;
 			} NetworkReport;
+
+			struct {
+				unsigned char Digest[16];
+			} ChatProof;
 
 		} Data;
 

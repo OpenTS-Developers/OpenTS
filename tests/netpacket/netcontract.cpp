@@ -301,7 +301,8 @@ TEST_CASE("the inherited events keep their numbers, and the new ones append afte
 	CHECK(EventClass::NETWORK_REPORT == 36);
 	CHECK(EventClass::ABANDON_COUNT == 37);
 	CHECK(EventClass::GRANT_CONTROL == 38);
-	CHECK(EventClass::LAST_EVENT == 39);
+	CHECK(EventClass::CHAT_PROOF == 39);
+	CHECK(EventClass::LAST_EVENT == 40);
 }
 
 
@@ -315,6 +316,8 @@ TEST_CASE("the appended events have their payload sizes and diagnostic names")
 	CHECK(std::string(EventClass::EventNames[EventClass::ABANDON_COUNT]) == "ABANDON_COUNT");
 	CHECK_MESSAGE(EventClass::EventLength[EventClass::GRANT_CONTROL] == sizeof(int), "GRANT_CONTROL carries one house index");
 	CHECK(std::string(EventClass::EventNames[EventClass::GRANT_CONTROL]) == "GRANT_CONTROL");
+	CHECK_MESSAGE(EventClass::EventLength[EventClass::CHAT_PROOF] == 16u, "CHAT_PROOF has a 16-byte digest");
+	CHECK(std::string(EventClass::EventNames[EventClass::CHAT_PROOF]) == "CHAT_PROOF");
 }
 
 
@@ -933,6 +936,14 @@ TEST_CASE("a kick vote is the matched member's, and must name another current me
 TEST_CASE("the global packet keeps its wire size")
 {
 	CHECK(sizeof(GlobalPacketType) == 1036u);
+}
+
+
+TEST_CASE("a chat packet has room for a 16-byte salt after the scope")
+{
+	using MessageType = decltype(GlobalPacketType::Message);
+	CHECK(sizeof(MessageType::Salt) == 16u);
+	CHECK(offsetof(MessageType, Salt) == offsetof(MessageType, Scope) + sizeof(MessageType::Scope));
 }
 
 

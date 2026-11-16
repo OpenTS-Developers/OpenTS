@@ -306,6 +306,7 @@ struct GlobalPacketType {
 			int Color;							// color of sender of message
 			unsigned int NameCRC;				// CRC of sender's Game Name
 			ChatScopeType Scope;				// who the message is for
+			unsigned char Salt[16];				// reserved for the chat fingerprint; sent as zeros
 		} Message;
 		struct {
 			int OneWay;							// one-way response time
