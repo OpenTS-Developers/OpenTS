@@ -97,12 +97,20 @@ void SaveManagerClass::Post_Save_Notice(int text)
 /// Solo and skirmish games save immediately. A synchronized multiplayer request is held
 /// until the frame has finished retiring dead objects. A quiet request is written without
 /// the saving box; the first request of a frame settles that and what the save reports.
+/// A request while no scenario is active, such as after a refused load, is refused, since
+/// the game may be partly built.
 /// </summary>
 /// <returns>Returns true when the save completed or the multiplayer request was accepted.</returns>
 bool SaveManagerClass::Request_Save_Game(char const * file_name, char const * descr, bool quiet,
 	NoticeType notice)
 {
 	if (file_name == NULL || descr == NULL) return(false);
+
+	if (!ScenarioActive) {
+		DebugString("Ignoring save request because no scenario is active\n");
+		Record_Save_Outcome(notice, false);
+		return(false);
+	}
 
 	if (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) {
 		bool saved = Save_Game(file_name, descr);
