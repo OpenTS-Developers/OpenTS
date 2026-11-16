@@ -10,9 +10,15 @@
 // Checks that simulation value types that need no game data start in a defined state after
 // default construction, so that a save or a checksum never reads memory nothing wrote.
 
+#include "event.h"
+#include "target.h"
 #include "tmission.h"
 
 #include "doctest/doctest.h"
+
+#include <algorithm>
+#include <cstring>
+#include <new>
 
 TEST_CASE("A default team mission is no mission with a zero argument")
 {
@@ -25,4 +31,26 @@ TEST_CASE("A default team mission is no mission with a zero argument")
 		CHECK(entry.Mission == TMISSION_NONE);
 		CHECK(entry.Data.Value == 0);
 	}
+}
+
+TEST_CASE("An empty target has a zero ID")
+{
+	alignas(TargetClass) unsigned char storage[sizeof(TargetClass)];
+	std::memset(storage, 0xCD, sizeof(storage));
+	TargetClass * target = new (storage) TargetClass;
+	CHECK(!target->Is_Valid());
+	CHECK(target->Value() == 0);
+
+	target->Decode(0x01123456);
+	target->Invalidate();
+	CHECK(target->Value() == 0);
+}
+
+TEST_CASE("A default event is empty and zero in every byte")
+{
+	alignas(EventClass) unsigned char storage[sizeof(EventClass)];
+	std::memset(storage, 0xCD, sizeof(storage));
+	EventClass * event = new (storage) EventClass;
+	CHECK(event->Type == EventClass::EMPTY);
+	CHECK(std::all_of(storage, storage + sizeof(storage), [](unsigned char byte) {return(byte == 0);}));
 }

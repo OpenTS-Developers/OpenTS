@@ -112,7 +112,7 @@ class xTargetClass
 
 		unsigned Value(void) const {return(ID);};
 
-		void Invalidate(void) {RTTI = RTTI_NONE; /*ID  = 0*/;}
+		void Invalidate(void) {RTTI = RTTI_NONE; ID = 0;}
 		bool Is_Valid(void) const {return(RTTI != RTTI_NONE);}
 
 		int Encode(void)

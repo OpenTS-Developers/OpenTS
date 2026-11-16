@@ -262,7 +262,8 @@ class EventClass
 		} Data;
 
 		//-------------- Constructors ---------------------
-		EventClass(void) {Type = EMPTY;};
+		// Every byte starts at zero, so payload bytes and padding an event type leaves unused match on every machine.
+		EventClass(void) {std::memset(static_cast<void *>(this), 0, sizeof(*this)); Type = EMPTY;};
 		EventClass(int index, SpecialClass data);
 		EventClass(int index, unsigned char type, TargetClass target);
 		EventClass(int index, unsigned char type);

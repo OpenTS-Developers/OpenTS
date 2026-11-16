@@ -277,7 +277,7 @@ void EventClass::Reset_Announcements(void)
  * HISTORY:                                                                                    *
  *   06/25/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-EventClass::EventClass(int index, SpecialClass data)
+EventClass::EventClass(int index, SpecialClass data) : EventClass()
 {
 	if (index >= 0) {
 		ID = index;
@@ -309,7 +309,7 @@ EventClass::EventClass(int index, SpecialClass data)
  * HISTORY:                                                                                    *
  *   06/25/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-EventClass::EventClass(int index, unsigned char type, TargetClass target)
+EventClass::EventClass(int index, unsigned char type, TargetClass target) : EventClass()
 {
 #ifdef _DEBUG
 	DebugString("Adding event %s\n", EventNames[type]);
@@ -336,7 +336,7 @@ EventClass::EventClass(int index, unsigned char type, TargetClass target)
 /// <param name="index">The house index of the player originating this event.</param>
 /// <param name="type">The event type to construct.</param>
 /// <param name="cell">The cell that this event is to apply to.</param>
-EventClass::EventClass(int index, unsigned char type, Cell const & cell)
+EventClass::EventClass(int index, unsigned char type, Cell const & cell) : EventClass()
 {
 	DebugString("Adding event %s\n", EventNames[type]);
 
@@ -368,7 +368,7 @@ EventClass::EventClass(int index, unsigned char type, Cell const & cell)
  * HISTORY:                                                                                    *
  *   12/27/1994 JLB : Created.                                                                 *
  *=============================================================================================*/
-EventClass::EventClass(int index, unsigned char type)
+EventClass::EventClass(int index, unsigned char type) : EventClass()
 {
 	DebugString("Adding event %s\n", EventNames[type]);
 
@@ -397,7 +397,7 @@ EventClass::EventClass(int index, unsigned char type)
  * HISTORY:                                                                                    *
  *   12/27/1994 JLB : Created.                                                                 *
  *=============================================================================================*/
-EventClass::EventClass(int index, unsigned char type, int val)
+EventClass::EventClass(int index, unsigned char type, int val) : EventClass()
 {
 	DebugString("Adding event %s\n", EventNames[type]);
 	if (index >= 0) {
@@ -433,7 +433,7 @@ EventClass::EventClass(int index, unsigned char type, int val)
  * HISTORY:                                                                                    *
  *   12/27/1994 JLB : Created.                                                                 *
  *=============================================================================================*/
-EventClass::EventClass(int index, unsigned char type, TargetClass src, TargetClass dest)
+EventClass::EventClass(int index, unsigned char type, TargetClass src, TargetClass dest) : EventClass()
 {
 	DebugString("Adding event %s\n", EventNames[type]);
 
@@ -467,7 +467,7 @@ EventClass::EventClass(int index, unsigned char type, TargetClass src, TargetCla
  * HISTORY:                                                                                    *
  *   05/19/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-EventClass::EventClass(int index, AnimType anim, HousesType owner, Coord const & coord)
+EventClass::EventClass(int index, AnimType anim, HousesType owner, Coord const & coord) : EventClass()
 {
 	DebugString("Adding event ANIMATION\n");
 
@@ -507,7 +507,7 @@ EventClass::EventClass(int index, AnimType anim, HousesType owner, Coord const &
  * HISTORY:                                                                                    *
  *   05/18/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-EventClass::EventClass(int index, TargetClass src, MissionType mission, TargetClass target, TargetClass destination)
+EventClass::EventClass(int index, TargetClass src, MissionType mission, TargetClass target, TargetClass destination) : EventClass()
 {
 	if (index >= 0) {
 		ID = index;
@@ -550,7 +550,7 @@ EventClass::EventClass(int index, TargetClass src, MissionType mission, TargetCl
  * HISTORY:                                                                                    *
  *   05/18/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-EventClass::EventClass(int index, TargetClass src, MissionType mission, TargetClass target, TargetClass destination, SpeedType speed, MPHType maxspeed)
+EventClass::EventClass(int index, TargetClass src, MissionType mission, TargetClass target, TargetClass destination, SpeedType speed, MPHType maxspeed) : EventClass()
 {
 	DebugString("Adding event MEGAMISSION_F\n");
 
@@ -591,7 +591,7 @@ EventClass::EventClass(int index, TargetClass src, MissionType mission, TargetCl
  * HISTORY:                                                                                    *
  *   05/18/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-EventClass::EventClass(int index, unsigned char type, RTTIType object, int id)
+EventClass::EventClass(int index, unsigned char type, RTTIType object, int id) : EventClass()
 {
 	DebugString("Adding event %s\n", EventNames[type]);
 
@@ -612,7 +612,7 @@ EventClass::EventClass(int index, unsigned char type, RTTIType object, int id)
 /// <summary>
 /// Builds an event that abandons count items of one type, the queued copies first.
 /// </summary>
-EventClass::EventClass(int index, unsigned char type, RTTIType object, int id, int count)
+EventClass::EventClass(int index, unsigned char type, RTTIType object, int id, int count) : EventClass()
 {
 	DebugString("Adding event %s\n", EventNames[type]);
 
@@ -651,7 +651,7 @@ EventClass::EventClass(int index, unsigned char type, RTTIType object, int id, i
  * HISTORY:                                                                                    *
  *   05/18/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-EventClass::EventClass(int index, unsigned char type, RTTIType object, Cell const & cell)
+EventClass::EventClass(int index, unsigned char type, RTTIType object, Cell const & cell) : EventClass()
 {
 	DebugString("Adding event %s\n", EventNames[type]);
 
@@ -687,7 +687,7 @@ EventClass::EventClass(int index, unsigned char type, RTTIType object, Cell cons
  * HISTORY:                                                                                    *
  *   05/18/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-EventClass::EventClass(int index, unsigned char type, int id, Cell const & cell)
+EventClass::EventClass(int index, unsigned char type, int id, Cell const & cell) : EventClass()
 {
 	DebugString("Adding event %s\n", EventNames[type]);
 
@@ -720,7 +720,7 @@ EventClass::EventClass(int index, unsigned char type, int id, Cell const & cell)
  * HISTORY:                                                                                    *
  *   11/10/1995 BRR : Created.                                                                 *
  *=============================================================================================*/
-EventClass::EventClass(int index, unsigned char type, void * ptr, unsigned int size)
+EventClass::EventClass(int index, unsigned char type, void * ptr, unsigned int size) : EventClass()
 {
 	DebugString("Adding event %s\n", EventNames[type]);
 
