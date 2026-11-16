@@ -36,6 +36,7 @@
 
 #include "win.h"
 
+#include <float.h>
 #include <intrin.h>
 #include <math.h>
 
@@ -96,6 +97,33 @@ unsigned int Get_CPU_Clock(unsigned int & high)
 
 	high = (unsigned int)(stamp >> 32);
 	return((unsigned int)stamp);
+}
+
+
+/// <summary>
+/// Sets the floating-point control state to the runtime's startup default, which is what
+/// the /fp:precise build assumes: round to nearest, every exception masked, denormals kept,
+/// and on Win32 the x87 unit at 53-bit precision. On x64 it also turns off the FMA3 code
+/// paths of the runtime's transcendental functions, such as sin and pow, so that they give
+/// the same results whether or not the processor has FMA3.
+/// </summary>
+/// <remarks>A graphics or sound driver loaded into the process can change this state, so the
+/// simulation calls this before each scenario and each logic frame.</remarks>
+void Reset_Float_State(void)
+{
+#if defined(_M_IX86)
+	unsigned int const mask = _MCW_EM | _MCW_RC | _MCW_PC | _MCW_DN;
+#else
+	// Precision control does not exist outside the x87 unit, and asking for it is an error.
+	unsigned int const mask = _MCW_EM | _MCW_RC | _MCW_DN;
+#endif
+
+	unsigned int previous = 0;
+	_controlfp_s(&previous, _CW_DEFAULT, mask);
+
+#if defined(_M_X64)
+	(void)_set_FMA3_enable(0);
+#endif
 }
 
 

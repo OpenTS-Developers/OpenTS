@@ -124,6 +124,7 @@
 #include "light.h"
 #include "mainloop.h"
 #include "mono.h"
+#include "mpu.h"
 #include "msgbox.h"
 #include "msgloop.h"
 #include "netdlg.h"
@@ -3196,6 +3197,9 @@ static int Execute_DoList(int max_houses, HousesType base_house,
 	int index;
 	int const previous_execution_frame = LastExecutedFrame;
 	LastExecutedFrame = Frame;
+
+	// The wait for the other players can draw a dialog after Main_Loop's reset.
+	Reset_Float_State();
 
 #if (TIMING_FIX)
 	//

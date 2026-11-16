@@ -43,6 +43,7 @@
 #include "logic.h"
 #include "misc.h"
 #include "mpscore.h"
+#include "mpu.h"
 #include "msgbox.h"
 #include "msgloop.h"
 #include "mstimer.h"
@@ -321,6 +322,9 @@ bool Main_Loop(void)
 	}
 
 	drag_select_aborted = false;
+
+	// Drawing the frame above can leave the floating-point state changed by a driver.
+	Reset_Float_State();
 
 	/*
 	**	Save map's position & selected objects, if we're recording the game.
