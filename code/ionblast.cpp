@@ -361,6 +361,17 @@ void IonBlastClass::Clear_All(void)
 
 
 /// <summary>
+/// Deletes every blast in progress, so that none goes on to strike the next scenario.
+/// </summary>
+void IonBlastClass::Delete_All(void)
+{
+	while (IonBlasts.Count()) {
+		delete IonBlasts[0];
+	}
+}
+
+
+/// <summary>
 /// Decides whether a displaced pixel may be fetched for the shockwave.
 /// The neighbor a warped pixel is replaced by must itself lie within the view, or the
 /// warp would carry interface pixels or memory past the frame into the blast.

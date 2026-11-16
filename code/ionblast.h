@@ -25,6 +25,7 @@ class IonBlastClass
 		static void One_Time(void);
 		static void Update_All(void);
 		static void Clear_All(void);
+		static void Delete_All(void);
 		static void Draw_All(void);
 
 	private:
