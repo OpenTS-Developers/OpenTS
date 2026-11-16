@@ -583,7 +583,7 @@ class HouseClass : public AbstractClass
 				stream.Serialize(ArmorDefense);
 				stream.Serialize(InfantryDefense);
 			}
-		} ZoneInfo[ZONE_COUNT];
+		} ZoneInfo[ZONE_COUNT] = {};
 
 		/*
 		**	This records information about the last time a building of this

@@ -470,7 +470,7 @@ class TechnoClass :	public RadioClass,
 		 * fraction of the object's normal speed. It slows the rate at which the body and
 		 * turret turn as well, so a limpeted vehicle is sluggish as well as watched.
 		 */
-		float LimpetSpeedFactor;
+		float LimpetSpeedFactor = 0.0f;
 
 		/*---------------------------------------------------------------------
 		**	Constructors, Destructors, and overloaded operators.

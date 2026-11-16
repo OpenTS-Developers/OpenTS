@@ -1806,12 +1806,12 @@ class RulesClass
 		 * The time quake will do this percentage of damage to all units and buildings
 		 * in the game. The number is expressed as a floating point percentage.
 		 */
-		double QuakeDamagePercent;
+		double QuakeDamagePercent = 0.0;
 
 		/*
 		**	Percentage chance that a time quake will occur with each chronoshift use.
 		*/
-		double QuakeChance;
+		double QuakeChance = 0.0;
 
 		/*
 		**	Ore (Tiberium) growth rate. The value is the number of minutes between
