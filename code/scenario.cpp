@@ -1649,7 +1649,7 @@ char const * Pick_Load_Background_Name(Point2D & pos)
 		player = 0;
 	}
 
-	int choice = (player << 1) + Random_Pick(0, 1);
+	int choice = (player << 1) + Sim_Random_Pick(0, 1);
 
 	if (VisibleRect.Width == 640) {
 		if (VisibleRect.Height == 480) {
