@@ -476,9 +476,10 @@ bool DebugPrint::Enable_Console_Locked(void)
 
 /// <summary>
 /// Determines the time difference in seconds between the specified reference time in UTC
-/// and the local time. Useful for determining the current local time from system_clock
+/// and the local time. Useful for determining the current local time from <c>system_clock</c>
 /// timestamps, but only accurate until the next DST switch.
 /// </summary>
+/// <param name="reference_time">A <c>system_clock</c> timestamp. Should be close to the current time.</param>
 static std::chrono::seconds Get_UTC_Local_Offset(system_time_point reference_time)
 {
 	time_t utc_time = std::chrono::system_clock::to_time_t(reference_time);
@@ -595,7 +596,7 @@ void DebugPrint::Init_Locked(void)
 /// record is available in case of an imminent crash.
 /// </summary>
 /// <param name="text">String buffer to write. Must be zero-terminated.</param>
-/// <param name="length">Number of bytes in text to write.</param>
+/// <param name="length">Number of bytes in <c>text</c> to write.</param>
 void DebugPrint::Write_Text_Locked(char const * text, size_t length)
 {
 	if (text == NULL || length == 0) {
@@ -1376,7 +1377,7 @@ static void DebugString_Perform(bool with_prefix, char const * fmt, va_list va_i
 /// A message that starts a line is stamped with the time it was reported.
 /// Can be called before Debug_Init(), but the messages will only be logged after Debug_Init() is called.
 /// </summary>
-/// <param name="string">The printf style format string to report.</param>
+/// <param name="fmt">The printf style format string to report.</param>
 void __cdecl DebugString(char const * fmt, ...)
 {
 #ifdef _WIN32
@@ -1402,7 +1403,7 @@ void __cdecl DebugString(char const * fmt, ...)
 /// startup banner that reads better unstamped. It reaches the same places DebugString does.
 /// Can be called before Debug_Init(), but the messages will only be logged after Debug_Init() is called.
 /// </summary>
-/// <param name="string">The printf style format string to report.</param>
+/// <param name="fmt">The printf style format string to report.</param>
 void __cdecl DebugStringNoPrefix(char const * fmt, ...)
 {
 #ifdef _WIN32
