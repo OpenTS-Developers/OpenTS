@@ -645,13 +645,13 @@ void DebugPrint::Write_Text_Locked(char const * text, size_t length)
 
 		while (to_write > 0) {
 			size_t free_bytes = sizeof(ConsoleBuf) - ConsoleBufFill;
-			size_t can_write = std::min(free_bytes, length);
+			size_t can_write = std::min(free_bytes, to_write);
 
 			if (can_write == 0) {
 				WriteConsole(DebugConsole, ConsoleBuf, (DWORD)ConsoleBufFill, &actual, NULL);
 				ConsoleBufFill = 0;
 				free_bytes = sizeof(ConsoleBuf);
-				can_write = std::min(free_bytes, length);
+				can_write = std::min(free_bytes, to_write);
 			}
 
 			if (can_write > 0) {
