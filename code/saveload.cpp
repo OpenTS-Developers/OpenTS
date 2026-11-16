@@ -157,7 +157,13 @@
 /*
 ********************************** Defines **********************************
 */
-unsigned int ExpectedGameVersion = LoadOptionsClass::GAMEVER_OPENTS;
+// Separates development builds of one version whose saves or simulation differ. Raise it by one
+// for a change to the save layout or to what the simulation computes, and reset it to 0 at each
+// release.
+static constexpr unsigned int GameVersionSerial = 0;
+static_assert(GameVersionSerial <= 0xFF, "the serial takes the byte the packed version leaves free");
+
+unsigned int ExpectedGameVersion = (GameVersionSerial << 24) | LoadOptionsClass::GAMEVER_OPENTS;
 
 
 /// <summary>

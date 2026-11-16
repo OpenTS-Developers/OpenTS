@@ -125,10 +125,28 @@ the file, and a reader refuses a version above its own. The header flags are
 gated the same way: a reader refuses a file with a flag bit it does not know,
 so a later version can mark content it stores differently without moving the
 format version. The internal version in the field table,
-`PIDSI_INTERNAL_VER`, is `ExpectedGameVersion`, the packed project version,
-and a save whose value differs from the running build's is not offered to the
-player. The format version moves only when the layout in this document
-changes; the internal version moves with every release.
+`PIDSI_INTERNAL_VER`, is `ExpectedGameVersion` in `code/saveload.cpp`, and a
+save whose value differs from the running build's is neither offered to the
+player nor loaded. The format version moves only when the layout in this
+document changes.
+
+`ExpectedGameVersion` contains the packed project version,
+`major << 16 | minor << 8 | patch`, in its low three bytes and the serial
+`GameVersionSerial` in its top byte, so it changes with every release and with
+every raise of the serial:
+
+- Raise the serial by one in a commit that changes what a `Serialize` function
+  writes or what the simulation computes. Development builds of one version
+  then refuse each other's saves instead of misreading them.
+- Reset it to 0 when the version is raised for a release, so a released
+  build's internal version is its packed version.
+
+`tests/saveserial` hashes the text of every function whose name contains
+`Serialize`, and of `Compute_CRC`, `Compute_Game_CRC`, `Put_All` and `Get_All`,
+and fails when one changes, apart from comments and whitespace. Its message
+names the serial and the file of recorded hashes to replace. The LAN lobby's
+version range and `Build_Number` use the packed version alone, so builds whose
+serials differ still meet in the lobby.
 
 ## What the reader refuses
 

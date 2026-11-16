@@ -81,12 +81,11 @@ class LoadOptionsClass
 		};
 
 		/*
-		 * Save games carry this in their version header. Only a save stamped with the
-		 * current value loads; the per-member save format has no reader for anything
-		 * else, so every earlier stamp is refused outright.
-		 *
-		 * It is the packed project version. Development snapshots within one version
-		 * share this value without promising that their saves interoperate.
+		 * The packed project version. Save games store ExpectedGameVersion in their
+		 * version header, which is this value with the serial from saveload.cpp in its
+		 * top byte. Only a save stamped with the current ExpectedGameVersion loads; the
+		 * per-member save format has no reader for anything else, so every earlier stamp
+		 * is refused outright.
 		 */
 		enum {
 			GAMEVER_OPENTS = OPENTS_VERSION_PACKED

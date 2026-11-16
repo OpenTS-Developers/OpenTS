@@ -120,7 +120,7 @@ When [`CarryScenarioFile`](/formats/opents-ini/#what-a-save-carries) in `OPENTS.
 
 A save is offered and loaded only when its version stamp matches the running version of OpenTS. The load dialog reads the header and listing table of every `.SAV` file in the `Saved Games` folder and skips any file stamped by another version, including another OpenTS release. Tiberian Sun and earlier OpenTS releases wrote saves in a compound-document layout, which this format does not recognize, so those files are skipped as well. There is no conversion.
 
-A save loaded without the dialog, such as a network save or one resumed from a [launch file](/formats/spawn-ini/), is refused in the same way when its stamp differs. Development snapshots of one version share its stamp, although their save layouts can still differ, so a listed save from another snapshot can fail to load.
+A save loaded without the dialog, such as a network save or one resumed from a [launch file](/formats/spawn-ini/), is refused in the same way when its stamp differs. Development snapshots of one version share its stamp until a change to the save layout raises a serial the stamp includes. A snapshot whose layout changed without that raise can still list a save it fails to load.
 
 Apart from the version stamp and the add-on the saved scenario requires, a save is not compared with the game loading it. A save made under one set of rules and loaded under another is not detected. The type definitions stored in the file replace the ones the current rules built.
 
