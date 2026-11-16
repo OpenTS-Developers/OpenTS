@@ -95,6 +95,10 @@ class DebugPrint
 			ConsoleActive(false),
 			File(NULL),
 			FileBytesWritten(0),
+#ifdef _WIN32
+			DebugConsole(INVALID_HANDLE_VALUE),
+			ConsoleBufFill(0),
+#endif
 			UTCtoLocal(std::chrono::seconds(0)),
 			ArgsConsoleRequested(false),
 			ArgsFullCommandLine(u8"(unknown)")
@@ -141,6 +145,14 @@ class DebugPrint
 		// C++20 doesn't support std::ios::noreplace (added in C++23), uset C API with "x" flag.
 		FILE * File;
 		uint64_t FileBytesWritten;
+
+#ifdef _WIN32
+		// Implement our own console buffering on Windows, since the std::cout stuff is slow.
+		HANDLE DebugConsole;
+		char ConsoleBuf[BUFSIZ];
+		size_t ConsoleBufFill;
+#endif
+
 		// Needed for fast timestamp evaluation. Not accurate when running the game during a DST switch.
 		std::chrono::seconds UTCtoLocal;
 
@@ -398,7 +410,7 @@ bool DebugPrint::Enable_Console_Locked(void)
 		SetStdHandle(STD_INPUT_HANDLE, input);
 	}
 
-	HANDLE DebugConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+	DebugConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 	if (DebugConsole == NULL) {
 		DebugConsole = INVALID_HANDLE_VALUE;
 	}
@@ -422,6 +434,7 @@ bool DebugPrint::Enable_Console_Locked(void)
 		}
 	}
 
+	ConsoleBufFill = 0;
 	ConsoleActive = true;
 
 	if (DebugConsole != INVALID_HANDLE_VALUE && ConsoleReplay.has_value() && !ConsoleReplay->empty()) {
@@ -625,10 +638,40 @@ void DebugPrint::Write_Text_Locked(char const * text, size_t length)
 #endif
 
 	if (ConsoleActive) {
+#ifdef _WIN32
+		size_t to_write = length;
+		size_t wrote_bytes = 0;
+		DWORD actual;
+
+		while (to_write > 0) {
+			size_t free_bytes = sizeof(ConsoleBuf) - ConsoleBufFill;
+			size_t can_write = std::min(free_bytes, length);
+
+			if (can_write == 0) {
+				WriteConsole(DebugConsole, ConsoleBuf, (DWORD)ConsoleBufFill, &actual, NULL);
+				ConsoleBufFill = 0;
+				free_bytes = sizeof(ConsoleBuf);
+				can_write = std::min(free_bytes, length);
+			}
+
+			if (can_write > 0) {
+				memcpy(&ConsoleBuf[ConsoleBufFill], &text[wrote_bytes], can_write);
+				ConsoleBufFill += can_write;
+				wrote_bytes += can_write;
+				to_write -= can_write;
+			}
+		}
+
+		if (should_flush || ConsoleBufFill == sizeof(ConsoleBuf)) {
+			WriteConsole(DebugConsole, ConsoleBuf, (DWORD)ConsoleBufFill, &actual, NULL);
+			ConsoleBufFill = 0;
+		}
+#else
 		std::cout.write(text, length);
 		if (should_flush) {
 			std::cout.flush();
 		}
+#endif
 	} else {
 		if (!ConsoleReplay.has_value()) {
 			ConsoleReplay.emplace();
