@@ -1,0 +1,4 @@
+# The tests compare these files byte for byte, so Git must not convert line endings.
+* -text
+*.cncr binary
+*.bin binary
