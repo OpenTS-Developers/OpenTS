@@ -563,8 +563,7 @@ void BaseClass::Serialize(SaveStreamClass & stream)
 
 /// <summary>
 /// Adds the base to the running game state checksum.
-/// This routine is used by the multiplayer sync check. Only the node list is submitted,
-/// since that is what distinguishes one house's base plan from another.
+/// This routine is used by the multiplayer sync check.
 /// </summary>
 void BaseClass::Compute_CRC(CRCEngine & crc) const
 {
@@ -574,4 +573,26 @@ void BaseClass::Compute_CRC(CRCEngine & crc) const
 		crc(Nodes[i].CellID.X);
 		crc(Nodes[i].CellID.Y);
 	}
+
+	crc(InnerCells.Count());
+	for (int i = 0; i < InnerCells.Count(); i++) {
+		crc(InnerCells[i].X);
+		crc(InnerCells[i].Y);
+	}
+	crc(OuterCells.Count());
+	for (int i = 0; i < OuterCells.Count(); i++) {
+		crc(OuterCells[i].X);
+		crc(OuterCells[i].Y);
+	}
+	crc(PlacementCenter.X);
+	crc(PlacementCenter.Y);
+	crc(BaseAreaRect.X);
+	crc(BaseAreaRect.Y);
+	crc(BaseAreaRect.Width);
+	crc(BaseAreaRect.Height);
+	crc(LastBaseAreaRect.X);
+	crc(LastBaseAreaRect.Y);
+	crc(LastBaseAreaRect.Width);
+	crc(LastBaseAreaRect.Height);
+	if (House != NULL) crc(House->Fetch_ID());
 }

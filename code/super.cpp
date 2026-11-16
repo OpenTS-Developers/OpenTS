@@ -883,6 +883,16 @@ void SuperClass::Compute_CRC(CRCEngine &crc) const
 	crc(OldStage);
 	crc(ChargeDrainState);
 	crc(NeedsBuilding);
+
+	if (Class != NULL) {
+		crc(Class->Fetch_ID());
+	}
+	if (House != NULL) {
+		crc(House->Fetch_ID());
+	}
+	crc((int)Control);
+	crc(Control.Is_Active());
+	crc(IsSuspended);
 }
 
 

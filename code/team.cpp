@@ -2343,7 +2343,18 @@ void TeamClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsLeaveMap);
 	crc(Suspended);
 
-	crc(Quantity, sizeof(Quantity));
+	for (int i = 0; i < ARRAY_SIZE(Quantity); i++) {
+		crc(Quantity[i]);
+	}
+
+	if (Script != NULL) crc(Script->Fetch_ID());
+	if (HouseToScout != NULL) crc(HouseToScout->Fetch_ID());
+	if (Zone != NULL) crc(Zone->Fetch_ID());
+	if (MissionTarget != NULL) crc(MissionTarget->Fetch_ID());
+	if (Target != NULL) crc(Target->Fetch_ID());
+	crc(CreationFrame);
+	crc(IsDeleteTypeWhenDone);
+	crc(Succeeded);
 }
 
 

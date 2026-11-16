@@ -342,7 +342,6 @@ void WeaponTypeClass::Compute_CRC(CRCEngine &crc) const
 	if (WarheadPtr != NULL) crc(WarheadPtr->Fetch_ID());
 	crc(ROF);
 	crc(Range);
-	crc(Sound.Count());
 	crc(Anim.Count());
 	crc(UseFireParticles);
 	crc(IsLobber);
@@ -352,6 +351,17 @@ void WeaponTypeClass::Compute_CRC(CRCEngine &crc) const
 	crc(IsElectric);
 	crc(IsBright);
 	crc(UseSparkParticles);
+
+	crc(ProjectileRange);
+	for (int i = 0; i < ARRAY_SIZE(BurstDelay); i++) {
+		crc(BurstDelay[i]);
+	}
+	crc(MinimumRange);
+	for (int i = 0; i < Anim.Count(); i++) {
+		if (Anim[i] != NULL) crc(Anim[i]->Fetch_ID());
+	}
+	if (AttachedParticleSystem != NULL) crc(AttachedParticleSystem->Fetch_ID());
+	crc(IsIonSensitive);
 }
 
 

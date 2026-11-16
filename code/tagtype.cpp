@@ -391,6 +391,8 @@ void TagTypeClass::Compute_CRC(CRCEngine & crc) const
 	BASECLASS::Compute_CRC(crc);
 
 	crc(Persistence);
+
+	if (FirstTrigger != NULL) crc(FirstTrigger->Fetch_ID());
 }
 
 

@@ -423,6 +423,13 @@ void OverlayTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsCrate);
 	crc(IsCrateTrigger);
 	crc(IsExplosive);
+
+	if (CellAnim != NULL) crc(CellAnim->Fetch_ID());
+	crc(IsNoUseTileLandType);
+	crc(IsVeinholeMonster);
+	crc(IsVeins);
+	crc(IsChainReaction);
+	crc(IsOverrides);
 }
 
 

@@ -542,10 +542,22 @@ void VoxelAnimClass::Compute_CRC(CRCEngine & crc) const
 	if (AttachedParticleSys != NULL) {
 		crc(AttachedParticleSys->Fetch_ID());
 	}
-	crc(House->Fetch_ID());
+	if (House != NULL) {
+		crc(House->Fetch_ID());
+	}
 	crc(IsToDie);
 	crc(IsInvisible);
 	crc(ECCounter);
+
+	crc(Elasticity);
+	crc(Gravity);
+	crc(MaxVelocity);
+	crc(MyCoord.X);
+	crc(MyCoord.Y);
+	crc(MyCoord.Z);
+	crc(Velocity.X);
+	crc(Velocity.Y);
+	crc(Velocity.Z);
 }
 
 

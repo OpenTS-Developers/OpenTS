@@ -443,6 +443,11 @@ void TagClass::Compute_CRC(CRCEngine & crc) const
 	if (Trigger != NULL) crc(Trigger->Fetch_ID());
 
 	crc(IsToDie);
+
+	crc(AttachCount);
+	crc(CellID.X);
+	crc(CellID.Y);
+	crc(IsCurrentlySprung);
 }
 
 

@@ -868,6 +868,19 @@ void ParticleSystemClass::Compute_CRC(CRCEngine & crc) const
 	}
 	crc(SpawnFrames);
 	crc(Lifetime);
+
+	if (Class != NULL) {
+		crc(Class->Fetch_ID());
+	}
+	crc(CoordOffset.X);
+	crc(CoordOffset.Y);
+	crc(CoordOffset.Z);
+	crc(SpawnCoord.X);
+	crc(SpawnCoord.Y);
+	crc(SpawnCoord.Z);
+	crc(SparkSpawnFrames);
+	crc(IsMarkedForDeletion);
+	crc(IsRandomSparkDirection);
 }
 
 

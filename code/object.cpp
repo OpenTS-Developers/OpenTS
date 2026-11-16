@@ -2261,10 +2261,6 @@ void ObjectClass::Compute_CRC(CRCEngine & crc) const
 	crc(Strength);
 	crc(IsDown);
 	crc(IsToDamage);
-	if (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) {
-		crc(IsToDisplay);
-		crc(IsSelected);
-	}
 	crc(IsInLimbo);
 	crc(IsAnimAttached);
 	crc(IsOnBridge);
@@ -2274,6 +2270,12 @@ void ObjectClass::Compute_CRC(CRCEngine & crc) const
 	crc(Position.X);
 	crc(Position.Y);
 	crc(Position.Z);
+
+	crc(Riser.X);
+	crc(Riser.Y);
+	crc(Riser.Z);
+	crc((int)Layer);
+	crc(IsSubmittedToLayer);
 }
 
 

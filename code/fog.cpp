@@ -599,28 +599,13 @@ ClassID FoggedObjectClass::Class_ID(void) const
 
 
 /// <summary>
-/// Adds this fogged object's state to a CRC calculation.
-/// This routine is used by the multiplayer sync check to prove that every machine
-/// remembers the same things under the fog.
+/// Adds this fogged object's identity to a CRC calculation. The snapshot itself is left out,
+/// since it records what the local player last saw and differs between machines.
 /// </summary>
 /// <param name="crc">The CRC engine to submit this object's data to.</param>
 void FoggedObjectClass::Compute_CRC(CRCEngine &crc) const
 {
 	BASECLASS::Compute_CRC(crc);
-	crc(Overlay);
-	crc(OverlayData);
-	crc(RTTI);
-	crc(Position.X);
-	crc(Position.Y);
-	crc(Position.Z);
-	crc(BoundingRect.X);
-	crc(BoundingRect.Y);
-	crc(BoundingRect.Width);
-	crc(BoundingRect.Height);
-	crc(CellHeight);
-	crc(Smudge);
-	crc(SmudgeData);
-	crc(Records.Count());
 }
 
 

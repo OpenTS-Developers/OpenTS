@@ -669,7 +669,6 @@ void FactoryClass::Compute_CRC(CRCEngine &crc) const
 	BASECLASS::Compute_CRC(crc);
 
 	crc(IsSuspended);
-	crc(IsDifferent);
 	crc(Balance);
 	crc(OriginalBalance);
 
@@ -677,6 +676,15 @@ void FactoryClass::Compute_CRC(CRCEngine &crc) const
 	crc(SpecialItem);
 
 	crc(House->Fetch_ID());
+
+	crc(Fetch_Stage());
+	crc(Fetch_Rate());
+	crc(Fetch_Step());
+	crc(QueuedObjects.Count());
+	for (int i = 0; i < QueuedObjects.Count(); i++) {
+		crc(QueuedObjects[i]->Fetch_ID());
+	}
+	crc(IsOnHold);
 }
 
 

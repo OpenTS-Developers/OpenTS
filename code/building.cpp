@@ -9125,11 +9125,34 @@ void BuildingClass::Compute_CRC(CRCEngine & crc) const
 	crc(HasOpened);
 	crc(UnusedBuildingBool1);
 	crc(IsDamagedAnims);
-	crc(Brightness);
 	crc(UpgradeLevel);
 	crc((int)ProduceCashTimer);
 	crc(ProduceCashRemaining);
 	crc(IsProduceCashStartupPaid);
+
+	if (Class != NULL) crc(Class->Fetch_ID());
+	if (Factory != NULL) crc(Factory->Fetch_ID());
+	for (int i = 0; i < BANIM_COUNT; i++) {
+		if (Anims[i] != NULL) crc(Anims[i]->Fetch_ID());
+	}
+	for (int i = 0; i < BUILDING_UPGRADE_MAX; i++) {
+		if (Upgrades[i] != NULL) crc(Upgrades[i]->Fetch_ID());
+	}
+	crc(LastSuperWeaponIndex);
+	crc(GateTimer.Time_Spent());
+	crc(GateTimer.Progress());
+	crc(BuildingStage.Fetch_Stage());
+	crc(BuildingStage.Fetch_Rate());
+	crc(BuildingStage.Fetch_Step());
+	crc(HasBuildupData);
+	crc((int)CloakGeneratorState);
+	crc(CurrentCloakRadius);
+	crc((int)CloakFieldCells.size());
+	for (std::uint8_t cell : CloakFieldCells) {
+		crc((int)cell);
+	}
+	crc(IsSensing);
+	crc(TranslucencyLevel);
 }
 
 

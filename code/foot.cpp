@@ -3684,6 +3684,27 @@ void FootClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsScattering);
 	crc(IsIdle);
 	crc(IonBlastYDrawOffset);
+
+	crc(LastAdjacencyCell.X);
+	crc(LastAdjacencyCell.Y);
+	crc(RouteQueue.Count());
+	for (int i = 0; i < RouteQueue.Count(); i++) {
+		if (RouteQueue[i] != NULL) crc(RouteQueue[i]->Fetch_ID());
+	}
+	crc(NavQueue.Count());
+	for (int i = 0; i < NavQueue.Count(); i++) {
+		if (NavQueue[i] != NULL) crc(NavQueue[i]->Fetch_ID());
+	}
+	if (PatrolCell != NULL) crc(PatrolCell->Fetch_ID());
+	for (int i = 0; i < CONQUER_PATH_MAX; i++) {
+		crc((int)Path[i]);
+	}
+	crc((int)BlockagePathDelay);
+	crc(IsToScatter);
+	crc(IsCrushing);
+	crc(IsOccupyingCell);
+	crc(IsToPathAroundBlockage);
+	crc(IsDroppedFromTeam);
 }
 
 

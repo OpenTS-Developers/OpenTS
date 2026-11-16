@@ -227,6 +227,10 @@ void HouseTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(Suffix, strlen(Suffix));
 	crc(Prefix);
 	crc(IsMultiplay);
+
+	crc((int)HeapID);
+	crc(IsMultiplayPassive);
+	crc(IsWallOwner);
 }
 
 

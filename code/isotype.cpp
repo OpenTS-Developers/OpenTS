@@ -2718,7 +2718,6 @@ void IsometricTileTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(MarbleMadness);
 	crc(NonMarbleMadness);
 	crc(TileSetBaseID);
-	crc(PreviewTiles.Count());
 	if (NextTileTypeInSet != NULL) {
 		crc(NextTileTypeInSet->Fetch_ID());
 	}
@@ -2733,6 +2732,12 @@ void IsometricTileTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(Height);
 	crc(Unused2);
 	crc(NumTileTypesInSet);
+
+	crc((int)Anim);
+	crc(Offset.X);
+	crc(Offset.Y);
+	crc(IsAllowBurrowing);
+	crc(IsAllowTiberium);
 }
 
 

@@ -941,6 +941,18 @@ void TeamTypeClass::Compute_CRC(CRCEngine & crc) const
 	if (TaskForce != NULL) {
 		crc(TaskForce->Fetch_ID());
 	}
+
+	crc(VeteranLevel);
+	crc(IsFull);
+	crc(IsAnnoyance);
+	crc(IsGuardSlower);
+	crc(OnTransOnly);
+	crc(AvoidThreats);
+	crc(IsIonImmune);
+	crc(TransportsReturnOnUnload);
+	crc(AreTeamMembersRecruitable);
+	crc(IsBaseDefense);
+	crc(OnlyTargetHouseEnemy);
 }
 
 

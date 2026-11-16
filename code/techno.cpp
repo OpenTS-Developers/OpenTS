@@ -193,6 +193,7 @@
 #include "tag.h"
 #include "team.h"
 #include "techtype.h"
+#include "tiberium.h"
 #include "tracker.h"
 #include "uicontrol.h"
 #include "unit.h"
@@ -8395,7 +8396,6 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 void TechnoClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
-	crc(Group);
 	crc(ActLike);
 	crc(ArmorBias);
 	crc(FirepowerBias);
@@ -8415,7 +8415,6 @@ void TechnoClass::Compute_CRC(CRCEngine & crc) const
 	crc(AngleRotatedForwards);
 	crc(RockingSidewaysPerFrame);
 	crc(RockingForwardsPerFrame);
-	crc(SinkingYOffset);
 	crc(IsSinking);
 	crc(IsNeedingRescue);
 	crc(IsUseless);
@@ -8426,9 +8425,6 @@ void TechnoClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsLocked);
 	crc(IsInRecoilState);
 	crc(IsTethered);
-	if (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) {
-		crc(IsOwnedByPlayer);
-	}
 	DiscoveredBy.Compute_CRC(crc);
 	crc(IsALemon);
 	crc(StunDuration);
@@ -8436,6 +8432,49 @@ void TechnoClass::Compute_CRC(CRCEngine & crc) const
 	crc(Unused1);
 	crc(SightIncrease);
 	LimpetType.Compute_CRC(crc);
+
+	crc(StageClass::Fetch_Stage());
+	crc(StageClass::Fetch_Rate());
+	crc(StageClass::Fetch_Step());
+
+	crc(Cargo.How_Many());
+	if (Cargo.Attached_Object() != NULL) crc(Cargo.Attached_Object()->Fetch_ID());
+	crc(Veterancy.Get_Experience());
+	if (ArchivedTarget != NULL) crc(ArchivedTarget->Fetch_ID());
+	if (House != NULL) crc(House->Fetch_ID());
+	crc(CloakingDevice.Fetch_Stage());
+	crc(CloakingDevice.Fetch_Rate());
+	crc(CloakingDevice.Fetch_Step());
+	if (TarCom != NULL) crc(TarCom->Fetch_ID());
+	if (SuspendedTarCom != NULL) crc(SuspendedTarCom->Fetch_ID());
+	for (int i = 0; i < ATTACHED_PARTICLE_COUNT; i++) {
+		if (ParticleSystems[i] != NULL) crc(ParticleSystems[i]->Fetch_ID());
+	}
+	if (Wave != NULL) crc(Wave->Fetch_ID());
+	crc((int)EnteredByInfType);
+	for (int i = 0; i < Tiberiums.Count(); i++) {
+		crc(Storage.Get_Amount(i));
+	}
+	crc(Door.Is_Count_Up_Active());
+	crc(Door.Is_Count_Down_Active());
+	crc(Door.Is_Count_Up_Complete());
+	crc(Door.Has_Ended());
+	crc(Door.Percent_Complete());
+	crc(BarrelPitch.Current().As_Int());
+	crc(BarrelPitch.Desired().As_Int());
+	crc(BarrelPitch.Turn_Arc());
+	crc(PrimaryFacing.Current().As_Int());
+	crc(PrimaryFacing.Desired().As_Int());
+	crc(PrimaryFacing.Turn_Arc());
+	crc(SecondaryFacing.Current().As_Int());
+	crc(SecondaryFacing.Desired().As_Int());
+	crc(SecondaryFacing.Turn_Arc());
+	crc(IsTeamRecruitable);
+	crc(IsAutocreateRecruitable);
+	crc(IsInTransport);
+	crc(IsRocking);
+	if (NearbyObject != NULL) crc(NearbyObject->Fetch_ID());
+	crc(LimpetSpeedFactor);
 }
 
 

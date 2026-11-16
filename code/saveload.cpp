@@ -346,19 +346,15 @@ CRCEngine Object_CRCs(void)
 
 #undef DO_OBJ_CRC
 
-	if (PlayerPtr != NULL) {
-		crc(PlayerPtr->HeapID);
-	}
 	crc((int)Frame);
-	crc(CurrentObject.Count());
 	return(crc);
 }
 
 
 /// <summary>
 /// Writes a per-heap checksum table to the out-of-sync report: one summary line per heap, then
-/// a row per live object keyed by its stable identifier. Unlike Object_CRCs this folds in no
-/// per-machine state, so two peers' tables are directly comparable.
+/// a row per live object keyed by its stable identifier. Two peers' tables are directly
+/// comparable.
 /// </summary>
 void Print_Heap_CRCs(FILE * fp)
 {

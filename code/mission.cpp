@@ -582,6 +582,7 @@ void MissionClass::Compute_CRC(CRCEngine &crc) const
 	crc(MissionQueue);
 	crc(Status);
 	crc((int)Timer);
+	crc(IsMissionUnloadStandby);
 }
 
 

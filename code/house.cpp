@@ -6514,7 +6514,6 @@ void HouseClass::Compute_CRC(CRCEngine & crc) const
 	crc(Blockage);
 	crc((int)RepairTimer);
 	crc((int)AlertTime);
-	crc((int)BorrowedTime);
 	crc(CurUnits);
 	crc(CurBuildings);
 	crc(CurInfantry);
@@ -6532,6 +6531,125 @@ void HouseClass::Compute_CRC(CRCEngine & crc) const
 	Allies.Compute_CRC(crc);
 	ControlGrantees.Compute_CRC(crc);
 	Base.Compute_CRC(crc);
+
+	crc((int)HeapID);
+	crc(HouseTags.Count());
+	for (int i = 0; i < HouseTags.Count(); i++) {
+		if (HouseTags[i] != NULL) crc(HouseTags[i]->Fetch_ID());
+	}
+	crc(ConYards.Count());
+	for (int i = 0; i < ConYards.Count(); i++) {
+		if (ConYards[i] != NULL) crc(ConYards[i]->Fetch_ID());
+	}
+	crc(Control.TechLevel);
+	Control.Allies.Compute_CRC(crc);
+	crc((int)Control.Edge);
+	crc((int)ProductionMode);
+	crc((int)ActLike);
+	crc(IsBaseBuilding);
+	crc(IsDiscovered);
+	crc(IsToDie);
+	crc(IsCivEvacuated);
+	crc(FirestormDefenseActivated);
+	crc(IsThreatRatingNodeActive);
+	crc(IsRecalcNeeded);
+	crc(IsVisionary);
+	crc(IsTiberiumShort);
+	crc(IsThieved);
+	crc(DidRepair);
+	crc(IsBuiltSomething);
+	crc(IsAllToHunt);
+	crc(IsToLook);
+	crc(SuperWeapon.Count());
+	for (int i = 0; i < SuperWeapon.Count(); i++) {
+		if (SuperWeapon[i] != NULL) crc(SuperWeapon[i]->Fetch_ID());
+	}
+	crc((int)JustBuiltStructure);
+	crc((int)JustBuiltInfantry);
+	crc((int)JustBuiltUnit);
+	crc((int)JustBuiltAircraft);
+	for (int i = 0; i < 4; i++) {
+		crc(Tiberium.Get_Amount(i));
+		crc(Weed.Get_Amount(i));
+	}
+	if (AircraftFactory != NULL) crc(AircraftFactory->Fetch_ID());
+	if (InfantryFactory != NULL) crc(InfantryFactory->Fetch_ID());
+	if (UnitFactory != NULL) crc(UnitFactory->Fetch_ID());
+	if (BuildingFactory != NULL) crc(BuildingFactory->Fetch_ID());
+	if (FlagLocation != NULL) crc(FlagLocation->Fetch_ID());
+	crc(FlagHome.X);
+	crc(FlagHome.Y);
+	crc(UnitsLost);
+	crc(BuildingsLost);
+	crc(Center.X);
+	crc(Center.Y);
+	crc(Center.Z);
+	crc(SpawnWaypoint);
+	crc(Radius);
+	for (int i = 0; i < ZONE_COUNT; i++) {
+		crc(ZoneInfo[i].AirDefense);
+		crc(ZoneInfo[i].ArmorDefense);
+		crc(ZoneInfo[i].InfantryDefense);
+	}
+	crc(LATime);
+	crc((int)LAEnemy);
+	if (ToCapture != NULL) crc(ToCapture->Fetch_ID());
+	RadarSpied.Compute_CRC(crc);
+	for (int i = 0; i < BuildingTypes.Count(); i++) {
+		crc(BQuantity.Value(i));
+		crc(ABQuantity.Value(i));
+		crc(PBQuantity.Value(i));
+	}
+	for (int i = 0; i < UnitTypes.Count(); i++) {
+		crc(UQuantity.Value(i));
+		crc(AUQuantity.Value(i));
+		crc(PUQuantity.Value(i));
+	}
+	for (int i = 0; i < InfantryTypes.Count(); i++) {
+		crc(IQuantity.Value(i));
+		crc(AIQuantity.Value(i));
+		crc(PIQuantity.Value(i));
+	}
+	for (int i = 0; i < AircraftTypes.Count(); i++) {
+		crc(AQuantity.Value(i));
+		crc(AAQuantity.Value(i));
+		crc(PAQuantity.Value(i));
+	}
+	crc(AngerNodes.Count());
+	for (int i = 0; i < AngerNodes.Count(); i++) {
+		if (AngerNodes[i].House != NULL) crc(AngerNodes[i].House->Fetch_ID());
+		crc(AngerNodes[i].Level);
+	}
+	crc(ScoutNodes.Count());
+	for (int i = 0; i < ScoutNodes.Count(); i++) {
+		if (ScoutNodes[i].House != NULL) crc(ScoutNodes[i].House->Fetch_ID());
+		crc(ScoutNodes[i].IsScouted);
+	}
+	crc((int)AITimer);
+	crc((int)PickEnemyTimer);
+	crc((int)BuildStructure);
+	crc((int)BuildUnit);
+	crc((int)BuildInfantry);
+	crc((int)BuildAircraft);
+	crc(RatioAITriggerTeam);
+	crc(BaseDefenseTeamCount);
+	crc(CurrentDropship);
+	crc(RecalcPower);
+	crc(EMPDest.X);
+	crc(EMPDest.Y);
+	crc(NukeDest.X);
+	crc(NukeDest.Y);
+	crc((int)DamageTime);
+	crc((int)TeamTime);
+	crc((int)TriggerTime);
+	for (int i = 0; i < MAP_TOTAL_REGIONS; i++) {
+		crc(Regions[i].Threat_Value());
+	}
+	crc(DefenseCostMultiplier);
+	crc(EnemyArmorForcePrediction);
+	crc(EnemyAirForcePrediction);
+	crc(EnemyInfantryForcePrediction);
+	crc(PowerSurplus);
 }
 
 

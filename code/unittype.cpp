@@ -528,6 +528,24 @@ void UnitTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsTilter);
 	crc(IsUseTurretShadow);
 	crc(IsTotable);
+	crc((int)HeapID);
+	crc(IsDeployToFire);
+	crc(IsSmallVisceroid);
+	crc(IsLargeVisceroid);
+	crc(IsCarriesCrate);
+	crc(IsNonVehicle);
+	crc(IsJellyfish);
+	crc(IsLimpetDrone);
+	crc(IsMobileEMP);
+	crc(IsCoreDefender);
+	crc(DeathFrames);
+	crc((int)MaxCharge);
+	crc(StartCharge);
+	for (int i = 0; i < FIRING_SYNC_FRAME_MAX; i++) {
+		crc(FiringSyncFrame[i]);
+	}
+	crc(MaxDeathCounter);
+	crc(FiringFrames);
 }
 
 

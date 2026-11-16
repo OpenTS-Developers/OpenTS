@@ -4024,18 +4024,9 @@ int Adjust_To_CPU_Timing(int time)
 /// </summary>
 void ScenarioClass::Compute_CRC(CRCEngine & crc) const
 {
-	crc(Description);
-	crc(IntroMovie);
-	crc(BriefMovie);
-	crc(BriefingText);
-	crc(WinMovie);
-	crc(LoseMovie);
-	crc(ActionMovie);
-	crc(PostScoreMovie);
-	crc(PreMapSelectMovie);
-	crc(PlayerHouse);
+	// The movies and the transit theme are left out: each is a position in a list that every
+	// installation builds from its own ART.INI or THEME.INI, and none affects the simulation.
 	crc(Percent);
-	crc(TransitTheme);
 	crc(CarryOverPercent);
 	crc(IsMultiplayerOnly);
 	crc(IsMPAIBaseNodes);
@@ -4057,7 +4048,6 @@ void ScenarioClass::Compute_CRC(CRCEngine & crc) const
 	crc((int)FogTimer);
 	crc((int)IceGrowthTimer);
 	crc((int)VeinGrowthTimer);
-	crc((int)ElapsedTimer);
 	crc(Difficulty);
 	crc(CDifficulty);
 	crc(Theater);
@@ -4073,6 +4063,45 @@ void ScenarioClass::Compute_CRC(CRCEngine & crc) const
 	crc(AmbientLight);
 	crc(CurrentAmbientLight);
 	crc(DesiredAmbientLight);
+
+	crc((bool)Special.IsCaptureTheFlag);
+	crc((bool)Special.IsInert);
+	crc((bool)Special.IsTGrowth);
+	crc((bool)Special.IsTSpread);
+	crc((bool)Special.IsMCVDeploy);
+	crc((bool)Special.IsInitialVeteran);
+	crc((bool)Special.IsAllianceFixed);
+	crc((bool)Special.IsHarvesterImmune);
+	crc((bool)Special.IsFogOfWar);
+	crc((bool)Special.IsDestroyBridges);
+	crc((bool)Special.IsScrapMetal);
+	crc(UniqueID);
+	crc(RandomNumber.Index_1());
+	crc(RandomNumber.Index_2());
+	crc(RandomNumber.Peek());
+	for (int i = 0; i < WAYPT_COUNT; i++) {
+		crc(Waypoint[i].X);
+		crc(Waypoint[i].Y);
+	}
+	crc((int)AmbientChangeTimer);
+	crc(Scenario);
+	for (int i = 0; i < SCEN_GLOBAL_COUNT; i++) {
+		crc(GlobalFlags[i].Value);
+	}
+	for (int i = 0; i < SCEN_LOCAL_COUNT; i++) {
+		crc(LocalFlags[i].Value);
+	}
+	crc(IsTrainCargo);
+	crc(IsTibGrowth);
+	crc(IsVeinGrowth);
+	crc(IsIceGrowth);
+	crc(IsBridgeChanged);
+	crc(IsGlobalChanged);
+	crc(IsAmbientLightChanged);
+	crc(IsTiberiumDeathToVisceroid);
+	crc(IsRandom);
+	crc(IsCrateBeenPickedUp);
+	crc((int)RequiredAddOn);
 }
 
 

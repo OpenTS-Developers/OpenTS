@@ -104,6 +104,17 @@ void SideClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsAIBuildsWalls);
 	crc(AIBaseDefensePlaceholders);
 	crc(IsAIBaseDefensesWithWalls);
+
+	for (int i = 0; i < Houses.Count(); i++) {
+		crc(Houses[i]);
+	}
+	if (RegularPowerPlant != NULL) crc(RegularPowerPlant->Fetch_ID());
+	if (AdvancedPowerPlant != NULL) crc(AdvancedPowerPlant->Fetch_ID());
+	if (PowerTurbine != NULL) crc(PowerTurbine->Fetch_ID());
+	if (HunterSeeker != NULL) crc(HunterSeeker->Fetch_ID());
+	for (int i = 0; i < AIWallTowers.Count(); i++) {
+		if (AIWallTowers[i] != NULL) crc(AIWallTowers[i]->Fetch_ID());
+	}
 }
 
 

@@ -1380,7 +1380,6 @@ void AnimClass::Compute_CRC(CRCEngine & crc) const
 		crc(xObject->Fetch_ID());
 	}
 	crc(OwnerHouse);
-	crc((int)AlternativeBrightness);
 	crc(ZAdjust);
 	crc(YSortAdjust);
 	crc(Delay);
@@ -1392,8 +1391,29 @@ void AnimClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsToDeleteOnOverpass);
 	crc(IsToDelete);
 	crc(IsBrandNew);
-	crc(IsInvisible);
 	crc(IsDisabled);
+
+	if (Class != NULL) {
+		crc(Class->Fetch_ID());
+	}
+	crc(Fetch_Stage());
+	crc(Fetch_Rate());
+	crc(Fetch_Step());
+	crc(FlamingGuyCoords.X);
+	crc(FlamingGuyCoords.Y);
+	crc(FlamingGuyCoords.Z);
+	crc(FlamingGuyRetries);
+	crc(Bounce.Elasticity);
+	crc(Bounce.Gravity);
+	crc(Bounce.MaxVelocity);
+	crc(Bounce.MyCoord.X);
+	crc(Bounce.MyCoord.Y);
+	crc(Bounce.MyCoord.Z);
+	crc(Bounce.Velocity.X);
+	crc(Bounce.Velocity.Y);
+	crc(Bounce.Velocity.Z);
+	crc(IsInert);
+	crc(IsFlamingGuyEnd);
 }
 
 

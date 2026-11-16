@@ -4077,7 +4077,11 @@ void InfantryClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsStoked);
 	crc(IsProne);
 	crc(IsZoneCheat);
-	crc(WasSelected);
+
+	if (Class != NULL) crc(Class->Fetch_ID());
+	crc(IsBerzerk);
+	crc((int)ProneStruggleTimer);
+	crc((int)LookTimer);
 }
 
 

@@ -612,13 +612,38 @@ void AnimTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(LoopStart);
 	crc(LoopEnd);
 	crc(Stages);
-	crc(Sound);
 	crc(DetailLevel);
 	crc(TranslucencyDetailLevel);
 	crc(RandomLoopDelayMin);
 	crc(RandomLoopDelayMax);
 	crc(Translucency);
 	crc(IsTiled);
+	crc((int)HeapID);
+	crc(Loops);
+	if (ChainTo != NULL) crc(ChainTo->Fetch_ID());
+	crc(RandomRateMin);
+	crc(RandomRateMax);
+	if (Spawns != NULL) crc(Spawns->Fetch_ID());
+	crc(SpawnCount);
+	if (BounceAnim != NULL) crc(BounceAnim->Fetch_ID());
+	if (ExpireAnim != NULL) crc(ExpireAnim->Fetch_ID());
+	if (TrailerAnim != NULL) crc(TrailerAnim->Fetch_ID());
+	crc(TrailerSeperation);
+	crc(Elasticity);
+	crc(MinZVel);
+	crc(MaxZVel);
+	crc(MaxXYVel);
+	if (Warhead != NULL) crc(Warhead->Fetch_ID());
+	crc(DamageRadius);
+	if (TiberiumSpawnType != NULL) crc(TiberiumSpawnType->Fetch_ID());
+	crc(TiberiumSpreadRadius);
+	crc(RunningFrames);
+	crc(IsFlamingGuy);
+	crc(IsVeins);
+	crc(IsMeteor);
+	crc(IsTiberium);
+	crc(IsBouncer);
+	crc(IsAnimatedTiberium);
 }
 
 

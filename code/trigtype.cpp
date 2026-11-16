@@ -807,6 +807,12 @@ void TriggerTypeClass::Compute_CRC(CRCEngine & crc) const
 	if (LinkedTo != NULL) crc(LinkedTo->Fetch_ID());
 	if (FirstEvent != NULL) crc(FirstEvent->Fetch_ID());
 	if (FirstAction != NULL) crc(FirstAction->Fetch_ID());
+
+	crc(_IsEnabled);
+	crc(IsEnabledOnEasy);
+	crc(IsEnabledOnMedium);
+	crc(IsEnabledOnHard);
+	crc(IsToInherit);
 }
 
 

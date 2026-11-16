@@ -168,6 +168,13 @@ void AITriggerTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsEnabledInHard);
 	crc(MultiSide);
 	crc(IsForBaseDefense);
+
+	crc(IsEnabled);
+	if (ConditionObject != NULL) crc(ConditionObject->Fetch_ID());
+	if (TeamTypeOne != NULL) crc(TeamTypeOne->Fetch_ID());
+	if (TeamTypeTwo != NULL) crc(TeamTypeTwo->Fetch_ID());
+	crc(TimesSucceded);
+	crc(TimesExecuted);
 }
 
 /// Spring?

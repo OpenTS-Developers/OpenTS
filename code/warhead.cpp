@@ -234,6 +234,17 @@ void WarheadTypeClass::Compute_CRC(CRCEngine &crc) const
 
 	crc(ExplosionSet.Count());
 	crc(InfantryDeath);
+
+	for (int i = 0; i < ExplosionSet.Count(); i++) {
+		if (ExplosionSet[i] != NULL) crc(ExplosionSet[i]->Fetch_ID());
+	}
+	crc(WebDuration);
+	crc(WebDurationVariation);
+	crc(WebRadius);
+	crc((int)LimpetFactor);
+	if (Particle != NULL) crc(Particle->Fetch_ID());
+	crc(IsWebby);
+	crc(IsEMEffect);
 }
 
 

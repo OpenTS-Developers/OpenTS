@@ -1718,8 +1718,21 @@ void BuildingTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(ZHeight);
 	crc(MidPoint);
 	crc(DoorStages);
-	crc(&Anims, sizeof(Anims));
-	crc(&AnimData, sizeof(AnimData));
+	for (int i = 0; i < ARRAY_SIZE(Anims); i++) {
+		crc(Anims[i].Start);
+		crc(Anims[i].Count);
+		crc(Anims[i].Rate);
+	}
+	for (int i = 0; i < ARRAY_SIZE(AnimData); i++) {
+		crc(AnimData[i].Anim);
+		crc(AnimData[i].AnimDamaged);
+		crc(AnimData[i].Location.X);
+		crc(AnimData[i].Location.Y);
+		crc(AnimData[i].ZAdjust);
+		crc(AnimData[i].YSort);
+		crc(AnimData[i].Powered);
+		crc(AnimData[i].PoweredLight);
+	}
 	crc(Upgrades);
 	crc(SpecialZOverlayZAdjust);
 	crc(IsHoverPad);
@@ -1753,10 +1766,18 @@ void BuildingTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsHelipad);
 	crc(VoxelBarrelFile);
 	crc(VoxelBarrelScale);
-	crc(&VoxelBarrelOffsetToPitchPivotPoint, sizeof(VoxelBarrelOffsetToPitchPivotPoint));
-	crc(&VoxelBarrelOffsetToRotatePivotPoint, sizeof(VoxelBarrelOffsetToRotatePivotPoint));
-	crc(&VoxelBarrelOffsetToBuildingPivotPoint, sizeof(VoxelBarrelOffsetToBuildingPivotPoint));
-	crc(&VoxelBarrelOffsetToBarrelEnd, sizeof(VoxelBarrelOffsetToBarrelEnd));
+	crc(VoxelBarrelOffsetToPitchPivotPoint.X);
+	crc(VoxelBarrelOffsetToPitchPivotPoint.Y);
+	crc(VoxelBarrelOffsetToPitchPivotPoint.Z);
+	crc(VoxelBarrelOffsetToRotatePivotPoint.X);
+	crc(VoxelBarrelOffsetToRotatePivotPoint.Y);
+	crc(VoxelBarrelOffsetToRotatePivotPoint.Z);
+	crc(VoxelBarrelOffsetToBuildingPivotPoint.X);
+	crc(VoxelBarrelOffsetToBuildingPivotPoint.Y);
+	crc(VoxelBarrelOffsetToBuildingPivotPoint.Z);
+	crc(VoxelBarrelOffsetToBarrelEnd.X);
+	crc(VoxelBarrelOffsetToBarrelEnd.Y);
+	crc(VoxelBarrelOffsetToBarrelEnd.Z);
 	crc(StartPitch);
 	crc(IsLimpetMine);
 	crc(IsMobileWar);
@@ -1781,8 +1802,38 @@ void BuildingTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(ProduceCashDelay);
 	crc(ProduceCashBudget);
 	crc(IsProduceCashResetOnCapture);
-	crc(GateUpSound);
-	crc(GateDownSound);
+	crc((int)HeapID);
+	crc(PrimaryFirePixelOffset.X);
+	crc(PrimaryFirePixelOffset.Y);
+	if (ToOverlay != NULL) crc(ToOverlay->Fetch_ID());
+	if (ToTile != NULL) crc(ToTile->Fetch_ID());
+	if (FreeUnit != NULL) crc(FreeUnit->Fetch_ID());
+	crc(ExitCoordinate.X);
+	crc(ExitCoordinate.Y);
+	crc(ExitCoordinate.Z);
+	crc((int)StartFace);
+	crc(AntiAirValue);
+	crc(AntiArmorValue);
+	crc(AntiInfantryValue);
+	crc(IsCanTogglePower);
+	crc(IsHasStupidGuardMode);
+	crc(IsWeeder);
+	crc(IsEMPulseCannon);
+	crc(IsTickTank);
+	crc(IsCloakGenerator);
+	crc(IsSensorArray);
+	crc(IsICBMLauncher);
+	crc(IsArtillary);
+	crc(IsGDIBarracks);
+	crc(IsNODBarracks);
+	crc((int)SuperWeapon);
+	crc((int)SuperWeapon2);
+	crc(IsCanPlaceAnywhere);
+	crc(CanAIBuildThis);
+	crc(IsBaseDefense);
+	crc(CloakRadiusInCells);
+	crc(IsDemandLoadBuildup);
+	crc(IsThreatRatingNode);
 }
 
 

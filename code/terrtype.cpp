@@ -385,6 +385,10 @@ void TerrainTypeClass::Compute_CRC(CRCEngine &crc) const
 	crc(IsAnimated);
 	crc(AnimationRate);
 	crc(AnimationProbability);
+
+	crc(TiberiumToSpawn);
+	crc(TemperateOccupationBits);
+	crc(SnowOccupationBits);
 }
 
 

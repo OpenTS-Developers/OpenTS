@@ -979,6 +979,10 @@ void TerrainClass::Compute_CRC(CRCEngine &crc) const
 	crc(IsCrumbling);
 	crc(Unused1);
 	crc(Unused2);
+
+	crc(Fetch_Stage());
+	crc(Fetch_Rate());
+	crc(Fetch_Step());
 }
 
 

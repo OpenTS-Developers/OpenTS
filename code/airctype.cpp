@@ -293,6 +293,7 @@ void AircraftTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsRotorCustom);
 	crc(IsLandable);
 	crc(HeapID);
+	crc(IsCarryall);
 }
 
 

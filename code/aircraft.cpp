@@ -3963,6 +3963,11 @@ void AircraftClass::Compute_CRC(CRCEngine & crc) const
 	crc(field_35B);
 	crc((int)SightTimer);
 	crc(AttacksRemaining);
+
+	if (Class != NULL) crc(Class->Fetch_ID());
+	crc(IsToSpendAmmo);
+	crc(IsLockedStraight);
+	crc(IsReadyToCommence);
 }
 
 

@@ -6159,6 +6159,11 @@ void UnitClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsDumping);
 	crc(IsHarvesting);
 	crc(IsToScatter);
+
+	crc(FiringSyncDelay);
+	crc((int)VisceroidFacing);
+	crc((int)Charge);
+	crc(DeathCounter);
 }
 
 

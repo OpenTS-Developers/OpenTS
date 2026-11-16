@@ -295,6 +295,13 @@ void BulletTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(Arming);
 	crc(IsSplits);
 	crc(RetargetAccuracy);
+
+	crc(IsFloater);
+	crc(IsVeryHigh);
+	crc(IsAntiVehicle);
+	crc(Cluster);
+	if (AirburstWeapon != NULL) crc(AirburstWeapon->Fetch_ID());
+	if (Trailer != NULL) crc(Trailer->Fetch_ID());
 }
 
 

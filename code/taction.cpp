@@ -3028,6 +3028,12 @@ void TActionClass::Compute_CRC(CRCEngine & crc) const
 	if (Tag != NULL) crc(Tag->Fetch_ID());
 	if (Trigger != NULL) crc(Trigger->Fetch_ID());
 	crc((int)Data.Value);
+
+	crc(TriggerRect.X);
+	crc(TriggerRect.Y);
+	crc(TriggerRect.Width);
+	crc(TriggerRect.Height);
+	crc((int)EffectLocation);
 }
 
 

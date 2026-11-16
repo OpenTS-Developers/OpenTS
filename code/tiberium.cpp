@@ -188,6 +188,32 @@ void TiberiumClass::Compute_CRC(CRCEngine & crc) const
 	crc(Color);
 	crc(FrameCount);
 	crc(Variety);
+
+	crc((int)HeapID);
+	crc(SpreadPercentage);
+	crc(GrowthPercentage);
+	crc(Debris.Count());
+	for (int i = 0; i < Debris.Count(); i++) {
+		if (Debris[i] != NULL) crc(Debris[i]->Fetch_ID());
+	}
+	if (Overlay != NULL) crc(Overlay->Fetch_ID());
+	crc(RampVariety);
+	crc(SpreadCount);
+	crc(SpreadQueue.Count());
+	if (SpreadState != NULL) {
+		for (int i = 0; i < Map_Cell_Count(); i++) {
+			crc(SpreadState[i]);
+		}
+	}
+	crc((int)SpreadTimer);
+	crc(GrowthCount);
+	crc(GrowthQueue.Count());
+	if (GrowthState != NULL) {
+		for (int i = 0; i < Map_Cell_Count(); i++) {
+			crc(GrowthState[i]);
+		}
+	}
+	crc((int)GrowthTimer);
 }
 
 

@@ -1108,9 +1108,12 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(DebrisTypes.Count());
 	crc(Dock.Count());
 	crc(DebrisMaximums.Count());
-	crc((char*)&Locomotor, sizeof(Locomotor));
-	crc(VoxelCenterY);
-	crc(VoxelCenterX);
+	crc((int)Locomotor.Data1);
+	crc((short)Locomotor.Data2);
+	crc((short)Locomotor.Data3);
+	for (int i = 0; i < ARRAY_SIZE(Locomotor.Data4); i++) {
+		crc((char)Locomotor.Data4[i]);
+	}
 	crc(Weight);
 	crc(PhysicalSize);
 	crc(InitialMission);
@@ -1128,11 +1131,9 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(FireAngle);
 	crc(PipScale);
 	crc(Max_Pips());
-	crc(VoiceSelect.Count());
-	crc(VoiceMove.Count());
-	crc(VoiceAttack.Count());
-	crc(VoiceDie.Count());
-	crc(VoiceFeedback.Count());
+	// A voice list drops the sounds missing from this machine's sound list. Only whether the
+	// feedback list is empty matters, since it decides whether a shared random number is drawn.
+	crc(VoiceFeedback.Count() > 0);
 	crc(DamageParticleSystems.Count());
 	crc(MZone);
 	crc(ThreatRange);
@@ -1158,7 +1159,6 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(Points);
 	crc(Explosion.Count());
 	crc(ScrapExplosion.Count());
-	crc(ShadowIndex);
 	crc(Capacity);
 	crc(IsTrain);
 	crc(IsDetectDisguise);
@@ -1190,9 +1190,46 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(IsManualReload);
 	crc(IsVisibleLoad);
 	crc(IsLightningRod);
-	crc(Description.c_str());
-	crc(CloakSound);
-	crc(UncloakSound);
+	crc(CollateralDamageCoefficient);
+	for (int i = ABILITY_FIRST; i < ABILITY_COUNT; i++) {
+		crc(VeteranAbilities[(AbilityType)i]);
+		crc(EliteAbilities[(AbilityType)i]);
+	}
+	crc(SpecialThreatValue);
+	crc(MyEffectivenessCoefficient);
+	crc(TargetEffectivenessCoefficient);
+	crc(TargetSpecialThreatCoefficient);
+	crc(TargetStrengthCoefficient);
+	crc(TargetDistanceCoefficient);
+	if (DeploysInto != NULL) crc(DeploysInto->Fetch_ID());
+	if (UndeploysInto != NULL) crc(UndeploysInto->Fetch_ID());
+	crc(IsAllowedToStartInMultiplayer);
+	if (NaturalParticleSystem != NULL) crc(NaturalParticleSystem->Fetch_ID());
+	crc(NaturalParticleLocation.X);
+	crc(NaturalParticleLocation.Y);
+	crc(NaturalParticleLocation.Z);
+	crc(DamageSmokeOffset.X);
+	crc(DamageSmokeOffset.Y);
+	crc(DamageSmokeOffset.Z);
+	for (int i = 0; i < WEAPON_SLOT_COUNT; i++) {
+		if (Weapons[i].Weapon != NULL) crc(Weapons[i].Weapon->Fetch_ID());
+		crc(Weapons[i].FireFLH.X);
+		crc(Weapons[i].FireFLH.Y);
+		crc(Weapons[i].FireFLH.Z);
+		crc(Weapons[i].BarrelLength);
+		crc(Weapons[i].BarrelThickness);
+	}
+	crc(IsTypeImmune);
+	crc(IsMoveToShroud);
+	crc(IsTrainable);
+	crc(IsDamageSparks);
+	crc(IsCloakStop);
+	crc(IsHunterSeeker);
+	crc(IsCrusher);
+	crc(IsTiltsWhenCrushes);
+	crc(IsSubterranean);
+	crc(IsAutoCrush);
+	crc(IsAccelerates);
 }
 
 
