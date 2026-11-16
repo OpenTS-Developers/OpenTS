@@ -359,6 +359,8 @@ static int Execute_DoList(int max_houses, HousesType base_house,
 	ConnManClass *net, CDTimerClass<FrameTimerClass> *skip_crc,
 //	ConnManClass *net, TCountDownTimerClass *skip_crc,
 	FrameSyncStruct *their);
+static void Execute_Queued_Event(EventClass & event, HousesType house, HouseClass * hptr,
+	ConnManClass * net, FrameSyncStruct * their);
 static void Clean_DoList(ConnManClass *net);
 static void Queue_Record(void);
 static void Queue_Playback(void);
@@ -3162,6 +3164,125 @@ static int Add_Compressed_Events(void *buf, int bufsize, int frame_delay,
 }	// end of Add_Compressed_Events
 
 
+/// <summary>
+/// Runs one due event for the house that sent it and marks it executed. EXIT, OPTIONS and
+/// PAGEUSER run only when this machine's player sent them; in a network game, another player's
+/// EXIT closes that player's connection instead. Any EXIT, another player's included, marks the
+/// sending house as having given up and, in an internet game, can send the statistics packet.
+/// A FRAMEINFO event is only marked.
+/// </summary>
+/// <param name="house">The index of the sending house, which is also its connection ID.</param>
+/// <param name="their">The frame sync entries, kept in step with the connections; NULL if net is.</param>
+static void Execute_Queued_Event(EventClass & event, HousesType house, HouseClass * hptr,
+	ConnManClass * net, FrameSyncStruct * their)
+{
+	//...............................................................
+	// Only execute EXIT & OPTIONS commands if they're from myself.
+	//...............................................................
+	if (event.Type==EventClass::EXIT ||
+			event.Type==EventClass::OPTIONS ||
+			event.Type==EventClass::PAGEUSER) {
+
+		if (event.Type==EventClass::EXIT) {
+			int house_count = Houses.Count();
+			/*
+			**	Flag that this house lost because it quit.
+			*/
+			HousesType quithouse = HOUSE_NONE;
+			HouseClass *quithptr = NULL;
+
+			for (int player = 0; player < house_count ; player++) {
+				quithouse = (HousesType)(player);
+				quithptr = Houses[quithouse];
+				if (!quithptr) {
+					continue;
+				}
+				if (quithptr->HeapID == event.ID) {
+					quithptr->IsGiverUpper = true;
+					break;
+				}
+			}
+
+			/*
+			**	Send the game statistics packet now since the game is effectivly over
+			*/
+			if (CountAliveTeams(quithptr) == 1 &&
+					Session.Type == GAME_INTERNET &&
+					!GameStatisticsPacketSent) {
+				Session.SawGameCompletion = true;
+				Register_Game_End_Time();
+				Send_Statistics_Packet();		// Event - player aborted, and there were only 2 left.
+			}
+			if (Session.Type == GAME_INTERNET && !GameStatisticsPacketSent && PlayerPtr != NULL && PlayerPtr == quithptr) {
+				DebugString("Sending game results because I quit, but didn't see completion");
+				Register_Game_End_Time();
+				Send_Statistics_Packet();
+			}
+		}
+
+		if (Debug_Print_Events) {
+			if (event.Type==EventClass::EXIT) {
+				DebugString("Exit Event: ID:%d (%s),  Event Frame:%d,  My Frame:%d\n",
+					event.ID,
+					Houses[(HousesType)(event.ID)]->IniName.c_str(),
+					event.Frame,
+					Frame);
+			}
+		}
+
+		if (event.ID == PlayerPtr->HeapID) {
+			Sync_Record_Event(event, SYNC_EVENT_EXECUTED);
+			event.Execute();
+		} else if (event.Type==EventClass::EXIT) {
+		//............................................................
+		// If this EXIT event isn't from myself, destroy the connection
+		//	for that player.  The HousesType for this event is the
+		// connection ID.
+		//............................................................
+			if (Session.Is_Network_Game() && net) {
+				int index = net->Connection_Index (house);
+				if (index != -1) {
+					for (int k = index; k < net->Num_Connections() - 1; k++) {
+						their[k] = their[k+1];
+					}
+					Destroy_Connection(house,0);
+				}
+			}
+			//
+			// Special case for recording playback: turn the house over
+			// to the computer.
+			//
+			if (Session.Play && event.Type==EventClass::EXIT) {
+				hptr->IsHuman = false;
+				hptr->IQ = Rule->MaxIQ;
+				hptr->Computer_Paranoid();
+				DebugString("Removing a player %s:%d\n", __FILE__, __LINE__);
+				Session.NumPlayers--;
+			}
+		}
+	}
+
+	//...............................................................
+	// A FRAMEINFO event has no action; Execute_DoList compares
+	// the checksum it reports before running any event of the frame.
+	//...............................................................
+	else if (event.Type == EventClass::FRAMEINFO) {
+	}
+	//...............................................................
+	// Execute other commands
+	//...............................................................
+	else {
+		Sync_Record_Event(event, SYNC_EVENT_EXECUTED);
+		event.Execute();
+	}
+
+	//...............................................................
+	// Mark this event as executed.
+	//...............................................................
+	event.IsExecuted = 1;
+}
+
+
 /***************************************************************************
  * Execute_DoList -- Executes commands from the DoList                     *
  *                                                                         *
@@ -3199,7 +3320,7 @@ static int Execute_DoList(int max_houses, HousesType base_house,
 {
 	HousesType house;
 	HouseClass *hptr;
-	int i,j,k;
+	int i,j;
 	int index;
 	int const previous_execution_frame = LastExecutedFrame;
 	LastExecutedFrame = Frame;
@@ -3385,110 +3506,7 @@ static int Execute_DoList(int max_houses, HousesType base_house,
 					return(0);
 				}
 
-				//...............................................................
-				// Only execute EXIT & OPTIONS commands if they're from myself.
-				//...............................................................
-				if (DoList[j].Type==EventClass::EXIT ||
-						DoList[j].Type==EventClass::OPTIONS ||
-						DoList[j].Type==EventClass::PAGEUSER) {
-
-					if (DoList[j].Type==EventClass::EXIT) {
-						int house_count = Houses.Count();
-						/*
-						**	Flag that this house lost because it quit.
-						*/
-						HousesType quithouse = HOUSE_NONE;
-						HouseClass *quithptr = NULL;
-
-						for (int player = 0; player < house_count ; player++) {
-							quithouse = (HousesType)(player);
-							quithptr = Houses[quithouse];
-							if (!quithptr) {
-								continue;
-							}
-							if (quithptr->HeapID == DoList[j].ID) {
-								quithptr->IsGiverUpper = true;
-								break;
-							}
-						}
-
-						/*
-						**	Send the game statistics packet now since the game is effectivly over
-						*/
-						if (CountAliveTeams(quithptr) == 1 &&
-								Session.Type == GAME_INTERNET &&
-								!GameStatisticsPacketSent) {
-							Session.SawGameCompletion = true;
-							Register_Game_End_Time();
-							Send_Statistics_Packet();		// Event - player aborted, and there were only 2 left.
-						}
-						if (Session.Type == GAME_INTERNET && !GameStatisticsPacketSent && PlayerPtr != NULL && PlayerPtr == quithptr) {
-							DebugString("Sending game results because I quit, but didn't see completion");
-							Register_Game_End_Time();
-							Send_Statistics_Packet();
-						}
-					}
-
-					if (Debug_Print_Events) {
-						if (DoList[j].Type==EventClass::EXIT) {
-							DebugString("Exit Event: ID:%d (%s),  Event Frame:%d,  My Frame:%d\n",
-								DoList[j].ID,
-								Houses[(HousesType)(DoList[j].ID)]->IniName.c_str(),
-								DoList[j].Frame,
-								Frame);
-						}
-					}
-
-					if (DoList[j].ID == PlayerPtr->HeapID) {
-						Sync_Record_Event(DoList[j], SYNC_EVENT_EXECUTED);
-						DoList[j].Execute();
-					} else if (DoList[j].Type==EventClass::EXIT) {
-					//............................................................
-					// If this EXIT event isn't from myself, destroy the connection
-					//	for that player.  The HousesType for this event is the
-					// connection ID.
-					//............................................................
-						if (Session.Is_Network_Game() && net) {
-							index = net->Connection_Index (house);
-							if (index != -1) {
-								for (k = index; k < net->Num_Connections() - 1; k++) {
-									their[k] = their[k+1];
-								}
-								Destroy_Connection(house,0);
-							}
-						}
-						//
-						// Special case for recording playback: turn the house over
-						// to the computer.
-						//
-						if (Session.Play && DoList[j].Type==EventClass::EXIT) {
-							hptr->IsHuman = false;
-							hptr->IQ = Rule->MaxIQ;
-							hptr->Computer_Paranoid();
-							DebugString("Removing a player %s:%d\n", __FILE__, __LINE__);
-							Session.NumPlayers--;
-						}
-					}
-				}
-
-				//...............................................................
-				// A FRAMEINFO event carries no action of its own; the checksum it
-				// reports was compared before this loop began.
-				//...............................................................
-				else if (DoList[j].Type == EventClass::FRAMEINFO) {
-				}
-				//...............................................................
-				// Execute other commands
-				//...............................................................
-				else {
-					Sync_Record_Event(DoList[j], SYNC_EVENT_EXECUTED);
-					DoList[j].Execute();
-				}
-
-				//...............................................................
-				// Mark this event as executed.
-				//...............................................................
-				DoList[j].IsExecuted = 1;
+				Execute_Queued_Event(DoList[j], house, hptr, net, their);
 			}
 		}
 	}
