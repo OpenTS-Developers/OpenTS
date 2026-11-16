@@ -1531,7 +1531,9 @@ Cell DisplayClass::Calculated_Cell(SourceType dir, Cell const & waypoint, Cell c
 			index = cells.Count();
 
 			if (trycell == CELL_NONE) {
-				punt = cells[Random_Pick(0, index)];
+				if (index > 0) {
+					punt = cells[Random_Pick(0, index - 1)];
+				}
 			} else {
 				int dist = -1;
 				Cell best = CELL_NONE;
