@@ -485,10 +485,10 @@ static std::chrono::seconds Get_UTC_Local_Offset(system_time_point reference_tim
 	const std::chrono::hh_mm_ss time_local {std::chrono::seconds((((buf.tm_hour * 60) + buf.tm_min) * 60) + buf.tm_sec)};
 	const std::chrono::year_month_day date_local {std::chrono::year(buf.tm_year + 1900) / (buf.tm_mon + 1) / buf.tm_mday};
 
-	const system_time_point ref_time_utc_rounded = std::chrono::system_clock::from_time_t(utc_time);
-	const system_time_point ref_time_local = std::chrono::sys_days {date_local} + time_local.to_duration();
+	const auto ref_time_utc_rounded = std::chrono::time_point_cast<std::chrono::seconds>(std::chrono::system_clock::from_time_t(utc_time));
+	const auto ref_time_local = std::chrono::time_point_cast<std::chrono::seconds>(std::chrono::sys_days {date_local} + time_local.to_duration());
 
-	return std::chrono::duration_cast<std::chrono::seconds>(ref_time_local - ref_time_utc_rounded);
+	return ref_time_local - ref_time_utc_rounded;
 }
 
 
