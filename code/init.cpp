@@ -876,6 +876,13 @@ restart:
 	PlayerAborts = false;
 	Session.ObiWan = false;
 	Session.AIOnly = false;
+
+	// Game options start from their defaults; only the launch switches are kept for the next game.
+	bool const from_install = Special.IsFromInstall;
+	Special.Init();
+	Special.IsFromInstall = from_install;
+	Special.IsInert = Debug_Inert;
+	Special.IsSpeedBuild = Debug_SpeedBuild;
 #ifdef _DEBUG
 	Debug_Unshroud = false;
 #endif

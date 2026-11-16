@@ -323,6 +323,7 @@ void ScenarioClass::Reset(void)
 	Stage = 0;
 	IsInputLocked = false;
 	IsTiberiumDeathToVisceroid = true;
+	Special.Init();
 
 	AllowableUnits.Clear();
 	AllowableUnitMaximums.Clear();
