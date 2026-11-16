@@ -423,18 +423,19 @@ bool Do_Reinforcements(TeamTypeClass const * teamtype, WAYPOINT wp)
 	*/
 	if (!teamtype || !teamtype->TaskForce->ClassCount || teamtype->House == NULL) return(false);
 
-	AircraftTypeClass const * dshp = AircraftTypes[AircraftTypeClass::From_Name("DSHP")];
-	if (teamtype->TaskForce->ClassCount == 1 && teamtype->TaskForce->Members[0].Class == dshp && teamtype->House->CurrentDropship < 3) {
+	AircraftType const dshp_type = AircraftTypeClass::From_Name("DSHP");
+	AircraftTypeClass const * dshp = (dshp_type != AIRCRAFT_NONE) ? AircraftTypes[dshp_type] : NULL;
+	if (dshp != NULL && teamtype->TaskForce->ClassCount == 1 && teamtype->TaskForce->Members[0].Class == dshp && teamtype->House->CurrentDropship < 3) {
 
-		if (!PlayerPtr->DropshipLoadouts[PlayerPtr->CurrentDropship].EntryCount) {
-			return(NULL);
+		if (!teamtype->House->DropshipLoadouts[teamtype->House->CurrentDropship].EntryCount) {
+			return(false);
 		}
 
 		TaskForceClass * dropship_taskforce = new TaskForceClass;
 		dropship_taskforce->Members[0] = EnlistedMemberClass(1, dshp);
 
 		int classcount;
-		for (classcount = 1; classcount <= PlayerPtr->DropshipLoadouts[PlayerPtr->CurrentDropship].EntryCount; classcount++) {
+		for (classcount = 1; classcount <= teamtype->House->DropshipLoadouts[teamtype->House->CurrentDropship].EntryCount; classcount++) {
 			TechnoTypeClass const * obj = teamtype->House->DropshipLoadouts[teamtype->House->CurrentDropship].Fetch(classcount - 1);
 			dropship_taskforce->Members[classcount] = EnlistedMemberClass(1, obj);
 		}

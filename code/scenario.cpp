@@ -432,7 +432,8 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 		Theme.Stop(true);
 	}
 
-	if (Scen->StartingDropships > 0) {
+	// The loadout is picked on this machine alone, so only a campaign offers the screen.
+	if (Scen->StartingDropships > 0 && Session.Type == GAME_NORMAL) {
 		Dropship_Screen();
 	}
 
