@@ -363,6 +363,11 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 
 	Scen->Campaign = campaign;
 
+	// Only a campaign numbers its missions; elsewhere the number is hashed, so every machine uses 1.
+	if (Session.Type != GAME_NORMAL) {
+		Scen->Scenario = 1;
+	}
+
 	// A game played alone starts at the speed it was set up with or last ran at, or at the speed
 	// of an order the last scenario left waiting.
 	if (!Session.Is_Network_Game()) {

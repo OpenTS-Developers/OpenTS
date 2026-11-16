@@ -538,7 +538,6 @@ bool DecodePubGameopt(char * options, char * name)
 		}
 	}
 
-	Scen->Scenario = -1;
 	Frame = 0;
 	Session.CommProtocol = DEFAULT_COMM_PROTOCOL;
 
@@ -710,7 +709,6 @@ void Commit_Session_Specials(void)
 /// </summary>
 void PregameSetup(void)
 {
-	Scen->Scenario = Session.Options.ScenarioIndex;
 	Frame = 0;
 	Session.NumPlayers = Session.Players.Count();
 	DebugString("Pregame setup for %d players.\n", Session.NumPlayers);
