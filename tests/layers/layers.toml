@@ -8,6 +8,7 @@ exclude = ["language", "vqalib"]
 # Sources under these directories take the layer named here unless a files list says otherwise.
 [directories]
 audio = "audio"
+replay = "core"
 sdl = "platform"
 ui = "ui"
 
@@ -18,13 +19,13 @@ files = [
     "_bench", "_milsectmr", "_mixfile", "_mono", "_pk", "_rand", "_rect", "_timer", "ahtoi",
     "b64pipe", "b64straw", "base64", "bench", "bfiofile", "blowfish", "blowpipe", "blwstraw",
     "buff", "buffer", "ccfile", "ccini", "cdfile", "classfactory", "classids", "counter", "crc",
-    "crcpipe", "crcstraw", "cstraw", "data", "dbgprint", "file", "file_posix", "file_win",
-    "gamedirs", "gametext", "gametime", "ini", "int", "jshell", "lcw", "lcwpipe", "lcwstraw",
-    "link", "load", "lzopipe", "lzostraw", "matrix3d", "milsectmr", "mixfile", "mono", "mpmath",
-    "mpu", "mstimer", "obscure", "pipe", "pk", "pkpipe", "pkstraw", "quat", "ramfile", "random",
-    "rawfile", "rndstraw", "savefile", "savestream", "savever", "sha", "shapipe", "shastraw",
-    "stbuffer", "stimer", "straw", "swizzle", "trim", "utf8", "version", "wstring", "xpipe",
-    "xstraw",
+    "crcpipe", "crcstraw", "cstraw", "data", "dbgprint", "deflate", "file", "file_posix",
+    "file_win", "gamedirs", "gametext", "gametime", "ini", "int", "jshell", "lcw", "lcwpipe",
+    "lcwstraw", "link", "load", "lzopipe", "lzostraw", "matrix3d", "milsectmr", "mixfile",
+    "mono", "mpmath", "mpu", "mstimer", "obscure", "pipe", "pk", "pkpipe", "pkstraw",
+    "protowire", "quat", "ramfile", "random", "rawfile", "rndstraw", "savefile", "savestream",
+    "savever", "sha", "sha256", "shapipe", "shastraw", "stbuffer", "stimer", "straw", "swizzle",
+    "trim", "utf8", "version", "wstring", "xpipe", "xstraw",
 ]
 
 # Window, input, sockets, and the crash handler.
