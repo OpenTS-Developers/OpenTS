@@ -1,10 +1,13 @@
-// Reminds a developer to raise the serial in ExpectedGameVersion (code/saveload.cpp) when the
-// save layout or the game checksum may have changed. It hashes the text of every function
-// definition under code/ whose name contains Serialize, or is Compute_CRC, Compute_Game_CRC,
-// Put_All or Get_All, and compares the hashes with functions.txt in this folder.
+// Fails when the save layout or the game checksum may have changed, so that a developer raises
+// the serial in ExpectedGameVersion (code/saveload.cpp). It hashes the text of every function
+// definition under code/ whose parameter list uses SaveStreamClass, or whose name contains
+// Serialize or is Compute_CRC, Compute_Game_CRC, Object_CRCs, Add_CRC, Put_All or Get_All,
+// and of the SERIALIZE_BIT macro, and compares the hashes with functions.txt in this folder.
+// SaveFileClass::Serialize_Fields is left out.
 //
 // Comments, line endings and whitespace between tokens do not count toward a hash. The case
-// reads the source tree only, so it needs no game data and no build of the engine.
+// reads the source tree only, so it needs no game data and no build of the engine. A member
+// whose type changes in a header changes the layout without changing any hashed text.
 
 #include "doctest/doctest.h"
 
@@ -241,11 +244,46 @@ std::size_t Qualifier_Start(std::string_view text, std::size_t pos)
 
 bool Is_Tracked_Name(std::string_view name)
 {
+	// The container format version governs the save's field table, so the serial does not.
+	if (name == "Serialize_Fields") {
+		return(false);
+	}
 	return(name.find("Serialize") != std::string_view::npos
 		|| name == "Compute_CRC"
 		|| name == "Compute_Game_CRC"
+		|| name == "Object_CRCs"
+		|| name == "Add_CRC"
 		|| name == "Put_All"
 		|| name == "Get_All");
+}
+
+
+bool Is_Keyword(std::string_view name)
+{
+	return(name == "if" || name == "while" || name == "for" || name == "switch" || name == "catch"
+		|| name == "return" || name == "sizeof" || name == "decltype" || name == "requires"
+		|| name == "noexcept" || name == "alignof" || name == "static_assert");
+}
+
+
+// True when the parameter list text contains the identifier SaveStreamClass.
+bool Names_Save_Stream(std::string_view params)
+{
+	std::string_view const word = "SaveStreamClass";
+	for (std::size_t found = params.find(word); found != std::string_view::npos; found = params.find(word, found + 1)) {
+		std::size_t const end = found + word.size();
+		if ((found == 0 || !Is_Ident(params[found - 1])) && (end >= params.size() || !Is_Ident(params[end]))) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+// The names of the macros whose definition text counts toward the record.
+bool Is_Tracked_Macro(std::string_view name)
+{
+	return(name == "SERIALIZE_BIT");
 }
 
 
@@ -268,12 +306,63 @@ std::string Hex(std::uint64_t value)
 }
 
 
+void Add_Entry(std::map<std::string, std::string> & table, std::string key, std::string_view text)
+{
+	std::string const base = key;
+	for (int copy = 2; table.count(key) != 0; copy++) {
+		key = base + " #" + std::to_string(copy);
+	}
+	table[key] = Hex(Fnv1a(Normalize(text)));
+}
+
+
+// Adds "<path> #define <name>" for each tracked macro, hashing its text with continuation lines.
+void Hash_Macros(std::string_view path, std::string_view view, std::map<std::string, std::string> & table)
+{
+	std::string_view const directive = "#define";
+	for (std::size_t found = view.find(directive); found != std::string_view::npos; found = view.find(directive, found + 1)) {
+		std::size_t name = found + directive.size();
+		while (name < view.size() && (view[name] == ' ' || view[name] == '\t')) {
+			name++;
+		}
+		std::size_t name_end = name;
+		while (name_end < view.size() && Is_Ident(view[name_end])) {
+			name_end++;
+		}
+		if (!Is_Tracked_Macro(view.substr(name, name_end - name))) {
+			continue;
+		}
+
+		std::size_t end = name_end;
+		while (end < view.size()) {
+			std::size_t const newline = view.find('\n', end);
+			if (newline == std::string_view::npos) {
+				end = view.size();
+				break;
+			}
+			std::size_t last = newline;
+			while (last > end && Is_Space(view[last - 1])) {
+				last--;
+			}
+			end = newline + 1;
+			if (last == 0 || view[last - 1] != '\\') {
+				break;
+			}
+		}
+		Add_Entry(table, std::string(path) + " #define " + std::string(view.substr(name, name_end - name)), view.substr(found, end - found));
+	}
+}
+
+
 // Maps "<path> <qualified name>(<parameters>)" to the hash of each tracked definition in one
-// file's text.
+// file's text. A definition is tracked when its name is, or when its parameter list uses
+// SaveStreamClass.
 void Hash_Definitions(std::string_view path, std::string_view source, std::map<std::string, std::string> & table)
 {
 	std::string const text = Strip_Comments(source);
 	std::string_view const view = text;
+
+	Hash_Macros(path, view, table);
 
 	std::size_t index = 0;
 	while (index < view.size()) {
@@ -297,13 +386,19 @@ void Hash_Definitions(std::string_view path, std::string_view source, std::map<s
 		while (paren < view.size() && Is_Space(view[paren])) {
 			paren++;
 		}
-		if (!Is_Tracked_Name(name) || paren >= view.size() || view[paren] != '(') {
+		if (paren >= view.size() || view[paren] != '(' || Is_Keyword(name)) {
 			index = name_end;
 			continue;
 		}
 
 		std::size_t const params_end = Match_Bracket(view, paren, '(', ')');
-		std::size_t const body = (params_end == std::string_view::npos) ? params_end : Body_Start(view, params_end + 1);
+		if (params_end == std::string_view::npos
+			|| (!Is_Tracked_Name(name) && !Names_Save_Stream(view.substr(paren, params_end - paren)))) {
+			index = name_end;
+			continue;
+		}
+
+		std::size_t const body = Body_Start(view, params_end + 1);
 		std::size_t const body_end = (body == std::string_view::npos) ? body : Match_Bracket(view, body, '{', '}');
 		if (body_end == std::string_view::npos) {
 			index = name_end;
@@ -311,12 +406,8 @@ void Hash_Definitions(std::string_view path, std::string_view source, std::map<s
 		}
 
 		std::size_t const qualified = Qualifier_Start(view, index);
-		std::string key = std::string(path) + " " + Normalize(view.substr(qualified, params_end + 1 - qualified));
-		std::string const base = key;
-		for (int copy = 2; table.count(key) != 0; copy++) {
-			key = base + " #" + std::to_string(copy);
-		}
-		table[key] = Hex(Fnv1a(Normalize(view.substr(qualified, body_end + 1 - qualified))));
+		Add_Entry(table, std::string(path) + " " + Normalize(view.substr(qualified, params_end + 1 - qualified)),
+			view.substr(qualified, body_end + 1 - qualified));
 
 		index = body_end + 1;
 	}
@@ -466,4 +557,33 @@ TEST_CASE("calls and declarations are not definitions")
 	CHECK(table.count("x.cpp Serialize(T&v)") == 1);
 	CHECK(table.count("x.cpp C<int>::Compute_CRC(C&crc)") == 1);
 	CHECK(table.count("x.cpp Put_All(S&s,int n)") == 1);
+}
+
+
+TEST_CASE("a definition that takes a save stream is tracked whatever its name")
+{
+	auto const table = Hash_One(
+		"bool MouseClass::Save(SaveStreamClass & stream) const { return(true); }\n"
+		"void Load_Vector(int n, SaveStreamClass * stream) { }\n"
+		"void Other(int n) { }\n"
+		"void Wrapper(MySaveStreamClass & s) { }\n"
+		"concept C = requires(T & t, SaveStreamClass & s) { t.Save(s); };\n"
+		"void Use(SaveStreamClass & s) { if (Check(s)) { } }\n"
+		"void SaveFileClass::Serialize_Fields(std::vector<unsigned char> & table) const { }\n");
+	CHECK(table.size() == 3);
+	CHECK(table.count("x.cpp MouseClass::Save(SaveStreamClass&stream)") == 1);
+	CHECK(table.count("x.cpp Load_Vector(int n,SaveStreamClass*stream)") == 1);
+	CHECK(table.count("x.cpp Use(SaveStreamClass&s)") == 1);
+}
+
+
+TEST_CASE("the SERIALIZE_BIT macro text is tracked with its continuation lines")
+{
+	auto const table = Hash_One("#define SERIALIZE_BIT(s, f) \\\n\tdo { \\\n\t\t(s).Serialize(f); \\\n\t} while (false)\n\nint x;\n");
+	REQUIRE(table.size() == 1);
+	CHECK(table.begin()->first == "x.cpp #define SERIALIZE_BIT");
+
+	auto const changed = Hash_One("#define SERIALIZE_BIT(s, f) \\\n\tdo { \\\n\t\t(s).Serialize(!f); \\\n\t} while (false)\n\nint x;\n");
+	CHECK(changed.begin()->second != table.begin()->second);
+	CHECK(Hash_One("#define SERIALIZE_BIT(s, f) \\\n\tdo { \\\n\t\t(s).Serialize(f); \\\n\t} while (false)\n\nint y;\n") == table);
 }

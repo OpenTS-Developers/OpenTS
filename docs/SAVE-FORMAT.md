@@ -147,10 +147,15 @@ every raise of the serial:
 - Reset it to 0 when the version is raised for a release, so a released
   build's internal version is its packed version.
 
-`tests/saveserial` hashes the text of every function whose name contains
-`Serialize`, and of `Compute_CRC`, `Compute_Game_CRC`, `Put_All` and `Get_All`,
-and fails when one changes, apart from comments and whitespace. Its message
-names the serial and the file of recorded hashes to replace. The LAN lobby's
+`tests/saveserial` hashes the text of every function whose parameter list
+uses `SaveStreamClass` or whose name contains `Serialize`, of `Compute_CRC`,
+`Compute_Game_CRC`, `Object_CRCs`, `Add_CRC`, `Put_All` and `Get_All`, and of
+the `SERIALIZE_BIT` macro, leaving out `SaveFileClass::Serialize_Fields`,
+which writes the field table that the format version covers. It fails when
+one changes, apart from comments and whitespace, and its message gives the
+serial and the file of recorded hashes to replace. The test cannot see a
+member whose type changes in a header: that changes the layout without
+changing any hashed text, so raise the serial for it by hand. The LAN lobby's
 version range and `Build_Number` use the packed version alone, so builds whose
 serials differ still meet in the lobby.
 
