@@ -79,7 +79,6 @@ A handler requests an autosave with `SaveManager.Autosave.Arm()`. At the end of 
 
 - While a multiplayer load is pending, the request waits until the load finishes.
 - Once a player has left a multiplayer match, saving stays closed for the rest of the match, and the request is never written.
-- During recording playback, the request is never taken.
 
 ### Object lists
 

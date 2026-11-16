@@ -434,10 +434,6 @@ void Tactical::AI(void)
 {
 	bool coordchanged = false;
 
-	if (Session.Play) {
-		return;
-	}
-
 	if (LastAIFrame != Frame) {
 		if (ScenarioActive) {
 			if (MoveTo != COORD_NONE && MoveSpeed != 0) {

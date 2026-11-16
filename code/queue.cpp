@@ -359,11 +359,9 @@ static int Execute_DoList(int max_houses, HousesType base_house,
 	ConnManClass *net, CDTimerClass<FrameTimerClass> *skip_crc,
 //	ConnManClass *net, TCountDownTimerClass *skip_crc,
 	FrameSyncStruct *their);
-static void Execute_Queued_Event(EventClass & event, HousesType house, HouseClass * hptr,
-	ConnManClass * net, FrameSyncStruct * their);
+static void Execute_Queued_Event(EventClass & event, HousesType house, ConnManClass * net,
+	FrameSyncStruct * their);
 static void Clean_DoList(ConnManClass *net);
-static void Queue_Record(void);
-static void Queue_Playback(void);
 
 //...........................................................................
 // Debugging:
@@ -511,24 +509,17 @@ void Queue_AI(void)
 		Session.Advance_Network_Timing(static_cast<unsigned int>(Frame));
 	}
 
-	if (Session.Play) {
-		Queue_Playback();
-	}
+	switch (Session.Type) {
 
-	else {
+		case GAME_SKIRMISH:
+		case GAME_NORMAL:
+			Queue_AI_Normal();
+			break;
 
-		switch (Session.Type) {
-
-			case GAME_SKIRMISH:
-			case GAME_NORMAL:
-				Queue_AI_Normal();
-				break;
-
-			case GAME_IPX:
-			case GAME_INTERNET:
-				Queue_AI_Multiplayer();
-				break;
-		}
+		case GAME_IPX:
+		case GAME_INTERNET:
+			Queue_AI_Multiplayer();
+			break;
 	}
 }	/* end of Queue_AI */
 
@@ -3173,8 +3164,8 @@ static int Add_Compressed_Events(void *buf, int bufsize, int frame_delay,
 /// </summary>
 /// <param name="house">The index of the sending house, which is also its connection ID.</param>
 /// <param name="their">The frame sync entries, kept in step with the connections; NULL if net is.</param>
-static void Execute_Queued_Event(EventClass & event, HousesType house, HouseClass * hptr,
-	ConnManClass * net, FrameSyncStruct * their)
+static void Execute_Queued_Event(EventClass & event, HousesType house, ConnManClass * net,
+	FrameSyncStruct * their)
 {
 	//...............................................................
 	// Only execute EXIT & OPTIONS commands if they're from myself.
@@ -3247,17 +3238,6 @@ static void Execute_Queued_Event(EventClass & event, HousesType house, HouseClas
 					}
 					Destroy_Connection(house,0);
 				}
-			}
-			//
-			// Special case for recording playback: turn the house over
-			// to the computer.
-			//
-			if (Session.Play && event.Type==EventClass::EXIT) {
-				hptr->IsHuman = false;
-				hptr->IQ = Rule->MaxIQ;
-				hptr->Computer_Paranoid();
-				DebugString("Removing a player %s:%d\n", __FILE__, __LINE__);
-				Session.NumPlayers--;
 			}
 		}
 	}
@@ -3350,18 +3330,13 @@ static int Execute_DoList(int max_houses, HousesType base_house,
 	}
 #endif
 
-	if (Session.Record && !Session.Play) {
-		Queue_Record();
-	}
-
 	//------------------------------------------------------------------------
 	// Compare the checksums the other systems reported before executing any of
 	// this frame's events, so that a report describes the same frame boundary on
 	// every machine, and so that a frame several players disagree on is reported
 	// once naming all of them.
 	//
-	// A null skip_crc timer means the caller wants the comparison; the recording
-	// playback caller relies on that.
+	// A null skip_crc timer means the caller wants the comparison.
 	//------------------------------------------------------------------------
 	if (skip_crc == NULL || *skip_crc == 0) {
 
@@ -3414,7 +3389,8 @@ static int Execute_DoList(int max_houses, HousesType base_house,
 
 			if (net == NULL || !Session.Is_Network_Game()) {
 
-				// A recording has nobody to decide with, so it keeps the plain box.
+				// Without a network connection there is nobody to decide with, so the
+				// plain box is shown.
 				Session.Suspended++;
 				int choice = WWMessageBox().Process(TXT_OUT_OF_SYNC, TXT_CONTINUE, TXT_STOP);
 				Session.Suspended--;
@@ -3506,7 +3482,7 @@ static int Execute_DoList(int max_houses, HousesType base_house,
 					return(0);
 				}
 
-				Execute_Queued_Event(DoList[j], house, hptr, net, their);
+				Execute_Queued_Event(DoList[j], house, net, their);
 			}
 		}
 	}
@@ -3557,203 +3533,6 @@ static void Clean_DoList(ConnManClass *net)
 	}
 
 }	// end of Clean_DoList
-
-
-/***************************************************************************
- * Queue_Record -- Records the DoList to disk                              *
- *                                                                         *
- * This routine just saves any events in the DoList to disk; we can later  *
- * "play back" the recording just be pulling events from disk rather than  *
- * from the network!                                                       *
- *                                                                         *
- * INPUT:                                                                  *
- *      none.                                                              *
- *                                                                         *
- * OUTPUT:                                                                 *
- *      none.                                                              *
- *                                                                         *
- * WARNINGS:                                                               *
- *      none.                                                              *
- *                                                                         *
- * HISTORY:                                                                *
- *   08/14/1995 BRR : Created.                                             *
- *=========================================================================*/
-static void Queue_Record(void)
-{
-	if (Frame == 0 && Session.Type != GAME_NORMAL) return;
-
-	int i,j;
-
-	//------------------------------------------------------------------------
-	//	Compute # of events to save this frame
-	//------------------------------------------------------------------------
-	j = 0;
-	for (i = 0; i < (int)DoList.size(); i++) {
-		if (NetTiming::Event_Is_Due(DoList[i].Frame, DoList[i].IsExecuted, Frame)) {
-			j++;
-		}
-	}
-
-	//------------------------------------------------------------------------
-	//	Save the # of events, then all events.
-	//------------------------------------------------------------------------
-	Session.RecordFile.Write (&j,sizeof(j));
-	for (i = 0; i < (int)DoList.size(); i++) {
-		if (NetTiming::Event_Is_Due(DoList[i].Frame, DoList[i].IsExecuted, Frame)) {
-			Session.RecordFile.Write (&DoList[i],sizeof (EventClass));
-			j--;
-		}
-	}
-
-}	/* end of Queue_Record */
-
-
-/***************************************************************************
- * Queue_Playback -- plays back queue entries from a record file           *
- *                                                                         *
- * This routine reads events from disk, putting them into the DoList;      *
- * it then executes the DoList just like the network version does.  The    *
- * result is that the game "plays back" like a recording.                  *
- *                                                                         *
- * This routine detects mouse motion and stops playback, so it can work    *
- * like an "attract" mode, showing a demo of the game itself.              *
- *                                                                         *
- * INPUT:                                                                  *
- *      none.                                                              *
- *                                                                         *
- * OUTPUT:                                                                 *
- *      none.                                                              *
- *                                                                         *
- * WARNINGS:                                                               *
- *      none.                                                              *
- *                                                                         *
- * HISTORY:                                                                *
- *   05/15/1995 BRR : Created.                                             *
- *=========================================================================*/
-static void Queue_Playback(void)
-{
-	int numevents;
-	EventClass event;
-	int i;
-	int ok;
-	static int mx,my;
-	int max_houses;
-	HousesType base_house;
-	int key;
-	int testframe;
-
-	//------------------------------------------------------------------------
-	// If the user hits ESC, stop the playback
-	//------------------------------------------------------------------------
-	if (Keyboard->Check()) {
-		key = Keyboard->Get();
-		if (key == KA_ESC || Session.Attract) {
-			GameActive = 0;
-			return;
-		}
-	}
-
-	//------------------------------------------------------------------------
-	// If we're in "Attract" mode, and the user moves the mouse, stop the
-	// playback.
-	//------------------------------------------------------------------------
-	if (Session.Attract && Frame > 0 &&
-		(mx != Get_Mouse_X() || my != Get_Mouse_Y())) {
-		GameActive = 0;
-		return;
-	}
-	mx = Get_Mouse_X();
-	my = Get_Mouse_Y();
-
-	//------------------------------------------------------------------------
-	// Compute the Game's CRC
-	//------------------------------------------------------------------------
-	Compute_Game_CRC();
-	CRC[Frame & (ARRAY_SIZE(CRC) - 1)] = GameCRC;
-
-	//------------------------------------------------------------------------
-	// If we've reached the CRC print frame, do so & exit
-	//------------------------------------------------------------------------
-	if (Frame >= Session.TrapPrintCRC) {
-		Print_CRCs(NULL, 0, CRC, ARRAY_SIZE(CRC));
-		Emergency_Exit();
-		exit(0);
-	}
-
-	//------------------------------------------------------------------------
-	// Don't read anything the first time through (since the Queue_AI_Network
-	//	routine didn't write anything the first time through); do this after the
-	// CRC is computed, since we'll still need a CRC for Frame 0.
-	//------------------------------------------------------------------------
-	if (Frame == 0) {
-		LastExecutedFrame = -1;
-	}
-	if (Frame==0 && Session.Type!=GAME_NORMAL) {
-		return;
-	}
-
-	//------------------------------------------------------------------------
-	// Only process every 'FrameSendRate' frames
-	//------------------------------------------------------------------------
-	testframe = ((Frame + (Session.FrameSendRate - 1)) /
-		Session.FrameSendRate) * Session.FrameSendRate;
-	if ( (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) &&
-		Session.CommProtocol == COMM_PROTOCOL_MULTI_E_COMP) {
-		if (Frame != testframe) {
-			return;
-		}
-	}
-
-	//------------------------------------------------------------------------
-	// Read the DoList from disk
-	//------------------------------------------------------------------------
-	ok = 1;
-	if (Session.RecordFile.Read (&numevents, sizeof(numevents)) ==
-		sizeof(numevents)) {
-		for (i = 0; i < numevents; i++) {
-			if (Session.RecordFile.Read (&event, sizeof(EventClass)) ==
-				sizeof(EventClass)) {
-				event.IsExecuted = 0;
-				DoList.push_back(event);
-			}
-			else {
-				ok = 0;
-				break;
-			}
-		}
-	}
-	else {
-		ok = 0;
-	}
-
-	if (!ok) {
-		GameActive = 0;
-		return;
-	}
-
-
-	//------------------------------------------------------------------------
-	// Execute the DoList; if an error occurs, bail out.
-	//------------------------------------------------------------------------
-	if (Session.Type == GAME_NORMAL) {
-		max_houses = 1;
-		base_house = PlayerPtr->Class->House;
-	}
-	else {
-		max_houses = Session.MaxPlayers;
-		base_house = HOUSE_FIRST;
-	}
-	if (!Execute_DoList(max_houses, base_house, NULL, NULL, NULL)) {
-		GameActive = 0;
-		return;
-	}
-
-	//------------------------------------------------------------------------
-	// Clean out the DoList
-	//------------------------------------------------------------------------
-	Clean_DoList(NULL);
-
-}	/* end of Queue_Playback */
 
 
 /***************************************************************************

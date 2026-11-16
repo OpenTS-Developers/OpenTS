@@ -75,16 +75,9 @@
 #include <chrono>
 #include <thread>
 
-//
-// Special module globals for recording and playback
-//
-int TeamEvent = 0;			// 0 = no event, 1,2,3 = team event type
-int TeamNumber = 0;			// which team was selected? (1-9)
-
 void Message_Input(KeyNumType &input);
 void Sync_Delay(void);
 void Multiplayer_Debug_Print(void);
-static void Do_Record_Playback(void);
 
 
 /// <summary>
@@ -219,8 +212,7 @@ static int Target_Frame_Rate(void)
 		return((int)NetTiming::Solo_Game_Speed_Frame_Rate(Session.Options.GameSpeed));
 	}
 
-	// A recording is played back as fast as possible.
-	return(Session.Play ? 0 : Session.DesiredFrameRate);
+	return(Session.DesiredFrameRate);
 }
 
 /***********************************************************************************************
@@ -262,13 +254,6 @@ bool Main_Loop(void)
 	*/
 	Check_For_Focus_Loss();
 
-	/*
-	**	Sync-bug trapping code
-	*/
-	if (Frame >= Session.TrapFrame) {
-		Session.Trap_Object();
-	}
-
 	//
 	// Initialize our AI processing timer
 	//
@@ -305,33 +290,24 @@ bool Main_Loop(void)
 	/*
 	**	Update the display, unless we're inside a dialog.
 	*/
-	if (!Session.Play) {
-		if (SpecialDialog == SDLG_NONE && GameInFocus) {
-			UI_Diplomacy_Update();
-			UIShell.Tick();
-			Map.Input(input, x, y);
-			if (input) {
-				Keyboard_Process(input);
-			}
-			if ((Frame & 7) == 7 && Session.Type == GAME_INTERNET) {
-				Ipx.Store_Stats();
-			}
-			Update_Fogged_Objects();
-			Map.Render();
+	if (SpecialDialog == SDLG_NONE && GameInFocus) {
+		UI_Diplomacy_Update();
+		UIShell.Tick();
+		Map.Input(input, x, y);
+		if (input) {
+			Keyboard_Process(input);
 		}
+		if ((Frame & 7) == 7 && Session.Type == GAME_INTERNET) {
+			Ipx.Store_Stats();
+		}
+		Update_Fogged_Objects();
+		Map.Render();
 	}
 
 	drag_select_aborted = false;
 
 	// Drawing the frame above can leave the floating-point state changed by a driver.
 	Reset_Float_State();
-
-	/*
-	**	Save map's position & selected objects, if we're recording the game.
-	*/
-	if (Session.Record || Session.Play) {
-		Do_Record_Playback();
-	}
 
 	/*
 	**	Sort the map's ground layer by y-coordinate value.  This is done
@@ -725,138 +701,4 @@ void Multiplayer_Debug_Print(void)
 	Fancy_Text_Print(buffer, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D(0, top + 42), Fetch_Scheme_By_Name("Grey"), 0, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
 
 	Ipx.Multiplayer_Debug_Print(top);
-}
-
-
-/***********************************************************************************************
- * Do_Record_Playback -- handles saving/loading map pos & current object                       *
- *                                                                                             *
- * INPUT:                                                                                      *
- *      none.                                                                                  *
- *                                                                                             *
- * OUTPUT:                                                                                     *
- *      none.                                                                                  *
- *                                                                                             *
- * WARNINGS:                                                                                   *
- *      none.                                                                                  *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   08/15/1995 BRR : Created.                                                                 *
- *=============================================================================================*/
-static void Do_Record_Playback(void)
-{
-	int count;
-	int tgt;
-	int i;
-	Point2D coord;
-	ObjectClass * obj;
-	unsigned int sum;
-	unsigned int sum2;
-	unsigned int ltgt;
-
-	/*
-	**	Record a game
-	*/
-	if (Session.Record) {
-
-		/*
-		**	Save the map's location
-		*/
-		coord = TacticalMap->Get_Tactical_Position();
-		Session.RecordFile.Write(&coord, sizeof(coord));
-
-		/*
-		**	Save the current object list count
-		*/
-		count = CurrentObject.Count();
-		Session.RecordFile.Write(&count, sizeof(count));
-
-		/*
-		**	Save a CRC of the selected-object list.
-		*/
-		sum = 0;
-		for (i = 0; i < count; i++) {
-			ltgt = TargetClass(CurrentObject[i]).Encode();
-			sum += ltgt;
-		}
-		Session.RecordFile.Write (&sum, sizeof(sum));
-
-		/*
-		**	Save all selected objects.
-		*/
-		for (i = 0; i < count; i++) {
-			tgt = TargetClass(CurrentObject[i]).Encode();
-			Session.RecordFile.Write (&tgt, sizeof(tgt));
-		}
-
-		//
-		// Save team-selection and formation events
-		//
-		Session.RecordFile.Write (&TeamEvent, sizeof(TeamEvent));
-		Session.RecordFile.Write (&TeamNumber, sizeof(TeamNumber));
-		TeamEvent = 0;
-		TeamNumber = 0;
-	}
-
-	/*
-	**	Play back a game ("attract" mode)
-	*/
-	if (Session.Play) {
-
-		/*
-		**	Read & set the map's location.
-		*/
-		if (Session.RecordFile.Read(&coord, sizeof(coord))==sizeof(coord)) {
-			TacticalMap->Set_Tactical_Position(coord);
-		}
-
-		if (Session.RecordFile.Read(&count, sizeof(count))==sizeof(count)) {
-			/*
-			**	Compute a CRC of the current object-selection list.
-			*/
-			sum = 0;
-			for (i = 0; i < CurrentObject.Count(); i++) {
-				ltgt = TargetClass(CurrentObject[i]).Encode();
-				sum += ltgt;
-			}
-
-			/*
-			**	Load the CRC of the objects on disk; if it doesn't match, select
-			**	all objects as they're loaded.
-			*/
-			Session.RecordFile.Read (&sum2, sizeof(sum2));
-			if (sum2 != sum) {
-				Unselect_All();
-			}
-
-			AllowVoice = true;
-
-			for (i = 0; i < count; i++) {
-				if (Session.RecordFile.Read (&tgt, sizeof(tgt))==sizeof(tgt)) {
-					TargetClass tmp;
-					tmp.Decode(tgt);
-					obj = tmp.As_Object();
-					if (obj && (sum2 != sum)) {
-						obj->Select();
-						AllowVoice = false;
-					}
-				}
-			}
-
-			AllowVoice = true;
-
-		}
-
-		//
-		// Save team-selection and formation events
-		//
-		Session.RecordFile.Read (&TeamEvent, sizeof(TeamEvent));
-		Session.RecordFile.Read (&TeamNumber, sizeof(TeamNumber));
-
-		/*
-		**	The map isn't drawn in playback mode, so draw it here.
-		*/
-		Map.Flag_To_Redraw();
-		Map.Render();
-	}
 }

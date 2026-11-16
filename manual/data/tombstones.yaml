@@ -251,6 +251,57 @@
     - "-MESSAGES"
     - Disable network protection
   summary: Let in-game chat from outside the match through. Removed when a line began to be accepted only from a seat of the match.
+- type: command
+  id: launch:record
+  route: /using/command-line/record/
+  search_aliases:
+    - "-XX"
+    - Game recording
+  summary: Recorded each game to RECORD.BIN in a Debug build. Removed with the recording playback, which never played a recording past its first frame.
+- type: command
+  id: launch:playback
+  route: /using/command-line/playback/
+  search_aliases:
+    - "-XY"
+    - Recording playback
+  summary: Played RECORD.BIN back in place of the main menu of a Debug build, but wrote an out-of-sync report and exited on the first frame. Removed.
+- type: command
+  id: launch:attract
+  route: /using/command-line/attract/
+  search_aliases:
+    - "-ATTRACT"
+    - Attract mode
+  summary: Let any key press end a -XY playback. Removed with the playback; the game now ignores the option.
+- type: key
+  id: Frame
+  route: /keys/frame/
+  search_aliases:
+    - Frame
+  summary: Named the frame from which a [SyncBug] trap would watch an object during recording playback. It had no effect. Removed with the playback.
+- type: key
+  id: Coord
+  route: /keys/coord/
+  search_aliases:
+    - Coord
+  summary: Named the coordinate of an object for a [SyncBug] trap to watch during recording playback. It had no effect. Removed with the playback.
+- type: key
+  id: Target
+  route: /keys/target/
+  search_aliases:
+    - Target
+  summary: Named an object for a [SyncBug] trap to watch during recording playback. It had no effect. Removed with the playback.
+- type: key
+  id: Cell
+  route: /keys/cell/
+  search_aliases:
+    - Cell
+  summary: Named a cell for a [SyncBug] trap to watch during recording playback. It had no effect. Removed with the playback.
+- type: key
+  id: PrintCRC
+  route: /keys/printcrc/
+  search_aliases:
+    - PrintCRC
+  summary: Named the frame at which a recording playback wrote an out-of-sync report and quit. Removed with the playback.
 - type: key
   id: TiberiumTransmogrify
   route: /keys/tiberiumtransmogrify/

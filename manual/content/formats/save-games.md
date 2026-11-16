@@ -52,7 +52,7 @@ In a game against other machines, the Save button in the options menu sends a `S
 
 The [Create Autosave](/mapping/actions/taction-create-autosave/) trigger action requests an automatic save. The save is written at the end of the frame in which the action runs, under the names and descriptions given in [Automatic saves](#automatic-saves). A trigger save posts a message only when it fails.
 
-The action works even when timed saves are turned off, including in a game against other machines started from the menu. Several requests in one frame produce one save. Nothing is saved while a recording plays back.
+The action works even when timed saves are turned off, including in a game against other machines started from the menu. Several requests in one frame produce one save.
 
 In a game against other machines, a trigger save or timed save written in the frame of a player's save command joins the player's save. That save keeps the player's file name, description, saving box, and `Game saved.` message.
 

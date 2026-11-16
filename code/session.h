@@ -369,22 +369,6 @@ struct GlobalPacketType {
 };
 #pragma pack()
 
-//...........................................................................
-// For finding sync bugs; filled in by the engine when certain conditions
-// are met; the pointers allow examination of objects in the debugger.
-//...........................................................................
-struct TrapObjectType {
-	union {
-		AircraftClass *Aircraft;
-		AnimClass *Anim;
-		BuildingClass *Building;
-		BulletClass *Bullet;
-		InfantryClass *Infantry;
-		UnitClass *Unit;
-		void *All;
-	} Ptr;
-};
-
 /*
 **	This is the identifier for a multiplayer mission. This can be used to
 **	identify the filename of the mission as well as display the mission in a
@@ -542,7 +526,6 @@ class SessionClass
 		//.....................................................................
 		// Debugging / Sync Bugs
 		//.....................................................................
-		void Trap_Object(void);
 		bool Log_To_File(FILE *out);
 
 		//---------------------------------------------------------------------
@@ -750,14 +733,6 @@ class SessionClass
 		static char const * GlobalPacketNames[];
 
 		//.....................................................................
-		// For Recording & Playing back a file
-		//.....................................................................
-		CCFileClass RecordFile;
-		unsigned Record				: 1;
-		unsigned Play				 	: 1;
-		unsigned Attract			 	: 1;
-
-		//.....................................................................
 		// Network-specific variables
 		//.....................................................................
 		bool NetStealth;                                // makes us invisible
@@ -795,14 +770,7 @@ class SessionClass
 		//.....................................................................
 		// For finding Sync Bugs
 		//.....................................................................
-		int TrapFrame;             // frame # to start trapping 'TrapObject'
-		RTTIType TrapObjType;       // type of object to trap
-		TrapObjectType TrapObject;  // ptr to object to trap (watch)
-		Coord TrapCoord;            // coord of object, 0 = ignore
-		TargetClass TrapTarget;     // Target # of object, 0 = ignore
-		CellClass * TrapCell;       // Ptr to cell to trap (watch)
-		int TrapCheckHeap;          // true = check the heap as of TrapFrame
-		int TrapPrintCRC;          // Frame # to print CRC state file
+		int TrapCheckHeap;          // true = check the heap
 		int ForceDesyncFrame;       // Frame # to corrupt our own checksum at, -1 = never
 };
 

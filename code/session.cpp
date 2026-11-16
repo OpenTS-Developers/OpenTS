@@ -229,11 +229,6 @@ SessionClass::SessionClass(void)
 	MessageTarget = -1;
 	LastMessage[0] = 0;
 
-	RecordFile.Set_Name("RECORD.BIN");  // always uses this name
-	Record= 0;                          // set via command line
-	Play = 0;                           // set via command line
-	Attract = 0;                        // set via command line
-
 	NetStealth = 0;
 	NetOpen = 0;
 	PlayMovies = false;
@@ -256,14 +251,7 @@ SessionClass::SessionClass(void)
 	memset(KickVoteCount, 0, sizeof(KickVoteCount));
 	memset(KickVoteWho, -1, sizeof(KickVoteWho));
 
-	TrapFrame = 0x7fffffff;     // frame to start trapping object values at
-	TrapObjType = RTTI_NONE;    // type of object to trap
-	TrapObject.Ptr.All = NULL;  // ptr to object being trapped
-	TrapCoord = COORD_NONE;     // COORDINATE of object to trap
-	TrapTarget.Invalidate();    // TARGET value of object to trap
-	TrapCell = NULL;            // for trapping a cell
 	TrapCheckHeap = 0;          // start checking the Heap
-	TrapPrintCRC = 0;           // output CRC file
 	ForceDesyncFrame = -1;      // deliberate checksum mismatch, disarmed
 }	// end of SessionClass
 
@@ -799,8 +787,6 @@ bool SessionClass::Advance_Network_Timing(unsigned int frame)
  *=========================================================================*/
 void SessionClass::Read_MultiPlayer_Settings(void)
 {
-	char buf[128];          // buffer for parsing INI entry
-
 	Rule->Do_HouseTypes(*RuleINI);
 
 	// Get the player's last-used Handle
@@ -818,46 +804,6 @@ void SessionClass::Read_MultiPlayer_Settings(void)
 	}
 
 	TrapCheckHeap = ConfigINI.Get_Int("MultiPlayer", "CheckHeap", 0);
-
-	// Read special recording playback values, to help find sync bugs
-	if (Session.Play) {
-		TrapFrame = ConfigINI.Get_Int("SyncBug", "Frame", 0x7fffffff);
-
-		ConfigINI.Get_String("SyncBug", "Type", "NONE", buf, 80);
-
-		if (!stricmp(buf,"AIRCRAFT"))
-			TrapObjType = RTTI_AIRCRAFT;
-		else if (!stricmp(buf,"ANIM"))
-			TrapObjType = RTTI_ANIM;
-		else if (!stricmp(buf,"BUILDING"))
-			TrapObjType = RTTI_BUILDING;
-		else if (!stricmp(buf,"BULLET"))
-			TrapObjType = RTTI_BULLET;
-		else if (!stricmp(buf,"INFANTRY"))
-			TrapObjType = RTTI_INFANTRY;
-		else if (!stricmp(buf,"UNIT"))
-			TrapObjType = RTTI_UNIT;
-		else {
-			TrapObjType = RTTI_NONE;
-		}
-
-		ConfigINI.Get_String("SyncBug", "Coord", "0", buf, 80);
-		int x;
-		int y;
-		int z;
-		sscanf(buf,"%d,%d,%d", &x, &y, &z);
-		int target = ConfigINI.Get_Int("SyncBug", "Target", -1);
-		TrapTarget.Decode(target);
-
-		ConfigINI.Get_String("SyncBug", "Cell", "0,0", buf, 80);
-		sscanf(buf, "%d,%d", &x, &y);
-		Cell cell(x, y);
-		if (cell != CELL_NONE) {
-			TrapCell = &(Map[cell]);
-		}
-
-		TrapPrintCRC = ConfigINI.Get_Int("SyncBug", "PrintCRC", 0x7fffffff);
-	}
 }
 
 
@@ -1091,156 +1037,6 @@ void SessionClass::Free_Scenario_Descriptions(void)
 //	Filenum.Clear();
 
 }	/* end of Free_Scenario_Descriptions */
-
-
-/***************************************************************************
- * SessionClass::Trap_Object -- searches for an object, for debugging      *
- *                                                                         *
- * INPUT:                                                                  *
- *      none.                                                              *
- *                                                                         *
- * OUTPUT:                                                                 *
- *      none.                                                              *
- *                                                                         *
- * WARNINGS:                                                               *
- *      none.                                                              *
- *                                                                         *
- * HISTORY:                                                                *
- *   06/02/1995 BRR : Created.                                             *
- *=========================================================================*/
-void SessionClass::Trap_Object(void)
-{
-#ifdef TRAP_OBJECTS
-	int i;
-
-	//------------------------------------------------------------------------
-	// Initialize
-	//------------------------------------------------------------------------
-	TrapObject.Ptr.All = NULL;
-
-	//------------------------------------------------------------------------
-	// Search for the object based upon its type, then its coordinate or
-	// 'this' pointer value.
-	//------------------------------------------------------------------------
-	switch (TrapObjType) {
-		case RTTI_AIRCRAFT:
-			for (i = 0; i < Aircraft.Count(); i++) {
-				if (Aircraft[i]->Coord == TrapCoord ||
-					Aircraft[i]->As_Target()==TrapTarget) {
-					TrapObject.Ptr.Aircraft = Aircraft[i];
-					break;
-				}
-			}
-			break;
-
-		case RTTI_ANIM:
-			for (i = 0; i < Anims.Count(); i++) {
-				if (Anims[i]->Coord == TrapCoord ||
-					Anims[i]->As_Target()==TrapTarget) {
-					TrapObject.Ptr.Anim = Anims[i];
-					break;
-				}
-			}
-			break;
-
-		case RTTI_BUILDING:
-			for (i = 0; i < Buildings.Count(); i++) {
-				if (Buildings[i]->Coord == TrapCoord ||
-					Buildings[i]->As_Target()==TrapTarget) {
-					TrapObject.Ptr.Building = Buildings[i];
-					break;
-				}
-			}
-			break;
-
-		case RTTI_BULLET:
-			for (i = 0; i < Bullets.Count(); i++) {
-				if (Bullets[i]->Coord == TrapCoord ||
-					Bullets[i]->As_Target()==TrapTarget) {
-					TrapObject.Ptr.Bullet = Bullets[i];
-					break;
-				}
-			}
-			break;
-
-		case RTTI_INFANTRY:
-			for (i = 0; i < Infantry.Count(); i++) {
-				if (Infantry[i]->Coord == TrapCoord ||
-					Infantry[i]->As_Target()==TrapTarget) {
-					TrapObject.Ptr.Infantry = Infantry[i];
-					break;
-				}
-			}
-			break;
-
-		case RTTI_UNIT:
-			for (i = 0; i < Units.Count(); i++) {
-				if (Units[i]->Coord == TrapCoord ||
-					Units[i]->As_Target()==TrapTarget) {
-					TrapObject.Ptr.Unit = Units[i];
-					break;
-				}
-			}
-			break;
-
-		//.....................................................................
-		// Last-ditch find-the-object-right-now-darnit loop
-		//.....................................................................
-		case RTTI_NONE:
-			for (i = 0; i < Aircraft.Count(); i++) {
-				if (Aircraft.Raw_Ptr(i)->Coord == TrapCoord ||
-					Aircraft.Raw_Ptr(i)->As_Target()==TrapTarget) {
-					TrapObject.Ptr.Aircraft = Aircraft.Raw_Ptr(i);
-					TrapObjType = RTTI_AIRCRAFT;
-					return;
-				}
-			}
-			for (i = 0; i < Anims.Count(); i++) {
-				if (Anims.Raw_Ptr(i)->Coord == TrapCoord ||
-					Anims.Raw_Ptr(i)->As_Target()==TrapTarget) {
-					TrapObject.Ptr.Anim = Anims.Raw_Ptr(i);
-					TrapObjType = RTTI_ANIM;
-					return;
-				}
-			}
-			for (i = 0; i < Buildings.Count(); i++) {
-				if (Buildings.Raw_Ptr(i)->Coord == TrapCoord ||
-					Buildings.Raw_Ptr(i)->As_Target()==TrapTarget) {
-					TrapObject.Ptr.Building = Buildings.Raw_Ptr(i);
-					TrapObjType = RTTI_BUILDING;
-					return;
-				}
-			}
-			for (i = 0; i < Bullets.Count(); i++) {
-				if (Bullets.Raw_Ptr(i)->Coord == TrapCoord ||
-					Bullets.Raw_Ptr(i)->As_Target()==TrapTarget) {
-					TrapObject.Ptr.Bullet = Bullets.Raw_Ptr(i);
-					TrapObjType = RTTI_BULLET;
-					return;
-				}
-			}
-			for (i = 0; i < Infantry.Count(); i++) {
-				if (Infantry.Raw_Ptr(i)->Coord == TrapCoord ||
-					Infantry.Raw_Ptr(i)->As_Target()==TrapTarget) {
-					TrapObject.Ptr.Infantry = Infantry.Raw_Ptr(i);
-					TrapObjType = RTTI_INFANTRY;
-					return;
-				}
-			}
-			for (i = 0; i < Units.Count(); i++) {
-				if (Units.Raw_Ptr(i)->Coord == TrapCoord ||
-					Units.Raw_Ptr(i)->As_Target()==TrapTarget) {
-					TrapObject.Ptr.Unit = Units.Raw_Ptr(i);
-					TrapObjType = RTTI_UNIT;
-					return;
-				}
-			}
-
-		default:
-			break;
-	}
-#endif
-}
 
 
 // The eight menu colors' positions in the rules' [Colors] list.

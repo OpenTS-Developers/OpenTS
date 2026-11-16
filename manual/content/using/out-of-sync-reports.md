@@ -14,8 +14,6 @@ related:
     id: crash-reports
   - type: system
     id: out-of-sync-recovery
-  - type: key
-    id: PrintCRC
 ---
 
 ## What an out-of-sync report is
@@ -24,7 +22,7 @@ An out-of-sync report is a text file that records one machine's game state on th
 
 Each machine in a network game computes a checksum of its game every frame. It sends that checksum to the other machines only on frames that are a multiple of the frame send rate, the number on the report's `FrameSendRate:` line. When a checksum from another player disagrees with the one this machine computed for the same frame, the two games diverged on that frame or earlier. The machine writes its report at that point, before it asks the players what to do. [Out-of-sync recovery](/systems/out-of-sync-recovery/) describes the dialog that follows.
 
-A network game writes the report without any setup. Recording playback can also write a report through the [`PrintCRC`](/keys/printcrc/) trap, which then exits the game; that page gives the frame the report is written on.
+A network game writes the report without any setup.
 
 ## Where it is written
 
@@ -54,7 +52,7 @@ The report is a plain text file. Most lines are a `Label: value` pair, and each 
 4. Every house, with its name, whether a human plays it, its color, its ID and its house type.
 5. Every house's infantry, vehicles (headed `Units`), structures (headed `Buildings`) and aircraft, one line per object with its position, facing, current mission and type. Infantry and vehicle lines add the object's target and destination. Structure and aircraft lines instead identify the object itself: the last six hexadecimal digits of their `Tgt:` field are its unique ID.
 6. Every object on each map layer, then every object in the list of objects the game updates each frame.
-7. One block for each player whose checksum disagreed, giving that player's name and checksum and the frame the checksum was computed for. The block adds this machine's checksum for the same frame when its `Delay:` value is under 256. A report written by the `PrintCRC` trap has a note in place of these blocks.
+7. One block for each player whose checksum disagreed, giving that player's name and checksum and the frame the checksum was computed for. The block adds this machine's checksum for the same frame when its `Delay:` value is under 256.
 8. Histories of the moments before the divergence, each newest first and limited in length: random number draws, executed and queued events, target assignments, mission orders, facing assignments and animation creations.
 9. A checksum table. It gives a count and checksum for each list of objects and type definitions, then one row for each house, vehicle, bullet, team, trigger or other object in the game. Each row gives the object's unique ID and a running checksum of that object and every object before it in the same list.
 

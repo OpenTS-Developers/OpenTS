@@ -1196,9 +1196,6 @@ bool SidebarClass::Activate(int control)
 {
 	bool old = IsSidebarActive;
 
-	if (Session.Play && Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH)
-		return(old);
-
 	/*
 	**	Determine the new state of the sidebar.
 	*/

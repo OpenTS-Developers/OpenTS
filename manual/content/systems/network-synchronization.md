@@ -70,7 +70,7 @@ A change that shortens either setting waits until every command scheduled under 
 
 A change that lengthens the send period but shortens the look-ahead switches the send period when its event executes. The look-ahead then steps down to the target in the same way.
 
-A command scheduled for a frame that is no longer a send frame executes on the next send frame, on every machine alike. A recording stores it with that send frame's commands, still tagged with its original frame.
+A command scheduled for a frame that is no longer a send frame executes on the next send frame, on every machine alike.
 
 If the master picks another target before a staged decrease finishes, the new target replaces it. It is applied or staged from the timing in force at that moment, by the rules above.
 
@@ -99,8 +99,8 @@ When a timing event executes with a target in a different tier from the previous
 
 ## Compatibility
 
-`NETWORK_REPORT` is a network event that OpenTS adds, and it appears in multiplayer recordings. Every player therefore needs the same OpenTS snapshot, and a recording should be played by the snapshot that wrote it. The events that Tiberian Sun already had keep their IDs.
+`NETWORK_REPORT` is a network event that OpenTS adds, so every player needs the same OpenTS snapshot. The events that Tiberian Sun already had keep their IDs.
 
 OpenTS 0.3.0 ignores the network games of earlier versions, and they ignore its games. Neither lists a LAN game the other hosts, and in a game a client starts across the two, the machines never connect.
 
-The timing reads the measured round trips directly. `LATENCYFUDGE` keeps its event ID and its session setting so that recordings still play, but nothing sends it, and the timing does not read it.
+The timing reads the measured round trips directly. `LATENCYFUDGE` keeps its event ID and its session setting, but nothing sends it, and the timing does not read it.

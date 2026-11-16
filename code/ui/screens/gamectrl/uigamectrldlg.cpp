@@ -53,9 +53,7 @@ class UIGameControlsEngineServiceClass : public UIGameControlsServiceClass
 			if (!Session.Is_Network_Game()) {
 				Options.GameSpeed = speed;
 			}
-			if (!Session.Play) {
-				OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::GAMESPEED, speed));
-			}
+			OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::GAMESPEED, speed));
 		}
 
 		virtual void Set_Scroll_Rate(int rate) override

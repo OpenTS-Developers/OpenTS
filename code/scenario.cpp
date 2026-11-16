@@ -1195,9 +1195,7 @@ void Clear_Scenario(void)
 void Do_Win(void)
 {
 	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
-		if (!Session.Play) {
-			Wait_For_End_Of_Queue();
-		}
+		Wait_For_End_Of_Queue();
 	}
 
 	ScenarioActive = false;
@@ -1223,24 +1221,22 @@ void Do_Win(void)
 	**	Stop here if this is a multiplayer game.
 	*/
 	if (Session.Type != GAME_NORMAL) {
-		if (!Session.Play) {
-			Session.GamesPlayed++;
+		Session.GamesPlayed++;
 
-			if (Session.SkipScoreScreen) {
-				DebugString("Passing over the score screen.\n");
-			} else {
-				Multi_Score_Presentation();
-			}
-
-			Session.CurGame++;
-			if (Session.CurGame >= MAX_MULTI_GAMES) {
-				Session.CurGame = MAX_MULTI_GAMES - 1;
-			}
-
-			// Nothing keeps the machines in step past the score screen, so ESC ends this movie alone.
-			MovieSkip::LocalScope local;
-			Play_Movie(Scen->WinMovie);
+		if (Session.SkipScoreScreen) {
+			DebugString("Passing over the score screen.\n");
+		} else {
+			Multi_Score_Presentation();
 		}
+
+		Session.CurGame++;
+		if (Session.CurGame >= MAX_MULTI_GAMES) {
+			Session.CurGame = MAX_MULTI_GAMES - 1;
+		}
+
+		// Nothing keeps the machines in step past the score screen, so ESC ends this movie alone.
+		MovieSkip::LocalScope local;
+		Play_Movie(Scen->WinMovie);
 
 		GameActive = false;
 		Show_Mouse();
@@ -1250,77 +1246,72 @@ void Do_Win(void)
 	Play_Movie(Scen->WinMovie);
 
 	/*
-	**	Do the ending screens only if not playing back a recorded game.
+	**	If the score presentation should be performed, then do
+	**	so now.
 	*/
-	if (!Session.Play) {
-		/*
-		**	If the score presentation should be performed, then do
-		**	so now.
-		*/
-		Keyboard->Clear();
+	Keyboard->Clear();
 
-		if (!Scen->IsSkipScore) {
-			ScoreClass().Presentation();
-		}
-
-		if (Scen->PostScoreMovie != VQ_NONE) {
-			Play_Movie(Scen->PostScoreMovie);
-		}
-		if (Scen->PreMapSelectMovie != VQ_NONE) {
-			Play_Movie(Scen->PreMapSelectMovie);
-		}
-
-		if (Scen->IsOneTimeOnly) {
-			GameActive = false;
-			Show_Mouse();
-			return;
-		}
-
-		/*
-		**	If this scenario is flagged as ending the game then print the credits and exit.
-		*/
-		if (Scen->IsEndOfGame) {
-			if (Scen->Campaign != CAMPAIGN_NONE) {
-				Play_Movie(Campaigns[Scen->Campaign]->FinalMovie);
-			}
-			Show_Who_Was_Responsible();
-#ifdef _DEMO
-			Load_Title_Page("tsdemoss.pcx", true);
-			Keyboard->Clear();
-			Keyboard->Get();
-#endif
-			GameActive = false;
-			Show_Mouse();
-			return;
-		}
-
-		/*
-		** Hack section.  If it's allied scenario 10, variation A, then skip the
-		** score and map selection, don't increment scenario, and set it to
-		** variation B.
-		*/
-		if (Scen->IsNoMapSel) {
-#ifdef _DEMO
-			if (Scen->GlobalFlags[1].Value) {
-				strcpy(Scen->ScenarioName, Scen->AltNextScenarioName);
-			} else {
-				strcpy(Scen->ScenarioName, Scen->NextScenarioName);
-			}
-#else
-			if (Scen->GlobalFlags[1].Value) {
-				Map_Select_Advance(Scen, Scen->AltNextScenarioName);
-			} else {
-				Map_Select_Advance(Scen, Scen->NextScenarioName);
-			}
-#endif
-		} else {
-			Show_Mouse();
-			Map_Selection(Scen);
-			Hide_Mouse();
-		}
-
-		Keyboard->Clear();
+	if (!Scen->IsSkipScore) {
+		ScoreClass().Presentation();
 	}
+
+	if (Scen->PostScoreMovie != VQ_NONE) {
+		Play_Movie(Scen->PostScoreMovie);
+	}
+	if (Scen->PreMapSelectMovie != VQ_NONE) {
+		Play_Movie(Scen->PreMapSelectMovie);
+	}
+
+	if (Scen->IsOneTimeOnly) {
+		GameActive = false;
+		Show_Mouse();
+		return;
+	}
+
+	/*
+	**	If this scenario is flagged as ending the game then print the credits and exit.
+	*/
+	if (Scen->IsEndOfGame) {
+		if (Scen->Campaign != CAMPAIGN_NONE) {
+			Play_Movie(Campaigns[Scen->Campaign]->FinalMovie);
+		}
+		Show_Who_Was_Responsible();
+#ifdef _DEMO
+		Load_Title_Page("tsdemoss.pcx", true);
+		Keyboard->Clear();
+		Keyboard->Get();
+#endif
+		GameActive = false;
+		Show_Mouse();
+		return;
+	}
+
+	/*
+	** Hack section.  If it's allied scenario 10, variation A, then skip the
+	** score and map selection, don't increment scenario, and set it to
+	** variation B.
+	*/
+	if (Scen->IsNoMapSel) {
+#ifdef _DEMO
+		if (Scen->GlobalFlags[1].Value) {
+			strcpy(Scen->ScenarioName, Scen->AltNextScenarioName);
+		} else {
+			strcpy(Scen->ScenarioName, Scen->NextScenarioName);
+		}
+#else
+		if (Scen->GlobalFlags[1].Value) {
+			Map_Select_Advance(Scen, Scen->AltNextScenarioName);
+		} else {
+			Map_Select_Advance(Scen, Scen->NextScenarioName);
+		}
+#endif
+	} else {
+		Show_Mouse();
+		Map_Selection(Scen);
+		Hide_Mouse();
+	}
+
+	Keyboard->Clear();
 
 	Show_Mouse();
 
@@ -1357,9 +1348,7 @@ void Do_Win(void)
 void Do_Lose(void)
 {
 	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
-		if (!Session.Play) {
-			Wait_For_End_Of_Queue();
-		}
+		Wait_For_End_Of_Queue();
 	}
 
 	ScenarioActive = false;
@@ -1397,24 +1386,22 @@ void Do_Lose(void)
 	**	Stop here if this is a multiplayer game.
 	*/
 	if (Session.Type != GAME_NORMAL) {
-		if (!Session.Play) {
-			Session.GamesPlayed++;
+		Session.GamesPlayed++;
 
-			if (Session.SkipScoreScreen) {
-				DebugString("Passing over the score screen.\n");
-			} else {
-				Multi_Score_Presentation();
-			}
-
-			Session.CurGame++;
-
-			if (Session.CurGame >= MAX_MULTI_GAMES) {
-				Session.CurGame = MAX_MULTI_GAMES - 1;
-			}
-
-			MovieSkip::LocalScope local;
-			Play_Movie(Scen->LoseMovie);
+		if (Session.SkipScoreScreen) {
+			DebugString("Passing over the score screen.\n");
+		} else {
+			Multi_Score_Presentation();
 		}
+
+		Session.CurGame++;
+
+		if (Session.CurGame >= MAX_MULTI_GAMES) {
+			Session.CurGame = MAX_MULTI_GAMES - 1;
+		}
+
+		MovieSkip::LocalScope local;
+		Play_Movie(Scen->LoseMovie);
 		GameActive = false;
 		Show_Mouse();
 		return;
@@ -1428,7 +1415,7 @@ void Do_Lose(void)
 	Draw_Menu_Background();
 	Show_Mouse();
 
-	if (!Session.Play && !WWMessageBox().Process(TXT_TO_REPLAY, TXT_YES, TXT_NO)) {
+	if (!WWMessageBox().Process(TXT_TO_REPLAY, TXT_YES, TXT_NO)) {
 		Keyboard->Clear();
 		Start_Scenario(Scen->ScenarioName, false, Scen->Campaign);
 		Environment.Restore();

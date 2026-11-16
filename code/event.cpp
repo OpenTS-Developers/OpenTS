@@ -1367,9 +1367,7 @@ void EventClass::Execute_EXIT(void)
 
 void EventClass::Execute_OPTIONS(void)
 {
-	if (!Session.Play) {
-		SpecialDialog = SDLG_OPTIONS;
-	}
+	SpecialDialog = SDLG_OPTIONS;
 }
 
 
@@ -1387,7 +1385,7 @@ void EventClass::Execute_GAMESPEED(void)
 void EventClass::Execute_RESPONSE_TIME(void)
 {
 	int const master = Session.Master_Player_ID();
-	if (!Session.Play && !NetTiming::Timing_Authority_Is_Valid(ID, master)) {
+	if (!NetTiming::Timing_Authority_Is_Valid(ID, master)) {
 		Reject(RejectReason::UnauthorizedTiming, master);
 		return;
 	}
@@ -1435,7 +1433,7 @@ void EventClass::Execute_REMOVEPLAYER(void)
 
 	// The reported player ignores a sender it is still connected to, so a forged report puts
 	// this machine out of sync instead of removing it.
-	if (!Session.Play && target == PlayerPtr && Ipx.Connection_Index(ID) != -1) {
+	if (target == PlayerPtr && Ipx.Connection_Index(ID) != -1) {
 		Reject(RejectReason::LiveRemoval, index);
 		return;
 	}
@@ -1466,7 +1464,7 @@ void EventClass::Execute_TIMING(void)
 {
 	HouseClass * house = Houses[ID];
 	int const master = Session.Master_Player_ID();
-	if (!Session.Play && !NetTiming::Timing_Authority_Is_Valid(ID, master)) {
+	if (!NetTiming::Timing_Authority_Is_Valid(ID, master)) {
 		Reject(RejectReason::UnauthorizedTiming, master);
 		return;
 	}
@@ -1548,13 +1546,11 @@ void EventClass::Execute_PROCESS_TIME(void)
 
 void EventClass::Execute_NETWORK_REPORT(void)
 {
-	// A recording started without a roster has nobody to attribute reports to.
-	if ((Session.CommProtocol != COMM_PROTOCOL_MULTI_E_COMP || Frame < 0
+	if (Session.CommProtocol != COMM_PROTOCOL_MULTI_E_COMP || Frame < 0
 		|| !Session.Record_Network_Report(ID, Data.NetworkReport.AverageProcessMilliseconds,
-			Data.NetworkReport.WorstRoundTripMilliseconds, Data.NetworkReport.StallMilliseconds, static_cast<unsigned int>(Frame)))
-		&& !Session.Play) {
+			Data.NetworkReport.WorstRoundTripMilliseconds, Data.NetworkReport.StallMilliseconds, static_cast<unsigned int>(Frame))) {
 		Reject(RejectReason::InvalidNetworkReport, Data.NetworkReport.WorstRoundTripMilliseconds);
-	} else if (!Session.Play) {
+	} else {
 		DebugString("Network report at frame %d from player %d: process %u ms, RTT %d ms, longest wait %u ms\n", Frame, ID,
 			(unsigned int)Data.NetworkReport.AverageProcessMilliseconds,
 			Data.NetworkReport.WorstRoundTripMilliseconds == NETWORK_RTT_UNAVAILABLE ? -1 : (int)Data.NetworkReport.WorstRoundTripMilliseconds,

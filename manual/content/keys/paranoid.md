@@ -16,4 +16,4 @@ The two events are:
 - A human house forms an alliance with any house that is not [`MultiplayPassive=yes`](/keys/multiplaypassive/), a computer house included. Alliances made while the scenario is being set up, such as those a map or launch file declares, do not count.
 - A computer house is defeated while its [`IQ`](/keys/iq/) equals [`MaxIQLevels`](/keys/maxiqlevels/). Every computer player in a skirmish or multiplayer game has that IQ.
 
-With `Paranoid=no`, neither event makes the computer houses band together, and nothing else does during a played match. Playing back a recording is the one exception. When a recorded player leaves the game, the playback hands that house to the computer and makes the computer houses band together at once, whatever this switch says.
+With `Paranoid=no`, neither event makes the computer houses band together, and nothing else does.

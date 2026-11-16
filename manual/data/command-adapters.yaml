@@ -572,14 +572,6 @@ launch_options:
     availability: *all
     sites:
       - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-STEALTH' }
-  - id: launch:attract
-    title: Attract mode
-    syntax: -ATTRACT
-    description: Lets any key press end a `-XY` playback before the playback writes its report, and has no other effect.
-    group: startup
-    availability: *all
-    sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-ATTRACT' }
   - id: launch:resolution
     title: Resolution
     syntax: -<width>X<height>
@@ -652,22 +644,6 @@ launch_options:
     availability: *debug
     sites:
       - { file: code/init.cpp, function: Parse_Command_Line, expression: 'compact:-XH', guard: _DEBUG }
-  - id: launch:record
-    title: Game recording
-    syntax: -XX
-    description: Records each game to `RECORD.BIN`, campaign missions included.
-    group: debug-build
-    availability: *debug
-    sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'compact:-XX', guard: _DEBUG }
-  - id: launch:playback
-    title: Recording playback
-    syntax: -XY
-    description: Plays back `RECORD.BIN` in place of the main menu, but the playback writes an out-of-sync report and exits on its first frame.
-    group: debug-build
-    availability: *debug
-    sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'compact:-XY', guard: _DEBUG }
   - id: launch:console-debug
     title: Console debug output
     syntax: -XC

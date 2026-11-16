@@ -52,4 +52,4 @@ A match in which every seat is an [observer](/systems/observers/) never has a pe
 
 ## The close button
 
-During a game, the window's close button and Alt+F4 quit the same way as Abort in the options menu. In a network game the other players are told the player left, and the departure then follows the rules above. Outside a game, and while a recorded game plays back, the close button does nothing.
+During a game, the window's close button and Alt+F4 quit the same way as Abort in the options menu. In a network game the other players are told the player left, and the departure then follows the rules above. Outside a game, the close button does nothing.

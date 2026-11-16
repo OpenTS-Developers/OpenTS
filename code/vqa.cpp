@@ -632,7 +632,7 @@ bool VQAClass::Advance_Frame(bool & finished)
 	}
 
 	if (IsPaused == true) {
-		if (!Session.Play && SpecialDialog == SDLG_NONE && GameInFocus == true) {
+		if (SpecialDialog == SDLG_NONE && GameInFocus == true) {
 			IsPaused = false;
 			DebugString("VQAClass::Advance_Frame() - Unpause\n");
 		}

@@ -377,7 +377,7 @@ UIDiplomacyState Build_State(void)
 
 bool Can_Show(void)
 {
-	return(GameActive && Session.Type != GAME_NORMAL && !Session.Play && PlayerPtr != NULL
+	return(GameActive && Session.Type != GAME_NORMAL && PlayerPtr != NULL
 		&& SpecialDialog == SDLG_NONE && !UIShell.Screen_Shown());
 }
 

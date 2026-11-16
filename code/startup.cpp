@@ -534,10 +534,6 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 		uidirectory += "ui\\";
 		CDFileClass::Add_Search_Drive(uidirectory.c_str());
 
-		// The recording's name was settled during static initialization, before there was
-		// anywhere for a player's files to go. Naming it again settles it where it belongs.
-		Session.RecordFile.Set_Name("RECORD.BIN");
-
 		CDFileClass *cfile = new CDFileClass(DeploymentConfig.SettingsFile.c_str());
 
 		ConfigINI.Load(*cfile, false);

@@ -32,8 +32,6 @@ A chat box under the list sends to every player. A line typed there also appears
 
 The game sends no frames while the dialog is open, so each machine sends the others a heartbeat once a second. Each machine drops a player after twenty-five seconds with no heartbeat from them. The count starts when that machine's dialog opens and restarts with each heartbeat. The dialog then lists that player as `Quit`, and the on-screen message list gets the same "connection lost" line as for a player who stops answering during play.
 
-A recording played back has nobody to decide with. It shows the plain "The game is out of sync." box, with Continue and Stop.
-
 ## Continuing
 
 When the master presses Continue, every machine drops the players who are out of sync with it and plays on. The bases of the dropped players go the way of any player who [leaves the match](/systems/leaving-a-match/#what-becomes-of-their-base).

@@ -12,7 +12,7 @@ related:
     id: spawn-ini
 ---
 
-Skirmish and network matches end at this screen instead of the campaign score screen. Every player sees it when the match ends, whether they won or lost. A defeated player keeps watching the match while another human player is still undefeated, and sees the screen when the match ends. The match also ends once no human player is left undefeated, even while computer players fight on, so in a skirmish the player's defeat ends it at once. A recorded game being played back skips the screen.
+Skirmish and network matches end at this screen instead of the campaign score screen. Every player sees it when the match ends, whether they won or lost. A defeated player keeps watching the match while another human player is still undefeated, and sees the screen when the match ends. The match also ends once no human player is left undefeated, even while computer players fight on, so in a skirmish the player's defeat ends it at once.
 
 Click, or press Space or Escape, to close the screen. If the launch file enables [multiplayer movies](/systems/multiplayer-movies/), the map's win or lose movie then plays. After that, a match started from the game's menu returns to the menu, and a match [a client launched](/formats/spawn-ini/) exits the game.
 
