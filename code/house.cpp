@@ -6548,7 +6548,7 @@ void HouseClass::Compute_CRC(CRCEngine & crc) const
 	crc((int)ActLike);
 	crc(IsBaseBuilding);
 	crc(IsDiscovered);
-	crc(IsToDie);
+	// IsToDie, IsToWin, IsToLose and BorrowedTime differ between machines, so they are left out.
 	crc(IsCivEvacuated);
 	crc(FirestormDefenseActivated);
 	crc(IsThreatRatingNodeActive);

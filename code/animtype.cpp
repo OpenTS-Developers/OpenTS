@@ -604,14 +604,17 @@ void AnimTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsSticky);
 	crc(IsPingPong);
 	crc(IsReverse);
-	crc(Biggest);
+	// A demand-loaded type sets these when its artwork first loads, which a draw can cause.
+	if (!IsDemandLoad) {
+		crc(Biggest);
+		crc(LoopEnd);
+		crc(Stages);
+	}
 	crc(Damage);
 	crc(IsTiberiumChainReaction);
 	crc(Delay);
 	crc(Start);
 	crc(LoopStart);
-	crc(LoopEnd);
-	crc(Stages);
 	crc(DetailLevel);
 	crc(TranslucencyDetailLevel);
 	crc(RandomLoopDelayMin);

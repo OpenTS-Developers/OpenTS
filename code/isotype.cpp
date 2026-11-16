@@ -2728,8 +2728,7 @@ void IsometricTileTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(Unused1);
 	crc(IsMorphable);
 	crc(IsShadowCaster);
-	crc(Width);
-	crc(Height);
+	// Width and Height are set when the tile file first loads and kept into later games, so they are left out.
 	crc(Unused2);
 	crc(NumTileTypesInSet);
 

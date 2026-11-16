@@ -1719,6 +1719,10 @@ void BuildingTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(MidPoint);
 	crc(DoorStages);
 	for (int i = 0; i < ARRAY_SIZE(Anims); i++) {
+		// A demand-loaded buildup sets its animation when the artwork first loads, which a draw can cause.
+		if (i == BSTATE_CONSTRUCTION && IsDemandLoadBuildup) {
+			continue;
+		}
 		crc(Anims[i].Start);
 		crc(Anims[i].Count);
 		crc(Anims[i].Rate);
