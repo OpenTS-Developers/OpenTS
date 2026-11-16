@@ -440,6 +440,29 @@ bool SessionClass::Am_I_Master(void)
 
 
 /// <summary>
+/// Returns the speed this machine last ordered while that speed order still waits to execute,
+/// or the speed the game runs at when no such order waits.
+/// </summary>
+int SessionClass::Pending_Game_Speed(void) const
+{
+	int speed = Options.GameSpeed;
+	if (PlayerPtr != NULL) {
+		for (EventClass const & event : DoList) {
+			if (!event.IsExecuted && event.Type == EventClass::GAMESPEED && event.ID == PlayerPtr->HeapID) {
+				speed = event.Data.General.Value;
+			}
+		}
+	}
+	for (EventClass const & event : OutList) {
+		if (event.Type == EventClass::GAMESPEED) {
+			speed = event.Data.General.Value;
+		}
+	}
+	return(speed);
+}
+
+
+/// <summary>
 /// Returns the house that decides for the match: the timing authority while it still holds a
 /// seat under the adaptive protocol, otherwise the announced host, otherwise the lowest
 /// seated house. The timing events, the out-of-sync dialog and an in-game load all answer to

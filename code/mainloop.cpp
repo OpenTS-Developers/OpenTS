@@ -216,7 +216,7 @@ static void Finish_Decided_Game(void)
 static int Target_Frame_Rate(void)
 {
 	if (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) {
-		return((int)NetTiming::Solo_Game_Speed_Frame_Rate(Options.GameSpeed));
+		return((int)NetTiming::Solo_Game_Speed_Frame_Rate(Session.Options.GameSpeed));
 	}
 
 	// A recording is played back as fast as possible.

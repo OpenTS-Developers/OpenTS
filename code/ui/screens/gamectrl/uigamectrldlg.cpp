@@ -30,17 +30,31 @@
 namespace
 {
 
+bool Is_In_Scenario(void)
+{
+	return(GameActive && ScenarioActive && PlayerPtr != NULL);
+}
+
+
 class UIGameControlsEngineServiceClass : public UIGameControlsServiceClass
 {
 	public:
+		// During a scenario the speed is a simulation input, so it changes through the event
+		// in every session type; only in a game played alone is the pick also the setting.
 		virtual void Set_Game_Speed(int speed) override
 		{
-			if (Options.GameSpeed != speed) {
-				if (GameActive == true && Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
-					OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::GAMESPEED, speed));
-				} else {
-					Options.GameSpeed = speed;
-				}
+			if (!Is_In_Scenario()) {
+				Options.GameSpeed = speed;
+				return;
+			}
+
+			if (Session.Pending_Game_Speed() == speed) return;
+
+			if (!Session.Is_Network_Game()) {
+				Options.GameSpeed = speed;
+			}
+			if (!Session.Play) {
+				OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::GAMESPEED, speed));
 			}
 		}
 
@@ -124,7 +138,7 @@ void UI_Game_Controls_State(UIGameControlsState & state)
 {
 	state = UIGameControlsState();
 
-	state.Speed = Options.GameSpeed;
+	state.Speed = Is_In_Scenario() ? Session.Pending_Game_Speed() : Options.GameSpeed;
 	state.Scroll = Options.ScrollRate;
 	state.Detail = Options.DetailLevel;
 	state.Difficulty = Options.Difficulty;

@@ -100,7 +100,7 @@ Picking a save starts a five-second countdown on every machine. Each machine the
 2. It gives each seated player the saved house with that player's name.
 3. It reconnects to the other machines and compares its restored game with theirs, as a resumed save does. If the games differ, the match stops with a mismatch message.
 
-A player who has left since the save was written has their house played by the computer.
+A player who has left since the save was written has their house played by the computer. The loaded match plays at the speed it was playing at when the save was written.
 
 No save is written while a load is pending. A machine that cannot load the save shows the loading error and leaves the match.
 

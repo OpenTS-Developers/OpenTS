@@ -95,6 +95,7 @@
 #include "persist.h"
 #include "psystype.h"
 #include "ptype.h"
+#include "queue.h"
 #include "revent.h"
 #include "rules.h"
 #include "savefile.h"
@@ -107,6 +108,7 @@
 #include "side.h"
 #include "sidebar.h"
 #include "smudtype.h"
+#include "spawner.h"
 #include "stats.h"
 #include "stimer.h"
 #include "sun.h"
@@ -160,7 +162,7 @@
 // Separates development builds of one version whose saves or simulation differ. Raise it by one
 // for a change to the save layout or to what the simulation computes, and reset it to 0 in the
 // commit that changes the project version number, so that stamps of different versions differ.
-static constexpr unsigned int GameVersionSerial = 2;
+static constexpr unsigned int GameVersionSerial = 4;
 static_assert(GameVersionSerial <= 0xFF, "the serial takes the byte the packed version leaves free");
 
 unsigned int ExpectedGameVersion = (GameVersionSerial << 24) | LoadOptionsClass::GAMEVER_OPENTS;
@@ -1145,6 +1147,9 @@ bool Load_Game(const char *file_name)
 
 	Swizzler.Discard();
 
+	// Read before the save replaces the session options.
+	int const solo_speed = Spawner_Is_Active() ? Session.Pending_Game_Speed() : Options.GameSpeed;
+
 	SaveStreamClass stream(file.Content, SaveStreamClass::MODE_LOAD);
 	bool res = false;
 	// The catch sits here rather than around the whole routine because what was already
@@ -1190,6 +1195,17 @@ bool Load_Game(const char *file_name)
 	TiberiumClass::Init_Tiberium_Growth_System();
 	TiberiumClass::Init_Tiberium_Spread_System();
 	Map.Complete_Radar_Refresh();
+
+	// A network game runs at the speed its save recorded. A game played alone runs at the
+	// player's setting, or, when a client launched it, at the speed it ran at or last ordered
+	// before the load. The queued orders belong to the game the load replaced; the multiplayer
+	// loads clear their queues themselves.
+	if (!Session.Is_Network_Game()) {
+		Session.Options.GameSpeed = solo_speed;
+		DoList.clear();
+		OutList.clear();
+	}
+
 	ScenarioActive = true;
 	TacticalActive = true;
 	Sync_Recorder_Arm();

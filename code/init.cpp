@@ -410,8 +410,7 @@ int Init_Game(int , char * [])
 	Init_Threads();
 
 	/*
-	**	Read game options, so the GameSpeed is initialized when multiplayer
-	**	dialogs are invoked. (GameSpeed must be synchronized between systems.)
+	**	Read game options.
 	*/
 	DebugString("Reading Game Settings\n");
 	Options.Load_Settings();
@@ -1245,6 +1244,12 @@ restart:
 		if (!Spawner_Is_Active()) {
 			Session.CampaignDifficulty = (DiffType)Options.Difficulty;
 			Session.CampaignCDifficulty = (DiffType)(DIFF_COUNT - 1 - Options.Difficulty);
+		}
+
+		// A campaign from the menu plays at the player's speed setting; every other game was
+		// given its speed when it was set up.
+		if (Session.Type == GAME_NORMAL && !Spawner_Is_Active()) {
+			Session.Options.GameSpeed = Options.GameSpeed;
 		}
 
 		if (Session.Type != GAME_NORMAL || Debug_ForceScenario || Session.Play || Spawner_Is_Active()) {

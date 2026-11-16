@@ -1554,12 +1554,12 @@ test('A game played alone is paced by its own speed table', () => {
 
 	assert.match(
 		functionBody(definitionFrom(mainloop, 'static int Target_Frame_Rate(void)'), 'static int Target_Frame_Rate(void)'),
-		/NetTiming::Solo_Game_Speed_Frame_Rate\(Options\.GameSpeed\)/,
+		/NetTiming::Solo_Game_Speed_Frame_Rate\(Session\.Options\.GameSpeed\)/,
 		'a solo game takes its rate from the single-player table',
 	);
 	assert.doesNotMatch(
 		functionBody(definitionFrom(mainloop, 'bool Main_Loop(void)'), 'bool Main_Loop(void)'),
-		/FrameTimer\s*=\s*Options\.GameSpeed/,
+		/FrameTimer\s*=\s*(Session\.)?Options\.GameSpeed/,
 		'the speed setting is a frame rate, not a count of timer ticks',
 	);
 	assert.match(

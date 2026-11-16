@@ -41,7 +41,6 @@
 #include "factory.h"
 #include "getcpu.h"
 #include "globals.h"
-#include "goptions.h"
 #include "house.h"
 #include "houstype.h"
 #include "iloco.h"
@@ -247,7 +246,7 @@ void Print_CRCs(EventClass const * events, int count, unsigned const * crc_ring,
 	fprintf(fp, "Average FPS: %d\n", SecondsPassed != 0 ? TotalFrames / SecondsPassed : 0);
 	fprintf(fp, "Max MaxAhead: %d\n", Session.MaxMaxAhead);
 	fprintf(fp, "Latency setting: %d\n", Session.LatencyFudge);
-	fprintf(fp, "Game speed setting: %d\n", Options.GameSpeed);
+	fprintf(fp, "Game speed setting: %d\n", Session.Options.GameSpeed);
 	fprintf(fp, "FrameSendRate: %d\n", Session.FrameSendRate);
 
 	for (i = 0; i < MAX_PLAYERS; i++) {

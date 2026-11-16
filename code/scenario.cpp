@@ -362,6 +362,12 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 
 	Scen->Campaign = campaign;
 
+	// A game played alone starts at the speed it was set up with or last ran at, or at the speed
+	// of an order the last scenario left waiting.
+	if (!Session.Is_Network_Game()) {
+		Session.Options.GameSpeed = Session.Pending_Game_Speed();
+	}
+
 	DebugString("\n----- Starting scnenario: %s -----\n", name);
 	DebugString("Player Count: %d\n", Session.Players.Count());
 

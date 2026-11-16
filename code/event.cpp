@@ -1377,7 +1377,7 @@ void EventClass::Execute_GAMESPEED(void)
 		Reject(RejectReason::InvalidGameSpeed, Data.General.Value);
 		return;
 	}
-	Options.GameSpeed = Data.General.Value;
+	Session.Options.GameSpeed = Data.General.Value;
 	Announce_Setting_Change(TXT_PLAYER_CHANGED_SPEED);
 }
 

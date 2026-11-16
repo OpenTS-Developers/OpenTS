@@ -1442,7 +1442,7 @@ void Print_MP_Stats(void)
 			fprintf(file, "Average FPS: %d\n", SecondsPassed != 0 ? TotalFrames / SecondsPassed : 0);
 			fprintf(file, "Max MaxAhead: %d\n", Session.MaxMaxAhead);
 			fprintf(file, "Latency setting: %d\n", Session.LatencyFudge);
-			fprintf(file, "Game speed setting: %d\n", Options.GameSpeed);
+			fprintf(file, "Game speed setting: %d\n", Session.Options.GameSpeed);
 
 			if (PacketTransport != NULL) {
 				for (int i = 0; i < PacketTransport->Get_Num_Local_Addresses(); i++) {

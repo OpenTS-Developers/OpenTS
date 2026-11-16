@@ -237,7 +237,6 @@ static void Spawner_Bind_Options(void)
 	// Only a network match applies the truce; a skirmish records it and ignores it.
 	Session.Options.HarvTruce = SpawnConfig.HarvesterTruce;
 
-	Options.GameSpeed = SpawnConfig.GameSpeed;
 	BuildLevel = SpawnConfig.TechLevel;
 	Session.PlayMovies = SpawnConfig.PlayMoviesInMultiplayer;
 	Session.ConnTimeout = SpawnConfig.ConnTimeout;
@@ -402,7 +401,7 @@ static bool Spawner_Resume(bool & gameloaded)
 	}
 
 	// The save's options apply, except game speed, movies and this machine's waits.
-	Options.GameSpeed = SpawnConfig.GameSpeed;
+	Session.Options.GameSpeed = SpawnConfig.GameSpeed;
 	Session.PlayMovies = SpawnConfig.PlayMoviesInMultiplayer;
 	Session.ConnTimeout = SpawnConfig.ConnTimeout;
 	Session.ReconnectTimeout = SpawnConfig.ReconnectTimeout;
@@ -432,7 +431,7 @@ static bool Spawner_Setup_Campaign(void)
 	}
 
 	Session.Type = GAME_NORMAL;
-	Options.GameSpeed = SpawnConfig.GameSpeed;
+	Session.Options.GameSpeed = SpawnConfig.GameSpeed;
 	Session.CampaignDifficulty = (DiffType)SpawnConfig.CampaignDifficulty;
 	Session.CampaignCDifficulty = (DiffType)SpawnConfig.CampaignCDifficulty;
 	CustomSeed = SpawnConfig.Seed;

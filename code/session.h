@@ -427,7 +427,7 @@ struct GameOptionsType {
 	bool		BridgeDestruction;	/// Weapons fire can bring bridges down.
 	bool 		Goodies;
 	bool		ShortGame;			/// A player is beaten once he has no buildings and no MCV.
-	int			GameSpeed;			/// Host's speed setting (0 - 6), forced on every player.
+	int			GameSpeed;			// The speed the running game plays at, the same on every machine.
 	bool		CrapEngineers;		/// Engineers can only capture buildings at condition red.
 	bool 		Ghosts;
 	int 		UnitCount;
@@ -517,6 +517,7 @@ class SessionClass
 		bool Is_Player_Removed(HouseClass const * house) const {return(RemovedPlayers[house]);}
 		void Reset_Departures(void);
 		bool Is_Network_Game(void) const {return(Type == GAME_IPX || Type == GAME_INTERNET);}
+		int Pending_Game_Speed(void) const;
 		NetTiming::TimingCensus Network_Timing_Census(unsigned int frame);
 		NetTiming::TimingEvaluation Evaluate_Network_Timing(NetTiming::TimingCensus const & census, unsigned int target_fps, unsigned int frame);
 		NetTiming::TimingSettings Network_Timing_Target(void) const;

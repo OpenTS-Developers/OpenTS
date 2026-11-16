@@ -112,7 +112,6 @@
 #include "factory.h"
 #include "getcpu.h"
 #include "globals.h"
-#include "goptions.h"
 #include "house.h"
 #include "houstype.h"
 #include "incdec.h"
@@ -1557,7 +1556,7 @@ static void Generate_Real_Timing_Event(void)
 
 	NetTiming::TimingCensus const census = Session.Network_Timing_Census(frame);
 	unsigned int const desired_frame_rate = NetTiming::Select_Desired_Frame_Rate(census,
-		static_cast<unsigned int>(std::clamp(Session.DesiredFrameRate, 1, 60)), NetTiming::Game_Speed_Frame_Rate(Options.GameSpeed));
+		static_cast<unsigned int>(std::clamp(Session.DesiredFrameRate, 1, 60)), NetTiming::Game_Speed_Frame_Rate(Session.Options.GameSpeed));
 	NetTiming::TimingEvaluation const evaluation = Session.Evaluate_Network_Timing(census, desired_frame_rate, frame);
 	if (evaluation.Evaluated) {
 		DebugString("Network timing evaluation at frame %u: %u of %u reports fresh, worst process %u ms, RTT %u ms%s, wait %u ms, %u fps -> %s %u/%u\n",
