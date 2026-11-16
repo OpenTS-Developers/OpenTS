@@ -744,7 +744,7 @@ void DebugPrint::Write_Message_Locked(char const * buffer, size_t length, bool w
 		timestamp_buf[6]  = ':';
 		timestamp_buf[7]  = '0' + secs_field / 10;
 		timestamp_buf[8]  = '0' + secs_field % 10;
-		timestamp_buf[9]  = ':';
+		timestamp_buf[9]  = '.';
 		timestamp_buf[10] = '0' + millis_field / 100;
 		timestamp_buf[11] = '0' + (millis_field / 10) % 10;
 		timestamp_buf[12] = '0' + millis_field % 10;
