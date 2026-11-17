@@ -370,9 +370,12 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 	}
 
 	// A game played alone starts at the speed it was set up with or last ran at, or at the speed
-	// of an order the last scenario left waiting.
+	// of an order the last scenario left waiting. Orders the last scenario left queued are
+	// dropped, since their frame numbers belong to it.
 	if (!Session.Is_Network_Game()) {
 		Session.Options.GameSpeed = Session.Pending_Game_Speed();
+		OutList.clear();
+		DoList.clear();
 	}
 
 	DebugString("\n----- Starting scnenario: %s -----\n", name);
