@@ -110,6 +110,7 @@
 #include "sidebar.h"
 #include "smudtype.h"
 #include "spawner.h"
+#include "statehash.h"
 #include "stats.h"
 #include "stimer.h"
 #include "sun.h"
@@ -355,30 +356,27 @@ CRCEngine Object_CRCs(void)
 
 
 /// <summary>
-/// Writes a per-heap checksum table to the out-of-sync report: one summary line per heap, then a
-/// row per live instance with its heap position, its ID, and the running checksum of its heap
-/// through that instance. Comparing two peers' tables finds the first instance whose checksum
-/// differs. It is not yet verified that every hashed member is the same on every machine, so a
-/// difference can also come from state that only one machine keeps.
+/// Writes the game state checksum table to the out-of-sync report: the table recorded at the
+/// start of the game, one line per part of the current state, then a row per live instance
+/// with its heap position, its ID, and the running checksum of its heap through that instance.
+/// Comparing two peers' tables finds the first instance whose checksum differs. It is not yet
+/// verified that every hashed member is the same on every machine, so a difference can also
+/// come from state that only one machine keeps.
 /// </summary>
 void Print_Heap_CRCs(FILE * fp)
 {
 	int i;
 
+	fprintf(fp, "\n----- Start state checksums -----\n");
+	StateHash::Print_Start(fp);
+
 	fprintf(fp, "\n----- Heap checksums -----\n");
 
-#define HEAP_SUMMARY(VECTOR) \
-	{ \
-		CRCEngine heap_crc; \
-		for (i = 0; i < VECTOR.Count(); i++) { \
-			VECTOR[i]->Compute_CRC(heap_crc); \
-		} \
-		fprintf(fp, "%-28s count=%-5d crc=%08x\n", #VECTOR, VECTOR.Count(), heap_crc()); \
+	std::vector<StateHash::Part> parts;
+	StateHash::Compute_Parts(parts);
+	for (StateHash::Part const & part : parts) {
+		fprintf(fp, "%s\n", StateHash::Format_Part(part).c_str());
 	}
-
-	OBJECT_HEAP_LIST(HEAP_SUMMARY)
-
-#undef HEAP_SUMMARY
 
 #define HEAP_ROWS(VECTOR) \
 	{ \

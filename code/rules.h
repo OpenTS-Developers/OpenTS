@@ -47,6 +47,7 @@ class AircraftTypeClass;
 class AnimTypeClass;
 class BuildingTypeClass;
 class BulletTypeClass;
+class CRCEngine;
 class InfantryTypeClass;
 class OverlayTypeClass;
 class ParticleSystemTypeClass;
@@ -150,6 +151,7 @@ class RulesClass
 		void Load(SaveStreamClass & stream);
 
 		void Serialize(SaveStreamClass & stream);
+		void Compute_CRC(CRCEngine & crc) const;
 
 		void Detach(AbstractClass const * target, bool all = true);
 

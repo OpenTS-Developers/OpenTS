@@ -102,6 +102,17 @@ class HouseArray
 
 		void Fill(T const & value) {Values.fill(value);}
 
+		template<typename C>
+		void Compute_CRC(C & crc) const
+		{
+			for (int slot = 0; slot < HOUSE_MAX; slot++) {
+				if (!(Values[slot] == T{})) {
+					crc(slot);
+					crc((int)Values[slot]);
+				}
+			}
+		}
+
 		// Writes only the non-default slots, since most houses hold nothing in most cells.
 		template<typename S>
 		void Serialize(S & stream)

@@ -79,7 +79,7 @@ files = [
     "layer", "levitate", "light", "loco", "logic", "map", "mapgen", "mech", "missile", "mission",
     "object", "objtype", "options", "overlay", "overtype", "ovrlight", "particle", "partsys",
     "psystype", "ptype", "quarry", "queue", "radio", "reinf", "revent", "rules", "scenario",
-    "scenfile", "script", "side", "smartdeform", "smudge", "smudtype", "special", "storage",
+    "scenfile", "script", "side", "smartdeform", "smudge", "smudtype", "special", "statehash", "storage",
     "super", "suprtype", "syncrec", "syncrechook", "syncreport", "taction", "tag", "tagtype",
     "target", "taskforc", "team", "teamtype", "techno", "techtype", "teleport", "terrain",
     "terrtype", "tevent", "theater", "tiberium", "tmission", "tracker", "trigger", "trigtype",

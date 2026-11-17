@@ -123,6 +123,7 @@
 #include "suprtype.h"
 #include "tactical.h"
 #include "tag.h"
+#include "tagtype.h"
 #include "terrain.h"
 #include "tiberium.h"
 #include "tracker.h"
@@ -4544,6 +4545,53 @@ void CellClass::Post_Load(void)
 		Map.Array[id] = NULL;
 	}
 	Map.Array[id] = this;
+}
+
+
+/// <summary>
+/// Adds the cell's terrain, contents, and movement state to a checksum. Fog snapshots,
+/// lighting, drawing records, and what each house has seen are left out.
+/// </summary>
+/// <param name="crc">The checksum the values are added to.</param>
+void CellClass::Compute_CRC(CRCEngine & crc) const
+{
+	// The cell's position identifies it, so the ID AbstractClass would add is skipped.
+	crc((int)CellID.X);
+	crc((int)CellID.Y);
+	crc(BridgeDeckCell != NULL ? (int)BridgeDeckCell->CellID.X : -1);
+	crc(BridgeDeckCell != NULL ? (int)BridgeDeckCell->CellID.Y : -1);
+	crc((int)ITType);
+	crc(Tag != NULL ? Tag->Class->Fetch_Heap_ID() : -1);
+	crc((int)Overlay);
+	crc((int)Smudge);
+	crc((int)Passability);
+	crc((int)Owner);
+	crc((int)InfType);
+	crc((int)BridgeInfType);
+	CloakCount.Compute_CRC(crc);
+	SensorCount.Compute_CRC(crc);
+	OccupiedBy.Compute_CRC(crc);
+	crc(OccupierPtr != NULL ? OccupierPtr->Fetch_ID() : -1);
+	crc(BridgeOccupierPtr != NULL ? BridgeOccupierPtr->Fetch_ID() : -1);
+	crc((int)Land);
+	crc((int)Tube);
+	crc((int)IsIceGrowthAllowed);
+	crc((int)SubTile);
+	crc((int)Height);
+	crc((int)Ramp);
+	crc((int)OverlayData);
+	crc((int)SmudgeData);
+	crc((int)AdjacentObjectCount);
+	crc((int)Flag.Composite);
+	crc((int)BridgeFlag.Composite);
+
+	int const bits =
+		IsWaypoint << 0 | IsFlagged << 1 | IsBridgeDeck << 2 | IsUnderBridge << 3 |
+		IsBridgeTraversable << 4 | WasUnderBridge << 5 | IsBridgeEastWest << 6 |
+		IsBridgeSurface << 7 | IsBridgeDamaged << 8 | IsToGrowIce << 9 | IsToGrowVeins << 10 |
+		IsAnimAttached << 11 | IsPredictedPath << 12 | IsAffectedByEMP << 13 |
+		IsHorizontalLine << 14 | IsVerticalLine << 15;
+	crc(bits);
 }
 
 

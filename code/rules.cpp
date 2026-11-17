@@ -65,6 +65,7 @@
 #include "bullettype.h"
 #include "ccfile.h"
 #include "conquer.h"
+#include "crc.h"
 #include "convert.h"
 #include "dbgprint.h"
 #include "deploymentconfig.h"
@@ -2729,6 +2730,536 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(CrateAnims);
 	stream.Serialize(CrateData);
 	stream.Serialize(MissionControl);
+}
+
+
+namespace {
+	void Add_Type(CRCEngine & crc, AbstractTypeClass const * type)
+	{
+		if (type == nullptr) {
+			crc(-1);
+			return;
+		}
+		char const * const name = type->Name();
+		crc((int)std::strlen(name));
+		crc(name);
+	}
+
+	template<class T>
+	void Add_List(CRCEngine & crc, TypeList<T const *> const & list)
+	{
+		crc(list.Count());
+		for (int index = 0; index < list.Count(); index++) {
+			Add_Type(crc, list[index]);
+		}
+	}
+
+	void Add_List(CRCEngine & crc, TypeList<int> const & list)
+	{
+		crc(list.Count());
+		for (int index = 0; index < list.Count(); index++) {
+			crc(list[index]);
+		}
+	}
+
+	void Add_Difficulty(CRCEngine & crc, DifficultyClass const & difficulty)
+	{
+		crc(difficulty.FirepowerBias);
+		crc(difficulty.GroundspeedBias);
+		crc(difficulty.AirspeedBias);
+		crc(difficulty.ArmorBias);
+		crc(difficulty.ROFBias);
+		crc(difficulty.CostBias);
+		crc(difficulty.BuildSpeedBias);
+		crc(difficulty.RepairDelay);
+		crc(difficulty.BuildDelay);
+		crc(difficulty.IsBuildSlowdown);
+		crc(difficulty.IsWallDestroyer);
+		crc(difficulty.IsContentScan);
+	}
+
+	void Add_Ground(CRCEngine & crc, GroundType const & ground)
+	{
+		for (int speed = 0; speed < SPEED_COUNT; speed++) {
+			crc(ground.Cost[speed]);
+		}
+		crc(ground.Build);
+	}
+
+	void Add_Mission_Control(CRCEngine & crc, MissionControlClass const & control)
+	{
+		crc((int)control.Mission);
+		crc(control.IsNoThreat);
+		crc(control.IsZombie);
+		crc(control.IsRecruitable);
+		crc(control.IsParalyzed);
+		crc(control.IsRetaliate);
+		crc(control.IsScatter);
+		crc(control.Rate);
+		crc(control.AARate);
+	}
+}
+
+
+/// <summary>
+/// Adds the rule values that affect the simulation to a checksum, together with the
+/// terrain, crate, and mission tables the rules files fill in.
+/// </summary>
+/// <param name="crc">The checksum the values are added to.</param>
+void RulesClass::Compute_CRC(CRCEngine & crc) const
+{
+	// Sound and speech choices are left out, since they only pick entries from the sound
+	// tables that SOUND.INI and EVA.INI build on each machine.
+	crc(AmmoCrateDamage);
+	Add_Type(crc, LargeVisceroid);
+	Add_Type(crc, SmallVisceroid);
+	Add_Type(crc, UnloadingHarvester);
+	crc(AttackingAircraftSightRange);
+	crc(TunnelSpeed);
+	crc(TiberiumHeal);
+	Add_List(crc, HSBuilding);
+	crc(IsFreeMCV);
+	crc(IsBerzerkAllowed);
+	crc((int)PoseDir);
+	Add_Type(crc, DropPodPuff);
+	crc(WaypointAnimationSpeed);
+	Add_Type(crc, BarrelExplode);
+	Add_List(crc, BarrelDebris);
+	Add_Type(crc, BarrelParticle);
+	crc(RadarEventColorSpeed);
+	crc(RadarEventMinRadius);
+	crc(RadarEventSpeed);
+	crc(RadarEventRotationSpeed);
+	crc(FlashFrameTime);
+	crc(RadarCombatFlashTime);
+	crc(MaxWaypointPathLength);
+	Add_Type(crc, Wake);
+	Add_Type(crc, FlamingInfantry);
+	crc(AITriggerSuccessWeightDelta);
+	crc(AITriggerFailureWeightDelta);
+	crc(AITriggerTrackRecordCoefficient);
+	crc(VeinholeMonsterStrength);
+	crc(MaxVeinholeGrowth);
+	crc(VeinholeGrowthRate);
+	crc(VeinholeShrinkRate);
+	Add_Type(crc, VeinAttack);
+	crc(VeinDamage);
+	crc(MaximumQueuedObjects);
+	crc(AircraftFogReveal);
+	Add_Type(crc, WoodCrateImg);
+	Add_Type(crc, CrateImg);
+	Add_List(crc, DropPod);
+	Add_List(crc, DeadBodies);
+	Add_List(crc, MetallicDebris);
+	Add_List(crc, BridgeExplosions);
+	Add_Type(crc, Dig);
+	Add_Type(crc, IonBlast);
+	Add_Type(crc, IonBeam);
+	Add_Type(crc, InfantryExplode);
+	Add_Type(crc, AtmosphereEntry);
+	Add_List(crc, PrerequisitePower);
+	Add_List(crc, PrerequisiteFactory);
+	Add_List(crc, PrerequisiteBarracks);
+	Add_List(crc, PrerequisiteRadar);
+	Add_List(crc, PrerequisiteTech);
+	crc(JumpjetTurnRate);
+	crc(JumpjetSpeed);
+	crc(JumpjetClimb);
+	crc(JumpjetCruiseHeight);
+	crc(JumpjetAcceleration);
+	crc(JumpjetWobblesPerSecond);
+	crc(JumpjetWobbleDeviation);
+	Add_List(crc, RadarEventSuppressionDistances);
+	Add_List(crc, RadarEventVisibilityDurations);
+	Add_List(crc, RadarEventDurations);
+	crc(IonCannonDamage);
+	crc(RailgunDamageRadius);
+	crc(ZoomInFactor);
+	crc(ConditionRedSparkingProbability);
+	crc(ConditionYellowSparkingProbability);
+	crc(TiberiumExplosionDamage);
+	crc(TiberiumStrength);
+	crc(MinLowPowerProductionSpeed);
+	crc(MultipleFactory);
+	crc(MultipleFactoryCap);
+	crc(CraterLevel);
+	crc(TreeFlammability);
+	crc(MissileSpeedVar);
+	crc(MissileROTVar);
+	Add_Type(crc, DropPodWeapon);
+	crc(DropPodHeight);
+	crc(DropPodSpeed);
+	crc(DropPodAngle);
+	crc(ScrollMultiplier);
+	crc(CrewEscape);
+	crc(ShakeScreen);
+	crc(HoverHeight);
+	crc(HoverBob);
+	crc(HoverBoost);
+	crc(HoverAcceleration);
+	crc(HoverBrake);
+	crc(HoverDampen);
+	crc(PlacementDelay);
+	Add_List(crc, ExplosiveVoxelDebris);
+	Add_Type(crc, TireVoxelDebris);
+	Add_Type(crc, ScrapVoxelDebris);
+	crc(BridgeVoxelMax);
+	crc(CloakingStages);
+	crc(RevealTriggerRadius);
+	crc(IceCrackingWeight);
+	crc(IceBreakingWeight);
+	// Whether the list is empty decides whether ice cracking draws a random number.
+	crc(IceCrackSounds.Count() > 0);
+	crc((int)CliffBackImpassability);
+	crc(VeteranRatio);
+	crc(VeteranCombat);
+	crc(VeteranSpeed);
+	crc(VeteranSight);
+	crc(VeteranArmor);
+	crc(VeteranROF);
+	crc(VeteranCap);
+	crc(WorstLowPowerBuildRateCoefficient);
+	crc(BestLowPowerBuildRateCoefficient);
+	crc(WallBuildSpeedCoefficient);
+	crc(ChargeToDrainRatio);
+	crc(DamageToFirestormDamageCoefficient);
+	crc(TrackedUphill);
+	crc(TrackedDownhill);
+	crc(WheeledUphill);
+	crc(WheeledDownhill);
+	crc(SpotlightMovementRadius);
+	crc(SpotlightLocationRadius);
+	crc(SpotlightSpeed);
+	crc(SpotlightAcceleration);
+	crc(SpotlightAngle);
+	crc(SpotlightRadius);
+	crc((int)WindDirection);
+	crc(CameraRange);
+	crc(FlightLevel);
+	Add_List(crc, Scorches);
+	Add_List(crc, Scorches1);
+	Add_List(crc, Scorches2);
+	Add_List(crc, Scorches3);
+	Add_List(crc, Scorches4);
+	Add_List(crc, Craters);
+	Add_Type(crc, RepairBay);
+	Add_Type(crc, GDIGateOne);
+	Add_Type(crc, GDIGateTwo);
+	Add_Type(crc, NodGateOne);
+	Add_Type(crc, NodGateTwo);
+	Add_Type(crc, WallTower);
+	Add_Type(crc, GDIPowerPlant);
+	Add_Type(crc, GDIPowerTurbine);
+	Add_Type(crc, NodRegularPower);
+	Add_Type(crc, NodAdvancedPower);
+	Add_Type(crc, GDIFirestormGenerator);
+	Add_Type(crc, GDIHunterSeeker);
+	Add_Type(crc, NodHunterSeeker);
+	Add_List(crc, BuildConst);
+	Add_List(crc, BuildPower);
+	Add_List(crc, BuildRefinery);
+	Add_List(crc, BuildBarracks);
+	Add_List(crc, BuildTech);
+	Add_List(crc, BuildWeapons);
+	Add_List(crc, BuildDefense);
+	Add_List(crc, BuildPDefense);
+	Add_List(crc, BuildAA);
+	Add_List(crc, BuildHelipad);
+	Add_List(crc, BuildRadar);
+	Add_List(crc, ConcreteWalls);
+	Add_List(crc, NSGates);
+	Add_List(crc, EWGates);
+	crc(GDIWallDefense);
+	crc(GDIWallDefenseCoefficient);
+	crc(NodBaseDefenseCoefficient);
+	crc(GDIBaseDefenseCoefficient);
+	crc(ComputerBaseDefenseResponse);
+	crc(AIDetectDisguise);
+	crc(FireSaleKeepThreshold);
+	crc(FireSaleStructureWeight);
+	crc(MaximumBaseDefenseValue);
+	Add_List(crc, BaseUnit);
+	Add_List(crc, HarvesterUnit);
+	Add_List(crc, PadAircraft);
+	Add_List(crc, OnFire);
+	Add_List(crc, TreeFire);
+	Add_Type(crc, Smoke1);
+	Add_Type(crc, Smoke2);
+	Add_Type(crc, FirestormActiveAnim);
+	Add_Type(crc, FirestormIdleAnim);
+	Add_Type(crc, FirestormAirAnim);
+	Add_Type(crc, FirestormGroundAnim);
+	Add_Type(crc, MoveFlash);
+	Add_Type(crc, BombParachute);
+	Add_Type(crc, Parachute);
+	Add_List(crc, SplashList);
+	Add_Type(crc, SmallFire);
+	Add_Type(crc, LargeFire);
+	Add_Type(crc, Paratrooper);
+	Add_Type(crc, Disguise);
+	Add_Type(crc, Technician);
+	Add_Type(crc, Engineer);
+	Add_Type(crc, Pilot);
+	Add_Type(crc, Crew);
+	Add_Type(crc, FlameDamage);
+	Add_Type(crc, FlameDamage2);
+	Add_Type(crc, NukeWarhead);
+	Add_Type(crc, NukeProjectile);
+	Add_Type(crc, NukeDown);
+	Add_Type(crc, EMPulseWarhead);
+	Add_Type(crc, EMPulseProjectile);
+	Add_Type(crc, C4Warhead);
+	Add_Type(crc, IonCannonWarhead);
+	Add_Type(crc, FirestormWarhead);
+	Add_Type(crc, VeinholeWarhead);
+	Add_Type(crc, IonStormWarhead);
+	Add_Type(crc, VeinholeTypeClass);
+	Add_Type(crc, DefaultLargeGreySmokeSystem);
+	Add_Type(crc, DefaultSmallGreySmokeSystem);
+	Add_Type(crc, DefaultSparkSystem);
+	Add_Type(crc, DefaultLargeRedSmokeSystem);
+	Add_Type(crc, DefaultSmallRedSmokeSystem);
+	Add_Type(crc, DefaultDebrisSmokeSystem);
+	Add_Type(crc, DefaultFireStreamSystem);
+	Add_Type(crc, DefaultFirestormExplosionSystem);
+	Add_Type(crc, DefaultTestParticleSystem);
+	Add_Type(crc, DefaultRepairParticleSystem);
+	crc(MyEffectivenessCoefficientDefault);
+	crc(TargetEffectivenessCoefficientDefault);
+	crc(TargetSpecialThreatCoefficientDefault);
+	crc(TargetStrengthCoefficientDefault);
+	crc(TargetDistanceCoefficientDefault);
+	crc(DumbMyEffectivenessCoefficient);
+	crc(DumbTargetEffectivenessCoefficient);
+	crc(DumbTargetSpecialThreatCoefficient);
+	crc(DumbTargetStrengthCoefficient);
+	crc(DumbTargetDistanceCoefficient);
+	crc(EnemyHouseThreatBonus);
+	crc(HunterSeekerDetonateProximity);
+	crc(HunterSeekerDescendProximity);
+	crc(HunterSeekerDescentSpeed);
+	crc(HunterSeekerAscentSpeed);
+	crc(HunterSeekerEmergeSpeed);
+	crc(TurboBoost);
+	crc(AttackInterval);
+	crc(AttackDelay);
+	crc(PowerEmergencyFraction);
+	crc(AirstripRatio);
+	crc(AirstripLimit);
+	crc(HelipadRatio);
+	crc(HelipadLimit);
+	crc(TeslaRatio);
+	crc(TeslaLimit);
+	crc(AARatio);
+	crc(AALimit);
+	crc(DefenseRatio);
+	crc(DefenseLimit);
+	crc(WarRatio);
+	crc(WarLimit);
+	crc(BarracksRatio);
+	crc(BarracksLimit);
+	crc(RefineryLimit);
+	crc(RefineryRatio);
+	crc(BaseSizeAdd);
+	crc(PowerSurplus);
+	crc(InfantryReserve);
+	crc(InfantryBaseMult);
+	crc(SoloCrateMoney);
+	crc(CrateMoneyBonus);
+	crc(IsArmorCrateStacking);
+	crc(IsFirepowerCrateStacking);
+	crc(IsArmorCrateStackingAdditive);
+	crc(IsFirepowerCrateStackingAdditive);
+	crc(TreeStrength);
+	Add_Type(crc, UnitCrateType);
+	crc(PatrolTime);
+	Add_List(crc, TeamDelays);
+	Add_List(crc, AIHateDelays);
+	crc(DissolveUnfilledTeamDelay);
+	Add_List(crc, AIIonCannonConYardValue);
+	Add_List(crc, AIIonCannonWarFactoryValue);
+	Add_List(crc, AIIonCannonPowerValue);
+	Add_List(crc, AIIonCannonEngineerValue);
+	Add_List(crc, AIIonCannonThiefValue);
+	Add_List(crc, AIIonCannonHarvesterValue);
+	Add_List(crc, AIIonCannonMCVValue);
+	Add_List(crc, AIIonCannonAPCValue);
+	Add_List(crc, AIIonCannonBaseDefenseValue);
+	Add_List(crc, AIIonCannonPlugValue);
+	Add_List(crc, AIIonCannonHelipadValue);
+	Add_List(crc, AIIonCannonTempleValue);
+	crc(AIAlternateProductionCreditCutoff);
+	Add_List(crc, MultiplayerAICreditMultipliers);
+	Add_List(crc, MinimumAIDefensiveTeams);
+	Add_List(crc, MaximumAIDefensiveTeams);
+	Add_List(crc, TotalAITeamCap);
+	crc(AIUseTurbineUpgradeChance);
+	Add_List(crc, FillEarliestTeamProbability);
+	crc(CloakDelay);
+	crc(GameSpeedBias);
+	crc(NervousBias);
+	crc(ExplosionSpread);
+	crc(SupressRadius);
+	crc(MaxIQ);
+	crc(IQSuperWeapons);
+	crc(IQProduction);
+	crc(IQGuardArea);
+	crc(IQRepairSell);
+	crc(IQCrush);
+	crc(IQScatter);
+	crc(IQContentScan);
+	crc(IQAircraft);
+	crc(IQHarvester);
+	crc(IQSellBack);
+	crc(AIBaseSpacing);
+	crc((int)SilverCrate);
+	crc((int)WoodCrate);
+	crc(CrateMinimum);
+	crc(CrateMaximum);
+	crc(LZScanRadius);
+	Add_Type(crc, FlareAnim);
+	crc(MPMoney);
+	crc(MPMaxMoney);
+	crc(MPUnitCount);
+	crc(MPBuildLevel);
+	crc(DropZoneRadius);
+	crc(MessageDelay);
+	crc(SavourDelay);
+	crc(MaxPlayers);
+	crc(BaseDefenseDelay);
+	crc(SuspendPriority);
+	crc(SuspendDelay);
+	crc(SurvivorFraction);
+	crc(SurvivorDivisor);
+	crc(ReloadRate);
+	crc(AutocreateTime);
+	crc(BuildupTime);
+	crc(HarvesterLoadRate);
+	crc(HarvesterDumpRate);
+	crc(AtomDamage);
+	for (int i = 0; i < DIFF_COUNT; i++) {
+		Add_Difficulty(crc, Diff[i]);
+	}
+	crc(QuakeDamagePercent);
+	crc(QuakeChance);
+	crc(GrowthRate);
+	crc(ShroudRate);
+	crc(FogRate);
+	crc(IceGrowthRate);
+	crc(VeinGrowthRate);
+	crc(IceSolidifyDelay);
+	crc(AmbientLightChangeRate);
+	crc(AmbientLightChangeStep);
+	crc(CrateTime);
+	crc(TimerWarning);
+	crc(NukeTime);
+	crc(EMPulseTime);
+	crc(IonCannonTime);
+	crc(FirestormTime);
+	crc(SpeakDelay);
+	crc(DamageDelay);
+	crc(Gravity);
+	crc(LeptonsPerSightIncrease);
+	crc((int)Incoming);
+	crc(MinDamage);
+	crc(MaxDamage);
+	crc(RepairStep);
+	crc(RepairPercent);
+	crc(IRepairStep);
+	crc(RepairRate);
+	crc(URepairRate);
+	crc(IRepairRate);
+	crc(SelfHealStep);
+	crc(SelfHealRate);
+	crc(SelfHealCap);
+	crc(ConditionGreen);
+	crc(ConditionYellow);
+	crc(ConditionRed);
+	crc(RandomAnimateTime);
+	crc(CloseEnoughDistance);
+	crc(StrayDistance);
+	crc(CrushDistance);
+	crc(CrateRadius);
+	crc(HomingScatter);
+	crc(BallisticScatter);
+	crc(RefundPercent);
+	crc(BridgeStrength);
+	crc(BuildSpeedBias);
+	crc(C4Delay);
+	crc(RepairThreshhold);
+	crc(PathDelay);
+	crc(BlockagePathDelay);
+	crc(MovieTime);
+	crc(TiberiumShortScan);
+	crc(TiberiumLongScan);
+	crc(LightningFrequency);
+	crc(LightningRandomness);
+	crc(LightningDamage);
+	crc(LightningDuration);
+	crc(LightningDeferment);
+	crc(CollapseChance);
+	crc(WeedCapacity);
+	crc(ExtraUnitLight);
+	crc(ExtraInfantryLight);
+	crc(ExtraAircraftLight);
+	crc(IsComputerParanoid);
+	crc(IsCurleyShuffle);
+	crc(IsMultiMCV);
+	crc(IsRecheckPrerequisites);
+	crc(IsBlendedFog);
+	crc(IsCompEasyBonus);
+	crc(IsFineDifficulty);
+	crc(IsExplosiveHarvester);
+	crc(IsHealthBar);
+	crc(IsAllyReveal);
+	crc(IsSeparate);
+	crc(IsTreeTarget);
+	crc(IsNamed);
+	crc(IsAutoCrush);
+	crc(IsSmartDefense);
+	crc(IsScatter);
+	crc(IsRevealByHeight);
+	crc(IsShroudedSubteranneanMovesAllowed);
+	crc(IsShroudGrow);
+	crc(IsMPShadowGrow);
+	crc(IsMPBasesOn);
+	crc(IsMPTiberiumGrow);
+	crc(IsMPCrates);
+	crc(IsMPAIPlayers);
+	crc(IsMPCaptureTheFlag);
+	crc(IsMPBridgeDestruction);
+	crc(IsMPBuildOffAllyAnyStructure);
+	crc(NodAIBuildsWalls);
+	crc(AIBuildsWalls);
+	crc(UseMinDefenseRule);
+	Add_Type(crc, EMPulseSparkles);
+	Add_Type(crc, WebbedInfantry);
+	crc(JumpjetCloakDetectionRadius);
+	crc(DropPodInfantryMinimum);
+	crc(DropPodInfantryMaximum);
+	crc((int)TalkBubbleTime);
+	Add_List(crc, PrerequisiteGDIFactory);
+	Add_List(crc, PrerequisiteNodFactory);
+	crc(EngineerCaptureLevel);
+	crc(EngineerDamage);
+	crc(VeteranFlashTimer);
+	crc(EliteFlashTimer);
+	crc(ComesNearWaypointDistance);
+	for (int i = 0; i < LAND_COUNT; i++) {
+		Add_Ground(crc, Ground[i]);
+	}
+	for (int i = 0; i < CRATE_COUNT; i++) {
+		crc(CrateShares[i]);
+	}
+	for (int i = 0; i < CRATE_COUNT; i++) {
+		crc((int)CrateAnims[i]);
+	}
+	for (int i = 0; i < CRATE_COUNT; i++) {
+		crc(CrateData[i]);
+	}
+	for (int i = 0; i < MISSION_COUNT; i++) {
+		Add_Mission_Control(crc, MissionControl[i]);
+	}
 }
 
 

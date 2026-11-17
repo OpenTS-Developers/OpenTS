@@ -146,6 +146,7 @@
 #include "session.h"
 #include "smudge.h"
 #include "spawnhouse.h"
+#include "statehash.h"
 #include "stats.h"
 #include "surface.h"
 #include "swizzle.h"
@@ -482,6 +483,10 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 			TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW),
 			int(Rule->MessageDelay * TICKS_PER_MINUTE));
 	}
+
+	// A campaign mission's carried-over money and globals are restored after this returns,
+	// so the start state is recorded at the first frame rather than here.
+	StateHash::Arm_Start();
 
 	ScenarioActive = true;
 	TacticalActive = true;
@@ -1081,6 +1086,7 @@ void Clear_Scenario(void)
 {
 	Stop_All_Sound_Effects();
 	Sync_Recorder_Disarm();
+	StateHash::Clear_Start();
 	UI_Diplomacy_Close();
 
 	int index;

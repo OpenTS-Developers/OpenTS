@@ -56,6 +56,7 @@
 #include "scenario.h"
 #include "scheme.h"
 #include "session.h"
+#include "statehash.h"
 #include "stats.h"
 #include "stimer.h"
 #include "surface.h"
@@ -258,6 +259,9 @@ bool Main_Loop(void)
 	}
 
 	InMainLoop = true;
+
+	// This frame's input and drawing come after, so they cannot change the recorded state.
+	StateHash::Take_Start();
 
 	/*
 	**	Call the focus loss handler

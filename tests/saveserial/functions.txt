@@ -47,6 +47,7 @@ d104d96f06ebc017 code/bullet.cpp BulletClass::Serialize(SaveStreamClass&stream)
 864052372ff22e6e code/campaign.cpp CampaignClass::Compute_CRC(CRCEngine&crc)
 c6dec40723454e90 code/campaign.cpp CampaignClass::Serialize(SaveStreamClass&stream)
 f8bd47d3b3ccc415 code/cargo.h Serialize(S&stream)
+0d9e2005760699b9 code/cell.cpp CellClass::Compute_CRC(CRCEngine&crc)
 9b6d6ed0c9728e38 code/cell.cpp CellClass::Serialize(SaveStreamClass&stream)
 8d285bd4f83b19a1 code/counter.h Serialize(S&stream)
 cdccea0118c09605 code/crate.h Serialize(S&stream)
@@ -87,6 +88,7 @@ fad8020f562764ab code/house.cpp HouseClass::Load(SaveStreamClass&stream)
 a75d923436089627 code/house.h Serialize(S&stream) #2
 1ec18448070635a6 code/house.h Serialize(S&stream) #3
 fe4272320da0bd1b code/houseset.h Compute_CRC(C&crc)
+586c49dd71dee67f code/houseset.h Compute_CRC(C&crc) #2
 9e7f946deb9239c9 code/houseset.h Serialize(S&stream)
 eec454b26690ae60 code/houseset.h Serialize(S&stream) #2
 085e17c566c022a1 code/houstype.cpp HouseTypeClass::Compute_CRC(CRCEngine&crc)
@@ -157,6 +159,7 @@ e24e0c8436ecaab5 code/region.h Serialize(S&stream)
 d1ccf5c0c5cd05d9 code/revent.cpp RadarEventClass::Save(SaveStreamClass&stream)
 d2c58a0cf23f452d code/revent.cpp RadarEventClass::Serialize(SaveStreamClass&stream)
 b8c9a3facbd36a99 code/rgb.h Serialize(S&stream)
+e209a8085bc32f71 code/rules.cpp RulesClass::Compute_CRC(CRCEngine&crc)
 39a4cff77c72175d code/rules.cpp RulesClass::Load(SaveStreamClass&stream)
 6b60a130c38b1679 code/rules.cpp RulesClass::Save(SaveStreamClass&stream)
 6d7bce02e0590d04 code/rules.cpp RulesClass::Serialize(SaveStreamClass&stream)
