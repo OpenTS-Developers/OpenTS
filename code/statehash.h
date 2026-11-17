@@ -26,8 +26,16 @@ namespace StateHash
 		unsigned int CRC;
 	};
 
+	// A running checksum taken partway through one object's values, labeled with the last value
+	// added before it.
+	struct Checkpoint
+	{
+		std::string Label;
+		unsigned int CRC;
+	};
 
-	// The two functions below are defined here so that tests/statehash needs no engine code.
+
+	// The three functions below are defined here so that tests/statehash needs no engine code.
 
 	/// <summary>
 	/// Returns one checksum for a table of parts. The result depends on the order of the parts
@@ -56,8 +64,22 @@ namespace StateHash
 	}
 
 
+	/// <summary>
+	/// Returns one row of a part's breakdown as text without a line ending: a position within the
+	/// part, a label, and the part's running checksum through that position.
+	/// </summary>
+	inline std::string Format_Row(int position, char const * label, unsigned int crc)
+	{
+		char line[96];
+		std::snprintf(line, sizeof(line), "%05d  %-24s  %08x", position, label, crc);
+		return(line);
+	}
+
+
 	// The game as it is now.
 	void Compute_Parts(std::vector<Part> & parts);
+	void Compute_Rows(std::vector<std::string> & lines);
+	void Log_Rows(void);
 
 	// The table taken before the scenario's first frame.
 	void Arm_Start(void);

@@ -147,6 +147,7 @@
 #include "side.h"
 #include "smudge.h"
 #include "smudtype.h"
+#include "statehash.h"
 #include "stats.h"
 #include "stimer.h"
 #include "syncrechook.h"
@@ -1957,6 +1958,10 @@ static RetcodeType Process_Receive_Packet(ConnManClass *net,
 	//------------------------------------------------------------------------
 	else if (event.Type == EventClass::FRAMESYNC) {
 		if (event.Data.FrameInfo.CRC != ScenarioCRC) {
+			DebugString("Start check failed at frame %d: connection %d sent %08x, this machine has %08x\n",
+				Frame, id, event.Data.FrameInfo.CRC, ScenarioCRC);
+			StateHash::Log_Start();
+			StateHash::Log_Rows();
 			return(RC_SCENARIO_MISMATCH);
 		}
 		their[index].timing = *timer;

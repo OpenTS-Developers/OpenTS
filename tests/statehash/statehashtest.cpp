@@ -78,6 +78,12 @@ TEST_CASE("a part prints as one aligned line")
 }
 
 
+TEST_CASE("a breakdown row prints its position, label, and running checksum")
+{
+	CHECK(StateHash::Format_Row(42, "E1", 0x0000abcdu) == "00042  E1                        0000abcd");
+}
+
+
 TEST_CASE("a double is checksummed as its binary64 bit pattern")
 {
 	// 1.5 is 0x3FF8000000000000; on a little-endian machine the low word goes first.

@@ -357,16 +357,14 @@ CRCEngine Object_CRCs(void)
 
 /// <summary>
 /// Writes the game state checksum table to the out-of-sync report: the table recorded at the
-/// start of the game, one line per part of the current state, then a row per live instance
-/// with its heap position, its ID, and the running checksum of its heap through that instance.
-/// Comparing two peers' tables finds the first instance whose checksum differs. It is not yet
+/// start of the game, one line per part of the current state, then the rows of
+/// StateHash::Compute_Rows, the same rows a failed start check writes to the debug log.
+/// Comparing two peers' tables finds the first row whose checksum differs. It is not yet
 /// verified that every hashed member is the same on every machine, so a difference can also
 /// come from state that only one machine keeps.
 /// </summary>
 void Print_Heap_CRCs(FILE * fp)
 {
-	int i;
-
 	fprintf(fp, "\n----- Start state checksums -----\n");
 	StateHash::Print_Start(fp);
 
@@ -378,19 +376,11 @@ void Print_Heap_CRCs(FILE * fp)
 		fprintf(fp, "%s\n", StateHash::Format_Part(part).c_str());
 	}
 
-#define HEAP_ROWS(VECTOR) \
-	{ \
-		CRCEngine heap_crc; \
-		fprintf(fp, "\n--- %s ---\n", #VECTOR); \
-		for (i = 0; i < VECTOR.Count(); i++) { \
-			VECTOR[i]->Compute_CRC(heap_crc); \
-			fprintf(fp, "%05d  ID:%-8d  %08x\n", i, VECTOR[i]->Fetch_ID(), heap_crc()); \
-		} \
+	std::vector<std::string> lines;
+	StateHash::Compute_Rows(lines);
+	for (std::string const & line : lines) {
+		fprintf(fp, "%s\n", line.c_str());
 	}
-
-	OBJECT_HEAP_LIST_INSTANCES(HEAP_ROWS)
-
-#undef HEAP_ROWS
 }
 
 /***********************************************************************************************

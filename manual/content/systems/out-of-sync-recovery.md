@@ -16,6 +16,29 @@ related:
     id: chat
 ---
 
+## Games that differ at the start
+
+A new network game stops at its start when the machines did not load the same game. Just before the first frame, each machine computes a checksum of the game it loaded: the scenario's settings, the rules, every object type, the theater's tile types, every map cell, and every object in play. The machines exchange the checksum as the game starts, and a machine that receives a checksum different from its own shows `Scenarios don't match.` and ends the game.
+
+Files that differ in their bytes but load to the same game pass the check. Sound, speech, music and movie choices are not compared, so machines whose sound or movie files differ can play together. [`VoiceFeedback`](/keys/voicefeedback/) and [`IceCrackSounds`](/keys/icecracksounds/) are the exceptions: the check compares whether each list names any sound in the machine's sound list, because an empty list changes whether the game draws a random number.
+
+To get past a failed check, give every machine the same game files and the same OpenTS build, then start the game again. To find the files that differ, compare the machines' [debug logs](/using/debug-logging/). At the start of every new game, the log gives the machine's checksum on a `Start state hash:` line, followed by one line for each part of the game with its name, record count and checksum. The first part whose checksum differs between two logs shows which files to compare:
+
+| Part | Comes from |
+| --- | --- |
+| `Scenario` | The map file and the match options |
+| `Rules` | The rules files and the map's changes to the rules |
+| A type list, such as `UnitTypes`, `Weapons` or `AnimTypes` | The rules files and the map's changes to the rules |
+| `TaskForces`, `TeamTypes`, `ScriptTypes` and `AITriggerTypes` | The AI files and the map file |
+| `TagTypes`, `TriggerTypes`, `Actions` and `Events` | The map file |
+| `IsometricTileTypes` | The theater control file, such as `TEMPERAT.INI` |
+| `Cells` | The map file and the theater's tile files |
+| An object list, such as `Units`, `Buildings` or `Terrains` | The map file and the match options |
+
+When the check fails, the log adds rows that narrow the difference down: the scenario and the rules in groups of values, then every type by name and every object by its unique ID. Each row gives the running checksum of its part through that row, so the first row that differs between two logs identifies the first group of values, type or object that differs.
+
+A resumed saved game compares the saved games instead, as [`SPAWN.INI`](/formats/spawn-ini/#resuming-a-saved-game) describes.
+
 ## When the game goes out of sync
 
 Before a machine runs a frame's commands, it compares its own checksum with the checksums the other machines reported. Every machine therefore detects a divergence at the same frame. Each machine then writes its [out-of-sync report](/using/out-of-sync-reports/), halts the game, and opens the out-of-sync dialog.

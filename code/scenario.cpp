@@ -4039,8 +4039,16 @@ int Adjust_To_CPU_Timing(int time)
 /// This routine is used by the multiplayer sync check, which compares the CRC taken on
 /// each machine in order to spot a game that has drifted out of step.
 /// </summary>
-void ScenarioClass::Compute_CRC(CRCEngine & crc) const
+/// <param name="checkpoints">When not null, receives the running checksum after each group
+/// of values.</param>
+void ScenarioClass::Compute_CRC(CRCEngine & crc, std::vector<StateHash::Checkpoint> * checkpoints) const
 {
+	auto checkpoint = [&](char const * label) {
+		if (checkpoints != nullptr) {
+			checkpoints->push_back({label, (unsigned int)crc()});
+		}
+	};
+
 	// The movies and the transit theme are left out: each is a position in a list that every
 	// installation builds from its own ART.INI or THEME.INI, and none affects the simulation.
 	crc(Percent);
@@ -4060,11 +4068,13 @@ void ScenarioClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsTruckCrate);
 	crc(Percent);
 	crc(StartingDropships);
+	checkpoint("settings");
 	crc((int)MissionTimer);
 	crc((int)ShroudTimer);
 	crc((int)FogTimer);
 	crc((int)IceGrowthTimer);
 	crc((int)VeinGrowthTimer);
+	checkpoint("timers");
 	crc(Difficulty);
 	crc(CDifficulty);
 	crc(Theater);
@@ -4080,6 +4090,7 @@ void ScenarioClass::Compute_CRC(CRCEngine & crc) const
 	crc(AmbientLight);
 	crc(CurrentAmbientLight);
 	crc(DesiredAmbientLight);
+	checkpoint("difficulty and lighting");
 
 	crc((bool)Special.IsCaptureTheFlag);
 	crc((bool)Special.IsInert);
@@ -4092,22 +4103,28 @@ void ScenarioClass::Compute_CRC(CRCEngine & crc) const
 	crc((bool)Special.IsFogOfWar);
 	crc((bool)Special.IsDestroyBridges);
 	crc((bool)Special.IsScrapMetal);
+	checkpoint("special options");
 	crc(UniqueID);
 	crc(RandomNumber.Index_1());
 	crc(RandomNumber.Index_2());
 	crc(RandomNumber.Peek());
+	checkpoint("unique ID and generator");
 	for (int i = 0; i < WAYPT_COUNT; i++) {
 		crc(Waypoint[i].X);
 		crc(Waypoint[i].Y);
 	}
+	checkpoint("waypoints");
 	crc((int)AmbientChangeTimer);
 	crc(Scenario);
+	checkpoint("light timer and number");
 	for (int i = 0; i < SCEN_GLOBAL_COUNT; i++) {
 		crc(GlobalFlags[i].Value);
 	}
+	checkpoint("globals");
 	for (int i = 0; i < SCEN_LOCAL_COUNT; i++) {
 		crc(LocalFlags[i].Value);
 	}
+	checkpoint("locals");
 	crc(IsTrainCargo);
 	crc(IsTibGrowth);
 	crc(IsVeinGrowth);
@@ -4119,6 +4136,7 @@ void ScenarioClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsRandom);
 	crc(IsCrateBeenPickedUp);
 	crc((int)RequiredAddOn);
+	checkpoint("flags");
 }
 
 

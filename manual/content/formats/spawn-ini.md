@@ -271,7 +271,7 @@ Each machine writes its own file, with itself in `[Settings]` and the other peop
 
 The keys under [What a player is shown](#what-a-player-is-shown) and [The match results file](#the-match-results-file), and the two waits below, may differ between machines.
 
-Before play begins, the machines compare the scenarios they loaded. If they differ, the match stops with the message `Scenarios don't match.`
+Before play begins, the machines compare the games they loaded, and the match stops with the message `Scenarios don't match.` if they differ. [Out-of-sync recovery](/systems/out-of-sync-recovery/#games-that-differ-at-the-start) lists what is compared.
 
 The `Session identity:` line in an [out-of-sync report](/using/out-of-sync-reports/) differs between machines whose files disagree on anything in the list above, except `Name`, `AutoSaveGame` and the `[Tunnel]` section. Scenario files that differ under the same name give the same identity. `Host`, the `Ip` and `Port` entries, the waits and the keys under [What a player is shown](#what-a-player-is-shown) and [The match results file](#the-match-results-file) do not change it.
 

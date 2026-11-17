@@ -43,6 +43,8 @@
 #include "land.hh"
 #include "mission.hh"
 
+#include <vector>
+
 class AircraftTypeClass;
 class AnimTypeClass;
 class BuildingTypeClass;
@@ -58,6 +60,11 @@ class VoxelAnimTypeClass;
 class WarheadTypeClass;
 class TerrainTypeClass;
 class WeaponTypeClass;
+
+namespace StateHash
+{
+	struct Checkpoint;
+}
 
 class DifficultyClass
 {
@@ -151,7 +158,7 @@ class RulesClass
 		void Load(SaveStreamClass & stream);
 
 		void Serialize(SaveStreamClass & stream);
-		void Compute_CRC(CRCEngine & crc) const;
+		void Compute_CRC(CRCEngine & crc, std::vector<StateHash::Checkpoint> * checkpoints = nullptr) const;
 
 		void Detach(AbstractClass const * target, bool all = true);
 
