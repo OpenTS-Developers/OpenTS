@@ -3616,7 +3616,7 @@ void BuildingClass::Place_Free_Unit(void)
 	if (type->Fetch_RTTI() == RTTI_AIRCRAFTTYPE) {
 		AircraftClass * air = Place_Free_Aircraft(static_cast<AircraftTypeClass const *>(type));
 		if (air == NULL) {
-			House->Refund_Money(type->Raw_Cost());
+			House->Refund_Money(type->Raw_Cost(), INCOME_REFUND_FREE_UNIT);
 			return;
 		}
 
@@ -3658,7 +3658,7 @@ void BuildingClass::Place_Free_Unit(void)
 				**	to the owner and then bail.
 				*/
 				if (newcell == CELL_NONE || !object->Unlimbo(newcell, DIR_SW)) {
-					House->Refund_Money(type->Raw_Cost());
+					House->Refund_Money(type->Raw_Cost(), INCOME_REFUND_FREE_UNIT);
 					delete object;
 				} else {
 					placed = true;
@@ -3684,7 +3684,7 @@ void BuildingClass::Place_Free_Unit(void)
 		**	If the object could not be created in the first place, then give
 		**	the full refund price to the owning player.
 		*/
-		House->Refund_Money(type->Cost_Of(House));
+		House->Refund_Money(type->Cost_Of(House), INCOME_REFUND_FREE_UNIT);
 	}
 }
 
@@ -4954,7 +4954,7 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 			if (UpgradeLevel) {
 				const BuildingTypeClass *upgrade = Upgrades[UpgradeLevel - 1];
 				BuildingClass *uptr = (BuildingClass *)upgrade->Create_One_Of(House);
-				House->Refund_Money(uptr->Refund_Amount());
+				House->Refund_Money(uptr->Refund_Amount(), INCOME_SOLD_UPGRADE);
 				delete uptr;
 				Remove_Upgrade();
 				House->RecalcPower = true;
@@ -5184,11 +5184,11 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 							**	If, for some strange reason, the MCV could not be placed on the
 							**	map, then give the player some money to compensate.
 							*/
-							House->Refund_Money(money);
+							House->Refund_Money(money, INCOME_REFUND_UNDEPLOY);
 							delete unit;
 						}
 					} else {
-						House->Refund_Money(Refund_Amount());
+						House->Refund_Money(Refund_Amount(), INCOME_REFUND_UNDEPLOY);
 					}
 					Detach_All();
 					Delete_Me();
@@ -5220,7 +5220,7 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 					/*
 					**	The player gets part of the money back for the sell.
 					*/
-					House->Refund_Money(Refund_Amount());
+					House->Refund_Money(Refund_Amount(), INCOME_SOLD_BUILDING);
 					//House->Stole(-Refund_Amount());
 					Limbo();
 
@@ -5228,7 +5228,7 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 					int i = storage->First_Used_Slot();
 					while (i != -1) {
 						int amount = storage->Decrease_Amount(storage->Get_Amount(i), i);
-						House->Harvested(amount, TiberiumType(i));
+						House->Harvested(amount, TiberiumType(i), INCOME_NONE);
 						i = storage->First_Used_Slot();
 					}
 
@@ -7630,7 +7630,7 @@ void BuildingClass::Produce_Cash_AI(void)
 	}
 
 	if (amount > 0) {
-		House->Refund_Money(amount);
+		House->Refund_Money(amount, INCOME_BUILDING_CASH);
 	} else {
 		House->Spend_Money(-amount);
 	}
@@ -7657,7 +7657,7 @@ void BuildingClass::Produce_Cash_Startup(void)
 	}
 
 	IsProduceCashStartupPaid = true;
-	House->Refund_Money(Class->ProduceCashStartup);
+	House->Refund_Money(Class->ProduceCashStartup, INCOME_BUILDING_STARTUP);
 }
 
 
@@ -10203,7 +10203,7 @@ void BuildingClass::Sell_All_Upgrades(void)
 	char level = UpgradeLevel;
 	while (level > 0) {
 		int cost = Upgrades[level - 1]->Cost_Of(House);
-		House->Refund_Money(cost);
+		House->Refund_Money(cost, INCOME_SOLD_UPGRADE);
 		Remove_Upgrade();
 		House->RecalcPower = true;
 		House->RecalcRadar = true;

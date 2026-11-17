@@ -3836,9 +3836,9 @@ crate_money:
 					force_money = Random_Pick((int)data, (int)data + std::max(Rule->CrateMoneyBonus, 0));
 				}
 				if (!object->House->Is_Player_Control() || Session.Type != GAME_NORMAL) {
-					object->House->Refund_Money(force_money);
+					object->House->Refund_Money(force_money, INCOME_CRATE);
 				} else {
-					PlayerPtr->Refund_Money(force_money);
+					PlayerPtr->Refund_Money(force_money, INCOME_CRATE);
 				}
 				break;
 

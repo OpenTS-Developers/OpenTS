@@ -3300,7 +3300,7 @@ int UnitClass::Do_MISSION_UNLOAD(void)
 								if (Class->IsToVeinHarvest) {
 									House->Harvested_Weed(amount, slot);
 								} else {
-									House->Harvested(amount, (TiberiumType)slot);
+									House->Harvested(amount, (TiberiumType)slot, INCOME_HARVESTED);
 								}
 								Set_Stage(0);
 							}

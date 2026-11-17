@@ -988,7 +988,7 @@ void Fill_In_Data(void)
 				TiberiumClass const * tib = Tiberiums[0];
 
 				while (money > tib->CreditValue && hptr->Available_Storage() > 0) {
-					hptr->Harvested(1, TiberiumType(0));
+					hptr->Harvested(1, TiberiumType(0), INCOME_STARTING_FILL_SILOS);
 					money -= tib->CreditValue;
 				}
 			}
@@ -1755,7 +1755,7 @@ void Multiplayer_Last_Minute_Fixups(bool official)
 			Houses[i]->PickEnemyTimer = Rule->AIHateDelays[Houses[i]->Difficulty];
 
 			int available_money = Houses[i]->Available_Money();
-			Houses[i]->Refund_Money((int)((Rule->MultiplayerAICreditMultipliers[Houses[i]->Difficulty] / 100.0) * available_money));
+			Houses[i]->Refund_Money((int)((Rule->MultiplayerAICreditMultipliers[Houses[i]->Difficulty] / 100.0) * available_money), INCOME_STARTING_MULTIPLIER);
 		}
 
 		if (Houses[i]->Class->IsMultiplayPassive) {

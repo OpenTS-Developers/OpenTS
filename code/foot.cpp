@@ -2884,7 +2884,7 @@ void FootClass::Sell_Back(int control)
 			Speak(VOX_UNIT_SOLD);
 			Sound_Effect(Rule->SellSound);
 		}
-		House->Refund_Money(Refund_Amount());
+		House->Refund_Money(Refund_Amount(), INCOME_SOLD_UNIT);
 		Stun();
 		Limbo();
 		Delete_Me();

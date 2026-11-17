@@ -478,7 +478,7 @@ void Keyboard_Process(KeyNumType & input)
 				case int(int(KN_M) | int(KN_ALT_BIT)):
 				case int(int(KN_M) | int(KN_CTRL_BIT)):
 					for (int h = 0; h < Houses.Count(); h++) {
-						Houses[h]->Refund_Money(10000);
+						Houses[h]->Refund_Money(10000, INCOME_DEBUG);
 					}
 					break;
 

@@ -1794,6 +1794,8 @@ void HouseClass::Attacked(BuildingClass * source)
  *                                                                                             *
  * INPUT:   tiberium -- The number of Tiberium credits to add to the House's total.            *
  *                                                                                             *
+ *          income   -- What delivered the Tiberium.                                           *
+ *                                                                                             *
  * OUTPUT:  none                                                                               *
  *                                                                                             *
  * WARNINGS:   none                                                                            *
@@ -1801,7 +1803,7 @@ void HouseClass::Attacked(BuildingClass * source)
  * HISTORY:                                                                                    *
  *   01/25/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-void HouseClass::Harvested(int tiberium, TiberiumType slot)
+void HouseClass::Harvested(int tiberium, TiberiumType slot, [[maybe_unused]] IncomeType income)
 {
 	PointTotal += tiberium * 5;
 
@@ -1941,6 +1943,8 @@ void HouseClass::Spend_Money(int money)
  *                                                                                             *
  * INPUT:   money -- The number of credits to refund back to the house.                        *
  *                                                                                             *
+ *          income -- What paid the money.                                                     *
+ *                                                                                             *
  * OUTPUT:  none                                                                               *
  *                                                                                             *
  * WARNINGS:   none                                                                            *
@@ -1949,7 +1953,7 @@ void HouseClass::Spend_Money(int money)
  *   01/25/1995 JLB : Created.                                                                 *
  *   06/01/1995 JLB : Refunded money is never lost                                             *
  *=============================================================================================*/
-void HouseClass::Refund_Money(int money)
+void HouseClass::Refund_Money(int money, [[maybe_unused]] IncomeType income)
 {
 	Credits += money;
 }
@@ -4408,7 +4412,7 @@ bool HouseClass::AI_Raise_Money(UrgencyType urgency)
 			char level = bptr->UpgradeLevel;
 			if (level != 0) {
 				int cost = bptr->Upgrades[level - 1]->Cost_Of(this);
-				Credits += cost;
+				Refund_Money(cost, INCOME_SOLD_UPGRADE);
 				bptr->Remove_Upgrade();
 				RecalcPower = true;
 				RecalcRadar = true;
@@ -6324,7 +6328,7 @@ void HouseClass::Tracking_Active_Remove(TechnoClass * techno, bool bycapture)
 					int i = storage->First_Used_Slot();
 					while (i != -1) {
 						int amount = storage->Decrease_Amount(0x7FFFFFFF, i);
-						Harvested(amount, TiberiumType(i));
+						Harvested(amount, TiberiumType(i), INCOME_NONE);
 						i = storage->First_Used_Slot();
 					}
 				} else {

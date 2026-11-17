@@ -2521,7 +2521,7 @@ bool TActionClass::TAction_GIVE_CREDITS(HouseClass * , ObjectClass * , TriggerCl
 	int amount = TriggerRect.X;
 	if (amount >= 0) {
 		if (hptr->Credits > std::numeric_limits<int>::max() - amount) return(false);
-		hptr->Refund_Money(amount);
+		hptr->Refund_Money(amount, INCOME_TRIGGER);
 	} else {
 		if (amount == std::numeric_limits<int>::min()) return(false);
 		hptr->Spend_Money(-amount);

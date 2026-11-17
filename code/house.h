@@ -881,10 +881,10 @@ class HouseClass : public AbstractClass
 		BuildingTypeClass const * Suggest_New_Building(void) const;
 		void Recalc_Center(void);
 		bool Does_Enemy_Building_Exist(StructType) const;
-		void Harvested(int tiberium, TiberiumType slot);
+		void Harvested(int tiberium, TiberiumType slot, IncomeType income);
 		void Harvested_Weed(int weed, int slot);
 		void Spend_Money(int money);
-		void Refund_Money(int money);
+		void Refund_Money(int money, IncomeType income);
 		void Attacked(BuildingClass * source);
 		void Adjust_Power(int adjust);
 		void Adjust_Drain(int adjust);
