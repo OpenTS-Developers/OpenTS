@@ -431,7 +431,9 @@ bool Do_Reinforcements(TeamTypeClass const * teamtype, WAYPOINT wp)
 			return(false);
 		}
 
-		TaskForceClass * dropship_taskforce = new TaskForceClass;
+		// These types get fixed names, since an unnamed type is named after its address and
+		// every machine hashes the name.
+		TaskForceClass * dropship_taskforce = new TaskForceClass("DropshipTaskForce");
 		dropship_taskforce->Members[0] = EnlistedMemberClass(1, dshp);
 
 		int classcount;
@@ -442,12 +444,10 @@ bool Do_Reinforcements(TeamTypeClass const * teamtype, WAYPOINT wp)
 		dropship_taskforce->ClassCount = classcount;
 
 		TeamTypeClass * dropship_teamtype = new TeamTypeClass;
-		static char name[24];
-		strcpy(name, dropship_teamtype->IniName);
 		memcpy(dropship_teamtype, teamtype, sizeof(TeamTypeClass));
 		dropship_teamtype->TaskForce = dropship_taskforce;
-		dropship_teamtype->IniName = TStringID<24>(name);
-		dropship_teamtype->GivenName = TStringID<48>(name);
+		dropship_teamtype->IniName = TStringID<24>("DropshipTeam");
+		dropship_teamtype->GivenName = TStringID<48>("DropshipTeam");
 
 		dropship_teamtype->IsDropship = true;
 		teamtype->House->CurrentDropship++;
