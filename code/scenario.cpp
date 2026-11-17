@@ -1123,6 +1123,9 @@ void Clear_Scenario(void)
 		Scen->Set_Global_To(index, false);
 	}
 
+	// Clearing a global left set by the previous game marks a change the next game must not see.
+	Scen->IsGlobalChanged = false;
+
 	delete TacticalMap;
 	TacticalMap = new Tactical;
 	TacticalMap->Reset_Dirty_Rectangles();
