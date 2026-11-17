@@ -552,9 +552,9 @@ class HouseClass : public AbstractClass
 		**	For multiplayer games, each house needs to keep track of how many
 		**	objects of each other house they've killed.
 		*/
-		int UnitsKilled[20];
+		int UnitsKilled[HOUSE_MAX];
 		int UnitsLost;
-		int BuildingsKilled[20];
+		int BuildingsKilled[HOUSE_MAX];
 		int BuildingsLost;
 
 		/*
