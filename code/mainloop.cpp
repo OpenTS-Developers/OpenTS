@@ -163,6 +163,12 @@ static void Check_For_Focus_Loss(void)
 {
 	bool parks = (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) && !Options.SimulateWhileUnfocused;
 
+	// Time parked is not play time; a clock a menu already stopped stays stopped.
+	bool const stops_clock = parks && !GameInFocus && Scen->ElapsedTimer.Is_Active();
+	if (stops_clock) {
+		Scen->ElapsedTimer.Stop();
+	}
+
 	while (!GameInFocus) {
 		// A running game already sleeps in Sync_Delay, so a pause here would only slow it.
 		if (!parks) {
@@ -171,6 +177,10 @@ static void Check_For_Focus_Loss(void)
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		Windows_Message_Handler();
+	}
+
+	if (stops_clock) {
+		Scen->ElapsedTimer.Start();
 	}
 }
 
