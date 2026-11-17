@@ -24,7 +24,7 @@ remains under its own license and copyright notices.
 | [Dear ImGui](https://github.com/ocornut/imgui)                     | Developer overlays                        | MIT          |
 | [stb](https://github.com/nothings/stb)                             | Rectangle packing, text editing, and TrueType headers bundled with Dear ImGui | MIT or Unlicense |
 | [stb_image](https://github.com/nothings/stb)                       | PNG and TGA decoding for the UI, bundled with bimg | MIT or Unlicense |
-| [miniz](https://github.com/richgel999/miniz)                       | Deflate compression for PNG screenshots, bundled with bimg | MIT |
+| [miniz](https://github.com/richgel999/miniz)                       | Deflate compression for PNG screenshots and replay files, bundled with bimg | MIT |
 | [SDL](https://github.com/libsdl-org/SDL)                           | Window, events, and keyboard and mouse input | zlib      |
 | [yuv2rgb](https://github.com/descampsa/yuv2rgb)                    | YUV conversion bundled with SDL           | BSD 3-Clause |
 | [fdlibm](https://www.netlib.org/fdlibm/)                           | Math routines bundled with SDL            | fdlibm       |
