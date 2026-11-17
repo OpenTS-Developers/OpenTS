@@ -5714,6 +5714,7 @@ void Delete_All_Objects(void)
 
 	LaserDrawClass::All_Clear();
 	IonBlastClass::Delete_All();
+	MoveFlashClass::Clear_All();
 
 	while (AbstractTypes.Count()) {
 		delete AbstractTypes[0];
@@ -5742,7 +5743,6 @@ void Delete_All_Objects(void)
 	assert(TargetTracker.Count() == 0);
 	assert(Bullets.Count() == 0);
 	assert(Objects.Count() == 0);
-	assert(MoveFlashes.Count() == 0);
 	assert(Tags.Count() == 0);
 	assert(Triggers.Count() == 0);
 	assert(Tubes.Count() == 0);

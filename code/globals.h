@@ -198,8 +198,6 @@ extern DynamicVectorClass<TechnoTypeClass *>			TechnoTypes;
 extern DynamicVectorClass<ObjectClass *>				Objects;
 extern DynamicVectorClass<AbstractTypeClass *>			AbstractTypes;
 
-extern DynamicVectorClass<AnimClass *>					MoveFlashes;
-
 extern std::deque<EventClass>							OutList;
 extern std::deque<EventClass>							DoList;
 

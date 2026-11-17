@@ -171,8 +171,6 @@ DynamicVectorClass<TechnoTypeClass *>			TechnoTypes;
 DynamicVectorClass<ObjectClass *>				Objects;
 DynamicVectorClass<AbstractTypeClass *>			AbstractTypes;
 
-DynamicVectorClass<AnimClass *>					MoveFlashes;
-
 
 int NewINIFormat = 0;
 

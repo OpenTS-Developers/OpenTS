@@ -1090,10 +1090,10 @@ void BuildingClass::Draw_Extras(Point2D & xy, Rect & rect)
 			if (in_front) {
 				if (anim != NULL) {
 					if (_make_visible) {
-						anim->Make_Visible();
+						anim->Draw.IsInvisible = false;
 					}
 					anim->Render(TacticalRect, true, false);
-					anim->Make_Invisible();
+					anim->Draw.IsInvisible = true;
 				}
 			}
 
@@ -1102,10 +1102,10 @@ void BuildingClass::Draw_Extras(Point2D & xy, Rect & rect)
 			if (!in_front) {
 				if (anim != NULL) {
 					if (_make_visible) {
-						anim->Make_Visible();
+						anim->Draw.IsInvisible = false;
 					}
 					anim->Render(TacticalRect, true, false);
-					anim->Make_Invisible();
+					anim->Draw.IsInvisible = true;
 				}
 			}
 		}
@@ -7956,12 +7956,12 @@ void BuildingClass::Create_Anim(char const * name, BAnimType anim, bool damaged,
 		Coord coord (Render_Coord() + TacticalMap->Pixel_To_Coord_Absolute(Class->AnimData[anim].Location));
 		AnimClass * animptr = new AnimClass(AnimTypes[animtype], coord, delay, 1, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ZREAD));
 
-		animptr->ZAdjust = Class->AnimData[anim].ZAdjust;
+		animptr->Draw.ZAdjust = Class->AnimData[anim].ZAdjust;
 		animptr->YSortAdjust = Class->AnimData[anim].YSort;
 		animptr->IsBuildingAnim = true;
 
 		if (IsFogged) {
-			animptr->IsFogged = true;
+			animptr->Draw.IsFogged = true;
 		}
 
 		Set_Anim_Translucency(TranslucencyLevel);
@@ -7977,12 +7977,12 @@ void BuildingClass::Create_Anim(char const * name, BAnimType anim, bool damaged,
 		Anims[anim] = animptr;
 
 		if (animptr->Class->IsShouldUseCellDrawer) {
-			animptr->AlternativeDrawer = ColorSchemes[House->Scheme]->Converter;
-			animptr->AlternativeBrightness = Apparent_Brightness();
+			animptr->Draw.AlternativeDrawer = ColorSchemes[House->Scheme]->Converter;
+			animptr->Draw.AlternativeBrightness = Apparent_Brightness();
 		}
 
 		if (anim == BANIM_TURRET && Class->IsBarrelAnimAVoxel) {
-			animptr->Make_Invisible();
+			animptr->Draw.IsInvisible = true;
 		}
 	}
 }
@@ -8071,8 +8071,8 @@ void BuildingClass::Set_Anim_Drawer(ConvertClass * drawer, int brightness)
 		AnimClass * anim = Anims[i];
 		if (anim != NULL) {
 			if (anim->Class->IsShouldUseCellDrawer) {
-				anim->AlternativeDrawer = drawer;
-				anim->AlternativeBrightness = brightness;
+				anim->Draw.AlternativeDrawer = drawer;
+				anim->Draw.AlternativeBrightness = brightness;
 			}
 			Set_Anim_Translucency(TranslucencyLevel);
 		}
@@ -8111,7 +8111,7 @@ void BuildingClass::Set_Anim_Translucency(int translucency)
 
 	for (int i = 0; i < BANIM_COUNT; i++) {
 		if (Anims[i] != NULL) {
-			Anims[i]->TranslucencyLevel = trans;
+			Anims[i]->Draw.TranslucencyLevel = trans;
 		}
 	}
 }
@@ -9620,7 +9620,7 @@ void BuildingClass::Update_FS_Wall_State(void)
 		}
 	} else {
 		Anims[BANIM_SPECIAL_ONE] = new AnimClass(Rule->FirestormActiveAnim, PositionCoord - Coord(CELL_LEPTON_W / 2, CELL_LEPTON_H / 2, 0), 1, 0, ShapeFlags_Type(SHAPE_WIN_REL|SHAPE_CENTER), -10);
-		Anims[BANIM_SPECIAL_ONE]->IsFogged = IsFogged;
+		Anims[BANIM_SPECIAL_ONE]->Draw.IsFogged = IsFogged;
 	}
 
 	if (active) {

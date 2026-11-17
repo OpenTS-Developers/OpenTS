@@ -1335,7 +1335,7 @@ bool ObjectClass::Limbo(void)
 		/*
 		**	Remove the object from the logic processing list.
 		*/
-		if (Class_Of() != NULL && Class_Of()->IsSentient && (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH || Fetch_ID() != -2)) {
+		if (Class_Of() != NULL && Class_Of()->IsSentient) {
 			Logic.Remove(this);
 		}
 
@@ -1408,7 +1408,7 @@ bool ObjectClass::Unlimbo(Coord const & coord, Dir256 )
 
 					if (objclass != NULL) {
 
-						if (objclass->IsSentient && (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH || Fetch_ID() != -2)) {
+						if (objclass->IsSentient) {
 							Logic.Submit(this);
 						}
 

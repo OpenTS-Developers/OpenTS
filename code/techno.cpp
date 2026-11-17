@@ -3194,7 +3194,7 @@ void TechnoClass::AI(void)
 				for (int i = 0; i < Anims.Count(); i++) {
 					AnimClass * anim = Anims[i];
 					if (anim != NULL && anim->xObject == this && anim->Class == Rule->EMPulseSparkles) {
-						anim->Loops = 0;
+						anim->Stage.Loops = 0;
 					}
 				}
 			} else if (Is_Foot()) {
@@ -3212,7 +3212,7 @@ void TechnoClass::AI(void)
 				for (int i = 0; i < Anims.Count(); i++) {
 					AnimClass * anim = Anims[i];
 					if (anim != NULL && anim->xObject == this && anim->Class == Rule->EMPulseSparkles) {
-						anim->Loops = 0;
+						anim->Stage.Loops = 0;
 					}
 				}
 			}
@@ -4159,7 +4159,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 					AnimClass * anim = new AnimClass(a, anim_coord);
 					if (RTTI == RTTI_BUILDING) {
 						int zadjust = (anim_coord.Y - Render_Coord().Y) / -4;
-						anim->ZAdjust = std::min(zadjust, 0);
+						anim->Draw.ZAdjust = std::min(zadjust, 0);
 					}
 					if (anim != NULL && RTTI != RTTI_BUILDING) {
 						anim->Attach_To(this);

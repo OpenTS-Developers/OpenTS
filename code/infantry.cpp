@@ -465,7 +465,7 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 						Do_Action(DO_FIRE_DEATH, true);
 					} else {
 						AnimClass * anim = new AnimClass(Rule->FlamingInfantry, PositionCoord);
-						anim->AlternativeDrawer = ColorSchemes[PlayerPtr->Scheme]->Converter;
+						anim->Draw.AlternativeDrawer = ColorSchemes[PlayerPtr->Scheme]->Converter;
 						delthis = true;
 					}
 					break;

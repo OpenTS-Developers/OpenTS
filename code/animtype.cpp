@@ -45,6 +45,7 @@
 #include "_mixfile.h"
 #include "_rules.h"
 #include "_theater.h"
+#include "animstage.h"
 #include "ccfile.h"
 #include "data.h"
 #include "dbgprint.h"
@@ -623,6 +624,34 @@ void AnimTypeClass::Serialize(SaveStreamClass & stream)
 ClassID AnimTypeClass::Class_ID(void) const
 {
 	return(ClassID_AnimTypeClass);
+}
+
+
+/// <summary>
+/// Fetches the stage numbers and rate settings of this type. Where Stages or LoopEnd is -1,
+/// the frame count of the art is used without being stored in the type.
+/// </summary>
+AnimSequence AnimTypeClass::Sequence(void) const
+{
+	AnimSequence seq;
+	seq.Stages = Stages;
+	if (seq.Stages == -1) {
+		ShapeSet const * shape = (ShapeSet const *)Get_Image_Data();
+		seq.Stages = (shape != NULL) ? shape->Get_Count() : 0;
+	}
+	seq.Start = Start;
+	seq.LoopStart = LoopStart;
+	seq.LoopEnd = (LoopEnd == -1) ? seq.Stages : LoopEnd;
+	seq.IsPingPong = IsPingPong;
+	seq.IsReverse = IsReverse;
+	seq.Delay = Delay;
+	seq.RandomRateMin = RandomRateMin;
+	seq.RandomRateMax = RandomRateMax;
+	seq.IsNormalized = IsNormalized;
+	seq.RandomLoopDelayMin = RandomLoopDelayMin;
+	seq.RandomLoopDelayMax = RandomLoopDelayMax;
+	seq.Loops = Loops;
+	return(seq);
 }
 
 

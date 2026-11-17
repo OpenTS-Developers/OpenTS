@@ -571,7 +571,7 @@ bool TerrainClass::Catch_Fire(void)
 		if (anim) {
 			anim->Attach_To(this);
 		}
-		anim->ZAdjust -= 20;
+		anim->Draw.ZAdjust -= 20;
 		IsOnFire = true;
 		return(true);
 	}

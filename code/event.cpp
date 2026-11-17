@@ -1016,6 +1016,10 @@ void EventClass::Execute_ANIMATION(void)
 		Reject(RejectReason::InvalidAnimationType, animation_type);
 		return;
 	}
+	if (animation_type == ANIM_NONE && Rule->MoveFlash == NULL) {
+		Reject(RejectReason::InvalidAnimationType, animation_type);
+		return;
+	}
 	if (owner != HOUSE_NONE && (owner < 0 || owner >= Houses.Count() || Houses[owner] == NULL)) {
 		Reject(RejectReason::InvalidAnimationOwner, owner);
 		return;
@@ -1035,7 +1039,7 @@ void EventClass::Execute_ANIMATION(void)
 	}
 	if (anim) {
 		if (owner != HOUSE_NONE && !Houses[owner]->Is_Player_Control()) {
-			anim->Make_Invisible();
+			anim->Draw.IsInvisible = true;
 		}
 	}
 }

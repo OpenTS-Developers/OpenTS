@@ -3595,9 +3595,6 @@ static void Compute_Game_CRC(void)
 	for (i = 0; i < LAYER_COUNT; i++) {
 		for (j = 0; j < Map.Layer[i].Count(); j++) {
 			objp = Map.Layer[i][j];
-			if (objp->RTTI == RTTI_ANIM && objp->Fetch_ID() == -2) {
-				continue;
-			}
 			Add_CRC (&GameCRC, (int)objp->PositionCoord.As_Int() + (int)objp->RTTI);
 		}
 	}
@@ -3607,9 +3604,6 @@ static void Compute_Game_CRC(void)
 	//------------------------------------------------------------------------
 	for (i = 0; i < Logic.Count(); i++) {
 		objp = Logic[i];
-		if (objp->RTTI == RTTI_ANIM && objp->Fetch_ID() == -2) {
-			continue;
-		}
 		Add_CRC (&GameCRC, (int)objp->PositionCoord.As_Int() + (int)objp->RTTI);
 	}
 

@@ -373,10 +373,8 @@ void LogicClass::AI(void)
 	}
 //	HouseClass::Recalc_Attributes();
 
-	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
-		for (index = 0; index < MoveFlashes.Count(); index++) {
-			MoveFlashes[index]->AI();
-		}
+	if (MoveFlashClass::AI_All()) {
+		Map.Flag_To_Redraw();
 	}
 
 	IonBlastClass::Update_All();

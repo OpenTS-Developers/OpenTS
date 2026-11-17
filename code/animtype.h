@@ -20,6 +20,7 @@
 class WarheadTypeClass;
 class OverlayTypeClass;
 class ShapeSet;
+struct AnimSequence;
 
 /****************************************************************************
 **	All the animation objects are controlled by this class. It holds the static
@@ -449,6 +450,8 @@ class AnimTypeClass : public ObjectTypeClass
 		virtual ObjectClass * Create_One_Of(HouseClass *) const override {return(NULL);};
 
 		virtual void Load_Image(TheaterType theater);
+
+		AnimSequence Sequence(void) const;
 
 	private:
 		void Uncached_Image_Name(char * fullname, TheaterType theater) const;

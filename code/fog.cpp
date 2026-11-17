@@ -191,10 +191,10 @@ FoggedObjectClass::FoggedObjectClass(BuildingClass * object, bool fade) :
 
 	for (int i = 0; i < BANIM_COUNT; i++) {
 		if (object->Anims[i] != NULL) {
-			object->Anims[i]->IsFogged = true;
+			object->Anims[i]->Draw.IsFogged = true;
 			AnimTypeClass *atype = object->Anims[i]->Class;
 			BoundingRect = Union(BoundingRect, object->Anims[i]->Get_Visual_Rect());
-			Records.Add(DrawRecord(atype, atype->Start + object->Anims[i]->Fetch_Stage(), 0, object->Anims[i]->ZAdjust));
+			Records.Add(DrawRecord(atype, atype->Start + object->Anims[i]->Fetch_Stage(), 0, object->Anims[i]->Draw.ZAdjust));
 		}
 	}
 
@@ -257,7 +257,7 @@ FoggedObjectClass::~FoggedObjectClass(void)
 			bptr->IsFogged = false;
 			for (int i = 0; i < BANIM_COUNT; i++) {
 				if (bptr->Anims[i] != NULL) {
-					bptr->Anims[i]->IsFogged = false;
+					bptr->Anims[i]->Draw.IsFogged = false;
 				}
 			}
 		}

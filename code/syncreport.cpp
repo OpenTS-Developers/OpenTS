@@ -462,7 +462,7 @@ void Print_CRCs(EventClass const * events, int count, unsigned const * crc_ring,
 		fprintf(fp,"Target:%x OwnerHouse:%d Loops:%d\n",
 			animp->xObject,
 			animp->OwnerHouse,
-			animp->Loops);
+			animp->Stage.Loops);
 	}
 	#endif
 
@@ -474,26 +474,24 @@ void Print_CRCs(EventClass const * events, int count, unsigned const * crc_ring,
 		fprintf(fp,"\n>>>> MAP LAYER %d <<<<\n",i);
 		for (j = 0; j < Map.Layer[i].Count(); j++) {
 			objp = Map.Layer[i][j];
-			if (objp->RTTI != RTTI_ANIM || objp->Fetch_ID() != -2) {
-				Coord coord = objp->PositionCoord;
-				Add_CRC (&GameCRC, (int)coord.As_Int() + (int)objp->RTTI);
-				fprintf(fp,"Object %-5d %6d,%6d,%5d  ",j,coord.X,coord.Y,coord.Z);
-				if (objp->RTTI != RTTI_WAVE && objp->RTTI != RTTI_LIGHT) {
-					char type_text[32];
-					snprintf(type_text, sizeof(type_text), "%d(%s)",
-						((ObjectClass *)objp)->Class_Of()->Fetch_Heap_ID(),
-						(const char *)((ObjectClass *)objp)->Class_Of()->IniName);
-					fprintf(fp,"%-10s Type:%-16s ", Name_From_RTTI(objp->RTTI), type_text);
-				} else {
-					fprintf(fp,"%-10s Type:%-16s ", Name_From_RTTI(objp->RTTI), "0");
-				}
-				housep = objp->Owner_HouseClass();
-				if (housep!=NULL) {
-					fprintf(fp,"Owner: %s\n",housep->Class->Name());
-				}
-				else {
-					fprintf(fp,"Owner: NONE\n");
-				}
+			Coord coord = objp->PositionCoord;
+			Add_CRC (&GameCRC, (int)coord.As_Int() + (int)objp->RTTI);
+			fprintf(fp,"Object %-5d %6d,%6d,%5d  ",j,coord.X,coord.Y,coord.Z);
+			if (objp->RTTI != RTTI_WAVE && objp->RTTI != RTTI_LIGHT) {
+				char type_text[32];
+				snprintf(type_text, sizeof(type_text), "%d(%s)",
+					((ObjectClass *)objp)->Class_Of()->Fetch_Heap_ID(),
+					(const char *)((ObjectClass *)objp)->Class_Of()->IniName);
+				fprintf(fp,"%-10s Type:%-16s ", Name_From_RTTI(objp->RTTI), type_text);
+			} else {
+				fprintf(fp,"%-10s Type:%-16s ", Name_From_RTTI(objp->RTTI), "0");
+			}
+			housep = objp->Owner_HouseClass();
+			if (housep!=NULL) {
+				fprintf(fp,"Owner: %s\n",housep->Class->Name());
+			}
+			else {
+				fprintf(fp,"Owner: NONE\n");
 			}
 		}
 	}
@@ -506,60 +504,58 @@ void Print_CRCs(EventClass const * events, int count, unsigned const * crc_ring,
 	fprintf(fp,"\n>>>> LOGIC LAYER <<<<\n");
 	for (i = 0; i < Logic.Count(); i++) {
 		objp = Logic[i];
-		if (objp->RTTI != RTTI_ANIM || objp->Fetch_ID() != -2) {
-			Coord coord = objp->PositionCoord;
-			Add_CRC (&GameCRC, (int)coord.As_Int() + (int)objp->RTTI);
-			fprintf(fp,"Object %-5d %6d,%6d,%5d  ",i,coord.X,coord.Y,coord.Z);
+		Coord coord = objp->PositionCoord;
+		Add_CRC (&GameCRC, (int)coord.As_Int() + (int)objp->RTTI);
+		fprintf(fp,"Object %-5d %6d,%6d,%5d  ",i,coord.X,coord.Y,coord.Z);
 
-			char type_text[32];
-			type_text[0] = '\0';
+		char type_text[32];
+		type_text[0] = '\0';
 
-			if (objp->RTTI == RTTI_AIRCRAFT)
-				snprintf(type_text, sizeof(type_text), "%d(%s)",
-					((AircraftClass *)objp)->Class_Of()->Fetch_Heap_ID(),
-					(const char *)((AircraftClass *)objp)->Class_Of()->IniName);
-			else if (objp->RTTI == RTTI_ANIM)
-				snprintf(type_text, sizeof(type_text), "%d(%s)",
-					((AnimClass *)objp)->Class_Of()->Fetch_Heap_ID(),
-					(const char *)((AnimClass *)objp)->Class_Of()->IniName);
-			else if (objp->RTTI == RTTI_BUILDING)
-				snprintf(type_text, sizeof(type_text), "%d(%s)",
-					((BuildingClass *)objp)->Class_Of()->Fetch_Heap_ID(),
-					(const char *)((BuildingClass *)objp)->Class_Of()->IniName);
-			else if (objp->RTTI == RTTI_BULLET)
-				snprintf(type_text, sizeof(type_text), "%d(%s)",
-					((BulletClass *)objp)->Class_Of()->Fetch_Heap_ID(),
-					(const char *)((BulletClass *)objp)->Class_Of()->IniName);
-			else if (objp->RTTI == RTTI_INFANTRY)
-				snprintf(type_text, sizeof(type_text), "%d(%s)",
-					((InfantryClass *)objp)->Class_Of()->Fetch_Heap_ID(),
-					(const char *)((InfantryClass *)objp)->Class_Of()->IniName);
-			else if (objp->RTTI == RTTI_OVERLAY)
-				snprintf(type_text, sizeof(type_text), "%d(%s)",
-					((OverlayClass *)objp)->Class_Of()->Fetch_Heap_ID(),
-					(const char *)((OverlayClass *)objp)->Class_Of()->IniName);
-			else if (objp->RTTI == RTTI_SMUDGE)
-				snprintf(type_text, sizeof(type_text), "%d(%s)",
-					((SmudgeClass *)objp)->Class_Of()->Fetch_Heap_ID(),
-					(const char *)((SmudgeClass *)objp)->Class_Of()->IniName);
-			else if (objp->RTTI == RTTI_TERRAIN)
-				snprintf(type_text, sizeof(type_text), "%d(%s)",
-					((TerrainClass *)objp)->Class_Of()->Fetch_Heap_ID(),
-					(const char *)((TerrainClass *)objp)->Class_Of()->IniName);
-			else if (objp->RTTI == RTTI_UNIT)
-				snprintf(type_text, sizeof(type_text), "%d(%s)",
-					((UnitClass *)objp)->Class_Of()->Fetch_Heap_ID(),
-					(const char *)((UnitClass *)objp)->Class_Of()->IniName);
+		if (objp->RTTI == RTTI_AIRCRAFT)
+			snprintf(type_text, sizeof(type_text), "%d(%s)",
+				((AircraftClass *)objp)->Class_Of()->Fetch_Heap_ID(),
+				(const char *)((AircraftClass *)objp)->Class_Of()->IniName);
+		else if (objp->RTTI == RTTI_ANIM)
+			snprintf(type_text, sizeof(type_text), "%d(%s)",
+				((AnimClass *)objp)->Class_Of()->Fetch_Heap_ID(),
+				(const char *)((AnimClass *)objp)->Class_Of()->IniName);
+		else if (objp->RTTI == RTTI_BUILDING)
+			snprintf(type_text, sizeof(type_text), "%d(%s)",
+				((BuildingClass *)objp)->Class_Of()->Fetch_Heap_ID(),
+				(const char *)((BuildingClass *)objp)->Class_Of()->IniName);
+		else if (objp->RTTI == RTTI_BULLET)
+			snprintf(type_text, sizeof(type_text), "%d(%s)",
+				((BulletClass *)objp)->Class_Of()->Fetch_Heap_ID(),
+				(const char *)((BulletClass *)objp)->Class_Of()->IniName);
+		else if (objp->RTTI == RTTI_INFANTRY)
+			snprintf(type_text, sizeof(type_text), "%d(%s)",
+				((InfantryClass *)objp)->Class_Of()->Fetch_Heap_ID(),
+				(const char *)((InfantryClass *)objp)->Class_Of()->IniName);
+		else if (objp->RTTI == RTTI_OVERLAY)
+			snprintf(type_text, sizeof(type_text), "%d(%s)",
+				((OverlayClass *)objp)->Class_Of()->Fetch_Heap_ID(),
+				(const char *)((OverlayClass *)objp)->Class_Of()->IniName);
+		else if (objp->RTTI == RTTI_SMUDGE)
+			snprintf(type_text, sizeof(type_text), "%d(%s)",
+				((SmudgeClass *)objp)->Class_Of()->Fetch_Heap_ID(),
+				(const char *)((SmudgeClass *)objp)->Class_Of()->IniName);
+		else if (objp->RTTI == RTTI_TERRAIN)
+			snprintf(type_text, sizeof(type_text), "%d(%s)",
+				((TerrainClass *)objp)->Class_Of()->Fetch_Heap_ID(),
+				(const char *)((TerrainClass *)objp)->Class_Of()->IniName);
+		else if (objp->RTTI == RTTI_UNIT)
+			snprintf(type_text, sizeof(type_text), "%d(%s)",
+				((UnitClass *)objp)->Class_Of()->Fetch_Heap_ID(),
+				(const char *)((UnitClass *)objp)->Class_Of()->IniName);
 
-			fprintf(fp,"%-10s Type:%-16s ", Name_From_RTTI(objp->RTTI), type_text);
+		fprintf(fp,"%-10s Type:%-16s ", Name_From_RTTI(objp->RTTI), type_text);
 
-			housep = objp->Owner_HouseClass();
-			if (housep!=NULL) {
-				fprintf(fp,"Owner: %s\n",housep->Class->Name());
-			}
-			else {
-				fprintf(fp,"Owner: NONE\n");
-			}
+		housep = objp->Owner_HouseClass();
+		if (housep!=NULL) {
+			fprintf(fp,"Owner: %s\n",housep->Class->Name());
+		}
+		else {
+			fprintf(fp,"Owner: NONE\n");
 		}
 	}
 	Mono_Printf("Logic:%x  \n",GameCRC);
