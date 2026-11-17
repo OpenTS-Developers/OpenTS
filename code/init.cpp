@@ -880,6 +880,13 @@ restart:
 	Special.IsSpeedBuild = Debug_SpeedBuild;
 
 	// Only a launch file or a save sets these, so a menu game must not keep a loaded save's values.
+	Session.Options.CoachMode = false;
+	Session.Options.AITakeover = true;
+	Session.Options.BuildOffAlly = false;
+	Session.Options.AutoDeployMCV = false;
+	Session.Options.AttackNeutralUnits = false;
+	Session.Options.ScrapMetal = false;
+	Session.Options.SharedControl = false;
 	Session.Options.PlayMovies = false;
 
 	// A new game must not read an earlier game's copy of a scenario file with the same name.
