@@ -416,20 +416,18 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	Attack.Timer = attack;
 	Attack.InitialAttack = attack;
 
-	if (Session.Type == GAME_INTERNET) {
-		AircraftTotals = new UnitTrackerClass(AircraftTypes.Count());
-		InfantryTotals = new UnitTrackerClass(InfantryTypes.Count());
-		UnitTotals = new UnitTrackerClass(UnitTypes.Count());
-		BuildingTotals = new UnitTrackerClass(BuildingTypes.Count());
+	AircraftTotals = new UnitTrackerClass(AircraftTypes.Count());
+	InfantryTotals = new UnitTrackerClass(InfantryTypes.Count());
+	UnitTotals = new UnitTrackerClass(UnitTypes.Count());
+	BuildingTotals = new UnitTrackerClass(BuildingTypes.Count());
 
-		DestroyedAircraft = new UnitTrackerClass(AircraftTypes.Count());
-		DestroyedInfantry = new UnitTrackerClass(InfantryTypes.Count());
-		DestroyedUnits = new UnitTrackerClass(UnitTypes.Count());
-		DestroyedBuildings =new UnitTrackerClass(BuildingTypes.Count());
+	DestroyedAircraft = new UnitTrackerClass(AircraftTypes.Count());
+	DestroyedInfantry = new UnitTrackerClass(InfantryTypes.Count());
+	DestroyedUnits = new UnitTrackerClass(UnitTypes.Count());
+	DestroyedBuildings = new UnitTrackerClass(BuildingTypes.Count());
 
-		CapturedBuildings = new UnitTrackerClass (BuildingTypes.Count());
-		TotalCrates = new UnitTrackerClass (CRATE_COUNT);
-	}
+	CapturedBuildings = new UnitTrackerClass(BuildingTypes.Count());
+	TotalCrates = new UnitTrackerClass(CRATE_COUNT);
 
 	for (index = 0; index < ARRAY_SIZE(Paths); index++) {
 		Paths[index] = 0;
@@ -672,18 +670,16 @@ HouseClass::~HouseClass (void)
 		Paths[index] = NULL;
 	}
 
-	if (Session.Type == GAME_INTERNET) {
-		delete AircraftTotals;
-		delete InfantryTotals;
-		delete UnitTotals;
-		delete BuildingTotals;
-		delete DestroyedAircraft;
-		delete DestroyedInfantry;
-		delete DestroyedUnits;
-		delete DestroyedBuildings;
-		delete CapturedBuildings;
-		delete TotalCrates;
-	}
+	delete AircraftTotals;
+	delete InfantryTotals;
+	delete UnitTotals;
+	delete BuildingTotals;
+	delete DestroyedAircraft;
+	delete DestroyedInfantry;
+	delete DestroyedUnits;
+	delete DestroyedBuildings;
+	delete CapturedBuildings;
+	delete TotalCrates;
 
 	for (index = 0; index < SuperWeapon.Count(); index++) {
 		delete SuperWeapon[index];
@@ -5069,36 +5065,28 @@ void HouseClass::Tracking_Add(TechnoClass const * techno)
 			}
 			building = (StructType)techno->TClass->Fetch_Heap_ID();
 			BQuantity.Increment(building);
-			if (Session.Type == GAME_INTERNET) {
-				BuildingTotals->Increment_Unit_Total(building);
-			}
+			BuildingTotals->Increment_Unit_Total(building);
 			break;
 
 		case RTTI_AIRCRAFT:
 			CurAircraft++;
 			aircraft = (AircraftType)techno->TClass->Fetch_Heap_ID();
 			AQuantity.Increment(aircraft);
-			if (Session.Type == GAME_INTERNET) {
-				AircraftTotals->Increment_Unit_Total(aircraft);
-			}
+			AircraftTotals->Increment_Unit_Total(aircraft);
 			break;
 
 		case RTTI_INFANTRY:
 			infantry = (InfantryType)techno->TClass->Fetch_Heap_ID();
 			CurInfantry++;
 			IQuantity.Increment(infantry);
-			if (Session.Type == GAME_INTERNET) {
-				InfantryTotals->Increment_Unit_Total(infantry);
-			}
+			InfantryTotals->Increment_Unit_Total(infantry);
 			break;
 
 		case RTTI_UNIT:
 			CurUnits++;
 			unit = (UnitType)techno->TClass->Fetch_Heap_ID();
 			UQuantity.Increment(unit);
-			if (Session.Type == GAME_INTERNET) {
-				UnitTotals->Increment_Unit_Total(unit);
-			}
+			UnitTotals->Increment_Unit_Total(unit);
 			break;
 
 		default:
@@ -6751,25 +6739,16 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Capacity);
 	stream.Serialize(Weed);
 
-	// The constructor builds the tallies only in internet games, and a load restores the saved
-	// game type before any house, so a record with tallies loads only into a house with them.
-	bool tallies = AircraftTotals != NULL;
-	bool saved_tallies = tallies;
-	stream.Serialize(saved_tallies);
-	if (stream.Is_Loading() && saved_tallies != tallies) {
-		stream.Fail();
-	} else if (tallies) {
-		stream.Serialize(*AircraftTotals);
-		stream.Serialize(*InfantryTotals);
-		stream.Serialize(*UnitTotals);
-		stream.Serialize(*BuildingTotals);
-		stream.Serialize(*DestroyedAircraft);
-		stream.Serialize(*DestroyedInfantry);
-		stream.Serialize(*DestroyedUnits);
-		stream.Serialize(*DestroyedBuildings);
-		stream.Serialize(*CapturedBuildings);
-		stream.Serialize(*TotalCrates);
-	}
+	stream.Serialize(*AircraftTotals);
+	stream.Serialize(*InfantryTotals);
+	stream.Serialize(*UnitTotals);
+	stream.Serialize(*BuildingTotals);
+	stream.Serialize(*DestroyedAircraft);
+	stream.Serialize(*DestroyedInfantry);
+	stream.Serialize(*DestroyedUnits);
+	stream.Serialize(*DestroyedBuildings);
+	stream.Serialize(*CapturedBuildings);
+	stream.Serialize(*TotalCrates);
 
 	stream.Serialize(AircraftFactories);
 	stream.Serialize(InfantryFactories);

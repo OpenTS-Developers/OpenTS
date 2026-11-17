@@ -82,7 +82,7 @@ ecab7781627373b6 code/fuse.h Serialize(S&stream)
 c822c0590ac76e7b code/gscreen.cpp GScreenClass::Serialize(SaveStreamClass&stream)
 ca95a05554b40a28 code/house.cpp HouseClass::Compute_CRC(CRCEngine&crc)
 fad8020f562764ab code/house.cpp HouseClass::Load(SaveStreamClass&stream)
-5461121bb85e8d85 code/house.cpp HouseClass::Serialize(SaveStreamClass&stream)
+37ec46a6f0ea7c0c code/house.cpp HouseClass::Serialize(SaveStreamClass&stream)
 970d9c5177e7a5da code/house.h Serialize(S&stream)
 a75d923436089627 code/house.h Serialize(S&stream) #2
 1ec18448070635a6 code/house.h Serialize(S&stream) #3
