@@ -196,8 +196,24 @@ void ParticleTypeClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
 
+	crc(NextParticleOffset.X);
+	crc(NextParticleOffset.Y);
+	crc(NextParticleOffset.Z);
+	crc(XVelocity);
+	crc(YVelocity);
+	crc(MinZVelocity);
+	crc(ZVelocityRange);
+	crc(ColorSpeed);
+	crc(ColorList.Count());
+	crc(StartColor1.Get_Red());
+	crc(StartColor1.Get_Green());
+	crc(StartColor1.Get_Blue());
+	crc(StartColor2.Get_Red());
+	crc(StartColor2.Get_Green());
+	crc(StartColor2.Get_Blue());
 	crc(MaxDC);
 	crc(MaxEC);
+	if (Warhead != NULL) crc(Warhead->Fetch_ID());
 	crc(Damage);
 	crc(StartFrame);
 	crc(NumLoopFrames);
@@ -210,29 +226,12 @@ void ParticleTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(EndStateAI);
 	crc(StartStateAI);
 	crc(StateAIAdvance);
+	crc(FinalDamageState);
 	crc(Translucent25State);
 	crc(Translucent50State);
 	crc(IsNormalized);
 	crc(NextParticle);
 	crc(BehavesLike);
-	crc(ColorSpeed);
-
-	crc(NextParticleOffset.X);
-	crc(NextParticleOffset.Y);
-	crc(NextParticleOffset.Z);
-	crc(XVelocity);
-	crc(YVelocity);
-	crc(MinZVelocity);
-	crc(ZVelocityRange);
-	crc(ColorList.Count());
-	crc(StartColor1.Get_Red());
-	crc(StartColor1.Get_Green());
-	crc(StartColor1.Get_Blue());
-	crc(StartColor2.Get_Red());
-	crc(StartColor2.Get_Green());
-	crc(StartColor2.Get_Blue());
-	if (Warhead != NULL) crc(Warhead->Fetch_ID());
-	crc(FinalDamageState);
 }
 
 

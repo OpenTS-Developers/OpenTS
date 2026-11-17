@@ -62,9 +62,8 @@ ScriptClass::~ScriptClass(void)
 void ScriptClass::Compute_CRC(CRCEngine &crc) const
 {
 	BASECLASS::Compute_CRC(crc);
-	crc(CurrentLineNumber);
-
 	if (Class != NULL) crc(Class->HeapID);
+	crc(CurrentLineNumber);
 }
 
 

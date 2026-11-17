@@ -4070,16 +4070,15 @@ void InfantryClass::Do_Idle(int which)
 void InfantryClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
+	if (Class != NULL) crc(Class->Fetch_ID());
 	crc(Doing);
 	crc((int)Comment);
 	crc(Fear);
+	crc(IsBerzerk);
 	crc(IsTechnician);
 	crc(IsStoked);
 	crc(IsProne);
 	crc(IsZoneCheat);
-
-	if (Class != NULL) crc(Class->Fetch_ID());
-	crc(IsBerzerk);
 	crc((int)ProneStruggleTimer);
 	crc((int)LookTimer);
 }

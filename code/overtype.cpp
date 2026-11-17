@@ -415,6 +415,7 @@ void OverlayTypeClass::Compute_CRC(CRCEngine & crc) const
 
 	crc(HeapID);
 	crc(Land);
+	if (CellAnim != NULL) crc(CellAnim->Fetch_ID());
 	crc(DamageLevels);
 	crc(DamagePoints);
 	crc(IsWall);
@@ -422,12 +423,10 @@ void OverlayTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsTiberium);
 	crc(IsCrate);
 	crc(IsCrateTrigger);
-	crc(IsExplosive);
-
-	if (CellAnim != NULL) crc(CellAnim->Fetch_ID());
 	crc(IsNoUseTileLandType);
 	crc(IsVeinholeMonster);
 	crc(IsVeins);
+	crc(IsExplosive);
 	crc(IsChainReaction);
 	crc(IsOverrides);
 }

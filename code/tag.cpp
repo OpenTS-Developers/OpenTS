@@ -442,12 +442,10 @@ void TagClass::Compute_CRC(CRCEngine & crc) const
 	crc(Class->HeapID);
 	// A trigger is never given an ID, so only whether one is attached is hashed.
 	crc(Trigger != NULL);
-
-	crc(IsToDie);
-
 	crc(AttachCount);
 	crc(CellID.X);
 	crc(CellID.Y);
+	crc(IsToDie);
 	crc(IsCurrentlySprung);
 }
 

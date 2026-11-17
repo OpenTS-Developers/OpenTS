@@ -236,16 +236,16 @@ void VoxelAnimTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(MaxZVel);
 	crc(MaxXYVel);
 	crc(IsMeteor);
-	crc(SpawnCount);
-	crc(Damage);
-	crc(DamageRadius);
-	crc(IsTiberium);
 	if (Spawns != NULL) crc(Spawns->Fetch_ID());
+	crc(SpawnCount);
 	if (BounceAnim != NULL) crc(BounceAnim->Fetch_ID());
 	if (ExpireAnim != NULL) crc(ExpireAnim->Fetch_ID());
 	if (TrailerAnim != NULL) crc(TrailerAnim->Fetch_ID());
+	crc(Damage);
+	crc(DamageRadius);
 	if (Warhead != NULL) crc(Warhead->Fetch_ID());
 	if (AttachedSystem != NULL) crc(AttachedSystem->Fetch_ID());
+	crc(IsTiberium);
 }
 
 

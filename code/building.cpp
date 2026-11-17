@@ -9094,6 +9094,8 @@ bool BuildingClass::Ready_To_Commence(void)
 void BuildingClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
+	if (Class != NULL) crc(Class->Fetch_ID());
+	if (Factory != NULL) crc(Factory->Fetch_ID());
 	crc((int)CountDown);
 	crc(BState);
 	crc(QueueBState);
@@ -9106,16 +9108,26 @@ void BuildingClass::Compute_CRC(CRCEngine & crc) const
 		crc(AnimToTrack->Fetch_ID());
 	}
 	crc((int)PlacementDelay);
+	for (int i = 0; i < BANIM_COUNT; i++) {
+		if (Anims[i] != NULL) crc(Anims[i]->Fetch_ID());
+	}
+	for (int i = 0; i < BUILDING_UPGRADE_MAX; i++) {
+		if (Upgrades[i] != NULL) crc(Upgrades[i]->Fetch_ID());
+	}
+	crc(LastSuperWeaponIndex);
 	crc(TurretIndex);
+	crc(GateTimer.Time_Spent());
+	crc(GateTimer.Progress());
 	crc(LaserFenceFrame);
 	crc(FirestormWallFrame);
+	crc(BuildingStage.Fetch_Stage());
+	crc(BuildingStage.Fetch_Rate());
+	crc(BuildingStage.Fetch_Step());
 	crc(IsOn);
-	crc(IsPoweredOn);
 	crc(IsToRebuild);
 	crc(IsToRepair);
 	crc(IsAllowedToSell);
 	crc(IsReadyToCommence);
-	crc(IsRepairing);
 	crc(IsWrenchVisible);
 	crc(IsGoingToBlow);
 	crc(IsSurvivorless);
@@ -9125,26 +9137,9 @@ void BuildingClass::Compute_CRC(CRCEngine & crc) const
 	crc(HasOpened);
 	crc(UnusedBuildingBool1);
 	crc(IsDamagedAnims);
-	crc(UpgradeLevel);
-	crc((int)ProduceCashTimer);
-	crc(ProduceCashRemaining);
-	crc(IsProduceCashStartupPaid);
-
-	if (Class != NULL) crc(Class->Fetch_ID());
-	if (Factory != NULL) crc(Factory->Fetch_ID());
-	for (int i = 0; i < BANIM_COUNT; i++) {
-		if (Anims[i] != NULL) crc(Anims[i]->Fetch_ID());
-	}
-	for (int i = 0; i < BUILDING_UPGRADE_MAX; i++) {
-		if (Upgrades[i] != NULL) crc(Upgrades[i]->Fetch_ID());
-	}
-	crc(LastSuperWeaponIndex);
-	crc(GateTimer.Time_Spent());
-	crc(GateTimer.Progress());
-	crc(BuildingStage.Fetch_Stage());
-	crc(BuildingStage.Fetch_Rate());
-	crc(BuildingStage.Fetch_Step());
+	crc(IsRepairing);
 	crc(HasBuildupData);
+	crc(IsPoweredOn);
 	crc((int)CloakGeneratorState);
 	crc(CurrentCloakRadius);
 	crc((int)CloakFieldCells.size());
@@ -9153,6 +9148,10 @@ void BuildingClass::Compute_CRC(CRCEngine & crc) const
 	}
 	crc(IsSensing);
 	crc(TranslucencyLevel);
+	crc(UpgradeLevel);
+	crc((int)ProduceCashTimer);
+	crc(ProduceCashRemaining);
+	crc(IsProduceCashStartupPaid);
 }
 
 

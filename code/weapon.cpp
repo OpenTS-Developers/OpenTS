@@ -330,11 +330,6 @@ void WeaponTypeClass::Compute_CRC(CRCEngine &crc) const
 {
 	BASECLASS::Compute_CRC(crc);
 	crc(AmbientDamage);
-	crc(IsSonic);
-	crc(IsTurboBoosted);
-	crc(IsSupressed);
-	crc(IsCamera);
-	crc(IsLaser);
 	crc(Burst);
 	if (Bullet != NULL) crc(Bullet->Fetch_ID());
 	crc(Attack);
@@ -342,25 +337,29 @@ void WeaponTypeClass::Compute_CRC(CRCEngine &crc) const
 	if (WarheadPtr != NULL) crc(WarheadPtr->Fetch_ID());
 	crc(ROF);
 	crc(Range);
-	crc(Anim.Count());
-	crc(UseFireParticles);
-	crc(IsLobber);
-	crc((char)LaserDuration);
-	crc(IsBigLaser);
-	crc(IsRailgun);
-	crc(IsElectric);
-	crc(IsBright);
-	crc(UseSparkParticles);
-
 	crc(ProjectileRange);
 	for (int i = 0; i < ARRAY_SIZE(BurstDelay); i++) {
 		crc(BurstDelay[i]);
 	}
 	crc(MinimumRange);
+	crc(Anim.Count());
 	for (int i = 0; i < Anim.Count(); i++) {
 		if (Anim[i] != NULL) crc(Anim[i]->Fetch_ID());
 	}
 	if (AttachedParticleSystem != NULL) crc(AttachedParticleSystem->Fetch_ID());
+	crc(UseFireParticles);
+	crc(UseSparkParticles);
+	crc(IsRailgun);
+	crc(IsLobber);
+	crc(IsBright);
+	crc((char)LaserDuration);
+	crc(IsBigLaser);
+	crc(IsSonic);
+	crc(IsTurboBoosted);
+	crc(IsSupressed);
+	crc(IsCamera);
+	crc(IsElectric);
+	crc(IsLaser);
 	crc(IsIonSensitive);
 }
 

@@ -877,13 +877,6 @@ void SuperClass::Detach(AbstractClass const * target, bool all)
 void SuperClass::Compute_CRC(CRCEngine &crc) const
 {
 	BASECLASS::Compute_CRC(crc);
-	crc(IsPresent);
-	crc(IsOneTime);
-	crc(IsReady);
-	crc(OldStage);
-	crc(ChargeDrainState);
-	crc(NeedsBuilding);
-
 	if (Class != NULL) {
 		crc(Class->Fetch_ID());
 	}
@@ -892,7 +885,13 @@ void SuperClass::Compute_CRC(CRCEngine &crc) const
 	}
 	crc((int)Control);
 	crc(Control.Is_Active());
+	crc(NeedsBuilding);
+	crc(IsPresent);
+	crc(IsOneTime);
+	crc(IsReady);
 	crc(IsSuspended);
+	crc(OldStage);
+	crc(ChargeDrainState);
 }
 
 

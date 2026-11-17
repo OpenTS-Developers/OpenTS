@@ -2250,13 +2250,14 @@ void ObjectClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
 
+	crc(Riser.X);
+	crc(Riser.Y);
+	crc(Riser.Z);
 	if (Next != NULL) {
 		crc(Next->Fetch_ID());
 	}
-
 	// A tag is never given an ID, so only whether one is attached is hashed.
 	crc(Tag != NULL);
-
 	crc(Strength);
 	crc(IsDown);
 	crc(IsToDamage);
@@ -2266,15 +2267,11 @@ void ObjectClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsFalling);
 	crc(IsToExplode);
 	crc(IsActive);
+	crc((int)Layer);
+	crc(IsSubmittedToLayer);
 	crc(Position.X);
 	crc(Position.Y);
 	crc(Position.Z);
-
-	crc(Riser.X);
-	crc(Riser.Y);
-	crc(Riser.Z);
-	crc((int)Layer);
-	crc(IsSubmittedToLayer);
 }
 
 

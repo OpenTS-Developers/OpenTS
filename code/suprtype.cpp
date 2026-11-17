@@ -169,15 +169,14 @@ void SuperWeaponTypeClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
 	crc(HeapID);
-	crc(Action);
-	crc(IsPowered);
+	if (Weapon != NULL) crc(Weapon->Fetch_ID());
 	crc(RechargeTime);
 	crc(Type);
-	crc(UseChargeDrain);
-	crc(IsManualControl);
-
-	if (Weapon != NULL) crc(Weapon->Fetch_ID());
+	crc(Action);
 	if (AuxBuilding != NULL) crc(AuxBuilding->Fetch_ID());
+	crc(UseChargeDrain);
+	crc(IsPowered);
+	crc(IsManualControl);
 }
 
 

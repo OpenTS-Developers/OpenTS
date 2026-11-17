@@ -6484,8 +6484,17 @@ bool House_Matches(HouseClass const * house, HousesType selector)
 void HouseClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
-	crc(Difficulty);
+	crc((int)HeapID);
 	crc(Class->House);
+	crc(HouseTags.Count());
+	for (int i = 0; i < HouseTags.Count(); i++) {
+		crc(HouseTags[i] != NULL);
+	}
+	crc(ConYards.Count());
+	for (int i = 0; i < ConYards.Count(); i++) {
+		if (ConYards[i] != NULL) crc(ConYards[i]->Fetch_ID());
+	}
+	crc(Difficulty);
 	crc(FirepowerBias);
 	crc(GroundspeedBias);
 	crc(AirspeedBias);
@@ -6495,51 +6504,19 @@ void HouseClass::Compute_CRC(CRCEngine & crc) const
 	crc(BuildSpeedBias);
 	crc(RepairDelay);
 	crc(BuildDelay);
-	crc(IsHuman);
-	crc(IsStarted);
-	crc(IsAlerted);
-	crc(IsAITriggersOn);
-	crc(IsDefeated);
-	crc(IsObserver);
-	crc(IQ);
-	crc(State);
-	crc(Blockage);
-	crc((int)RepairTimer);
-	crc((int)AlertTime);
-	crc(CurUnits);
-	crc(CurBuildings);
-	crc(CurInfantry);
-	crc(CurAircraft);
-	crc((int)Credits);
-	crc((int)Capacity);
-	crc(AircraftFactories);
-	crc(InfantryFactories);
-	crc(UnitFactories);
-	crc(BuildingFactories);
-	crc(Power);
-	crc(Drain);
-	crc(WhoLastHurtMe);
-	crc(Enemy);
-	Allies.Compute_CRC(crc);
-	ControlGrantees.Compute_CRC(crc);
-	Base.Compute_CRC(crc);
-
-	crc((int)HeapID);
-	crc(HouseTags.Count());
-	for (int i = 0; i < HouseTags.Count(); i++) {
-		crc(HouseTags[i] != NULL);
-	}
-	crc(ConYards.Count());
-	for (int i = 0; i < ConYards.Count(); i++) {
-		if (ConYards[i] != NULL) crc(ConYards[i]->Fetch_ID());
-	}
 	crc(Control.TechLevel);
 	Control.Allies.Compute_CRC(crc);
 	crc((int)Control.Edge);
 	crc((int)ProductionMode);
 	crc((int)ActLike);
+	crc(IsHuman);
+	crc(IsStarted);
+	crc(IsAlerted);
+	crc(IsAITriggersOn);
 	crc(IsBaseBuilding);
 	crc(IsDiscovered);
+	crc(IsDefeated);
+	crc(IsObserver);
 	// IsToDie, IsToWin, IsToLose and BorrowedTime differ between machines, so they are left out.
 	crc(IsCivEvacuated);
 	crc(FirestormDefenseActivated);
@@ -6552,6 +6529,8 @@ void HouseClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsBuiltSomething);
 	crc(IsAllToHunt);
 	crc(IsToLook);
+	crc(IQ);
+	crc(State);
 	crc(SuperWeapon.Count());
 	for (int i = 0; i < SuperWeapon.Count(); i++) {
 		if (SuperWeapon[i] != NULL) crc(SuperWeapon[i]->Fetch_ID());
@@ -6560,10 +6539,25 @@ void HouseClass::Compute_CRC(CRCEngine & crc) const
 	crc((int)JustBuiltInfantry);
 	crc((int)JustBuiltUnit);
 	crc((int)JustBuiltAircraft);
+	crc(Blockage);
+	crc((int)RepairTimer);
+	crc((int)AlertTime);
+	crc(CurUnits);
+	crc(CurBuildings);
+	crc(CurInfantry);
+	crc(CurAircraft);
 	for (int i = 0; i < 4; i++) {
 		crc(Tiberium.Get_Amount(i));
 		crc(Weed.Get_Amount(i));
 	}
+	crc((int)Credits);
+	crc((int)Capacity);
+	crc(AircraftFactories);
+	crc(InfantryFactories);
+	crc(UnitFactories);
+	crc(BuildingFactories);
+	crc(Power);
+	crc(Drain);
 	if (AircraftFactory != NULL) crc(AircraftFactory->Fetch_ID());
 	if (InfantryFactory != NULL) crc(InfantryFactory->Fetch_ID());
 	if (UnitFactory != NULL) crc(UnitFactory->Fetch_ID());
@@ -6573,6 +6567,7 @@ void HouseClass::Compute_CRC(CRCEngine & crc) const
 	crc(FlagHome.Y);
 	crc(UnitsLost);
 	crc(BuildingsLost);
+	crc(WhoLastHurtMe);
 	crc(Center.X);
 	crc(Center.Y);
 	crc(Center.Z);
@@ -6607,6 +6602,7 @@ void HouseClass::Compute_CRC(CRCEngine & crc) const
 		crc(AAQuantity.Value(i));
 		crc(PAQuantity.Value(i));
 	}
+	crc(Enemy);
 	crc(AngerNodes.Count());
 	for (int i = 0; i < AngerNodes.Count(); i++) {
 		if (AngerNodes[i].House != NULL) crc(AngerNodes[i].House->Fetch_ID());
@@ -6626,11 +6622,14 @@ void HouseClass::Compute_CRC(CRCEngine & crc) const
 	crc(RatioAITriggerTeam);
 	crc(BaseDefenseTeamCount);
 	crc(CurrentDropship);
+	Base.Compute_CRC(crc);
 	crc(RecalcPower);
 	crc(EMPDest.X);
 	crc(EMPDest.Y);
 	crc(NukeDest.X);
 	crc(NukeDest.Y);
+	Allies.Compute_CRC(crc);
+	ControlGrantees.Compute_CRC(crc);
 	crc((int)DamageTime);
 	crc((int)TeamTime);
 	crc((int)TriggerTime);

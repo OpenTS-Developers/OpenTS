@@ -594,16 +594,7 @@ ClassID AnimTypeClass::Class_ID(void) const
 void AnimTypeClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
-	crc(IsNormalized);
-	crc(IsGroundLayer);
-	crc(IsFlat);
-	crc(IsTranslucent);
-	crc(IsScorcher);
-	crc(IsFlameThrower);
-	crc(IsCraterForming);
-	crc(IsSticky);
-	crc(IsPingPong);
-	crc(IsReverse);
+	crc((int)HeapID);
 	// A demand-loaded type sets these when its artwork first loads, which a draw can cause.
 	if (!IsDemandLoad) {
 		crc(Biggest);
@@ -611,21 +602,18 @@ void AnimTypeClass::Compute_CRC(CRCEngine & crc) const
 		crc(Stages);
 	}
 	crc(Damage);
-	crc(IsTiberiumChainReaction);
 	crc(Delay);
 	crc(Start);
 	crc(LoopStart);
+	crc(Loops);
+	if (ChainTo != NULL) crc(ChainTo->Fetch_ID());
 	crc(DetailLevel);
 	crc(TranslucencyDetailLevel);
 	crc(RandomLoopDelayMin);
 	crc(RandomLoopDelayMax);
-	crc(Translucency);
-	crc(IsTiled);
-	crc((int)HeapID);
-	crc(Loops);
-	if (ChainTo != NULL) crc(ChainTo->Fetch_ID());
 	crc(RandomRateMin);
 	crc(RandomRateMax);
+	crc(Translucency);
 	if (Spawns != NULL) crc(Spawns->Fetch_ID());
 	crc(SpawnCount);
 	if (BounceAnim != NULL) crc(BounceAnim->Fetch_ID());
@@ -644,9 +632,21 @@ void AnimTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsFlamingGuy);
 	crc(IsVeins);
 	crc(IsMeteor);
+	crc(IsTiberiumChainReaction);
 	crc(IsTiberium);
 	crc(IsBouncer);
+	crc(IsTiled);
 	crc(IsAnimatedTiberium);
+	crc(IsNormalized);
+	crc(IsGroundLayer);
+	crc(IsFlat);
+	crc(IsTranslucent);
+	crc(IsScorcher);
+	crc(IsFlameThrower);
+	crc(IsCraterForming);
+	crc(IsSticky);
+	crc(IsPingPong);
+	crc(IsReverse);
 }
 
 

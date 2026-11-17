@@ -2707,6 +2707,9 @@ void IsometricTileTypeClass::Compute_CRC(CRCEngine & crc) const
 	}
 	crc(ToSnowTheater);
 	crc(ToTemperateTheater);
+	crc((int)Anim);
+	crc(Offset.X);
+	crc(Offset.Y);
 	crc(AttachesTo);
 	crc(ZAdjust);
 	crc(Unused1);
@@ -2715,10 +2718,6 @@ void IsometricTileTypeClass::Compute_CRC(CRCEngine & crc) const
 	// Width and Height stay 0 until the tile file loads, which drawing can cause, so they are left out.
 	crc(Unused2);
 	crc(NumTileTypesInSet);
-
-	crc((int)Anim);
-	crc(Offset.X);
-	crc(Offset.Y);
 	crc(IsAllowBurrowing);
 	crc(IsAllowTiberium);
 }

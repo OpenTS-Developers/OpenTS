@@ -435,6 +435,7 @@ Coord const InfantryTypeClass::Coord_Fixup(Coord const & coord) const
 void InfantryTypeClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
+	crc((int)HeapID);
 	crc(Pip);
 	for (int i = 0; i < DO_COUNT; i++) {
 		crc(DoControls[i].Frame);
@@ -444,6 +445,7 @@ void InfantryTypeClass::Compute_CRC(CRCEngine & crc) const
 	}
 	crc(FireLaunch);
 	crc(ProneLaunch);
+	crc(IsCyborg);
 	crc(IsFearless);
 	crc(IsCrawling);
 	crc(IsCapture);
@@ -456,8 +458,6 @@ void InfantryTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsAgent);
 	crc(IsThief);
 	crc(IsVehicleThief);
-	crc((int)HeapID);
-	crc(IsCyborg);
 	crc(IsDoggie);
 	crc(IsJumpJet);
 	crc(IsWebImmune);

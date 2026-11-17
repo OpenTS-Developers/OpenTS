@@ -668,22 +668,19 @@ void FactoryClass::Compute_CRC(CRCEngine &crc) const
 {
 	BASECLASS::Compute_CRC(crc);
 
-	crc(IsSuspended);
-	crc(Balance);
-	crc(OriginalBalance);
-
-	if (Object != NULL) crc(Object->Fetch_ID());
-	crc(SpecialItem);
-
-	crc(House->Fetch_ID());
-
-	crc(Fetch_Stage());
-	crc(Fetch_Rate());
-	crc(Fetch_Step());
 	crc(QueuedObjects.Count());
 	for (int i = 0; i < QueuedObjects.Count(); i++) {
 		crc(QueuedObjects[i]->Fetch_ID());
 	}
+	if (Object != NULL) crc(Object->Fetch_ID());
+	crc(Balance);
+	crc(OriginalBalance);
+	crc(SpecialItem);
+	crc(House->Fetch_ID());
+	crc(Fetch_Stage());
+	crc(Fetch_Rate());
+	crc(Fetch_Step());
+	crc(IsSuspended);
 	crc(IsOnHold);
 }
 

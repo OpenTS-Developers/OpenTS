@@ -2309,26 +2309,26 @@ void TeamClass::Compute_CRC(CRCEngine & crc) const
 	BASECLASS::Compute_CRC(crc);
 
 	crc(Class->HeapID);
-
+	crc(Script != NULL);
 	crc(House->Fetch_ID());
-
+	if (HouseToScout != NULL) crc(HouseToScout->Fetch_ID());
+	if (Zone != NULL) crc(Zone->Fetch_ID());
 	if (ClosestMember != NULL) {
 		crc(ClosestMember->Fetch_ID());
 	}
-
+	if (MissionTarget != NULL) crc(MissionTarget->Fetch_ID());
+	if (Target != NULL) crc(Target->Fetch_ID());
 	crc(Total);
 	crc(Risk);
-
+	crc(CreationFrame);
 	if (Member != NULL) {
 		crc(Member->Fetch_ID());
 	}
-
 	crc((int)TimeOut);
 	crc((int)SuspendTimer);
-
 	// Tags and scripts are never given an ID, so only whether one is set is hashed.
 	crc(Tag != NULL);
-
+	crc(IsDeleteTypeWhenDone);
 	crc(IsForcedActive);
 	crc(IsHasBeen);
 	crc(IsFullStrength);
@@ -2341,19 +2341,10 @@ void TeamClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsNextMission);
 	crc(IsLeaveMap);
 	crc(Suspended);
-
+	crc(Succeeded);
 	for (int i = 0; i < ARRAY_SIZE(Quantity); i++) {
 		crc(Quantity[i]);
 	}
-
-	crc(Script != NULL);
-	if (HouseToScout != NULL) crc(HouseToScout->Fetch_ID());
-	if (Zone != NULL) crc(Zone->Fetch_ID());
-	if (MissionTarget != NULL) crc(MissionTarget->Fetch_ID());
-	if (Target != NULL) crc(Target->Fetch_ID());
-	crc(CreationFrame);
-	crc(IsDeleteTypeWhenDone);
-	crc(Succeeded);
 }
 
 

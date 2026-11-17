@@ -1376,29 +1376,18 @@ void AnimClass::Post_Load(void)
 void AnimClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
-	if (xObject != NULL) {
-		crc(xObject->Fetch_ID());
-	}
-	crc(OwnerHouse);
-	crc(ZAdjust);
-	crc(YSortAdjust);
-	crc(Delay);
-	crc(Accum);
-	crc(ShapeFlags);
-	crc(IsBouncing);
-	crc(Loops);
-	crc(IsAttachedToCell);
-	crc(IsToDeleteOnOverpass);
-	crc(IsToDelete);
-	crc(IsBrandNew);
-	crc(IsDisabled);
-
 	if (Class != NULL) {
 		crc(Class->Fetch_ID());
 	}
 	crc(Fetch_Stage());
 	crc(Fetch_Rate());
 	crc(Fetch_Step());
+	if (xObject != NULL) {
+		crc(xObject->Fetch_ID());
+	}
+	crc(OwnerHouse);
+	crc(ZAdjust);
+	crc(YSortAdjust);
 	crc(FlamingGuyCoords.X);
 	crc(FlamingGuyCoords.Y);
 	crc(FlamingGuyCoords.Z);
@@ -1412,8 +1401,18 @@ void AnimClass::Compute_CRC(CRCEngine & crc) const
 	crc(Bounce.Velocity.X);
 	crc(Bounce.Velocity.Y);
 	crc(Bounce.Velocity.Z);
+	crc(Delay);
+	crc(Accum);
+	crc(ShapeFlags);
+	crc(IsBouncing);
+	crc(Loops);
+	crc(IsAttachedToCell);
+	crc(IsToDeleteOnOverpass);
 	crc(IsInert);
 	crc(IsFlamingGuyEnd);
+	crc(IsToDelete);
+	crc(IsBrandNew);
+	crc(IsDisabled);
 }
 
 

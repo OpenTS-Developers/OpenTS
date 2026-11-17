@@ -289,11 +289,11 @@ void AircraftTypeClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
 
+	crc(HeapID);
+	crc(IsCarryall);
 	crc(IsRotorEquipped);
 	crc(IsRotorCustom);
 	crc(IsLandable);
-	crc(HeapID);
-	crc(IsCarryall);
 }
 
 

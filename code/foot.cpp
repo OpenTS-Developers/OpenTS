@@ -3659,19 +3659,35 @@ void FootClass::Compute_CRC(CRCEngine & crc) const
 	BASECLASS::Compute_CRC(crc);
 	crc(ThreatAvoidanceCoefficient);
 	crc(LastPathingCell.Length());
+	crc(LastAdjacencyCell.X);
+	crc(LastAdjacencyCell.Y);
 	crc(LastTubeCoord.Length());
 	crc(Speed);
 	crc(SpeedBias);
+	crc(RouteQueue.Count());
+	for (int i = 0; i < RouteQueue.Count(); i++) {
+		if (RouteQueue[i] != NULL) crc(RouteQueue[i]->Fetch_ID());
+	}
 	if (NavCom != NULL) crc(NavCom->Fetch_ID());
 	if (SuspendedNavCom != NULL) crc(SuspendedNavCom->Fetch_ID());
+	crc(NavQueue.Count());
+	for (int i = 0; i < NavQueue.Count(); i++) {
+		if (NavQueue[i] != NULL) crc(NavQueue[i]->Fetch_ID());
+	}
 	if (Team != NULL) crc(Team->Fetch_ID());
 	if (Member != NULL) crc(Member->Fetch_ID());
+	if (PatrolCell != NULL) crc(PatrolCell->Fetch_ID());
+	for (int i = 0; i < CONQUER_PATH_MAX; i++) {
+		crc((int)Path[i]);
+	}
 	crc((int)PathDelay);
 	crc(TryTryAgain);
 	crc((int)BaseAttackTimer);
+	crc((int)BlockagePathDelay);
 	crc(HeadToCoord.Length());
 	crc(CurrentTube);
 	crc(CurrentTubeDir);
+	crc(IsToScatter);
 	crc(IsScanLimited);
 	crc(IsInitiated);
 	crc(IsNewNavCom);
@@ -3684,23 +3700,6 @@ void FootClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsScattering);
 	crc(IsIdle);
 	crc(IonBlastYDrawOffset);
-
-	crc(LastAdjacencyCell.X);
-	crc(LastAdjacencyCell.Y);
-	crc(RouteQueue.Count());
-	for (int i = 0; i < RouteQueue.Count(); i++) {
-		if (RouteQueue[i] != NULL) crc(RouteQueue[i]->Fetch_ID());
-	}
-	crc(NavQueue.Count());
-	for (int i = 0; i < NavQueue.Count(); i++) {
-		if (NavQueue[i] != NULL) crc(NavQueue[i]->Fetch_ID());
-	}
-	if (PatrolCell != NULL) crc(PatrolCell->Fetch_ID());
-	for (int i = 0; i < CONQUER_PATH_MAX; i++) {
-		crc((int)Path[i]);
-	}
-	crc((int)BlockagePathDelay);
-	crc(IsToScatter);
 	crc(IsCrushing);
 	crc(IsOccupyingCell);
 	crc(IsToPathAroundBlockage);

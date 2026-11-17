@@ -6148,6 +6148,7 @@ void UnitClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
 
+	crc(FiringSyncDelay);
 	crc((int)Reload);
 	crc(Class->Fetch_RTTI());
 	crc(Class->Fetch_ID());
@@ -6162,8 +6163,6 @@ void UnitClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsDumping);
 	crc(IsHarvesting);
 	crc(IsToScatter);
-
-	crc(FiringSyncDelay);
 	crc((int)VisceroidFacing);
 	crc((int)Charge);
 	crc(DeathCounter);

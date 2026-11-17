@@ -3958,15 +3958,14 @@ bool AircraftClass::Ready_To_Commence(void)
 void AircraftClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
+	if (Class != NULL) crc(Class->Fetch_ID());
+	crc(IsToSpendAmmo);
 	crc(Passenger);
 	crc(IsKamikaze);
 	crc(field_35B);
+	crc(IsLockedStraight);
 	crc((int)SightTimer);
 	crc(AttacksRemaining);
-
-	if (Class != NULL) crc(Class->Fetch_ID());
-	crc(IsToSpendAmmo);
-	crc(IsLockedStraight);
 	crc(IsReadyToCommence);
 }
 

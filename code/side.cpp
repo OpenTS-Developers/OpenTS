@@ -97,14 +97,6 @@ void SideClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
 	crc(Houses.Count());
-	crc(AIWallTowers.Count());
-	crc(AIBaseDefenseCoefficient);
-	crc(AIWallDefense);
-	crc(AIWallDefenseCoefficient);
-	crc(IsAIBuildsWalls);
-	crc(AIBaseDefensePlaceholders);
-	crc(IsAIBaseDefensesWithWalls);
-
 	for (int i = 0; i < Houses.Count(); i++) {
 		crc(Houses[i]);
 	}
@@ -112,9 +104,16 @@ void SideClass::Compute_CRC(CRCEngine & crc) const
 	if (AdvancedPowerPlant != NULL) crc(AdvancedPowerPlant->Fetch_ID());
 	if (PowerTurbine != NULL) crc(PowerTurbine->Fetch_ID());
 	if (HunterSeeker != NULL) crc(HunterSeeker->Fetch_ID());
+	crc(AIWallTowers.Count());
 	for (int i = 0; i < AIWallTowers.Count(); i++) {
 		if (AIWallTowers[i] != NULL) crc(AIWallTowers[i]->Fetch_ID());
 	}
+	crc(AIBaseDefenseCoefficient);
+	crc(AIWallDefense);
+	crc(AIWallDefenseCoefficient);
+	crc(IsAIBuildsWalls);
+	crc(AIBaseDefensePlaceholders);
+	crc(IsAIBaseDefensesWithWalls);
 }
 
 

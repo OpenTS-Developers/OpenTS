@@ -857,9 +857,18 @@ void ParticleSystemClass::Serialize(SaveStreamClass & stream)
 void ParticleSystemClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
+	if (Class != NULL) {
+		crc(Class->Fetch_ID());
+	}
+	crc(CoordOffset.X);
+	crc(CoordOffset.Y);
+	crc(CoordOffset.Z);
 	for (int i = 0; i < SystemParticles.Count(); i++) {
 		crc(SystemParticles[i]->Fetch_ID());
 	}
+	crc(SpawnCoord.X);
+	crc(SpawnCoord.Y);
+	crc(SpawnCoord.Z);
 	if (Source != NULL) {
 		crc(Source->Fetch_ID());
 	}
@@ -868,16 +877,6 @@ void ParticleSystemClass::Compute_CRC(CRCEngine & crc) const
 	}
 	crc(SpawnFrames);
 	crc(Lifetime);
-
-	if (Class != NULL) {
-		crc(Class->Fetch_ID());
-	}
-	crc(CoordOffset.X);
-	crc(CoordOffset.Y);
-	crc(CoordOffset.Z);
-	crc(SpawnCoord.X);
-	crc(SpawnCoord.Y);
-	crc(SpawnCoord.Z);
 	crc(SparkSpawnFrames);
 	crc(IsMarkedForDeletion);
 	crc(IsRandomSparkDirection);

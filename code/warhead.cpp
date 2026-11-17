@@ -214,8 +214,25 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 void WarheadTypeClass::Compute_CRC(CRCEngine &crc) const
 {
 	BASECLASS::Compute_CRC(crc);
+	crc(Deform);
+	for (int armor = ARMOR_FIRST; armor < ARMOR_COUNT; armor++) {
+		crc(Modifier[armor]);
+	}
+	crc(ProneDamage);
+	crc(DeformThreshhold);
+	crc(ExplosionSet.Count());
+	for (int i = 0; i < ExplosionSet.Count(); i++) {
+		if (ExplosionSet[i] != NULL) crc(ExplosionSet[i]->Fetch_ID());
+	}
+	crc(InfantryDeath);
 	crc(SpreadFactor);
+	crc(WebDuration);
+	crc(WebDurationVariation);
+	crc(WebRadius);
+	crc((int)LimpetFactor);
+	if (Particle != NULL) crc(Particle->Fetch_ID());
 	crc(IsWallDestroyer);
+	crc(IsWebby);
 	crc(IsWoodDestroyer);
 	crc(IsTiberiumDestroyer);
 	crc(IsOrganic);
@@ -224,27 +241,8 @@ void WarheadTypeClass::Compute_CRC(CRCEngine &crc) const
 	crc(IsConventional);
 	crc(IsRocker);
 	crc(IsBright);
-	crc(Deform);
-	crc(DeformThreshhold);
-	crc(ProneDamage);
-	crc(IsVeinhole);
-	for (int armor = ARMOR_FIRST; armor < ARMOR_COUNT; armor++) {
-		crc(Modifier[armor]);
-	}
-
-	crc(ExplosionSet.Count());
-	crc(InfantryDeath);
-
-	for (int i = 0; i < ExplosionSet.Count(); i++) {
-		if (ExplosionSet[i] != NULL) crc(ExplosionSet[i]->Fetch_ID());
-	}
-	crc(WebDuration);
-	crc(WebDurationVariation);
-	crc(WebRadius);
-	crc((int)LimpetFactor);
-	if (Particle != NULL) crc(Particle->Fetch_ID());
-	crc(IsWebby);
 	crc(IsEMEffect);
+	crc(IsVeinhole);
 }
 
 

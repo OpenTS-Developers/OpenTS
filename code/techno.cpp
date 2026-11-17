@@ -8406,62 +8406,37 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 void TechnoClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
-	crc(Group);
 	crc(ActLike);
+	crc(Cargo.How_Many());
+	if (Cargo.Attached_Object() != NULL) crc(Cargo.Attached_Object()->Fetch_ID());
+	crc(Veterancy.Get_Experience());
 	crc(ArmorBias);
 	crc(FirepowerBias);
 	crc((int)IdleTimer);
 	SpiedBy.Compute_CRC(crc);
+	crc(Group);
+	if (ArchivedTarget != NULL) crc(ArchivedTarget->Fetch_ID());
+	if (House != NULL) crc(House->Fetch_ID());
 	crc(Cloak);
+	crc(CloakingDevice.Fetch_Stage());
+	crc(CloakingDevice.Fetch_Rate());
+	crc(CloakingDevice.Fetch_Step());
 	crc((int)CloakDelay);
 	crc(PredatorOffset);
+	if (TarCom != NULL) crc(TarCom->Fetch_ID());
+	if (SuspendedTarCom != NULL) crc(SuspendedTarCom->Fetch_ID());
 	crc(PitchAngle);
 	crc((int)Arm);
 	crc(Ammo);
 	crc(PurchasePrice);
-	crc(BurstIndex);
-	crc(IsBurstResetPending);
-	crc((int)BurstResetTimer);
-	crc(AngleRotatedSideways);
-	crc(AngleRotatedForwards);
-	crc(RockingSidewaysPerFrame);
-	crc(RockingForwardsPerFrame);
-	crc(IsSinking);
-	crc(IsNeedingRescue);
-	crc(IsUseless);
-	crc(IsTickedOff);
-	crc(IsCloakable);
-	crc(IsLeader);
-	crc(IsALoaner);
-	crc(IsLocked);
-	crc(IsInRecoilState);
-	crc(IsTethered);
-	DiscoveredBy.Compute_CRC(crc);
-	crc(IsALemon);
-	crc(StunDuration);
-	crc(UnusedCooldown);
-	crc(Unused1);
-	crc(SightIncrease);
-	LimpetType.Compute_CRC(crc);
-
-	crc(StageClass::Fetch_Stage());
-	crc(StageClass::Fetch_Rate());
-	crc(StageClass::Fetch_Step());
-
-	crc(Cargo.How_Many());
-	if (Cargo.Attached_Object() != NULL) crc(Cargo.Attached_Object()->Fetch_ID());
-	crc(Veterancy.Get_Experience());
-	if (ArchivedTarget != NULL) crc(ArchivedTarget->Fetch_ID());
-	if (House != NULL) crc(House->Fetch_ID());
-	crc(CloakingDevice.Fetch_Stage());
-	crc(CloakingDevice.Fetch_Rate());
-	crc(CloakingDevice.Fetch_Step());
-	if (TarCom != NULL) crc(TarCom->Fetch_ID());
-	if (SuspendedTarCom != NULL) crc(SuspendedTarCom->Fetch_ID());
 	for (int i = 0; i < ATTACHED_PARTICLE_COUNT; i++) {
 		if (ParticleSystems[i] != NULL) crc(ParticleSystems[i]->Fetch_ID());
 	}
 	if (Wave != NULL) crc(Wave->Fetch_ID());
+	crc(AngleRotatedSideways);
+	crc(AngleRotatedForwards);
+	crc(RockingSidewaysPerFrame);
+	crc(RockingForwardsPerFrame);
 	crc((int)EnteredByInfType);
 	for (int i = 0; i < Tiberiums.Count(); i++) {
 		crc(Storage.Get_Amount(i));
@@ -8480,11 +8455,34 @@ void TechnoClass::Compute_CRC(CRCEngine & crc) const
 	crc(SecondaryFacing.Current().As_Int());
 	crc(SecondaryFacing.Desired().As_Int());
 	crc(SecondaryFacing.Turn_Arc());
+	crc(BurstIndex);
+	crc(IsBurstResetPending);
+	crc((int)BurstResetTimer);
+	crc(IsSinking);
+	crc(IsNeedingRescue);
+	crc(IsUseless);
+	crc(IsTickedOff);
+	crc(IsCloakable);
+	crc(IsLeader);
+	crc(IsALoaner);
+	crc(IsLocked);
+	crc(IsInRecoilState);
+	crc(IsTethered);
+	DiscoveredBy.Compute_CRC(crc);
+	crc(IsALemon);
+	crc(UnusedCooldown);
+	crc(Unused1);
+	crc(SightIncrease);
 	crc(IsTeamRecruitable);
 	crc(IsAutocreateRecruitable);
 	crc(IsInTransport);
 	crc(IsRocking);
 	if (NearbyObject != NULL) crc(NearbyObject->Fetch_ID());
+	crc(StunDuration);
+	LimpetType.Compute_CRC(crc);
+	crc(StageClass::Fetch_Stage());
+	crc(StageClass::Fetch_Rate());
+	crc(StageClass::Fetch_Step());
 	crc(LimpetSpeedFactor);
 }
 

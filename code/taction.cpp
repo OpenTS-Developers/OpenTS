@@ -3024,15 +3024,14 @@ void TActionClass::Compute_CRC(CRCEngine & crc) const
 	if (Next != NULL) crc(Next->HeapID);
 	crc(Action);
 	if (Team != NULL) crc(Team->HeapID);
-	if (Tag != NULL) crc(Tag->HeapID);
-	if (Trigger != NULL) crc(Trigger->HeapID);
-	crc((int)Data.Value);
-
 	crc(TriggerRect.X);
 	crc(TriggerRect.Y);
 	crc(TriggerRect.Width);
 	crc(TriggerRect.Height);
 	crc((int)EffectLocation);
+	if (Tag != NULL) crc(Tag->HeapID);
+	if (Trigger != NULL) crc(Trigger->HeapID);
+	crc((int)Data.Value);
 }
 
 
