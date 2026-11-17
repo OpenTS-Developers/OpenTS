@@ -3066,11 +3066,7 @@ bool DisplayClass::Read_INI(CCINIClass const & ini)
 	*/
 	int uniqueid = Scen->UniqueID;
 	TerrainTypeClass::Init(Scen->Theater);
-	if (Scen->Theater != LastTheater) {
-		IsometricTileTypeClass::Read_Control_File(Scen->Theater, true);
-	} else {
-		IsometricTileTypeClass::Clear_Use_Counts();
-	}
+	IsometricTileTypeClass::Read_Control_File(Scen->Theater, true);
 	Scen->UniqueID = uniqueid + 10000;
 	OverlayTypeClass::Init(Scen->Theater);
 	UnitTypeClass::Init(Scen->Theater);

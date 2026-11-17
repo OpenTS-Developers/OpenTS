@@ -123,7 +123,7 @@ e6d683bf67b04f5f code/loco.cpp LocomotionClass::Save_Members(SaveStreamClass&str
 876be0f7af5e09fa code/mission.cpp MissionClass::Compute_CRC(CRCEngine&crc)
 8fa2d37f5143d7be code/mission.cpp MissionClass::Serialize(SaveStreamClass&stream)
 1b1deac66b5686c1 code/mission.h Serialize(S&stream)
-cf031f2c3b684019 code/mouse.cpp MouseClass::Load(SaveStreamClass&stream)
+ce6e9fd8dd8d6841 code/mouse.cpp MouseClass::Load(SaveStreamClass&stream)
 c9e9a859b5650ea6 code/mouse.cpp MouseClass::Save(SaveStreamClass&stream)
 16d556678e85802d code/mouse.cpp MouseClass::Serialize(SaveStreamClass&stream)
 f107872de26d4137 code/nodes.h Serialize(S&stream)
