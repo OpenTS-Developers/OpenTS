@@ -9344,40 +9344,6 @@ Fraidycat:
       source: code/infatype.cpp
       guard: null
     level: InfantryTypeClass
-FreeAfterPlaying:
-  key: FreeAfterPlaying
-  scopes:
-  - applies_to: *id005
-    file: art.ini
-    section:
-      kind: identifier
-      source: object-type
-    value_type: boolean
-    status: generated
-    _provenance:
-      default_candidate: 'no'
-      declared_in: AnimTypeClass
-      member: IsFreeAfterPlaying
-      source: code/animtype.cpp
-      guard: null
-    level: AnimTypeClass
-FreeBuildup:
-  key: FreeBuildup
-  scopes:
-  - applies_to: *id004
-    file: art.ini
-    section:
-      kind: image
-      fallback: object-type
-    value_type: boolean
-    status: generated
-    _provenance:
-      default_candidate: 'no'
-      declared_in: BuildingTypeClass
-      member: IsFreeBuildup
-      source: code/builtype.cpp
-      guard: null
-    level: BuildingTypeClass
 FreeMCV:
   key: FreeMCV
   scopes:

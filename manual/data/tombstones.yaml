@@ -303,6 +303,18 @@
     - PrintCRC
   summary: Named the frame at which a recording playback wrote an out-of-sync report and quit. Removed with the playback.
 - type: key
+  id: FreeAfterPlaying
+  route: /keys/freeafterplaying/
+  search_aliases:
+    - FreeAfterPlaying
+  summary: Released a demand-loaded animation's artwork each time an animation of the type was removed. Removed when demand-loaded art began to load when each scenario starts and to stay loaded until the next one.
+- type: key
+  id: FreeBuildup
+  route: /keys/freebuildup/
+  search_aliases:
+    - FreeBuildup
+  summary: Released a structure's demand-loaded construction artwork after each use. Removed when demand-loaded art began to load when each scenario starts and to stay loaded until the next one.
+- type: key
   id: TiberiumTransmogrify
   route: /keys/tiberiumtransmogrify/
   search_aliases:

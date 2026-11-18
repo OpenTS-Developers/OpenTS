@@ -17,7 +17,7 @@ A [`Translucent=yes`](/keys/translucent/#scope-animtype) animation fades in step
 
 ## Where the stored count comes from
 
-An animation type measures the frame count of the first shape it loads and keeps it, which is why most animations leave `End` unset. When a shape named after the animation's ID exists, the type measures that shape first. A later [`Image=`](/keys/image/#scope-animtype) that selects a different shape does not change the count, so set `End` explicitly on such an animation. A type that never finds a shape has a count of zero, so its last pass ends at its first frame advance.
+An animation type measures the frame count of the first shape it finds and keeps it, which is why most animations leave `End` unset. When a shape named after the animation's ID exists, the type measures that shape first. A [`DemandLoad=yes`](/keys/demandload/#scope-animtype) type that finds none measures the shape it uses in the scenario's theater when the scenario starts or a saved game is loaded. A later [`Image=`](/keys/image/#scope-animtype) that selects a different shape does not change the count, so set `End` explicitly on such an animation. A type that never finds a shape has a count of zero, so its last pass ends at its first frame advance.
 
 `End=-1` measures the count again. The frame count of the shape the type currently uses is taken when the next animation of the type is created, and then kept for good.
 

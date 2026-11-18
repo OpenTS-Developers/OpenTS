@@ -100,7 +100,7 @@ BSurface * CloakingSurface;
 /// <summary>
 /// Releases shape data that this type loaded through the file layer.
 /// </summary>
-static void Free_Demand_Loaded_Shape(void const *& data)
+static void Free_Uncached_Shape(void const *& data)
 {
 	delete [] (char *)data;
 	data = NULL;
@@ -336,7 +336,6 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	CloakRadiusInCells(20),
 	IsDemandLoad(false),
 	IsDemandLoadBuildup(false),
-	IsFreeBuildup(false),
 	IsThreatRatingNode(false),
 	ProduceCashStartup(0),
 	IsProduceCashStartupOneTime(false),
@@ -383,10 +382,10 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 BuildingTypeClass::~BuildingTypeClass(void)
 {
 	if (IsDemandLoad && ImageData != NULL) {
-		Free_Demand_Loaded_Shape(ImageData);
+		Free_Uncached_Shape(ImageData);
 	}
 	if (IsDemandLoadBuildup && BuildupData != NULL) {
-		Free_Demand_Loaded_Shape(BuildupData);
+		Free_Uncached_Shape(BuildupData);
 	}
 	Detach_This_From_All(this, true);
 	BuildingTypes.Delete(this);
@@ -618,7 +617,7 @@ void BuildingTypeClass::Init(TheaterType theater)
 				classptr->ImageData = MFCD::Retrieve(fullname);
 			} else {
 				if (classptr->ImageData != NULL) {
-					Free_Demand_Loaded_Shape(classptr->ImageData);
+					Free_Uncached_Shape(classptr->ImageData);
 				}
 			}
 
@@ -631,7 +630,7 @@ void BuildingTypeClass::Init(TheaterType theater)
 				classptr->BuildupData = MFCD::Retrieve(fullname);
 			} else {
 				if (classptr->BuildupData != NULL) {
-					Free_Demand_Loaded_Shape(classptr->BuildupData);
+					Free_Uncached_Shape(classptr->BuildupData);
 				}
 			}
 
@@ -646,17 +645,19 @@ void BuildingTypeClass::Init(TheaterType theater)
 		} else if (classptr->IsNewTheater) {
 			if (classptr->IsDemandLoad) {
 				if (classptr->ImageData != NULL) {
-					Free_Demand_Loaded_Shape(classptr->ImageData);
+					Free_Uncached_Shape(classptr->ImageData);
 				}
 			}
 			if (classptr->IsDemandLoadBuildup) {
 				if (classptr->BuildupData != NULL) {
-					Free_Demand_Loaded_Shape(classptr->BuildupData);
+					Free_Uncached_Shape(classptr->BuildupData);
 				}
 			}
 			classptr->Fetch_Building_Normal_Image(theater);
 		}
 	}
+
+	Load_Uncached_Art(theater);
 
 	if (maxcloak != 0) {
 		delete CloakingSurface;
@@ -963,21 +964,70 @@ int BuildingTypeClass::Flush_For_Placement(Cell const & cell, HouseClass * house
 
 
 /// <summary>
-/// Fetches the shape data for this building.
-/// This routine will load the art the first time it is asked for if this building type
-/// was flagged to defer loading until it is really needed.
+/// Loads the shapes of every building type that loads them through the file layer and has
+/// none loaded, and sets the construction animation of each type with such a buildup.
 /// </summary>
-/// <returns>Returns with a pointer to the shape data, or NULL if there is none.</returns>
-void const * BuildingTypeClass::Get_Image_Data(void) const
+/// <param name="theater">The theater the buildup shapes are named for.</param>
+void BuildingTypeClass::Load_Uncached_Art(TheaterType theater)
 {
-	if (ImageData == NULL && IsDemandLoad) {
-		if (TheaterImageFile[0] != '\0') {
-			CCFileClass file(TheaterImageFile);
-			(void *&)ImageData = Load_Alloc_Data(file);
-		}
-		return(ImageData);
+	for (int index = 0; index < BuildingTypes.Count(); index++) {
+		BuildingTypes[index]->Load_Uncached_Shapes(theater);
 	}
-	return(ImageData);
+}
+
+
+/// <summary>
+/// Loads the main shape and the buildup through the file layer where this type sets
+/// DemandLoad or DemandLoadBuildup and has none loaded, and sets the construction animation
+/// from a DemandLoadBuildup buildup that is loaded. A missing file leaves the shape NULL.
+/// </summary>
+/// <param name="theater">The theater the buildup is named for. The main shape uses
+/// TheaterImageFile.</param>
+void BuildingTypeClass::Load_Uncached_Shapes(TheaterType theater)
+{
+	if (IsDemandLoad && ImageData == NULL && TheaterImageFile[0] != '\0') {
+		CCFileClass file(TheaterImageFile);
+		ImageData = Load_Alloc_Data(file);
+	}
+
+	if (IsDemandLoadBuildup) {
+		if (BuildupData == NULL && !BuildupFilename.empty()) {
+			char fullname[MAX_PATH];
+			Buildup_Name(fullname, theater);
+			CCFileClass file(fullname);
+			BuildupData = Load_Alloc_Data(file);
+		}
+
+		// A rules reread can change BuildupTime without freeing a buildup that is loaded.
+		if (BuildupData != NULL) {
+			Init_Buildup_Anim();
+		}
+	}
+}
+
+
+void BuildingTypeClass::Buildup_Name(char * fullname, TheaterType theater) const
+{
+	_makepath(fullname, NULL, NULL, BuildupFilename, ".SHP");
+	Theater_Naming_Convention(fullname, theater);
+}
+
+
+/// <summary>
+/// Sets the construction animation from the buildup shape: half its frames, or GateStages
+/// plus one for a gate, spread over BuildupTime.
+/// </summary>
+void BuildingTypeClass::Init_Buildup_Anim(void)
+{
+	int timedelay = 1;
+	int count = ((ShapeSet const *)BuildupData)->Get_Count()/2;
+	if (IsGate) {
+		count = GateStages + 1;
+	}
+	if (count > 0) {
+		timedelay = (Rule->BuildupTime * TICKS_PER_MINUTE) / count;
+	}
+	Init_Anim(BSTATE_CONSTRUCTION, 0, count, timedelay);
 }
 
 
@@ -999,19 +1049,10 @@ void BuildingTypeClass::Fetch_Building_Normal_Image(TheaterType theater)
 			/*
 			**	Fetch the construction animation for this building.
 			*/
-			_makepath(fullname, NULL, NULL, BuildupFilename, ".SHP");
-			Theater_Naming_Convention(fullname, theater);
+			Buildup_Name(fullname, theater);
 			BuildupData = MFCD::Retrieve(fullname);
 			if (BuildupData != NULL) {
-				int timedelay = 1;
-				int count = ((ShapeSet const *)BuildupData)->Get_Count()/2;
-				if (IsGate) {
-					count = GateStages + 1;
-				}
-				if (count > 0) {
-					timedelay = (Rule->BuildupTime * TICKS_PER_MINUTE) / count;
-				}
-				Init_Anim(BSTATE_CONSTRUCTION, 0, count, timedelay);
+				Init_Buildup_Anim();
 			}
 		}
 	}
@@ -1177,10 +1218,10 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 	}
 
 	if (IsDemandLoad && ImageData != NULL) {
-		Free_Demand_Loaded_Shape(ImageData);
+		Free_Uncached_Shape(ImageData);
 	}
 	if (IsDemandLoadBuildup && BuildupData != NULL) {
-		Free_Demand_Loaded_Shape(BuildupData);
+		Free_Uncached_Shape(BuildupData);
 	}
 
 	if (BASECLASS::Read_INI(ini)) {
@@ -1326,7 +1367,6 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		ExtraLight = ArtINI.Get_Int(Graphic_Name(), "ExtraLight", ExtraLight);
 		IsDemandLoad = ArtINI.Get_Bool(Graphic_Name(), "DemandLoad", IsDemandLoad);
 		IsDemandLoadBuildup = ArtINI.Get_Bool(Graphic_Name(), "DemandLoadBuildup", IsDemandLoadBuildup);
-		IsFreeBuildup = ArtINI.Get_Bool(Graphic_Name(), "FreeBuildup", IsFreeBuildup);
 		if (IsDemandLoad) {
 			ImageData = NULL;
 		}
@@ -1729,10 +1769,6 @@ void BuildingTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(MidPoint);
 	crc(DoorStages);
 	for (int i = 0; i < ARRAY_SIZE(Anims); i++) {
-		// A demand-loaded buildup sets its animation when the artwork first loads, which a draw can cause.
-		if (i == BSTATE_CONSTRUCTION && IsDemandLoadBuildup) {
-			continue;
-		}
 		crc(Anims[i].Start);
 		crc(Anims[i].Count);
 		crc(Anims[i].Rate);
@@ -1863,6 +1899,7 @@ void BuildingTypeClass::Post_Load(void)
 
 	Fetch_Building_Voxel_Image();
 	Fetch_Building_Normal_Image(Scen->Theater);
+	Load_Uncached_Shapes(Scen->Theater);
 }
 
 
@@ -1993,7 +2030,6 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(CloakRadiusInCells);
 	stream.Serialize(IsDemandLoad);
 	stream.Serialize(IsDemandLoadBuildup);
-	stream.Serialize(IsFreeBuildup);
 	stream.Serialize(IsThreatRatingNode);
 	stream.Serialize(ProduceCashStartup);
 	stream.Serialize(IsProduceCashStartupOneTime);
@@ -2092,16 +2128,12 @@ Rect BuildingTypeClass::Get_Draw_Rect(void)
 		rect = Union(rect, shape->Get_Rect(i));
 	}
 
-	bool free_buildup = (BuildupData == NULL);
 	ShapeSet const * buildup = (ShapeSet const *)Get_Buildup_Data();
 
 	if (buildup != NULL) {
 		frames = buildup->Get_Count();
 		for (i = 0; i < frames; i++) {
 			rect = Union(rect, buildup->Get_Rect(i));
-		}
-		if (free_buildup) {
-			Free_Buildup_Data();
 		}
 	}
 
@@ -2137,53 +2169,12 @@ int BuildingTypeClass::Get_Max_Drain(DynamicVectorClass<BuildingTypeClass *> con
 
 /// <summary>
 /// Fetches the construction animation shapes for this building.
-/// This routine will load the buildup art the first time it is asked for if this building
-/// type was flagged to defer loading, and it prepares the construction animation timing
-/// to suit whatever art it finds.
 /// </summary>
 /// <returns>Returns with a pointer to the buildup shape data, or NULL if there is
 /// none.</returns>
 void const * BuildingTypeClass::Get_Buildup_Data(void) const
 {
-	char fullname[MAX_PATH];
-
-	if (BuildupData == NULL && IsDemandLoadBuildup) {
-		if (!BuildupFilename.empty()) {
-			_makepath(fullname, NULL, NULL, BuildupFilename, ".SHP");
-			Theater_Naming_Convention(fullname, Scen->Theater);
-			CCFileClass file(fullname);
-			ShapeSet * data = (ShapeSet *)Load_Alloc_Data(file);
-			((void const *&)BuildupData) = data;
-			if (BuildupData != NULL) {
-				int timedelay = 1;
-				int count = ((ShapeSet const *)BuildupData)->Get_Count()/2;
-				if (IsGate) {
-					count = GateStages + 1;
-				}
-				if (count > 0) {
-					timedelay = (Rule->BuildupTime * TICKS_PER_MINUTE) / count;
-				}
-				Init_Anim(BSTATE_CONSTRUCTION, 0, count, timedelay);
-			}
-		}
-		return(BuildupData);
-	}
 	return(BuildupData);
-}
-
-
-/// <summary>
-/// Frees the construction animation shapes for this building.
-/// Only those building types that are flagged as worth discarding will actually give
-/// their buildup art back.
-/// </summary>
-void BuildingTypeClass::Free_Buildup_Data(void)
-{
-	if (IsFreeBuildup && IsDemandLoadBuildup) {
-		if (BuildupData != NULL) {
-			Free_Demand_Loaded_Shape(BuildupData);
-		}
-	}
 }
 
 

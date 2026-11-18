@@ -66,7 +66,7 @@
 /// <summary>
 /// Releases shape data that this type loaded through the file layer.
 /// </summary>
-static void Free_Demand_Loaded_Shape(void const *& data)
+static void Free_Uncached_Shape(void const *& data)
 {
 	delete [] (char *)data;
 	data = NULL;
@@ -138,7 +138,6 @@ AnimTypeClass::AnimTypeClass(char const *ininame) :
 	IsShouldUseCellDrawer(true),
 	IsUseNormalLight(false),
 	IsDemandLoad(false),
-	IsFreeAfterPlaying(false),
 	IsAnimatedTiberium(false),
 	IsAltPalette(false),
 	IsNormalized(false),
@@ -181,7 +180,7 @@ AnimTypeClass::AnimTypeClass(char const *ininame) :
 AnimTypeClass::~AnimTypeClass(void)
 {
 	if (IsDemandLoad && ImageData) {
-		Free_Demand_Loaded_Shape(ImageData);
+		Free_Uncached_Shape(ImageData);
 	}
 
 	AbstractTypePtrTracker.Delete(this);
@@ -227,9 +226,10 @@ void AnimTypeClass::Init(TheaterType theater)
 			} else {
 				if (anim->IsTheater || anim->IsNewTheater) {
 					if (anim->ImageData != NULL) {
-						Free_Demand_Loaded_Shape(anim->ImageData);
+						Free_Uncached_Shape(anim->ImageData);
 					}
 				}
+				anim->Load_Uncached_Image(theater);
 			}
 		}
 	} else {
@@ -241,7 +241,44 @@ void AnimTypeClass::Init(TheaterType theater)
 			if (anim->IsNewTheater && (anim->ImageData == NULL || (!anim->IsDemandLoad && !anim->IsTheater))) {
 				anim->Load_Image(theater);
 			}
+			if (anim->IsDemandLoad) {
+				anim->Load_Uncached_Image(theater);
+			}
 		}
+	}
+}
+
+
+/// <summary>
+/// Loads the shape this type uses in the theater through the file layer when none is loaded,
+/// then sets Stages and LoopEnd where they are 0, and Biggest, from the shape. Leaves the
+/// image NULL and the values unchanged when the file is missing.
+/// </summary>
+/// <param name="theater">The theater the shape is named for.</param>
+void AnimTypeClass::Load_Uncached_Image(TheaterType theater)
+{
+	if (ImageData == NULL) {
+		char fullname[_MAX_FNAME + _MAX_EXT];
+		Uncached_Image_Name(fullname, theater);
+
+		CCFileClass file(fullname);
+		ImageData = Load_Alloc_Data(file);
+	}
+
+	if (ImageData != NULL) {
+		Measure_Image(*(ShapeSet const *)ImageData);
+	}
+}
+
+
+void AnimTypeClass::Uncached_Image_Name(char * fullname, TheaterType theater) const
+{
+	_makepath(fullname, NULL, NULL, !GraphicName.empty() ? Graphic_Name() : Name(), ".SHP");
+
+	if (IsTheater) {
+		_makepath(fullname, NULL, NULL, Name(), TheaterClass::As_Reference(theater).Suffix);
+	} else if (IsNewTheater) {
+		Theater_Naming_Convention(fullname, theater);
 	}
 }
 
@@ -290,26 +327,32 @@ void AnimTypeClass::Load_Image(TheaterType theater)
 
 	ShapeSet const * shape = (ShapeSet const *)ImageData;
 	if (shape != NULL) {
-		if (Stages == 0) {
-			Stages = shape->Get_Count();
-		}
-		if (LoopEnd == 0) {
-			LoopEnd = Stages;
-		}
-
-		int biggest_size = 0;
-		int biggest_frame = 0;
-
-		for (int frame = 0; frame < shape->Get_Count(); frame++) {
-			Rect rect = shape->Get_Rect(frame);
-			if (rect.Size() > biggest_size) {
-				biggest_frame = frame;
-				biggest_size = rect.Size();
-			}
-		}
-
-		Biggest = biggest_frame;
+		Measure_Image(*shape);
 	}
+}
+
+
+void AnimTypeClass::Measure_Image(ShapeSet const & shape)
+{
+	if (Stages == 0) {
+		Stages = shape.Get_Count();
+	}
+	if (LoopEnd == 0) {
+		LoopEnd = Stages;
+	}
+
+	int biggest_size = 0;
+	int biggest_frame = 0;
+
+	for (int frame = 0; frame < shape.Get_Count(); frame++) {
+		Rect rect = shape.Get_Rect(frame);
+		if (rect.Size() > biggest_size) {
+			biggest_frame = frame;
+			biggest_size = rect.Size();
+		}
+	}
+
+	Biggest = biggest_frame;
 }
 
 
@@ -373,7 +416,7 @@ bool AnimTypeClass::Read_INI(CCINIClass const & ini)
 	}
 
 	if (IsDemandLoad && ImageData != NULL) {
-		Free_Demand_Loaded_Shape(ImageData);
+		Free_Uncached_Shape(ImageData);
 	}
 
 	if (BASECLASS::Read_INI(ini)) {
@@ -424,7 +467,6 @@ bool AnimTypeClass::Read_INI(CCINIClass const & ini)
 		YSortAdjust = ini.Get_Int(Name(), "YSortAdjust", YSortAdjust);
 
 		IsDemandLoad = ini.Get_Bool(Name(), "DemandLoad", IsDemandLoad);
-		IsFreeAfterPlaying = ini.Get_Bool(Name(), "FreeAfterPlaying", IsFreeAfterPlaying);
 		if (IsDemandLoad) {
 			ImageData = NULL;
 		}
@@ -562,7 +604,6 @@ void AnimTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsShouldUseCellDrawer);
 	stream.Serialize(IsUseNormalLight);
 	stream.Serialize(IsDemandLoad);
-	stream.Serialize(IsFreeAfterPlaying);
 	stream.Serialize(IsAnimatedTiberium);
 	stream.Serialize(IsAltPalette);
 	stream.Serialize(IsNormalized);
@@ -595,16 +636,13 @@ void AnimTypeClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
 	crc((int)HeapID);
-	// A demand-loaded type sets these when its artwork first loads, which a draw can cause.
-	if (!IsDemandLoad) {
-		crc(Biggest);
-		crc(LoopEnd);
-		crc(Stages);
-	}
+	crc(Biggest);
 	crc(Damage);
 	crc(Delay);
 	crc(Start);
 	crc(LoopStart);
+	crc(LoopEnd);
+	crc(Stages);
 	crc(Loops);
 	if (ChainTo != NULL) crc(ChainTo->Fetch_ID());
 	crc(DetailLevel);
@@ -673,53 +711,5 @@ void AnimTypeClass::Detach(AbstractClass const * target, bool all)
 {
 	if (ChainTo == target) {
 		ChainTo = NULL;
-	}
-}
-
-
-/// <summary>
-/// Fetches the shape data to draw this animation with.
-/// A demand loaded animation has no artwork read at scenario start, so this routine will
-/// pull the shape file in the first time something actually needs to draw the animation.
-/// </summary>
-/// <returns>
-/// Returns with a pointer to the shape data. Otherwise, NULL is returned.
-/// </returns>
-void const * AnimTypeClass::Get_Image_Data(void) const
-{
-	void const * data = ImageData;
-	if (data == NULL && IsDemandLoad) {
-		DebugString("Demand loading image for %s\n", Full_Name());
-
-		char fullname[_MAX_FNAME + _MAX_EXT];
-		_makepath(fullname, NULL, NULL, !GraphicName.empty() ? Graphic_Name() : Name(), ".SHP");
-
-		if (IsTheater) {
-			_makepath(fullname, NULL, NULL, Name(), TheaterClass::As_Reference(Scen->Theater).Suffix);
-		} else if (IsNewTheater) {
-			Theater_Naming_Convention(fullname, Scen->Theater);
-		}
-
-		CCFileClass file(fullname);
-		((void const *&)ImageData) = Load_Alloc_Data(file);
-		((AnimTypeClass*)this)->Load_Image(Scen->Theater);
-
-		data = ImageData;
-	}
-	return(data);
-}
-
-
-/// <summary>
-/// Frees the demand loaded artwork for this animation.
-/// This routine is called when an animation has finished playing, so that a rarely used
-/// animation does not hold onto its shape data for the rest of the mission. Only those
-/// animations that asked to be freed after playing will give their artwork up.
-/// </summary>
-void AnimTypeClass::Free_Image(void)
-{
-	if (IsDemandLoad && ImageData != NULL && IsFreeAfterPlaying) {
-		DebugString("Freeing loaded image for %s\n", Full_Name());
-		Free_Demand_Loaded_Shape(ImageData);
 	}
 }

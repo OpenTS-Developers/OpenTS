@@ -8,7 +8,7 @@ when_omitted:
   note: Uses the AnimType ID as the animation Image ID.
 ---
 
-The animation draws `<Image ID>.SHP` when that file exists. If it does not, the animation falls back to `<AnimType ID>.SHP`, and if neither file exists it draws nothing. After a saved game is loaded there is no fallback, so an animation whose `<Image ID>.SHP` is missing draws nothing. An animation with [`DemandLoad=yes`](/keys/demandload/#scope-animtype) loads `<Image ID>.SHP` the first time it is needed and has no fallback.
+The animation draws `<Image ID>.SHP` when that file exists. If it does not, the animation falls back to `<AnimType ID>.SHP`, and if neither file exists it draws nothing. After a saved game is loaded there is no fallback, so an animation whose `<Image ID>.SHP` is missing draws nothing. An animation with [`DemandLoad=yes`](/keys/demandload/#scope-animtype) loads `<Image ID>.SHP` when a scenario starts or a saved game is loaded, and has no fallback.
 
 An `Image=` that selects a different shape does not change the frame count; see [`End`](/keys/end/).
 

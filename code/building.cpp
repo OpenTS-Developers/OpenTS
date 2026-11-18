@@ -328,7 +328,6 @@ BuildingClass::~BuildingClass(void)
 	Limbo();
 	Buildings.Delete(this);
 	End_Anim(BANIM_ALL);
-	Class->Free_Buildup_Data();
 
 	if (GameActive && Class != NULL && Class->IsCloakGenerator) {
 		Disable_Cloak_Generator();
@@ -2480,7 +2479,6 @@ void BuildingClass::Init(void)
 		if (Class->Get_Buildup_Data() == NULL) {
 			IsAllowedToSell = false;
 		} else {
-			Class->Free_Buildup_Data();
 			HasBuildupData  = true;
 		}
 	}
@@ -4856,7 +4854,6 @@ int BuildingClass::Do_MISSION_CONSTRUCTION(void)
 				if (!Class->IsLaserFence) {
 					PrimaryFacing.Set(Class->StartFace);
 				}
-				Class->Free_Buildup_Data();
 			}
 			break;
 

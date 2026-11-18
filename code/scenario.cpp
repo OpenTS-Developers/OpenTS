@@ -2135,6 +2135,7 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 	*/
 	CCINIClass mini;
 	CCFileClass cfile;
+	bool rules_reread = false;
 
 	if (Session.Type == GAME_NORMAL) {
 		_splitpath(Scen->ScenarioName, NULL, NULL, buffer, NULL);
@@ -2145,9 +2146,11 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 		if (Scen->SourceFile.Matches(buffer)) {
 			Load_Held_Scenario_File(mini, buffer, false);
 			Rule->Addition(mini);
+			rules_reread = true;
 		} else if (cfile.Is_Available() == true) {
 			mini.Load(cfile, false);
 			Rule->Addition(mini);
+			rules_reread = true;
 		}
 
 		cfile.Close();
@@ -2184,8 +2187,18 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 			if (cfile.Is_Available() == true) {
 				mini.Load(cfile, false);
 				Rule->Addition(mini);
+				rules_reread = true;
 			}
 		}
+	}
+
+	// These rereads come after the map loaded the types' art, so a type they created or whose
+	// art they released loads it again, and an animation whose frame counts they put back to
+	// zero takes its counts from its art again.
+	if (rules_reread) {
+		OverlayTypeClass::Load_Uncached_Art(Scen->Theater);
+		BuildingTypeClass::Load_Uncached_Art(Scen->Theater);
+		AnimTypeClass::Init(Scen->Theater);
 	}
 
 	Session.Update_Progress(82);

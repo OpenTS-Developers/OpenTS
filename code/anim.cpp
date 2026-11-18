@@ -330,8 +330,6 @@ AnimClass::~AnimClass(void)
 
 	AbstractTypePtrTracker.Delete(this);
 
-	Class->Free_Image();
-
 	xObject = NULL;
 	Class = 0;
 
