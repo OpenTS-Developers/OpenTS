@@ -323,6 +323,9 @@ bool Main_Loop(void)
 	// Drawing the frame above can leave the floating-point state changed by a driver.
 	Reset_Float_State();
 
+	// Run_Logic_Frame in mapcapture.cpp runs the same simulation steps from this sort to the
+	// deferred deletion, so a step added to either loop must be added to the other.
+
 	/*
 	**	Sort the map's ground layer by y-coordinate value.  This is done
 	**	outside the IsToRedraw check, for the purposes of game sync'ing
