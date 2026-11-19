@@ -79,6 +79,7 @@ class AnimTypeClass : public ObjectTypeClass
 		**	of the animation. The last loop of the animation will proceed until the Stages
 		**	has been fully completed.
 		*/
+		// Read this and Stages through Sequence, which turns their 0 and -1 into counts from the art.
 		int LoopEnd;
 
 		/*
@@ -455,6 +456,7 @@ class AnimTypeClass : public ObjectTypeClass
 
 	private:
 		void Uncached_Image_Name(char * fullname, TheaterType theater) const;
+		void const * Find_Image(TheaterType theater) const;
 		void Load_Uncached_Image(TheaterType theater);
-		void Measure_Image(ShapeSet const & shape);
+		void Measure_Image(ShapeSet const * shape);
 };

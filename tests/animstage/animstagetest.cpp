@@ -439,3 +439,42 @@ TEST_CASE("A delay set between loops pauses play, and the frame it runs out rest
 	}
 	CHECK(trace == Trace{{1, P}, {2, P}, {3, E}});
 }
+
+TEST_CASE("A sequence with no stages ends at its first stage advance")
+{
+	AnimSequence seq;
+	seq.Loops = 1;
+	AnimStageClass stage;
+	stage.Begin(seq, 1, 1, 0);
+	CHECK(Run(stage, seq, 10) == Trace{{1, E}});
+}
+
+TEST_CASE("A looping sequence with no stages takes one loop per stage advance, then ends")
+{
+	AnimSequence seq;
+	seq.Loops = 3;
+	AnimStageClass stage;
+	stage.Begin(seq, 1, 3, 0);
+	CHECK(Run(stage, seq, 10) == Trace{{0, L}, {0, L}, {1, E}});
+}
+
+TEST_CASE("A reverse sequence with no stages ends at its first stage advance")
+{
+	AnimSequence seq;
+	seq.Loops = 1;
+	seq.IsReverse = true;
+	AnimStageClass stage;
+	stage.Begin(seq, 1, 1, 0);
+	CHECK(Run(stage, seq, 10) == Trace{{-1, E}});
+}
+
+TEST_CASE("A ping-pong sequence with no stages turns at every stage advance and does not end")
+{
+	AnimSequence seq;
+	seq.Loops = 1;
+	seq.IsPingPong = true;
+	AnimStageClass stage;
+	stage.Begin(seq, 1, 1, 0);
+	Trace const trace = Run(stage, seq, 6);
+	CHECK(trace == Trace{{1, T}, {0, T}, {1, T}, {0, T}, {1, T}, {0, T}});
+}

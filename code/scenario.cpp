@@ -2193,8 +2193,7 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 	}
 
 	// These rereads come after the map loaded the types' art, so a type they created or whose
-	// art they released loads it again, and an animation whose frame counts they put back to
-	// zero takes its counts from its art again.
+	// art they released loads it again.
 	if (rules_reread) {
 		OverlayTypeClass::Load_Uncached_Art(Scen->Theater);
 		BuildingTypeClass::Load_Uncached_Art(Scen->Theater);

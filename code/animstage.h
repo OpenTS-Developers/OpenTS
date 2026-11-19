@@ -20,8 +20,7 @@
 #include <climits>
 
 
-// The stage numbers and rate settings of an animation type. Where the type leaves Stages or
-// LoopEnd at -1, the value comes from the frame count of the type's art.
+// The stage numbers and rate settings an animation type plays with its current art.
 struct AnimSequence
 {
 	int Stages = 0;

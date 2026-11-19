@@ -159,12 +159,6 @@ AnimClass::AnimClass(AnimTypeClass const * type, Coord const & coord, int timede
 
 	YSortAdjust = Class->YSortAdjust;
 
-	if (Class->Stages == -1) {
-		Class->Stages = ((ShapeSet *)Class->Get_Image_Data())->Get_Count();
-	}
-	if (Class->LoopEnd == -1) {
-		Class->LoopEnd = Class->Stages;
-	}
 	AnimSequence const seq = Class->Sequence();
 	Stage.Begin(seq, Pick_Anim_Rate(seq, Random_Pick<int>), std::max(loop, 1) * seq.Loops, timedelay);
 
@@ -851,13 +845,6 @@ void AnimClass::AI(void)
 			}
 		}
 
-		if (Class->Stages == -1) {
-			Class->Stages = ((ShapeSet const *)Class->Get_Image_Data())->Get_Count();
-		}
-		if (Class->LoopEnd == -1) {
-			Class->LoopEnd = Class->Stages;
-		}
-
 		/*
 		**	This is necessary because there is no recording of animations on the map
 		**	and thus the animation cannot be intelligently flagged for redraw. Most
@@ -867,7 +854,7 @@ void AnimClass::AI(void)
 		Mark(MARK_CHANGE);
 
 		if (!IsDisabled && Stage.Advance()) {
-			int const stage = Fetch_Stage();
+			int stage = Fetch_Stage();
 
 			/*
 			**	If this animation is attached to another object and it is a
@@ -928,13 +915,6 @@ void AnimClass::AI(void)
 					if (Class->ChainTo != NULL) {
 
 						Class = (AnimTypeClass *)Class->ChainTo;
-
-						if (Class->Stages == -1) {
-							Class->Stages = ((ShapeSet const *)Class->Get_Image_Data())->Get_Count();
-						}
-						if (Class->LoopEnd == -1) {
-							Class->LoopEnd = Class->Stages;
-						}
 
 						IsToDelete = false;
 						Accum = 0;
@@ -1376,10 +1356,10 @@ void AnimClass::Compute_CRC(CRCEngine & crc) const
 /// <summary>
 /// Fetches the number of stages this animation runs through.
 /// </summary>
-/// <returns>Returns with the stage count declared by the animation's type class.</returns>
+/// <returns>Returns with the stage count the animation's type plays with its current art.</returns>
 int AnimClass::Stage_Count(void) const
 {
-	return(Class->Stages);
+	return(Class->Sequence().Stages);
 }
 
 

@@ -207,44 +207,20 @@ AnimTypeClass::~AnimTypeClass(void)
 void AnimTypeClass::Init(TheaterType theater)
 {
 	AnimType index;
+	bool const theater_changed = Debug_Map || theater != LastTheater;
 
-	if (Debug_Map || theater != LastTheater) {
-		for (index = ANIM_FIRST; index < AnimTypes.Count(); index++) {
-			AnimTypeClass * anim = AnimTypes[index];
+	for (index = ANIM_FIRST; index < AnimTypes.Count(); index++) {
+		AnimTypeClass * anim = AnimTypes[index];
 
-			if (!anim->IsDemandLoad) {
-				if (anim->IsTheater) {
-					char fullname[_MAX_FNAME+_MAX_EXT];	// Fully constructed iconset name.
-					_makepath(fullname, NULL, NULL, anim->Name(), TheaterClass::As_Reference(theater).Suffix);
-					anim->ImageData = MFCD::Retrieve(fullname);
-					if (anim->ImageData == NULL) {
-						_makepath(fullname, NULL, NULL, anim->Name(), ".SHP");
-						anim->ImageData = MFCD::Retrieve(fullname);
-					}
-				} else if (anim->IsNewTheater) {
-					anim->Load_Image(theater);
+		if (!anim->IsDemandLoad) {
+			anim->Load_Image(theater);
+		} else {
+			if (theater_changed && (anim->IsTheater || anim->IsNewTheater)) {
+				if (anim->ImageData != NULL) {
+					Free_Uncached_Shape(anim->ImageData);
 				}
-			} else {
-				if (anim->IsTheater || anim->IsNewTheater) {
-					if (anim->ImageData != NULL) {
-						Free_Uncached_Shape(anim->ImageData);
-					}
-				}
-				anim->Load_Uncached_Image(theater);
 			}
-		}
-	} else {
-		for (index = ANIM_FIRST; index < AnimTypes.Count(); index++) {
-			AnimTypeClass * anim = AnimTypes[index];
-
-			// A reread of the rules replaces the frame counts an image still in memory supplied, so
-			// the image supplies them again, as a change of theater does.
-			if (anim->IsNewTheater && (anim->ImageData == NULL || (!anim->IsDemandLoad && !anim->IsTheater))) {
-				anim->Load_Image(theater);
-			}
-			if (anim->IsDemandLoad) {
-				anim->Load_Uncached_Image(theater);
-			}
+			anim->Load_Uncached_Image(theater);
 		}
 	}
 }
@@ -252,8 +228,8 @@ void AnimTypeClass::Init(TheaterType theater)
 
 /// <summary>
 /// Loads the shape this type uses in the theater through the file layer when none is loaded,
-/// then sets Stages and LoopEnd where they are 0, and Biggest, from the shape. Leaves the
-/// image NULL and the values unchanged when the file is missing.
+/// then sets Biggest from the shape. Leaves the image NULL and Biggest 0 when the file is
+/// missing.
 /// </summary>
 /// <param name="theater">The theater the shape is named for.</param>
 void AnimTypeClass::Load_Uncached_Image(TheaterType theater)
@@ -266,9 +242,7 @@ void AnimTypeClass::Load_Uncached_Image(TheaterType theater)
 		ImageData = Load_Alloc_Data(file);
 	}
 
-	if (ImageData != NULL) {
-		Measure_Image(*(ShapeSet const *)ImageData);
-	}
+	Measure_Image((ShapeSet const *)ImageData);
 }
 
 
@@ -306,47 +280,49 @@ void AnimTypeClass::Init_Theater(TheaterType theater)
 }
 
 
+void const * AnimTypeClass::Find_Image(TheaterType theater) const
+{
+	char fullname[_MAX_FNAME+_MAX_EXT];
+
+	Uncached_Image_Name(fullname, theater);
+	void const * image = MFCD::Retrieve(fullname);
+
+	if (image == NULL) {
+		_makepath(fullname, NULL, NULL, Name(), ".SHP");
+		image = MFCD::Retrieve(fullname);
+	}
+
+	if (image == NULL && !IsTheater && IsNewTheater) {
+		_makepath(fullname, NULL, NULL, !GraphicName.empty() ? Graphic_Name() : Name(), ".SHP");
+		image = MFCD::Retrieve(fullname);
+	}
+
+	return(image);
+}
+
+
 /// <summary>
 /// Loads the artwork for this animation and takes its measurements.
 /// This routine fetches the shape file appropriate for the theater specified and then
-/// notes the animation's frame count and its largest frame, so that sensible values stand
-/// in for anything the rules did not bother to state.
+/// notes the animation's largest frame.
 /// </summary>
 /// <param name="theater">The theater to align the animation artwork with.</param>
 void AnimTypeClass::Load_Image(TheaterType theater)
 {
-	if (!IsDemandLoad && ImageData == NULL) {
-		if (IsTheater) {
-			Fetch_Normal_Image();
-		} else {
-			char fullname[_MAX_FNAME+_MAX_EXT];
-			_makepath(fullname, NULL, NULL, !GraphicName.empty() ? Graphic_Name() : Name(), ".SHP");
-			Theater_Naming_Convention(fullname, theater);
-			ImageData = MFCD::Retrieve(fullname);
-		}
-	}
-
-	ShapeSet const * shape = (ShapeSet const *)ImageData;
-	if (shape != NULL) {
-		Measure_Image(*shape);
+	if (!IsDemandLoad) {
+		ImageData = Find_Image(theater);
+		Measure_Image((ShapeSet const *)ImageData);
 	}
 }
 
 
-void AnimTypeClass::Measure_Image(ShapeSet const & shape)
+void AnimTypeClass::Measure_Image(ShapeSet const * shape)
 {
-	if (Stages == 0) {
-		Stages = shape.Get_Count();
-	}
-	if (LoopEnd == 0) {
-		LoopEnd = Stages;
-	}
-
 	int biggest_size = 0;
 	int biggest_frame = 0;
 
-	for (int frame = 0; frame < shape.Get_Count(); frame++) {
-		Rect rect = shape.Get_Rect(frame);
+	for (int frame = 0; shape != NULL && frame < shape->Get_Count(); frame++) {
+		Rect rect = shape->Get_Rect(frame);
 		if (rect.Size() > biggest_size) {
 			biggest_frame = frame;
 			biggest_size = rect.Size();
@@ -405,8 +381,8 @@ AnimType AnimTypeClass::From_Name(char const * name)
 /// <summary>
 /// Fetches this animation type's settings from the rules.
 /// This routine gathers the animation's timing, artwork, sound and behavior settings from
-/// the rules and art databases. The artwork is consulted for anything the rules chose to
-/// leave unstated, such as the frame count.
+/// the rules and art databases. End and LoopEnd are kept as written; Sequence turns their
+/// 0 and -1 into counts from the art.
 /// </summary>
 /// <param name="ini">The rules database to read this animation's section from.</param>
 /// <returns>bool; Was the animation type's data read?</returns>
@@ -426,7 +402,6 @@ bool AnimTypeClass::Read_INI(CCINIClass const & ini)
 				IsTheater = ArtINI.Get_Bool(Name(), "Theater", IsTheater);
 				IsNewTheater = ArtINI.Get_Bool(Name(), "NewTheater", IsNewTheater);
 			}
-			Load_Image(THEATER_NONE);
 		}
 
 		Sound = ArtINI.Get_VocType(Name(), "Report", Sound);
@@ -467,9 +442,12 @@ bool AnimTypeClass::Read_INI(CCINIClass const & ini)
 		IsTiberium = ini.Get_Bool(Name(), "IsTiberium", IsTiberium);
 		YSortAdjust = ini.Get_Int(Name(), "YSortAdjust", YSortAdjust);
 
+		// The base class may have set a shape from the Image ID alone, which Load_Image replaces.
 		IsDemandLoad = ini.Get_Bool(Name(), "DemandLoad", IsDemandLoad);
 		if (IsDemandLoad) {
 			ImageData = NULL;
+		} else {
+			Load_Image(Scen->Theater);
 		}
 
 		Elasticity = ini.Get_Float(Name(), "Elasticity", Elasticity);
@@ -536,16 +514,7 @@ void AnimTypeClass::Post_Load(void)
 
 	Fetch_Voxel_Image();
 
-	if (!IsDemandLoad) {
-		Fetch_Normal_Image();
-		if (IsTheater) {
-			char fullname[_MAX_FNAME+_MAX_EXT];	// Fully constructed iconset name.
-			_makepath(fullname, NULL, NULL, Name(), TheaterClass::As_Reference(Scen->Theater).Suffix);
-			ImageData = MFCD::Retrieve(fullname);
-		} else if (IsNewTheater) {
-			Load_Image(Scen->Theater);
-		}
-	}
+	Load_Image(Scen->Theater);
 }
 
 
@@ -628,20 +597,18 @@ ClassID AnimTypeClass::Class_ID(void) const
 
 
 /// <summary>
-/// Fetches the stage numbers and rate settings of this type. Where Stages or LoopEnd is -1,
-/// the frame count of the art is used without being stored in the type.
+/// Fetches the stage numbers and rate settings this type plays with the art it has now. An End
+/// of 0 or -1 gives the frame count of that art, which is 0 without art, and a LoopEnd of 0 or
+/// -1 gives the resulting stage count. Any other value is used as set.
 /// </summary>
 AnimSequence AnimTypeClass::Sequence(void) const
 {
 	AnimSequence seq;
-	seq.Stages = Stages;
-	if (seq.Stages == -1) {
-		ShapeSet const * shape = (ShapeSet const *)Get_Image_Data();
-		seq.Stages = (shape != NULL) ? shape->Get_Count() : 0;
-	}
+	ShapeSet const * shape = (ShapeSet const *)Get_Image_Data();
+	seq.Stages = (Stages == 0 || Stages == -1) ? ((shape != NULL) ? shape->Get_Count() : 0) : Stages;
+	seq.LoopEnd = (LoopEnd == 0 || LoopEnd == -1) ? seq.Stages : LoopEnd;
 	seq.Start = Start;
 	seq.LoopStart = LoopStart;
-	seq.LoopEnd = (LoopEnd == -1) ? seq.Stages : LoopEnd;
 	seq.IsPingPong = IsPingPong;
 	seq.IsReverse = IsReverse;
 	seq.Delay = Delay;
@@ -672,6 +639,10 @@ void AnimTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(LoopStart);
 	crc(LoopEnd);
 	crc(Stages);
+	// The counts the art gives decide how long an animation plays, so they are hashed like Biggest.
+	AnimSequence const seq = Sequence();
+	crc(seq.LoopEnd);
+	crc(seq.Stages);
 	crc(Loops);
 	if (ChainTo != NULL) crc(ChainTo->Fetch_ID());
 	crc(DetailLevel);

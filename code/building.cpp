@@ -7445,7 +7445,7 @@ void BuildingClass::Charging_AI(void)
 				if (IsCharging) {
 					BuildingStage.Graphic_Logic();
 //					if (stagechange) {
-						if (BuildingStage.Fetch_Stage() >= (Anims[BANIM_TURRET] != NULL ? Anims[BANIM_TURRET]->Class->LoopEnd : 12)) {
+						if (BuildingStage.Fetch_Stage() >= (Anims[BANIM_TURRET] != NULL ? Anims[BANIM_TURRET]->Class->Sequence().LoopEnd : 12)) {
 							IsCharged = true;
 							IsCharging = false;
 							Set_Rate(0);
