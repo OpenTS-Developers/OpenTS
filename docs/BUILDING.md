@@ -11,7 +11,7 @@
 | --- | --- |
 | Host | Windows |
 | Target platforms | 32-bit (`Win32`) and 64-bit (`x64`) |
-| Processor | SSE2, so a Pentium 4 or Athlon 64 onward; the `x64` build needs a 64-bit processor and Windows |
+| Processor | SSE4.2, so an Intel Core i3, i5, or i7 or an AMD FX (Bulldozer) onward; the `x64` build needs a 64-bit processor and Windows |
 | Generator and compiler | Visual Studio 2022 MSVC 19.30 or newer |
 | Windows SDK | A Visual Studio-installed Windows SDK |
 | CMake | 3.23 or newer |
@@ -20,6 +20,10 @@
 
 Other generators, compilers, architectures, and configurations are currently
 unsupported.
+
+The processor requirement comes from bgfx's `bx` library, which sets SSE4.2 as
+its minimum and uses SSE4.1 instructions without checking for them at run time.
+The `/arch:SSE2` compiler option does not lower the requirement.
 
 Install Visual Studio 2022 with the **Desktop development with C++** workload,
 a Windows SDK, and CMake 3.23 or newer. Git for Windows is needed to clone the
@@ -192,6 +196,15 @@ SemVer prerelease label goes in `OPENTS_VERSION_PRERELEASE`. Both values must
 match the development entry in the manual's release registry;
 `python manual/tools/manage.py check` verifies this.
 
+A release candidate's label comes from its tag instead. When
+`OPENTS_VERSION_PRERELEASE` is empty, a build whose commit carries a tag such
+as `v0.2.0-rc1` reports `0.2.0-rc1`, unless the same commit also carries the
+plain `v0.2.0` tag. `-DOPENTS_VERSION_LABEL=rc1` sets the label explicitly; the
+release workflow uses it. The setting stays in that build directory's cache for
+later builds, so clear it with `-DOPENTS_VERSION_LABEL=` when it no longer
+applies. The label is shown with the version but is not part of the packed
+version.
+
 Each build writes two generated headers from that version and the repository
 state:
 
@@ -230,8 +243,9 @@ the version without one.
 
 ## Continuous integration
 
-The `Engine` workflow runs for ready pull requests and pushes to `main` when
-their changed paths match its engine and build filters. Draft pull requests do
+The `Engine` workflow runs for ready pull requests and for pushes to `main`
+and `release/*` branches when their changed paths match its engine and build
+filters. Draft pull requests do
 not build until marked ready; the workflow then builds their current commit.
 
 `Engine nightly` runs daily. A scheduled run cancels itself when the newest
@@ -249,14 +263,16 @@ fails the workflow.
 After a successful pull-request build, `Engine build comment` maintains one
 pull-request comment with direct nightly.link downloads.
 
-Publishing a GitHub release runs `Engine release`. It builds the release commit
-for both platforms with `-DOPENTS_OFFICIAL_BUILD=ON`, and packages each one's
+Publishing a GitHub release runs `Engine release`. After its preflight checks
+pass, it builds the release commit for both platforms with
+`-DOPENTS_OFFICIAL_BUILD=ON` and the tag's prerelease label, and packages each one's
 `Game.exe`, `Language.dll`, `Game.pdb`, `ui/`, and the project and third-party
 license notices in a zip named after the release tag and the platform, such as
 `OpenTS-v0.2.0-x64.zip`. It attaches both to the release, and appends notes
 generated from the manual's change records by
 `python manual/tools/manage.py release-notes`. See
-[Maintaining](../manual/MAINTAINING.md) for the full release procedure.
+[Releases and lifecycle](../manual/MAINTAINING.md#releases-and-lifecycle) for
+the checks and the full release procedure.
 
 CI collects the uploaded artifacts from `build/bin/<configuration>/`.
 

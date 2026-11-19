@@ -438,6 +438,16 @@ for (const relative of ['keys/aa/index.html', 'keys/basenormal/index.html']) {
 const aiAssistanceNotice = 'This manual was produced with AI assistance and may contain imprecisions.';
 const filterTableRoot = /<div class="[^"]*\bots-filter-table\b[^"]*" data-reference-table>[\s\S]*?<p class="ots-empty"/g;
 const aiNoticePages = [];
+// RC notes belong only in the release candidates' GitHub notes; the manual validation
+// keeps their IDs apart from change record IDs, so a page at a note's ID is a leaked note.
+const rcNoteFolder = resolve('../changes/rc');
+if (existsSync(rcNoteFolder)) {
+	for (const name of readdirSync(rcNoteFolder).filter((file) => file.endsWith('.md'))) {
+		if (existsSync(resolve('dist/changes', name.slice(0, -3)))) {
+			throw new Error(`The site publishes the RC note changes/rc/${name}`);
+		}
+	}
+}
 for (const relative of readdirSync(resolve('dist'), { recursive: true })) {
 	const path = String(relative).split('\\').join('/');
 	if (!path.endsWith('.html')) continue;
@@ -742,6 +752,7 @@ for (const release of releaseExpectations(base)) {
 		...release.credits.map(escapeHtml),
 	];
 	if (release.status === 'development') required.push('In development');
+	if (release.status === 'candidate') required.push('Release candidate');
 	for (const text of required) {
 		if (!changesIndex.includes(text)) {
 			throw new Error(`Changes index does not contain ${JSON.stringify(text)}`);

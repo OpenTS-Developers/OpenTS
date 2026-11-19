@@ -354,13 +354,6 @@ void TabClass::Init_For_House(void)
 }
 
 
-void TabClass::Clear_For_House(void)
-{
-	TabShape = NULL;
-	BASECLASS::Clear_For_House();
-}
-
-
 /// <summary>
 /// Flashes the credits readout to catch the player's eye.
 /// This routine is used when something has happened that the player really ought to

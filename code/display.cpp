@@ -108,7 +108,6 @@
 #include "building.h"
 #include "builtype.h"
 #include "bullettype.h"
-#include "cctooltip.h"
 #include "cell.h"
 #include "conquer.h"
 #include "convert.h"
@@ -141,6 +140,7 @@
 #include "tag.h"
 #include "tagtype.h"
 #include "terrtype.h"
+#include "uitooltip.h"
 #include "unittype.h"
 #include "vein.h"
 #include "vector3.h"
@@ -403,6 +403,7 @@ void DisplayClass::Set_View_Dimensions(Rect const & dimensions)
 		tooltip.ID = 500;
 		tooltip.Text = TXT_NONE;
 		tooltip.Region = TacticalRect;
+		tooltip.TracksPointer = true;
 		ToolTips->Remove(500);
 		ToolTips->Add(&tooltip);
 	}

@@ -3392,7 +3392,15 @@ void Tactical::Reset_Dirty_Rectangles(void)
 /// <param name="inshroud">Should the line be drawn through shrouded/unmapped cells?</param>
 void Tactical::Draw_Rally_Points(bool inshroud)
 {
-	static bool _pattern[8] = {
+	static bool _pattern[16] = {
+		true,
+		true,
+		true,
+		true,
+		true,
+		false,
+		false,
+		false,
 		true,
 		true,
 		true,
@@ -3477,7 +3485,15 @@ void Tactical::Draw_Rally_Points(bool inshroud)
 /*
  * Dash pattern for the animated "marching" line that joins the selected waypoint path.
  */
-static bool Draw_WaypointPoint_Line_Style[8] = {
+static bool Draw_WaypointPoint_Line_Style[16] = {
+	true,
+	true,
+	true,
+	true,
+	true,
+	false,
+	false,
+	false,
 	true,
 	true,
 	true,

@@ -61,6 +61,10 @@ class VeterancyClass
 		explicit VeterancyClass(PromotedCallback callback);
 		~VeterancyClass(void);
 
+		// A copy would keep the callback bound to the original object; use Set_Experience instead.
+		VeterancyClass(const VeterancyClass &) = delete;
+		VeterancyClass & operator=(const VeterancyClass &) = delete;
+
 		void Made_A_Kill(int cost, int value);
 
 		/*

@@ -9,6 +9,7 @@
 
 #include "ui/screens/restate/uirestate.h"
 
+#include "gametext.h"
 #include "ui/rml/rmlview.h"
 
 #include <RmlUi/Core/Context.h>
@@ -143,19 +144,20 @@ UIRestatePresenterClass::UIRestatePresenterClass(UIRestateServiceClass & service
 }
 
 
-// '@' and newlines force breaks and drop the spaces after them; only an overlong word splits.
+// A line break drops the spaces after it; only an overlong word splits.
 void UIRestatePresenterClass::Lay_Out(std::function<int(std::string const &)> const & width, int line_width, int page_lines)
 {
+	std::string const text = Game_Text_Lines(Text);
 	std::vector<std::string> lines;
 	std::string paragraph;
 	std::size_t index = 0;
 
-	while (index < Text.size()) {
-		char const c = Text[index++];
-		if (c == '\n' || c == '@') {
+	while (index < text.size()) {
+		char const c = text[index++];
+		if (c == '\n') {
 			Wrap_Paragraph(paragraph, width, line_width, lines);
 			paragraph.clear();
-			while (index < Text.size() && Text[index] == ' ') {
+			while (index < text.size() && text[index] == ' ') {
 				index++;
 			}
 			continue;

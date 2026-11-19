@@ -189,6 +189,42 @@ MixFileClass::MixFileClass(char const * filename, PKey const * key) :
 }
 
 
+/// <summary>
+/// Moves this mixfile to be searched right after anchor, or before every other mixfile when
+/// anchor is NULL. A non-NULL anchor must be another mixfile that is being searched. A mixfile
+/// that failed to open stays out of the search.
+/// </summary>
+void MixFileClass::Search_After(MixFileClass * anchor)
+{
+	assert(anchor == NULL || (anchor != this && anchor->Is_Valid()));
+
+	if (!Is_Valid()) {
+		return;
+	}
+
+	if (anchor != NULL) {
+		anchor->Link(this);
+	} else {
+		List.Add_Head(this);
+	}
+}
+
+
+/// <summary>
+/// Moves this mixfile to be searched after every other mixfile. A mixfile that failed to open
+/// stays out of the search.
+/// </summary>
+void MixFileClass::Search_Last(void)
+{
+	if (!Is_Valid()) {
+		return;
+	}
+
+	Unlink();
+	List.Add_Tail(this);
+}
+
+
 /***********************************************************************************************
  * MixFileClass::Free -- Uncaches a cached mixfile.                                            *
  *                                                                                             *

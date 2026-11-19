@@ -55,7 +55,6 @@ class PowerClass : public RadarClass
 		void Flash_Power(void);
 
 		virtual void Init_For_House(void) override;
-		virtual void Clear_For_House(void) override;
 		virtual void Reposition_Sidebar(void) override;
 		virtual char const * Help_Text(int id) override;
 

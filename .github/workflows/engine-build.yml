@@ -28,6 +28,16 @@ on:
         required: false
         default: false
         type: boolean
+      version-label:
+        description: "Prerelease label to build with, such as rc1."
+        required: false
+        default: ""
+        type: string
+      expected-version:
+        description: "When set, the build fails unless it declares exactly this version."
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
@@ -35,11 +45,8 @@ permissions:
 jobs:
   build:
     name: ${{ matrix.platform }} ${{ matrix.configuration }}
-    # The runner image has to carry the Visual Studio 2022 toolchain that docs/BUILDING.md
-    # names as the supported one. windows-2025 and windows-latest resolve to an image built
-    # around Visual Studio 2026 and have no 2022 instance for the generator to find, so they
-    # are not interchangeable here. Moving to a newer toolchain is a change to the supported
-    # build, not to this workflow.
+    # Keep windows-2022: docs/BUILDING.md names Visual Studio 2022 as the supported toolchain,
+    # and the windows-2025 and windows-latest images ship Visual Studio 2026 without it.
     runs-on: windows-2022
     strategy:
       fail-fast: false
@@ -48,8 +55,8 @@ jobs:
         configuration: ${{ fromJSON(inputs.configurations) }}
     steps:
       - name: Check out OpenTS
-        # The build stamp needs no history: it reads the commit, the refs that point at it,
-        # and the worktree state, all of which a shallow checkout answers.
+        # A shallow checkout is enough: the build stamp reads only the commit, the refs that
+        # point at it, and the worktree state.
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           submodules: recursive
@@ -67,7 +74,20 @@ jobs:
         run: >
           cmake -S . -B build -G "Visual Studio 17 2022" -A ${{ matrix.platform }}
           -DOPENTS_OFFICIAL_BUILD=${{ inputs.official && 'ON' || 'OFF' }}
+          "-DOPENTS_VERSION_LABEL=${{ inputs.version-label }}"
           -DOPENTS_DESKTOP_TESTS=ON
+
+      - name: Check the declared version
+        if: inputs.expected-version != ''
+        shell: bash
+        env:
+          EXPECTED: ${{ inputs.expected-version }}
+        run: |
+          declared="$(sed -nE 's/^#define OPENTS_VERSION +"(.*)"$/\1/p' build/generated/opents_version.h)"
+          if [ "${declared}" != "${EXPECTED}" ]; then
+            echo "::error::The build declares version '${declared}', not '${EXPECTED}'."
+            exit 1
+          fi
 
       - name: Build
         run: cmake --build build --config ${{ matrix.configuration }}
@@ -79,10 +99,9 @@ jobs:
         shell: bash
         run: |
           mkdir -p artifact
-          # The artifact carries what a downloaded build needs to run and debug itself, so it
-          # names those files rather than taking the output directory wholesale. The symbol
-          # file answers everything the linker map would, and is what the crash handler reads.
-          # The whole ui directory is copied, because the game opens its files by name at runtime.
+          # Stage only what a downloaded build needs to run and to report a crash. The crash
+          # handler reads the .pdb, so no linker map is staged. The game opens ui files by name,
+          # so the whole directory is copied.
           engine=Game
           if [ "${{ matrix.configuration }}" = "Debug" ]; then engine=GameD; fi
           built=build/bin/${{ matrix.configuration }}

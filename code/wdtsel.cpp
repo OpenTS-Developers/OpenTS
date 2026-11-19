@@ -15,6 +15,7 @@
 #include "ccfile.h"
 #include "convert.h"
 #include "data.h"
+#include "gametext.h"
 #include "globals.h"
 #include "ini.h"
 #include "keyboard.h"
@@ -1014,6 +1015,8 @@ void Selection::Set_Text(char const * text, int start_delay)
 
 	if (text != NULL) {
 		strncpy(Text, text, sizeof(Text));
+		Text[sizeof(Text) - 1] = '\0';
+		Game_Text_Lines_In_Place(Text);
 		MSPrintAnim::Word_Wrap(Text, sizeof(Text), Font, TextRect.Width);
 		TextAnim = new MSPrintAnim(Text, TextRect.X, TextRect.Y, Font, TextRect, start_delay, 1, true, true);;
 		TextAnim->Set_Transient(true);

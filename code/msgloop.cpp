@@ -40,8 +40,8 @@
 
 #include "_tooltip.h"
 #include "_ui.h"
-#include "cctooltip.h"
 #include "sdl/sdlwindow.h"
+#include "uitooltip.h"
 #include "vector.h"
 #include "video.h"
 #include "win.h"

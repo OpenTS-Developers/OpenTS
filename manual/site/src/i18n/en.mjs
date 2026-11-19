@@ -47,6 +47,7 @@ export const UI = {
 		upgradeGuide: 'Upgrade guide',
 		versions: 'Versions',
 		development: 'Development',
+		candidate: 'Release candidate',
 	},
 	commandAudiences: {
 		player: 'Player commands',

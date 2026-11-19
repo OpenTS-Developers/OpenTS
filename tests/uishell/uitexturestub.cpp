@@ -29,6 +29,13 @@ bool UI_Read_File(char const *, std::vector<unsigned char> & bytes)
 }
 
 
+bool UI_Read_Game_File(char const *, std::vector<unsigned char> & bytes)
+{
+	bytes.clear();
+	return(false);
+}
+
+
 bool UI_Load_Indexed_Image(char const *, UIImageIndexed & image)
 {
 	UITestSheetLookups++;

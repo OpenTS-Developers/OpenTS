@@ -245,7 +245,7 @@ const releaseNav = releases();
 						<li>
 							<a href={withBase('/changes/') + '#release-' + release.version}>
 								<span>{release.version}</span>
-								<small>{release.status === 'development' ? UI.navigation.development : release.date}</small>
+								<small>{release.status === 'development' ? UI.navigation.development : release.status === 'candidate' ? UI.navigation.candidate : release.date}</small>
 							</a>
 							<ul>
 								<li>
