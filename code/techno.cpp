@@ -5192,8 +5192,8 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 			 * Half-strength transition may trigger a feedback voice response.
 			 */
 			TechnoTypeClass const * ttype = TClass;
-			if (ttype->VoiceFeedback.Count() > 0 && Scen->RandomNumber(0, 99) < 30) {
-				VocType voc = (VocType)ttype->VoiceFeedback.Pick(Scen->RandomNumber());
+			if (ttype->VoiceFeedback.Count() > 0 && Sim_Random_Pick(0, 99) < 30) {
+				VocType voc = (VocType)ttype->VoiceFeedback.Pick(NonCriticalRandomNumber());
 				Sound_Effect(voc, Center_Coord());
 			}
 			break;

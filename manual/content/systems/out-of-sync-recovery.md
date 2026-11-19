@@ -20,7 +20,7 @@ related:
 
 A new network game stops at its start when the machines did not load the same game. Just before the first frame, each machine computes a checksum of the game it loaded: the scenario's settings, the rules, every object type, the theater's tile types, every map cell, and every object in play. The machines exchange the checksum as the game starts, and a machine that receives a checksum different from its own shows `Scenarios don't match.` and ends the game.
 
-Files that differ in their bytes but load to the same game pass the check. Sound, speech, music and movie choices are not compared, so machines whose sound or movie files differ can play together. [`VoiceFeedback`](/keys/voicefeedback/) and [`IceCrackSounds`](/keys/icecracksounds/) are the exceptions: the check compares whether each list names any sound in the machine's sound list, because an empty list changes whether the game draws a random number.
+Files that differ in their bytes but load to the same game pass the check. Sound, speech, music and movie choices are not compared, so machines whose sound or movie files differ can play together.
 
 To get past a failed check, give every machine the same game files and the same OpenTS build, then start the game again. To find the files that differ, compare the machines' [debug logs](/using/debug-logging/). At the start of every new game, the log gives the machine's checksum on a `Start state hash:` line, followed by one line for each part of the game with its name, record count and checksum. The first part whose checksum differs between two logs shows which files to compare:
 

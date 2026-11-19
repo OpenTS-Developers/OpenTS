@@ -1139,9 +1139,6 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(Dock.Count());
 	if (DeploysInto != NULL) crc(DeploysInto->Fetch_ID());
 	if (UndeploysInto != NULL) crc(UndeploysInto->Fetch_ID());
-	// A voice list drops the sounds missing from this machine's sound list. Only whether the
-	// feedback list is empty matters, since it decides whether a shared random number is drawn.
-	crc(VoiceFeedback.Count() > 0);
 	crc(MZone);
 	crc(ThreatRange);
 	crc(MaxDebris);

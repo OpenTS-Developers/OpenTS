@@ -3242,8 +3242,8 @@ void RulesClass::Compute_CRC(CRCEngine & crc, std::vector<StateHash::Checkpoint>
 	Add_Type(crc, FirestormGroundAnim);
 	Add_Type(crc, MoveFlash);
 	Add_Type(crc, Parachute);
+	checkpoint("[AudioVisual] through Parachute");
 	Add_Type(crc, BombParachute);
-	checkpoint("[AudioVisual] through BombParachute");
 	Add_Type(crc, SmallFire);
 	Add_Type(crc, LargeFire);
 	crc(IsAllyReveal);
@@ -3264,8 +3264,6 @@ void RulesClass::Compute_CRC(CRCEngine & crc, std::vector<StateHash::Checkpoint>
 	crc(VeinGrowthRate);
 	crc(IceGrowthRate);
 	crc(IceSolidifyDelay);
-	// Whether the list is empty decides whether ice cracking draws a random number.
-	crc(IceCrackSounds.Count() > 0);
 	crc(AmbientLightChangeRate);
 	crc(AmbientLightChangeStep);
 	crc(SpeakDelay);
