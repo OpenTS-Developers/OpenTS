@@ -19,4 +19,4 @@ VeteranSight=6
 EliteSight=8
 ```
 
-The type's rookies use 4 cells, its veterans 6, and its elites 8. A type that sets only `EliteSight` leaves its veterans on `Sight=`. [Sight range](/systems/map-visibility/#sight-range) adds the height bonus and the `SIGHT` ability multiplier to that figure, and caps every look at ten cells.
+The type's rookies use 4 cells, its veterans 6, and its elites 8. A type that sets only `EliteSight` leaves its veterans on `Sight=`. For vehicles, infantry and structures, [Sight range](/systems/map-visibility/#sight-range) adds the height bonus and the `SIGHT` ability multiplier to that figure, and caps every look at ten cells. Aircraft use the range for their rank without those multipliers.

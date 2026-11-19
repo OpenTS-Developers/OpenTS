@@ -136,7 +136,7 @@ Vehicles, infantry and structures then apply two multipliers, in this order:
 
 Each multiplication drops any fraction, so the range stays a whole number of cells.
 
-Airborne aircraft use the range for their rank and the `SIGHT` multiplier too. Their height figure is the one taken when they are placed: it counts the ground under them, and an aircraft that appears in flight at its [cruising altitude](/keys/flightlevel/) also counts that altitude. Taking off or climbing later does not raise it.
+Airborne aircraft use the range for their rank and the `SIGHT` multiplier, but not the height multiplier. A positive rank-specific sight value prevents an aircraft from using the fog-only behavior described below.
 
 :::caution[Sight range is capped at ten cells]
 A look reaches at most ten cells, whatever the range for the rank, the height bonus and the `SIGHT` multiplier produce. Any range above ten has no further effect.

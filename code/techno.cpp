@@ -8048,7 +8048,7 @@ void TechnoClass::Look(bool incremental, bool dontmap)
 		}
 		SightIncrease = sight_increase;
 
-		int sight_range = Get_Sight_Range();
+		int sight_range = Get_Sight_Range_Total(true);
 
 		if (sight_range) {
 			Map.Sight_From(PositionCoord, sight_range, House, incremental, dontmap);
@@ -9183,10 +9183,10 @@ void TechnoClass::On_Promoted(bool silent)
 
 
 /// <summary>
-/// Returns the sight range of this techno after calculations.
-/// Takes into account veterancy bonuses as well height bonuses, if any.
+/// Selects the base sight range stat that this techno should use based on its veterancy.
+/// Does not include bonuses from heights or from the SIGHT ability.
 /// </summary>
-/// <returns>The type's sight range after all calculations.</returns>
+/// <returns>The type's sight range based on its veterancy, without any multipliers.</returns>
 int TechnoClass::Get_Sight_Range() const
 {
 	int sight_range = TClass->SightRange;
@@ -9202,7 +9202,24 @@ int TechnoClass::Get_Sight_Range() const
 		}
 	}
 
-	sight_range *= (SightIncrease * 0.01 + 1.0);
+	return sight_range;
+}
+
+
+/// <summary>
+/// Returns the sight range of this techno after the applicable calculations.
+/// Takes into account the SIGHT ability and, when requested, the height bonus.
+/// </summary>
+/// <param name="calculate_height">Whether to apply the height bonus.</param>
+/// <returns>The type's sight range after all relevant calculations.</returns>
+int TechnoClass::Get_Sight_Range_Total(bool calculate_height) const
+{
+	int sight_range = Get_Sight_Range();
+
+	if (calculate_height) {
+		sight_range *= (SightIncrease * 0.01 + 1.0);
+	}
+
 	if (Has_Ability(ABILITY_SIGHT) && Rule->VeteranSight != 0.0) {
 		sight_range *= Rule->VeteranSight + 1;
 	}

@@ -19,4 +19,4 @@ A vehicle, infantryman or structure with no sight range reveals nothing. For the
 
 `Sight=` is the base range. Rookies and below-rookie objects use it; a type can replace it for promoted objects, as [Sight range](/systems/map-visibility/#sight-range) describes. Every look reaches at most ten cells.
 
-Out of weapon range, a human player's object fights back only when the attacker is within its sight range plus half a cell, which includes the range for its rank and the height and ability bonuses. [Retaliation](/systems/target-selection/#retaliation) gives the rule.
+Out of weapon range, a human player's object fights back only when the attacker is within the range for its rank plus half a cell. [Retaliation](/systems/target-selection/#retaliation) gives the rule.
