@@ -54,6 +54,11 @@ bimg as nested submodules, so initialize it recursively:
 git submodule update --init --recursive
 ```
 
+Deflate compression comes from the copy of
+[miniz](https://github.com/richgel999/miniz) that bimg bundles under
+`3rdparty/tinyexr/deps/miniz`. bgfx.cmake compiles it into the `bimg` library,
+which the engine already links.
+
 The audio layer uses [miniaudio](https://github.com/mackron/miniaudio),
 vendored through `thirdparty/miniaudio` at a tested tag and compiled as one
 translation unit from `thirdparty/miniaudio-impl.c`.

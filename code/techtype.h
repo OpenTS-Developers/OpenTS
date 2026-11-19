@@ -750,6 +750,12 @@ class TechnoTypeClass : public ObjectTypeClass
 		 */
 		std::string Description;
 
+		 * These are the sounds this type plays as it starts to cloak and to uncloak.
+		 * VOC_NONE plays the rules-wide CloakSound in either case.
+		 */
+		VocType CloakSound;
+		VocType UncloakSound;
+
 		/*
 		 * Specifies the sight range that should be used when the techno is veteran.
 		 * Falls back to vanilla SightRange when not provided.

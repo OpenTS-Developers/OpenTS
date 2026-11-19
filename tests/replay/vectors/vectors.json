@@ -1,0 +1,1101 @@
+{
+  "format": "CNCR container version 1, seal version 1",
+  "generator": "tools/replay/make_vectors.py",
+  "notes": "Hashes and byte strings are lowercase hex. verify_exit is the exit code of cncreplay.py verify: 0 complete and every seal matches, 1 a seal or structural check fails, 2 not a CNCR file, 3 no END section and every seal present matches, 4 not verified: the file is not malformed but its seal_version, or the codec of INIT or FRMS, is unknown, so its seals are neither confirmed nor refuted. error_code is the code cncreplay.py reports for a malformed or unverified file.",
+  "computations": [
+    {
+      "name": "s0_base",
+      "description": "S0 of section 7 for the base RecordingInfo values, LNCH body, and INIT body.",
+      "seal_version": 1,
+      "engine": "opents",
+      "data_version": 1,
+      "lnch": "080315785634121a161205416c7068611801320347444940015800600068041a1a08011205427261766f1801280132034e6f643806580260066800220a0a064372617465731800220d0a074372656469747310a09c01220d0a0947616d655370656564100022120a0b53657373696f6e5479706522034c414e",
+      "lnch_sha256": "c5b61faeaec17cac42e47dbe707e98c5925f08415cc9b01f0c50f458d5cf2c9c",
+      "init": "3412ed5edf4014f5123ee84f5a46bff42251b15a4d68625532581186cd2f060645f3b488",
+      "init_sha256": "033102900e61ea752e8bfe7611747862d0666c6186dacb675e6c1b73fd4338e5",
+      "preimage": "434e435201000000060000006f70656e747301000000c5b61faeaec17cac42e47dbe707e98c5925f08415cc9b01f0c50f458d5cf2c9c033102900e61ea752e8bfe7611747862d0666c6186dacb675e6c1b73fd4338e5",
+      "s0": "07873ad2d1ed480e10c93a1167ed9188b1a3db279766c27ef40b9d10d939ece8"
+    },
+    {
+      "name": "s0_empty",
+      "description": "S0 with an empty engine ID, data_version 0, and empty LNCH and INIT bodies.",
+      "seal_version": 1,
+      "engine": "",
+      "data_version": 0,
+      "lnch": "",
+      "init": "",
+      "s0": "23aa66527edbdb6fa360143c56517ba1a63f2b6cb782f578ec9fb8759c29293f"
+    },
+    {
+      "name": "utf8_replacement",
+      "description": "A writer replaces each ill-formed UTF-8 sequence with one U+FFFD, following the Unicode maximal-subpart practice.",
+      "input": "426164ff6e616d65c328e282",
+      "output": "426164efbfbd6e616d65efbfbd28efbfbd"
+    },
+    {
+      "name": "chat_fingerprint",
+      "description": "Section 8: the first 16 bytes of SHA-256(\"chat-proof-1\" || salt || u32 sender house || UTF-8 text).",
+      "salt": "000102030405060708090a0b0c0d0e0f",
+      "house": 1,
+      "text": "676720777020e298ba",
+      "fingerprint": "7a68dbd062730f9fdb0ab7f2474b9147"
+    },
+    {
+      "name": "launch_request",
+      "description": "launch_play.json in the proto3 JSON mapping encodes to launch_play.bin. Launch.seed and Session.local_player are optional and set to 0, so both are written; the oneof member Crates.flag = false is written.",
+      "json_file": "launch_play.json",
+      "binary_file": "launch_play.bin",
+      "binary": "080112a3010a43080315000000001a0b1205416c706861180140011a121205427261766f1801280138064002520100220d0a074372656469747310a09c01220a0a064372617465731800120f6d6170732f766563746f722e6d61701a1508001001520543617274655a0842617461696c6c65221808a413120f0801120831302e302e302e3218a61338b0ea012a1a08012a140a0972756c65732e696e691207736861313a303030003a116c61756e63682d726573756c742e62696e4a08766563746f722d31"
+    },
+    {
+      "name": "launch_result",
+      "description": "A LaunchResult with one scenario; last_frame is optional and set to 0.",
+      "binary_file": "launch_result.bin",
+      "binary": "0a08766563746f722d31100122350a0f6d6170732f766563746f722e6d61701001180120002a1c433a2f47616d65732f5265706c6179732f766563746f722e636e6372"
+    },
+    {
+      "name": "compare_desync",
+      "description": "compare desync_a.cncr desync_b.cncr",
+      "a": "desync_a.cncr",
+      "b": "desync_b.cncr",
+      "same_game": true,
+      "first_frame": 1000,
+      "first_interval": 2,
+      "exit_code": 1
+    },
+    {
+      "name": "compare_sealed_payload",
+      "description": "compare sealed_payload_sender.cncr sealed_payload_receiver.cncr",
+      "a": "sealed_payload_sender.cncr",
+      "b": "sealed_payload_receiver.cncr",
+      "same_game": true,
+      "first_frame": null,
+      "exit_code": 0
+    },
+    {
+      "name": "compare_other_game",
+      "description": "compare desync_a.cncr other_game.cncr",
+      "a": "desync_a.cncr",
+      "b": "other_game.cncr",
+      "same_game": false,
+      "lnch_difference": "players[1].color",
+      "exit_code": 1
+    }
+  ],
+  "files": [
+    {
+      "file": "minimal_complete.cncr",
+      "size": 208,
+      "sha256": "d6dd87e7bc2c98adbb42716b17b21e39cec934eb933665b96c124275c1864924",
+      "verify_exit": 0,
+      "description": "Smallest complete file: one record on frame 0 with a zero hash, every section stored. Launch.seed is set to 0 and RecordingSummary.last_frame to 0, so both are written.",
+      "records": 1,
+      "last_recorded_frame": 0,
+      "s0": "3b85c4a4634708e1279dd562be968d5dcc0dc25700fee0181a06e78d3cb0244e",
+      "file_hex": "434e435201000000494e464f000000000c000000000000000c000000000000000a066f70656e7473180168014c4e434800000000050000000000000005000000000000001500000000494e495400000000040000000000000004000000000000000000000046524d53000000000b000000000000000b0000000000000009150000000030b5840200454e4420000000003000000000000000300000000000000008001081f2d6ca062a221220095bcd5fcd63b4f5cc66c26948f2ce9702da94012562d64e89befc95ed819c2438b58402",
+      "seals": [
+        {
+          "through": 0,
+          "hash": "095bcd5fcd63b4f5cc66c26948f2ce9702da94012562d64e89befc95ed819c24"
+        }
+      ],
+      "canonical": [
+        {
+          "frame": 0,
+          "bytes": "0000000001000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "file": "no_frames.cncr",
+      "size": 156,
+      "sha256": "c49c273cb41507aed437a8e6fb64a89c27c57f8857a54160603e1764cf159732",
+      "verify_exit": 0,
+      "description": "Complete file in which the simulation ran no frame: FRMS holds only the end marker, last_frame is absent, and there are no seals.",
+      "records": 0,
+      "last_recorded_frame": null,
+      "s0": "3b85c4a4634708e1279dd562be968d5dcc0dc25700fee0181a06e78d3cb0244e",
+      "seals": []
+    },
+    {
+      "file": "chain_three_intervals.cncr",
+      "size": 941,
+      "sha256": "c15d884d9a09d5a2466447ee5d2cf1c3efb57b80ec3c99edd94e5b86bcc15122",
+      "verify_exit": 0,
+      "description": "Interval seals through 899, 1799, and 2699, then the final seal through 2850. Intervals 2 and 3 hold no canonical frame and are sealed over the previous seal alone. The record on frame 2800 follows a skipped jump and carries all three interval seals. Every section uses codec 1, and FRMS is sync-flushed every 2 records.",
+      "records": 5,
+      "last_recorded_frame": 2800,
+      "s0": "07873ad2d1ed480e10c93a1167ed9188b1a3db279766c27ef40b9d10d939ece8",
+      "seals": [
+        {
+          "through": 899,
+          "hash": "e4adbb4d6b11e0a5280abe221852d8e6ef0ea375005f4d416ce3089e510ceaa1"
+        },
+        {
+          "through": 1799,
+          "hash": "b6befa8e110573f19c51e1140bb2f733027b2fa89267b68e42f916e0e52e7ce7"
+        },
+        {
+          "through": 2699,
+          "hash": "5f2c19799254d3f1fb575dc717a3e64fd0f2063aa2615be11d30137cea6a03ca"
+        },
+        {
+          "through": 2850,
+          "hash": "9acfc7f571e1cfb94bcd6b48cb6ca45e98432282ea724028064ad1d2be58d9da"
+        }
+      ],
+      "canonical": [
+        {
+          "frame": 0,
+          "bytes": "0000000001111111110000000000000000"
+        },
+        {
+          "frame": 1,
+          "bytes": "0100000001222222220000000000000000"
+        },
+        {
+          "frame": 2,
+          "bytes": "0200000001333333330100000004000000000000000300000008000000050000000100000000000000"
+        },
+        {
+          "frame": 3,
+          "bytes": "0300000001444444440000000000000000"
+        },
+        {
+          "frame": 2800,
+          "bytes": "f00a00000155555555000000000100000001000000"
+        }
+      ],
+      "frame_seals": {
+        "2800": [
+          899,
+          1799,
+          2699
+        ]
+      }
+    },
+    {
+      "file": "final_on_boundary.cncr",
+      "size": 587,
+      "sha256": "62a7aa1552dee10760b15f0b849167dee12ffa6d20dc4bd5a0a8a3011b48ccfd",
+      "verify_exit": 0,
+      "description": "last_frame is 899, the last frame of interval 1, so RecordingSummary.seals holds that interval seal as the final seal and nothing else. No frame record carries a seal. game_micros is 899 * 33333 + 66666.",
+      "records": 2,
+      "last_recorded_frame": 899,
+      "s0": "07873ad2d1ed480e10c93a1167ed9188b1a3db279766c27ef40b9d10d939ece8",
+      "seals": [
+        {
+          "through": 899,
+          "hash": "5e1d914d2cd93a8a9b2a2367ba43d4daf5a7d36f7afdfe87ba9b89f21a5e5c44"
+        }
+      ],
+      "game_micros": 30033033
+    },
+    {
+      "file": "utf8_replaced.cncr",
+      "size": 622,
+      "sha256": "bf2e5b1c0ebc91f960ba4d7e10b7cb102a802dc71cd6c4b2ec34725b6bff0f73",
+      "verify_exit": 0,
+      "description": "Player 1 name and a chat line written from input with invalid UTF-8, after replacement as in computation utf8_replacement.",
+      "records": 1,
+      "last_recorded_frame": 0,
+      "s0": "c1626dd9ac184474ffa0ffc745d2489579ab507ad26ed0c49b2607ab89b3fc7b",
+      "player_name_hex": "426164efbfbd6e616d65efbfbd28efbfbd"
+    },
+    {
+      "file": "malformed_invalid_utf8.cncr",
+      "size": 576,
+      "sha256": "b47d3fd261a8e8770789c5c5ea78c54ea7a640e0d67eab5d6baf75150c3631fc",
+      "verify_exit": 1,
+      "description": "Player.name in LNCH holds the raw bytes of computation utf8_replacement.",
+      "reason": "a string field that is not valid UTF-8; proto3 parsers refuse it",
+      "error_code": "invalid_utf8"
+    },
+    {
+      "file": "checkpoint_frame0.cncr",
+      "size": 695,
+      "sha256": "e14956c77a4f182b5294282d9db8d0b26054899fc6d980065d5c2f871a1a46bc",
+      "verify_exit": 0,
+      "description": "Two CKPT sections. The one at frame 0 has no frame field, so its body starts with the fixed32 crc32 field (tag 0x15).",
+      "records": 2,
+      "last_recorded_frame": 1,
+      "s0": "07873ad2d1ed480e10c93a1167ed9188b1a3db279766c27ef40b9d10d939ece8",
+      "ckpt0_body": "154ffea4591a1b656e67696e6520736176652064617461206174206672616d652030",
+      "ckpt1_body": "080115d9cea32e1a1b656e67696e6520736176652064617461206174206672616d652031"
+    },
+    {
+      "file": "optional_empty_message.cncr",
+      "size": 628,
+      "sha256": "4f3096cbd78b8b3589468d87d05d97c0df19b2aa857c1a90a0f2297559676950",
+      "verify_exit": 0,
+      "description": "Frame 0 sets ViewState.camera to the point (0, 0) and ViewState.selection to an empty selection: both are optional and written with length 0, so view encodes as 22 04 0a 00 12 00. In STAT, house 0 has a final sample whose encoding is empty, which a writer leaves out because HouseStatistics.final is a plain message field; house 1 has credits 0 set and picked up two Money crates, written as 62 09 0a 05 4d 6f 6e 65 79 10 02. In LNCH the option Crates holds the oneof member flag = false, written as 18 00.",
+      "records": 1,
+      "last_recorded_frame": 0,
+      "s0": "07873ad2d1ed480e10c93a1167ed9188b1a3db279766c27ef40b9d10d939ece8",
+      "record_body": "150100000022040a00120030b58402",
+      "stat_body": "1204280438011215080138024a040801100062090a054d6f6e65791002"
+    },
+    {
+      "file": "chat_fingerprint.cncr",
+      "size": 657,
+      "sha256": "09daeb89c6a83ac80a335058eec9f73233f1c7312031b6bcfa93d6b84bfd7ee2",
+      "verify_exit": 0,
+      "description": "A chat line with a salt on frame 10 and its fingerprint event, role EVENT_ROLE_CHAT_PROOF, on frame 12. The fingerprint is computation chat_fingerprint.",
+      "records": 3,
+      "last_recorded_frame": 12,
+      "s0": "07873ad2d1ed480e10c93a1167ed9188b1a3db279766c27ef40b9d10d939ece8",
+      "chat_proven": 1,
+      "canonical": [
+        {
+          "frame": 0,
+          "bytes": "0000000001010000000000000000000000"
+        },
+        {
+          "frame": 10,
+          "bytes": "0a00000001020000000000000000000000"
+        },
+        {
+          "frame": 12,
+          "bytes": "0c000000010300000001000000300000000100000000000000100000007a68dbd062730f9fdb0ab7f2474b914700000000"
+        }
+      ]
+    },
+    {
+      "file": "sealed_payload_sender.cncr",
+      "size": 615,
+      "sha256": "8225c673418c9a021a5a6543f93ea59f2f61d9d3d785bd105ac2e57e1ba50f61",
+      "verify_exit": 0,
+      "description": "A group order whose payload holds the machine's own bytes and whose sealed_payload holds the form every machine agrees on. The sender and receiver copies differ in payload, in INFO.recorder, and in INFO.map_name and game_mode, which the receiver holds translated, and have the same S0 and seals.",
+      "records": 2,
+      "last_recorded_frame": 5,
+      "s0": "07873ad2d1ed480e10c93a1167ed9188b1a3db279766c27ef40b9d10d939ece8",
+      "seals": [
+        {
+          "through": 5,
+          "hash": "ff00773dcd5827296565eb9ae20c76702ddd2609a9a63f4bf0e21a905ae001ff"
+        }
+      ],
+      "canonical": [
+        {
+          "frame": 0,
+          "bytes": "0000000001010000000000000000000000"
+        },
+        {
+          "frame": 5,
+          "bytes": "050000000102000000010000000b00000000000000000000000e0000000a0000000000112233440000000000000000"
+        }
+      ],
+      "event_payload": "0a000000070011223344aabbccdd",
+      "event_sealed_payload": "0a00000000001122334400000000"
+    },
+    {
+      "file": "sealed_payload_receiver.cncr",
+      "size": 624,
+      "sha256": "87e11f6a24b2fada8f64c9f8db98f8167db2b75a0cfd55b824953fad4d45aa8f",
+      "verify_exit": 0,
+      "description": "A group order whose payload holds the machine's own bytes and whose sealed_payload holds the form every machine agrees on. The sender and receiver copies differ in payload, in INFO.recorder, and in INFO.map_name and game_mode, which the receiver holds translated, and have the same S0 and seals.",
+      "records": 2,
+      "last_recorded_frame": 5,
+      "s0": "07873ad2d1ed480e10c93a1167ed9188b1a3db279766c27ef40b9d10d939ece8",
+      "seals": [
+        {
+          "through": 5,
+          "hash": "ff00773dcd5827296565eb9ae20c76702ddd2609a9a63f4bf0e21a905ae001ff"
+        }
+      ],
+      "canonical": [
+        {
+          "frame": 0,
+          "bytes": "0000000001010000000000000000000000"
+        },
+        {
+          "frame": 5,
+          "bytes": "050000000102000000010000000b00000000000000000000000e0000000a0000000000112233440000000000000000"
+        }
+      ],
+      "event_payload": "0a00000007001122334455667788",
+      "event_sealed_payload": "0a00000000001122334400000000"
+    },
+    {
+      "file": "incomplete_open.cncr",
+      "size": 615,
+      "sha256": "33f18e484c9c3227e22a747942509ba3e94dcfe2ebbe9336420cedf402aa9d3e",
+      "verify_exit": 3,
+      "description": "FRMS is open: stored and raw size are all ones, codec 1, a sync flush after every record. The file ends 3 bytes into the flushed block that holds frame 901, so that record is lost. The record on frame 900 carries the seal through 899, which matches.",
+      "records": 7,
+      "last_recorded_frame": 900,
+      "s0": "07873ad2d1ed480e10c93a1167ed9188b1a3db279766c27ef40b9d10d939ece8",
+      "frame_seals": {
+        "900": [
+          899
+        ]
+      }
+    },
+    {
+      "file": "incomplete_closing.cncr",
+      "size": 502,
+      "sha256": "4068320fa4a48d8cb269631ad5e13ac1c84193aae01910f7b8d8401195503864",
+      "verify_exit": 3,
+      "description": "The writer stopped while closing: FRMS has its real raw size and a stored size that is still all ones, so it is read as open. The stream has no end marker.",
+      "records": 2,
+      "last_recorded_frame": 1,
+      "s0": "07873ad2d1ed480e10c93a1167ed9188b1a3db279766c27ef40b9d10d939ece8"
+    },
+    {
+      "file": "skipped_parts.cncr",
+      "size": 697,
+      "sha256": "9dba9323b5dcd1bcfd9abdcb409465c28aead0a9908173906c2bbe4d9cb25a8a",
+      "verify_exit": 0,
+      "description": "A reader skips: private section \"opts\" (codec 0) and \"xtra\" (codec 7, unknown) after LNCH; an unknown shared section \"ZZZZ\" before END; private field 100 in INFO; unknown field 50 and private field 150 in a Frame record.",
+      "records": 1,
+      "last_recorded_frame": 0,
+      "s0": "07873ad2d1ed480e10c93a1167ed9188b1a3db279766c27ef40b9d10d939ece8"
+    },
+    {
+      "file": "desync_a.cncr",
+      "size": 688,
+      "sha256": "08fd1fdef265323b103e8c3fa5c3e1f3853c11b5f2cd7c882bfeacba92caa429",
+      "verify_exit": 0,
+      "description": "One of two copies of a game that differ in the frame hash on frame 1000. Each copy is valid on its own. compare reports the same game and the first difference on frame 1000, interval 2.",
+      "records": 4,
+      "last_recorded_frame": 1001,
+      "s0": "07873ad2d1ed480e10c93a1167ed9188b1a3db279766c27ef40b9d10d939ece8",
+      "seals": [
+        {
+          "through": 899,
+          "hash": "c69d86de1cbd0b69277f2a7647864a8dc6c5556c42e1dae0a2624cbc31d9d2b7"
+        },
+        {
+          "through": 1001,
+          "hash": "03d760b204f171863e3be859434eb5d339b210f7523494658562c5b7026b661b"
+        }
+      ]
+    },
+    {
+      "file": "desync_b.cncr",
+      "size": 689,
+      "sha256": "c921acf0d7377b1e8925915bb6a4c8d50d40b9ecd3e2640d9ca6cd6b59c482c5",
+      "verify_exit": 0,
+      "description": "One of two copies of a game that differ in the frame hash on frame 1000. Each copy is valid on its own. compare reports the same game and the first difference on frame 1000, interval 2.",
+      "records": 4,
+      "last_recorded_frame": 1001,
+      "s0": "07873ad2d1ed480e10c93a1167ed9188b1a3db279766c27ef40b9d10d939ece8",
+      "seals": [
+        {
+          "through": 899,
+          "hash": "c69d86de1cbd0b69277f2a7647864a8dc6c5556c42e1dae0a2624cbc31d9d2b7"
+        },
+        {
+          "through": 1001,
+          "hash": "0759549e41cd25c3dddfb99d094edf0f2ae6e2552cf96b6bdcd2e5d56feece95"
+        }
+      ]
+    },
+    {
+      "file": "other_game.cncr",
+      "size": 569,
+      "sha256": "59d0d5abad866110fce7bb3c6c2fe817369c75b96cda4eddd244a9dd39f225e0",
+      "verify_exit": 0,
+      "description": "Differs from desync_a.cncr only in LNCH players[1].color, so S0 and every seal differ.",
+      "records": 1,
+      "last_recorded_frame": 0,
+      "s0": "4b2cbc842d1f40b95dacfd5cc8e5bc78cae9a6f9c74b83b985be918a93ce6a05"
+    },
+    {
+      "file": "limit_info_at.cncr",
+      "size": 8420,
+      "sha256": "853a228290c8ec85e6376c5e5da92971bf5987b5179d8d36156e4c0841f244c5",
+      "verify_exit": 0,
+      "description": "INFO with a raw size of exactly 1 MiB (1048576 bytes), codec 1.",
+      "records": 1,
+      "last_recorded_frame": 0,
+      "s0": "53e6fb55c656b31e50da31d5550bcd8241536c2289fda7fba517f98f6ab1fedd"
+    },
+    {
+      "file": "malformed_limit_info.cncr",
+      "size": 8420,
+      "sha256": "7cbc580679f116e0c8981ffeb730583760767a32d0311668af08272206d02702",
+      "verify_exit": 1,
+      "description": "INFO with a raw size of 1048577 bytes, codec 1.",
+      "reason": "INFO raw size above 1 MiB; a reader refuses it before inflating",
+      "error_code": "limit_section"
+    },
+    {
+      "file": "limit_record_at.cncr",
+      "size": 7883,
+      "sha256": "c4c3fc7e1dd8601151b3a57bcc80062d156ab7a6f6f8765fec62426666b4ef5e",
+      "verify_exit": 0,
+      "description": "One Frame record of 1048576 bytes, FRMS codec 1.",
+      "records": 1,
+      "last_recorded_frame": 0,
+      "s0": "07873ad2d1ed480e10c93a1167ed9188b1a3db279766c27ef40b9d10d939ece8"
+    },
+    {
+      "file": "malformed_limit_record.cncr",
+      "size": 7883,
+      "sha256": "f47e3ab5af20cbffad1de2d3419ee8e59069d70bbe4757fe35abb8bd9fee6e95",
+      "verify_exit": 1,
+      "description": "One Frame record of 1048577 bytes, FRMS codec 1.",
+      "reason": "a Frame record above 1 MiB",
+      "error_code": "limit_record"
+    },
+    {
+      "file": "limit_events_at.cncr",
+      "size": 1236,
+      "sha256": "e3ed26f330febdb7e9799b9c7a3ddd6e57fcaa29f6341e8c74c3bb76895a2d7f",
+      "verify_exit": 0,
+      "description": "One record with 16384 local events that are otherwise empty, FRMS codec 1.",
+      "records": 1,
+      "last_recorded_frame": 0,
+      "s0": "07873ad2d1ed480e10c93a1167ed9188b1a3db279766c27ef40b9d10d939ece8"
+    },
+    {
+      "file": "malformed_limit_events.cncr",
+      "size": 1239,
+      "sha256": "81e3fa9ffc047a98b9cff2517e6d28d07ee2697ae6dfdb618d4f6d071bd8b684",
+      "verify_exit": 1,
+      "description": "One record with 16385 local events that are otherwise empty, FRMS codec 1.",
+      "reason": "more than 16384 events in one record",
+      "error_code": "limit_events"
+    },
+    {
+      "file": "limit_payload_at.cncr",
+      "size": 4668,
+      "sha256": "d5ed264c3fa8b7c9d11644fb2c935c013828ea0b5636f3afafa2ef2fef5eb358",
+      "verify_exit": 0,
+      "description": "One event payload of 4096 bytes.",
+      "records": 1,
+      "last_recorded_frame": 0,
+      "s0": "07873ad2d1ed480e10c93a1167ed9188b1a3db279766c27ef40b9d10d939ece8"
+    },
+    {
+      "file": "malformed_limit_payload.cncr",
+      "size": 4669,
+      "sha256": "6fef143cf3fa095046e94867eb31681662fb392fc94bc3d1c99afe6c21f6c861",
+      "verify_exit": 1,
+      "description": "One event payload of 4097 bytes.",
+      "reason": "an event payload above 4096 bytes",
+      "error_code": "limit_payload"
+    },
+    {
+      "file": "limit_string_at.cncr",
+      "size": 1584,
+      "sha256": "3a17b3c5af87d19e7c47552cb04633cbf4c9b26b9fdcbf9d2b971f734b712308",
+      "verify_exit": 0,
+      "description": "Player 0 name of 1024 bytes.",
+      "records": 1,
+      "last_recorded_frame": 0,
+      "s0": "effc719bf10530ef08bb3603a163090e4164212b264719cc3de81b1d8ae494bb"
+    },
+    {
+      "file": "malformed_limit_string.cncr",
+      "size": 1585,
+      "sha256": "bdd43c1aeaf5a4c9dc634820b238b0e4539c0362d04a9c69e0e596e4d23f4096",
+      "verify_exit": 1,
+      "description": "Player 0 name of 1025 bytes.",
+      "reason": "a string above 1024 bytes",
+      "error_code": "limit_string"
+    },
+    {
+      "file": "limit_players_at.cncr",
+      "size": 1203,
+      "sha256": "0c1f866865e5eef58b5f42d78a787f9e3ccf39dc636df0af6b5e7551091b5ab4",
+      "verify_exit": 0,
+      "description": "64 players in LNCH.",
+      "records": 1,
+      "last_recorded_frame": 0,
+      "s0": "6a045d08f2bada7d191fea8477e04f0a101116c03251a58dc47993b4308cd952"
+    },
+    {
+      "file": "malformed_limit_players.cncr",
+      "size": 1214,
+      "sha256": "f780ef968fb7c76531e5e86e12770ec009848b61a5329468272b9b65df55f850",
+      "verify_exit": 1,
+      "description": "65 players in LNCH.",
+      "reason": "more than 64 players",
+      "error_code": "limit_players"
+    },
+    {
+      "file": "base_valid.cncr",
+      "size": 661,
+      "sha256": "55fc47579fdd132c9861c42d29b3b8d96e2e609b299d4d3e954f1c9f4613527e",
+      "verify_exit": 0,
+      "description": "The valid file several malformed vectors are derived from: records on frames 0 and 950, the second carrying the seal through 899.",
+      "records": 2,
+      "last_recorded_frame": 950,
+      "s0": "07873ad2d1ed480e10c93a1167ed9188b1a3db279766c27ef40b9d10d939ece8",
+      "seals": [
+        {
+          "through": 899,
+          "hash": "b2b1723332b33c4fb652b9f716455cea602addbe4fb68d7d99c8d4aa76e3ac40"
+        },
+        {
+          "through": 950,
+          "hash": "91dd98c978700064270e058c83113f07872d1981859213efd5da97f61b402748"
+        }
+      ]
+    },
+    {
+      "file": "malformed_short_preamble.cncr",
+      "size": 6,
+      "sha256": "4ca2f209654b248ae6a740e94e9e27993076152b117b2a3b5f608a2a2d777a95",
+      "verify_exit": 2,
+      "description": "The first 6 bytes of base_valid.cncr.",
+      "reason": "shorter than the 8-byte preamble",
+      "error_code": "short_preamble"
+    },
+    {
+      "file": "malformed_bad_magic.cncr",
+      "size": 661,
+      "sha256": "f19a0fa6e707185d9a56e47bd4bf03088b6cdde2f06bce111490b79995d2a3ee",
+      "verify_exit": 2,
+      "description": "Magic \"CNCX\".",
+      "reason": "magic is not \"CNCR\"",
+      "error_code": "bad_magic"
+    },
+    {
+      "file": "malformed_container_version.cncr",
+      "size": 661,
+      "sha256": "274bc110a34d9dd6b5988c4377ab78a507c7c3bf721b28d0666206afb2f368a7",
+      "verify_exit": 2,
+      "description": "Container version 2.",
+      "reason": "container version is not 1",
+      "error_code": "container_version"
+    },
+    {
+      "file": "malformed_missing_init.cncr",
+      "size": 601,
+      "sha256": "52de52aa5094fe436a2175fce27fb614a0711444b4b72c03d118e81e3453dbf8",
+      "verify_exit": 1,
+      "description": "base_valid.cncr without its INIT section.",
+      "reason": "INIT is required; seals are not checked",
+      "error_code": "missing_section"
+    },
+    {
+      "file": "malformed_lnch_first.cncr",
+      "size": 661,
+      "sha256": "bff3f377016fbf116833bf008fe1e752cf9529354716202ede177b3d0820dd5d",
+      "verify_exit": 1,
+      "description": "LNCH before INFO.",
+      "reason": "INFO must be first and LNCH second",
+      "error_code": "section_order"
+    },
+    {
+      "file": "malformed_section_after_end.cncr",
+      "size": 697,
+      "sha256": "268d10d37782d281f0901c0f49428a1d9a9024d10b5ab48f85ea6a525b59e61f",
+      "verify_exit": 1,
+      "description": "A CKPT section after END.",
+      "reason": "END must be the last section",
+      "error_code": "section_order"
+    },
+    {
+      "file": "malformed_codec0_sizes.cncr",
+      "size": 661,
+      "sha256": "0c213d828c721f7bc013e8678bf427616eb635f2d9306c151e83d37a50c1dbac",
+      "verify_exit": 1,
+      "description": "INFO with codec 0 and a raw size one larger than its stored size.",
+      "reason": "codec 0 requires equal stored and raw sizes",
+      "error_code": "size_mismatch"
+    },
+    {
+      "file": "malformed_open_info.cncr",
+      "size": 661,
+      "sha256": "eb9f1eeb94cd6cf58f1244a4cd9ef8266aab1c894636eae1c8b053e183d938a0",
+      "verify_exit": 1,
+      "description": "INFO marked open.",
+      "reason": "only FRMS may be open",
+      "error_code": "open_section"
+    },
+    {
+      "file": "malformed_raw_size_ones.cncr",
+      "size": 661,
+      "sha256": "e9845038bafed7499672fd228e34eeaf3e442dbda7c5313a1ffc583cb8dbc073",
+      "verify_exit": 1,
+      "description": "INFO with a real stored size and a raw size of all ones.",
+      "reason": "a stored size that is not all ones comes with a real raw size",
+      "error_code": "open_raw_size"
+    },
+    {
+      "file": "malformed_unknown_codec_info.cncr",
+      "size": 661,
+      "sha256": "acc9c9a4139d03a0d4803b4833243c720635ea51faa39e5bcecaee18f7c5943c",
+      "verify_exit": 1,
+      "description": "INFO with codec 9.",
+      "reason": "INFO, LNCH, and END must use codec 0 or 1",
+      "error_code": "unknown_codec"
+    },
+    {
+      "file": "malformed_raw_size.cncr",
+      "size": 652,
+      "sha256": "be61a2a55a8bfc96a54b1a5fec4b0c56c5d5dc1a1ba0488f0cf52548106e8c70",
+      "verify_exit": 1,
+      "description": "INFO with codec 1 whose raw size is one less than the inflated size.",
+      "reason": "inflated size differs from the raw size",
+      "error_code": "raw_size_mismatch"
+    },
+    {
+      "file": "malformed_group_wire_type.cncr",
+      "size": 665,
+      "sha256": "a6ebc9045dba69e5f7226d1063a22d04b6a231897176199ce0d4e7588e68f548",
+      "verify_exit": 1,
+      "description": "LNCH ending in a start-group and end-group pair for field 50.",
+      "reason": "wire types 3 and 4 are malformed",
+      "error_code": "group_wire_type"
+    },
+    {
+      "file": "malformed_truncated_field.cncr",
+      "size": 668,
+      "sha256": "f772a8f17c220ab1875ce48d27005066a9fb61f969e46346dd90d874c5bad22f",
+      "verify_exit": 1,
+      "description": "LNCH ending in a players entry whose length runs past the end of the body.",
+      "reason": "a field runs past the end of its message",
+      "error_code": "truncated"
+    },
+    {
+      "file": "unknown_seal_version.cncr",
+      "size": 563,
+      "sha256": "50994275426c6a6a5294ecebeae30c3432edef22d034a1891df6aaa13505b158",
+      "verify_exit": 4,
+      "description": "RecordingInfo.seal_version 2. The file is otherwise valid.",
+      "reason": "not verified: this reader knows only seal version 1, so the seals are neither confirmed nor refuted; the file is not malformed",
+      "error_code": "unknown_seal_version",
+      "records": 1,
+      "last_recorded_frame": 0,
+      "s0": null
+    },
+    {
+      "file": "absent_seal_version.cncr",
+      "size": 561,
+      "sha256": "55040ea9173d0db8617283973f0019fcb841861e8be26b09c4f862a9c530bb62",
+      "verify_exit": 4,
+      "description": "RecordingInfo.seal_version absent (0). The file is otherwise valid.",
+      "reason": "not verified: this reader knows only seal version 1, so the seals are neither confirmed nor refuted; the file is not malformed",
+      "error_code": "unknown_seal_version",
+      "records": 1,
+      "last_recorded_frame": 0,
+      "s0": null
+    },
+    {
+      "file": "malformed_missing_frame_seal.cncr",
+      "size": 622,
+      "sha256": "100182678fff8a538f5f549782fca2fe1854eaddc48cbb888ffe962f7d15f324",
+      "verify_exit": 1,
+      "description": "base_valid.cncr with the seal through 899 left out of the record on frame 950; the summary seals are correct.",
+      "reason": "an interval seal is missing from its frame record",
+      "error_code": "missing_seal"
+    },
+    {
+      "file": "malformed_frame_seal.cncr",
+      "size": 661,
+      "sha256": "7d5e6d5ab6f6c00ebf20ea327e1df3bfdf09c92d23e259e8452fb79743486419",
+      "verify_exit": 1,
+      "description": "The seal through 899 in the record on frame 950 has its first byte changed.",
+      "reason": "an interval seal does not match",
+      "error_code": "seal_mismatch"
+    },
+    {
+      "file": "malformed_misplaced_seal.cncr",
+      "size": 669,
+      "sha256": "15695d7f547da6d12b1873257b1be0fce5523dcd1d377dec8aab8c30e373af48",
+      "verify_exit": 1,
+      "description": "The correct seal through 899 on the record of frame 1000 instead of frame 950.",
+      "reason": "an interval seal is not on the first record after its interval",
+      "error_code": "misplaced_seal"
+    },
+    {
+      "file": "malformed_final_seal.cncr",
+      "size": 661,
+      "sha256": "4bd4e1c05d06f2c429bbf71dc141248b2f41de6768677c3e4e5e8562836a66f8",
+      "verify_exit": 1,
+      "description": "The final seal through 950 is 32 zero bytes.",
+      "reason": "the final seal does not match",
+      "error_code": "seal_mismatch"
+    },
+    {
+      "file": "malformed_record_after_last_frame.cncr",
+      "size": 573,
+      "sha256": "e73c698fda5476a90c41c5cfa3fb1af47e040e115b9f37ff31e0c339b56f8d0d",
+      "verify_exit": 1,
+      "description": "last_frame is 3 and a record is on frame 4.",
+      "reason": "a frame record after last_frame",
+      "error_code": "record_after_last_frame"
+    },
+    {
+      "file": "malformed_checkpoint_crc.cncr",
+      "size": 599,
+      "sha256": "106e23ef3c9f8c3ba18977a2051186c64f424043e1ab62a548e3f376723f44aa",
+      "verify_exit": 1,
+      "description": "A checkpoint whose crc32 does not match its state.",
+      "reason": "checkpoint CRC-32 mismatch",
+      "error_code": "checkpoint_crc"
+    },
+    {
+      "file": "skipped_wire_type.cncr",
+      "size": 565,
+      "sha256": "3b42a01d3102a6c79fd1f88e256e666354fff39715542ffaadab42a0bc4118a1",
+      "verify_exit": 0,
+      "description": "The record on frame 0 ends with field 1 (skipped, uint32) in wire type 2 with length 0. A reader skips it as an unknown field, so skipped reads as absent (0), the record is on frame 0, and every seal matches.",
+      "records": 1,
+      "last_recorded_frame": 0,
+      "s0": "07873ad2d1ed480e10c93a1167ed9188b1a3db279766c27ef40b9d10d939ece8",
+      "record_body": "150100000030b584020a00"
+    },
+    {
+      "file": "malformed_record_cut.cncr",
+      "size": 564,
+      "sha256": "795f6c7f3b2e0c31f4032f4b20e1e372ce76834c6dfc42dd68d18a31a135f287",
+      "verify_exit": 1,
+      "description": "A closed FRMS that fits in the file and ends inside a record of 40 bytes.",
+      "reason": "a record cut short inside a closed section",
+      "error_code": "record_cut"
+    },
+    {
+      "file": "malformed_defeated_order.cncr",
+      "size": 551,
+      "sha256": "fcd1623d2976dd85d816fb52e4f2c5055cb98272c98251c79e4b86e4ec0984c2",
+      "verify_exit": 1,
+      "description": "The record on frame 1 lists defeated houses 2 then 1. The seals are computed over the canonical bytes, which list the houses in ascending order, and they match.",
+      "reason": "Frame.defeated is not in ascending order; the sealed list then has two readings, record order and ascending order, so the record is refused",
+      "error_code": "defeated_order",
+      "canonical": [
+        {
+          "frame": 0,
+          "bytes": "0000000001010000000000000000000000"
+        },
+        {
+          "frame": 1,
+          "bytes": "01000000010200000000000000020000000100000002000000"
+        }
+      ]
+    },
+    {
+      "file": "income_kinds.cncr",
+      "size": 667,
+      "sha256": "dc0f81c5950760b97870191aaee3781f88fe00170b7631a48260719c60ddbe0e",
+      "verify_exit": 0,
+      "description": "INFO lists income kinds 1 \"Harvested\", 2 \"Crate\", 3 \"Sold/Unit\", and 4 \"Trigger\". Frame 0 pays kind 1, frame 1 pays kinds 1 and 3, and frame 2 pays kind 2 in an entry with private field 150. No entry uses kind 4.",
+      "records": 3,
+      "last_recorded_frame": 2,
+      "s0": "07873ad2d1ed480e10c93a1167ed9188b1a3db279766c27ef40b9d10d939ece8"
+    },
+    {
+      "file": "malformed_income_kind_unlisted.cncr",
+      "size": 594,
+      "sha256": "d331f04336a2e4ec895dd359ddbb035a518bb3be61f6fb1cee57a269a7d91b12",
+      "verify_exit": 1,
+      "description": "INFO lists income kind 1 \"Crate\". Frame 0 pays kind 1, and frame 1 pays kind 2.",
+      "reason": "an Income entry uses a kind that RecordingInfo.income_kinds does not list",
+      "error_code": "income_kind_unlisted"
+    },
+    {
+      "file": "malformed_income_kind_number_twice.cncr",
+      "size": 593,
+      "sha256": "278cc4f04a87659febe9cf5f17e758c24cf796d28c7230cf6878d4a6ec88d11c",
+      "verify_exit": 1,
+      "description": "INFO lists income kind 1 \"Crate\" and kind 1 \"Trigger\". Frame 0 pays kind 1.",
+      "reason": "two RecordingInfo.income_kinds entries have the same number",
+      "error_code": "income_kind_number_twice"
+    },
+    {
+      "file": "malformed_income_kind_id_twice.cncr",
+      "size": 597,
+      "sha256": "21e39a4f89143c63fe67ff35b896402d96cade2b1a41ba5b748f495c0e9ea941",
+      "verify_exit": 1,
+      "description": "INFO lists income kind 1 \"Crate\" and kind 2 \"Crate\". Frame 0 pays kinds 1 and 2.",
+      "reason": "two RecordingInfo.income_kinds entries have the same id",
+      "error_code": "income_kind_id_twice"
+    },
+    {
+      "file": "malformed_income_kind_id_empty.cncr",
+      "size": 573,
+      "sha256": "98b7d19c5a6056c692063d6e7250b379e17c347c03b1f1665729ff970c45988f",
+      "verify_exit": 1,
+      "description": "INFO lists income kind 1 with an empty id. Frame 0 pays kind 1.",
+      "reason": "a RecordingInfo.income_kinds entry has an empty id",
+      "error_code": "income_kind_id_empty"
+    },
+    {
+      "file": "limit_income_kinds_at.cncr",
+      "size": 65979,
+      "sha256": "ac79670b35ee4476d3fd22c67b6bd140891517d4c27a459473360bfdd0ce99d4",
+      "verify_exit": 0,
+      "description": "INFO lists 4096 income kinds, numbered from 1. Frame 0 pays kind 4096.",
+      "records": 1,
+      "last_recorded_frame": 0,
+      "s0": "07873ad2d1ed480e10c93a1167ed9188b1a3db279766c27ef40b9d10d939ece8"
+    },
+    {
+      "file": "malformed_limit_income_kinds.cncr",
+      "size": 65995,
+      "sha256": "5f0f5bce0af3147f0ff94c2e1a359d7fc911ca11a09f63eddf636e1595c57154",
+      "verify_exit": 1,
+      "description": "INFO lists 4097 income kinds, numbered from 1. Frame 0 pays kind 4097.",
+      "reason": "more than 4096 income kinds",
+      "error_code": "limit_income_kinds"
+    },
+    {
+      "file": "malformed_unsealed_after_last_frame.cncr",
+      "size": 581,
+      "sha256": "e5c38f9e5bdf92b5f9340f37184e7c831f86bc5de05e7fcea8aa67e1fed0ac5a",
+      "verify_exit": 1,
+      "description": "last_frame is 3 and a record on frame 5 holds only a sample: no hash, no shared event, no defeat. The seals through 3 match, so only the last_frame rule refuses the file.",
+      "reason": "a frame record after last_frame",
+      "error_code": "record_after_last_frame"
+    },
+    {
+      "file": "malformed_cut_in_init.cncr",
+      "size": 444,
+      "sha256": "959de889c5d7fc6f33941adbb7729d610bedc555d15bb2f16d2198cdcad4bb29",
+      "verify_exit": 1,
+      "description": "base_valid.cncr cut in the middle of the INIT body, as a crash before the first flush leaves it.",
+      "reason": "INIT runs past the end of the file and is ignored; a file without INIT is malformed",
+      "error_code": "missing_section"
+    },
+    {
+      "file": "unknown_codec_init.cncr",
+      "size": 661,
+      "sha256": "f914be47dbe86ff509162c3bb98ca387985b170162da9d384e69bd14bde9d9d1",
+      "verify_exit": 4,
+      "description": "base_valid.cncr with INIT marked codec 9.",
+      "reason": "not verified: INIT cannot be decoded, so S0 and the seals cannot be computed; a future codec is allowed outside INFO, LNCH, and END",
+      "error_code": "unknown_codec",
+      "records": 2,
+      "last_recorded_frame": 950,
+      "s0": null
+    },
+    {
+      "file": "unknown_codec_frms.cncr",
+      "size": 661,
+      "sha256": "3da77664dc29e0bc7dc7834d5de2d2adafb9f631fe4a67a66bf9806ac33e2fe2",
+      "verify_exit": 4,
+      "description": "base_valid.cncr with FRMS marked codec 9.",
+      "reason": "not verified: the frame stream cannot be read, so the seals cannot be compared",
+      "error_code": "unknown_codec",
+      "records": 0,
+      "last_recorded_frame": null,
+      "s0": "07873ad2d1ed480e10c93a1167ed9188b1a3db279766c27ef40b9d10d939ece8"
+    },
+    {
+      "file": "narrowed_value_range.cncr",
+      "size": 569,
+      "sha256": "02fd2ff02dfd032f4b25f72b1bb29983f95830f30eea2a27b38b8d2c4e37a4b4",
+      "verify_exit": 0,
+      "description": "Player 0 in LNCH has house (uint32) encoded as the varint 2^32. A reader narrows the value to 32 bits, as a generated parser does, so house reads as 0 and the file is accepted. The seals are computed over the LNCH bytes as stored, so they match. Re-encoding LNCH gives other bytes, so cncreplay warns that LNCH is not canonical.",
+      "records": 1,
+      "last_recorded_frame": 0,
+      "s0": "66091d3d78506929b7db7a8fd1c499d28ddef53e3ab0e4831327970bb7ac81c1",
+      "narrowed": {
+        "field": "players[0].house",
+        "type": "uint32",
+        "varint": 4294967296,
+        "reads_as": 0
+      }
+    },
+    {
+      "file": "malformed_checkpoint_same_frame.cncr",
+      "size": 648,
+      "sha256": "e0a763af1a1b1da1c0324dd365613e886070abf2ea0dc1a082a1b01d1face167",
+      "verify_exit": 1,
+      "description": "Two CKPT sections for frame 1.",
+      "reason": "two checkpoints on the same frame",
+      "error_code": "checkpoint_order"
+    },
+    {
+      "file": "hand_minimal.cncr",
+      "size": 136,
+      "sha256": "b29069afae1d4ce5aa8c142591829dd3369c8afed860e4cee9148d7d0fa469c7",
+      "verify_exit": 0,
+      "description": "Built by hand: INFO is 68 01 (seal_version 1), LNCH is 15 00000000 (seed 0), INIT and END are empty, and FRMS is 00 unless stated. The base of the other hand-built vectors. No frame ran, so there are no records and no seals.",
+      "records": 0,
+      "last_recorded_frame": null,
+      "s0": "e1dcaffeb6d52a3241d06bcd9438f5f45716123d0eb240a044bfcb6e3e2a82c4",
+      "file_hex": "434e435201000000494e464f000000000200000000000000020000000000000068014c4e434800000000050000000000000005000000000000001500000000494e4954000000000000000000000000000000000000000046524d53000000000100000000000000010000000000000000454e44200000000000000000000000000000000000000000"
+    },
+    {
+      "file": "malformed_frms_bytes_after_terminator.cncr",
+      "size": 137,
+      "sha256": "c7dc06b471c425e4b6b63683b05ded28c671dec547a0c78575089a1f44707008",
+      "verify_exit": 1,
+      "description": "Built by hand: INFO is 68 01 (seal_version 1), LNCH is 15 00000000 (seed 0), INIT and END are empty, and FRMS is 00 unless stated. The closed FRMS body is 00 01: one byte follows the end marker.",
+      "reason": "a closed FRMS holds nothing after its zero-length end marker",
+      "error_code": "data_after_end"
+    },
+    {
+      "file": "malformed_frms_no_terminator.cncr",
+      "size": 135,
+      "sha256": "553e088fd7e0638d5abe3181a4be93e47a176a82af9f0d69aee193e01ffde4a0",
+      "verify_exit": 1,
+      "description": "Built by hand: INFO is 68 01 (seal_version 1), LNCH is 15 00000000 (seed 0), INIT and END are empty, and FRMS is 00 unless stated. FRMS is closed, codec 0, with an empty body.",
+      "reason": "a closed FRMS ends without its zero-length end marker",
+      "error_code": "frms_unterminated"
+    },
+    {
+      "file": "malformed_frms_no_terminator_deflate.cncr",
+      "size": 137,
+      "sha256": "ad47d9835d96b816e78f0a8d6e1bdb3dbf22bbb65736c3cdaefaab49782d3d8b",
+      "verify_exit": 1,
+      "description": "Built by hand: INFO is 68 01 (seal_version 1), LNCH is 15 00000000 (seed 0), INIT and END are empty, and FRMS is 00 unless stated. FRMS is closed, codec 1, with raw size 0 and the stored body 03 00, a final empty block that inflates to nothing.",
+      "reason": "a closed FRMS ends without its zero-length end marker",
+      "error_code": "frms_unterminated"
+    },
+    {
+      "file": "incomplete_frms_invalid_deflate.cncr",
+      "size": 112,
+      "sha256": "e84307ec8c3ac4bb085c982f3e25cd1bfcf7ba3b0f569cd86c910f9c3f8fc844",
+      "verify_exit": 3,
+      "description": "Built by hand: INFO is 68 01 (seal_version 1), LNCH is 15 00000000 (seed 0), INIT and END are empty, and FRMS is 00 unless stated. FRMS is open (stored and raw size all ones), codec 1, and its body is 07, a block of the reserved type 3. Invalid deflate data in an open FRMS ends the stream as if the input had run out, so the file is incomplete with no records.",
+      "records": 0,
+      "last_recorded_frame": null,
+      "s0": "e1dcaffeb6d52a3241d06bcd9438f5f45716123d0eb240a044bfcb6e3e2a82c4"
+    },
+    {
+      "file": "malformed_frms_closed_invalid_deflate.cncr",
+      "size": 136,
+      "sha256": "0c00679635fe8713a636600333bf5b2c5146ccc5bfbc102ce8a06d6c19565a5b",
+      "verify_exit": 1,
+      "description": "Built by hand: INFO is 68 01 (seal_version 1), LNCH is 15 00000000 (seed 0), INIT and END are empty, and FRMS is 00 unless stated. FRMS is closed, codec 1, raw size 1, and its body is 07, a block of the reserved type 3. END follows.",
+      "reason": "invalid deflate data in a closed FRMS that lies whole in the file",
+      "error_code": "inflate_error"
+    },
+    {
+      "file": "malformed_deflate_trailing_bytes.cncr",
+      "size": 139,
+      "sha256": "3fecb36a2a428282d577ede3c20230678c08b0eb62b754cdb8e24f8497d2f920",
+      "verify_exit": 1,
+      "description": "Built by hand: INFO is 68 01 (seal_version 1), LNCH is 15 00000000 (seed 0), INIT and END are empty, and FRMS is 00 unless stated. INIT is codec 1, raw size 0, with the stored body 03 00 00: an empty final block and one byte after it.",
+      "reason": "stored bytes after the end of a closed section's deflate stream",
+      "error_code": "inflate_error"
+    },
+    {
+      "file": "malformed_section_after_end_unknown.cncr",
+      "size": 160,
+      "sha256": "81d3b3b5a4c1246545f1851ed7fb8b4e596f89e3d6598ae12fa8dce71afb5213",
+      "verify_exit": 1,
+      "description": "Built by hand: INFO is 68 01 (seal_version 1), LNCH is 15 00000000 (seed 0), INIT and END are empty, and FRMS is 00 unless stated. An empty section with the unknown shared tag \"FUTR\" follows END.",
+      "reason": "no section follows END, a skipped one included",
+      "error_code": "section_order"
+    },
+    {
+      "file": "malformed_section_after_end_private.cncr",
+      "size": 160,
+      "sha256": "5b9e6520136c34373f4f5e5f1e717735febf6dbfc2f6fd232f1ce2d41076950b",
+      "verify_exit": 1,
+      "description": "Built by hand: INFO is 68 01 (seal_version 1), LNCH is 15 00000000 (seed 0), INIT and END are empty, and FRMS is 00 unless stated. An empty engine-private section \"priv\" follows END.",
+      "reason": "no section follows END, a skipped one included",
+      "error_code": "section_order"
+    },
+    {
+      "file": "malformed_map_unknown_codec_after_frms.cncr",
+      "size": 160,
+      "sha256": "fb8b379f490b0429bcb07215cf2ae03bb65424101b6b7262c503144186be91e1",
+      "verify_exit": 1,
+      "description": "Built by hand: INFO is 68 01 (seal_version 1), LNCH is 15 00000000 (seed 0), INIT and END are empty, and FRMS is 00 unless stated. An empty MAP section with codec 2 follows FRMS.",
+      "reason": "MAP comes before FRMS, whatever its codec",
+      "error_code": "section_order"
+    },
+    {
+      "file": "malformed_second_map_unknown_codec.cncr",
+      "size": 184,
+      "sha256": "71df3665f00b2318fa536afac023da57dfef74650736c8db0ebeff99508ab1a1",
+      "verify_exit": 1,
+      "description": "Built by hand: INFO is 68 01 (seal_version 1), LNCH is 15 00000000 (seed 0), INIT and END are empty, and FRMS is 00 unless stated. Two empty MAP sections before INIT, the first codec 0 and the second codec 2.",
+      "reason": "MAP occurs at most once, whatever its codec",
+      "error_code": "duplicate_section"
+    },
+    {
+      "file": "malformed_unknown_tag_codec0_sizes.cncr",
+      "size": 160,
+      "sha256": "839b1eccdf6bfee399590ef95bc1ddb2741e681bf58a68416efd044ee77440ce",
+      "verify_exit": 1,
+      "description": "Built by hand: INFO is 68 01 (seal_version 1), LNCH is 15 00000000 (seed 0), INIT and END are empty, and FRMS is 00 unless stated. After LNCH, a section with the unknown shared tag \"FUTR\", codec 0, stored size 0, and raw size 1.",
+      "reason": "codec 0 requires equal stored and raw sizes for every tag, a skipped one included",
+      "error_code": "size_mismatch"
+    },
+    {
+      "file": "malformed_init_unknown_codec_over_limit.cncr",
+      "size": 136,
+      "sha256": "4ad0eceefd4f49f86a99b06016f98d35328483fec8a958c48320ad827ed17bc4",
+      "verify_exit": 1,
+      "description": "Built by hand: INFO is 68 01 (seal_version 1), LNCH is 15 00000000 (seed 0), INIT and END are empty, and FRMS is 00 unless stated. INIT is codec 9, stored size 0, raw size 33554433 (32 MiB + 1).",
+      "reason": "the raw size limit holds for a section whose codec the reader does not know",
+      "error_code": "limit_section"
+    },
+    {
+      "file": "checkpoint_frame_wide.cncr",
+      "size": 166,
+      "sha256": "7fd2249aa7f4ca17db6749fb927550007674a2f5a77b651c320a29f5327e7c37",
+      "verify_exit": 0,
+      "description": "Built by hand: INFO is 68 01 (seal_version 1), LNCH is 15 00000000 (seed 0), INIT and END are empty, and FRMS is 00 unless stated. One CKPT whose body is 08 81 80 80 80 10: frame as the varint 2^32 + 1, which narrows to frame 1. crc32 and state are absent, and the CRC-32 of an empty state is 0, so the checkpoint is valid.",
+      "records": 0,
+      "last_recorded_frame": null,
+      "s0": "e1dcaffeb6d52a3241d06bcd9438f5f45716123d0eb240a044bfcb6e3e2a82c4",
+      "checkpoint_frames": [
+        1
+      ]
+    },
+    {
+      "file": "malformed_checkpoint_frame_repeated.cncr",
+      "size": 190,
+      "sha256": "44d432fbec3133e94a8ec5147dc7ea81b97baa534295fee2201dfc66d7094eb9",
+      "verify_exit": 1,
+      "description": "Built by hand: INFO is 68 01 (seal_version 1), LNCH is 15 00000000 (seed 0), INIT and END are empty, and FRMS is 00 unless stated. Two CKPT sections: 08 01 08 02, whose frame is 2 because the last occurrence counts, then 08 02. Both have the empty state and crc32 0.",
+      "reason": "two checkpoints on the same frame, judged on the decoded frame values",
+      "error_code": "checkpoint_order",
+      "checkpoint_frames": [
+        2,
+        2
+      ]
+    },
+    {
+      "file": "checkpoint_frame_last.cncr",
+      "size": 198,
+      "sha256": "2ee145be868dea552ecdc4181cae16083fb10a02b90f6cd3a2fa8f10bb4f3843",
+      "verify_exit": 0,
+      "description": "Built by hand: INFO is 68 01 (seal_version 1), LNCH is 15 00000000 (seed 0), INIT and END are empty, and FRMS is 00 unless stated. Two CKPT sections whose frame field comes after crc32: 15 00000000 08 01 and 15 00000000 08 02, on frames 1 and 2. A writer puts frame first, but a reader takes the field wherever it sits.",
+      "records": 0,
+      "last_recorded_frame": null,
+      "s0": "e1dcaffeb6d52a3241d06bcd9438f5f45716123d0eb240a044bfcb6e3e2a82c4",
+      "checkpoint_frames": [
+        1,
+        2
+      ]
+    },
+    {
+      "file": "malformed_string_limit_replaced.cncr",
+      "size": 1166,
+      "sha256": "bc760ca1b018a109b4062f80a648317c4e01a71e826b53f097e728f72e1d9a8d",
+      "verify_exit": 1,
+      "description": "Built by hand: INFO is 68 01 (seal_version 1), LNCH is 15 00000000 (seed 0), INIT and END are empty, and FRMS is 00 unless stated. INFO is 68 01 0a 81 08, 1025 bytes of \"a\", then 0a 00: engine holds 1025 bytes, and a second, empty engine field replaces it.",
+      "reason": "a string above 1024 bytes, even one a later occurrence replaces",
+      "error_code": "limit_string"
+    },
+    {
+      "file": "malformed_players_over_limit_bomb.cncr",
+      "size": 10297,
+      "sha256": "069f8f1b87b8530fbce131717a25d4c5a5fc32deffb2bddb33e0bf964b99f2e7",
+      "verify_exit": 1,
+      "description": "Built by hand: INFO is 68 01 (seal_version 1), LNCH is 15 00000000 (seed 0), INIT and END are empty, and FRMS is 00 unless stated. LNCH is codec 1 and inflates to 1a 00 repeated 524288 times: 1 MiB, exactly the raw size limit, holding 524288 empty players.",
+      "reason": "more than 64 players; a reader can stop counting at the 65th",
+      "error_code": "limit_players"
+    },
+    {
+      "file": "malformed_skipped_max.cncr",
+      "size": 154,
+      "sha256": "2c34a759b9f3fc6f1416eea5459ab492dad2a8860b843454ff811a9dd5ccc8e7",
+      "verify_exit": 1,
+      "description": "Built by hand: INFO is 68 01 (seal_version 1), LNCH is 15 00000000 (seed 0), INIT and END are empty, and FRMS is 00 unless stated. The only record has skipped = 0xFFFFFFFF and hash 1, so it is on frame 0xFFFFFFFF, and carries no seal. END has last_frame 0xFFFFFFFF and no seals, so the summary also lacks its seals. 4772185 intervals end before the record; a verifier can find the missing seals by counting them, without computing the chain.",
+      "reason": "an interval seal is missing",
+      "error_code": "missing_seal"
+    },
+    {
+      "file": "malformed_last_frame_max.cncr",
+      "size": 142,
+      "sha256": "2cea50939f0ffd15cd19ae5212ae7e355952e85d70c42c16bb011c4251b0254e",
+      "verify_exit": 1,
+      "description": "Built by hand: INFO is 68 01 (seal_version 1), LNCH is 15 00000000 (seed 0), INIT and END are empty, and FRMS is 00 unless stated. END has last_frame 0xFFFFFFFF and no seals; there are no records.",
+      "reason": "RecordingSummary.seals lacks the seals up to last_frame",
+      "error_code": "missing_seal"
+    }
+  ]
+}

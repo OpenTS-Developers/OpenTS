@@ -70,6 +70,9 @@ class FileClass
 		virtual bool Set_Date_Time(unsigned int ) {return(false);}
 		virtual void Error(int error, int canretry = false, char const * filename=NULL) = 0;
 
+		// Hands buffered writes to the operating system; false if it refuses them.
+		virtual bool Flush(void) {return(true);}
+
 		operator char const * ()
 		{
 			return File_Name();

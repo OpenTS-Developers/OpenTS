@@ -442,6 +442,27 @@ void RawFileClass::Close(void)
 }
 
 
+/// <summary>
+/// Hands the bytes written so far to the operating system, so another reader of the file sees
+/// them and they survive a crash of this process. Returns false when the file is not open or
+/// the operating system refused the bytes.
+/// </summary>
+bool RawFileClass::Flush(void)
+{
+	// A derived Is_Open can report a file open that has no handle, and fflush(NULL) would
+	// flush every stream of the process.
+	if (Handle == nullptr) {
+		return(false);
+	}
+
+	if (fflush(Handle) != 0) {
+		Error(errno, false, Filename);
+		return(false);
+	}
+	return(true);
+}
+
+
 /***********************************************************************************************
  * RawFileClass::Read -- Reads the specified number of bytes into a memory buffer.             *
  *                                                                                             *

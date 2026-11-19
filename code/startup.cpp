@@ -163,9 +163,11 @@
 #include "zbuffer.h"
 
 #include <cfloat>
+#include <chrono>
 #include <lzo/lzoconf.h>
 #include <shellapi.h>
 #include <string>
+#include <thread>
 #include <vector>
 
 extern	HINSTANCE LanguageResources;
@@ -411,7 +413,7 @@ static bool Claim_Single_Instance(void)
 				if (GetLastError () == ERROR_ALREADY_EXISTS) {
 					CloseHandle (AutoPlayMutex);
 					AutoPlayMutex = NULL;
-					Sleep (2500);
+					std::this_thread::sleep_for(std::chrono::milliseconds(2500));
 				} else {
 					DebugString("Create AutoPlayMutex.\n");
 				}
