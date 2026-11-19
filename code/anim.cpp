@@ -1544,7 +1544,8 @@ void AnimClass::Flaming_Guy_AI(void)
 		Set_Stage(stage + Frame / _frame_divisor % Class->RunningFrames);
 		return;
 	} else {
-		int stage = ((ShapeSet const *)Get_Image_Data())->Get_Count() / 2 - 1;
+		ShapeSet const * shape = (ShapeSet const *)Get_Image_Data();
+		int stage = (shape != NULL ? shape->Get_Count() : 0) / 2 - 1;
 		if (Fetch_Stage() >= stage) {
 			Delete_Me();
 		}
