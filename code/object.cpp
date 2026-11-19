@@ -2256,8 +2256,8 @@ void ObjectClass::Compute_CRC(CRCEngine & crc) const
 	if (Next != NULL) {
 		crc(Next->Fetch_ID());
 	}
-	// A tag is never given an ID, so only whether one is attached is hashed.
-	crc(Tag != NULL);
+	// A tag is never given an ID, so its type's heap position is hashed, or -1 for none.
+	crc(Tag != NULL ? Tag->Class->Fetch_Heap_ID() : -1);
 	crc(Strength);
 	crc(IsDown);
 	crc(IsToDamage);

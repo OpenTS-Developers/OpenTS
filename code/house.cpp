@@ -179,6 +179,7 @@
 #include "surface.h"
 #include "tactical.h"
 #include "tag.h"
+#include "tagtype.h"
 #include "taskforc.h"
 #include "team.h"
 #include "techtype.h"
@@ -6487,8 +6488,9 @@ void HouseClass::Compute_CRC(CRCEngine & crc) const
 	crc((int)HeapID);
 	crc(Class->House);
 	crc(HouseTags.Count());
+	// A tag is never given an ID, so its type's heap position is hashed, or -1 for none.
 	for (int i = 0; i < HouseTags.Count(); i++) {
-		crc(HouseTags[i] != NULL);
+		crc(HouseTags[i] != NULL ? HouseTags[i]->Class->Fetch_Heap_ID() : -1);
 	}
 	crc(ConYards.Count());
 	for (int i = 0; i < ConYards.Count(); i++) {

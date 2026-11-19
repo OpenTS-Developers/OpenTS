@@ -104,6 +104,7 @@
 #include "swizzle.h"
 #include "tactical.h"
 #include "tag.h"
+#include "tagtype.h"
 #include "target.h"
 #include "taskforc.h"
 #include "teamtype.h"
@@ -2309,7 +2310,8 @@ void TeamClass::Compute_CRC(CRCEngine & crc) const
 	BASECLASS::Compute_CRC(crc);
 
 	crc(Class->HeapID);
-	crc(Script != NULL);
+	// A script is never given an ID, so its type's heap position is hashed, or -1 for none.
+	crc(Script != NULL && Script->Class_Of() != NULL ? Script->Class_Of()->Fetch_Heap_ID() : -1);
 	crc(House->Fetch_ID());
 	if (HouseToScout != NULL) crc(HouseToScout->Fetch_ID());
 	if (Zone != NULL) crc(Zone->Fetch_ID());
@@ -2326,8 +2328,8 @@ void TeamClass::Compute_CRC(CRCEngine & crc) const
 	}
 	crc((int)TimeOut);
 	crc((int)SuspendTimer);
-	// Tags and scripts are never given an ID, so only whether one is set is hashed.
-	crc(Tag != NULL);
+	// A tag is never given an ID, so its type's heap position is hashed, or -1 for none.
+	crc(Tag != NULL ? Tag->Class->Fetch_Heap_ID() : -1);
 	crc(IsDeleteTypeWhenDone);
 	crc(IsForcedActive);
 	crc(IsHasBeen);
