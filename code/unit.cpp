@@ -4117,7 +4117,7 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 	**	If the cell is out and out impassable because of underlying terrain, then
 	**	return this immutable fact.
 	*/
-	if (!bridge && Ground[cellptr->Land_Type()].Cost[Class->Speed] == 0) {
+	if (!bridge && Rule->Ground[cellptr->Land_Type()].Cost[Class->Speed] == 0) {
 		return(MOVE_NO);
 	}
 
@@ -4250,7 +4250,7 @@ ActionType UnitClass::What_Action(ObjectClass const * object, bool disallow_forc
 					} else {
 						CellClass * cellptr = &Map[(Coord const &)PositionCoord];
 						ObjectClass * object = Cargo.Attached_Object();
-						if (object == NULL || Ground[cellptr->Land_Type()].Cost[object->TClass->Speed] >= 0.01) {
+						if (object == NULL || Rule->Ground[cellptr->Land_Type()].Cost[object->TClass->Speed] >= 0.01) {
 							can_deploy = true;
 						}
 					}
@@ -4574,7 +4574,7 @@ FacingType UnitClass::Desired_Load_Dir(ObjectClass * passenger, Cell & moveto) c
 			value = (passenger->Can_Enter_Cell(&Map[cellnum], face, Get_Cell_Height()) == MOVE_OK || passenger->PositionCell == cellnum) ? 128 : -128;
 		} else {
 			CellClass * cell = &Map[Cell(cellnum)];
-			if (Ground[cell->Land_Type()].Cost[SPEED_FOOT] == 0 || cell->Flag.Occupy.Building || cell->Flag.Occupy.Vehicle || cell->Flag.Occupy.Monolith || (cell->Flag.Composite & 0x01F) == 0x01F) {
+			if (Rule->Ground[cell->Land_Type()].Cost[SPEED_FOOT] == 0 || cell->Flag.Occupy.Building || cell->Flag.Occupy.Vehicle || cell->Flag.Occupy.Monolith || (cell->Flag.Composite & 0x01F) == 0x01F) {
 				value = -128;
 			} else {
 				if (cell->Cell_Techno() && !House->Is_Ally(cell->Cell_Techno())) {

@@ -1646,7 +1646,7 @@ MoveType InfantryClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir
 			if (Mission == MISSION_ENTER || Mission == MISSION_CAPTURE || Mission == MISSION_SABOTAGE ||
 				((Mission == MISSION_GUARD_AREA || Mission == MISSION_PATROL || Mission == MISSION_GUARD) && Class->IsEngineer)) {
 				if (obj == NavCom || (&Map[(Coord const &)obj->PositionCoord] == NavCom || obj == TarCom)) {
-					if (!IsTethered && !isbridge && Ground[cellptr->Land_Type()].Cost[Class->Speed] == 0) {
+					if (!IsTethered && !isbridge && Rule->Ground[cellptr->Land_Type()].Cost[Class->Speed] == 0) {
 						return(MOVE_NO);
 					}
 					return(MOVE_OK);
@@ -1856,7 +1856,7 @@ MoveType InfantryClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir
 	/*
 	**	If foot soldiers cannot travel on the cell -- consider it impassable.
 	*/
-	if (/*retval == MOVE_OK &&*/ !IsTethered && !isbridge && Ground[cellptr->Land_Type()].Cost[Class->Speed] == 0) {
+	if (/*retval == MOVE_OK &&*/ !IsTethered && !isbridge && Rule->Ground[cellptr->Land_Type()].Cost[Class->Speed] == 0) {
 
 #ifdef OBSOLETE
 		/*

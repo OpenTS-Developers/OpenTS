@@ -34,8 +34,14 @@
 
 #include "ccini.h"
 #include "face.h"
+#include "mission.h"
 
+#include "anim.hh"
+#include "crate.hh"
 #include "diff.hh"
+#include "ground.hh"
+#include "land.hh"
+#include "mission.hh"
 
 class AircraftTypeClass;
 class AnimTypeClass;
@@ -2293,4 +2299,24 @@ class RulesClass
 		 * Distance in leptons to consider "close enough" for TEVENT_NEAR_WAYPOINT.
 		 */
 		int ComesNearWaypointDistance;
+
+		/*
+		 * For each land type, the fraction of full speed each speed type moves at on it, and
+		 * whether it can be built on.
+		 */
+		GroundType Ground[LAND_COUNT];
+
+		/*
+		 * For each crate powerup, its relative odds, the animation played when a crate gives
+		 * it, and a value whose meaning depends on the powerup.
+		 */
+		int CrateShares[CRATE_COUNT];
+		AnimType CrateAnims[CRATE_COUNT];
+		double CrateData[CRATE_COUNT];
+
+		/*
+		 * For each mission, how an object on it responds to threats and how often its mission
+		 * handler runs.
+		 */
+		MissionControlClass MissionControl[MISSION_COUNT];
 };

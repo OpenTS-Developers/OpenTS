@@ -838,11 +838,11 @@ bool CellClass::Is_Clear_To_Build(SpeedType loco, BuildingTypeClass * what, Hous
 			return(false);
 		}
 
-		return(::Ground[Land_Type()].Build);
+		return(Rule->Ground[Land_Type()].Build);
 
 	} else {
 
-		if (::Ground[Land_Type()].Cost[loco] == 0) {
+		if (Rule->Ground[Land_Type()].Cost[loco] == 0) {
 			return(false);
 		}
 		return(true);
@@ -3516,7 +3516,7 @@ bool CellClass::Goodie_Check(FootClass * object)
 		int total_shares = 0;
 		int index;
 		for (index = CRATE_FIRST; index < CRATE_COUNT; index++) {
-			total_shares += CrateShares[index];
+			total_shares += Rule->CrateShares[index];
 		}
 
 		/*
@@ -3550,7 +3550,7 @@ bool CellClass::Goodie_Check(FootClass * object)
 
 			int share_count = 0;
 			for (powerup = CRATE_FIRST; powerup < CRATE_COUNT; powerup++) {
-				share_count += CrateShares[powerup];
+				share_count += Rule->CrateShares[powerup];
 				if (pick <= share_count) break;
 			}
 			assert(powerup != CRATE_COUNT);
@@ -3677,7 +3677,7 @@ bool CellClass::Goodie_Check(FootClass * object)
 		/*
 		**	Create the effect requested.
 		*/
-		double data = CrateData[powerup];
+		double data = Rule->CrateData[powerup];
 		bool tospeak = false;
 		switch (powerup) {
 
@@ -4010,9 +4010,9 @@ crate_money:
 				break;
 		}
 
-		if (CrateAnims[powerup] != ANIM_NONE) {
+		if (Rule->CrateAnims[powerup] != ANIM_NONE) {
 			coord = Cell_Coord() + Coord(0, 0, 200);
-			new AnimClass(AnimTypes[CrateAnims[powerup]], coord);
+			new AnimClass(AnimTypes[Rule->CrateAnims[powerup]], coord);
 		}
 	}
 
@@ -4206,7 +4206,7 @@ bool CellClass::Is_Clear_To_Move(SpeedType loco, bool ignoreinfantry, bool ignor
 	**	See if the ground type is impassable to this locomotion type and if
 	**	so, return the error condition.
 	*/
-	if (::Ground[land].Cost[loco] == 0 && !bridge) {
+	if (Rule->Ground[land].Cost[loco] == 0 && !bridge) {
 		return(false);
 	}
 
@@ -4406,7 +4406,7 @@ bool CellClass::Can_Tiberium_Germinate(TiberiumClass const * tiberium) const
 	TerrainClass * terrain = Cell_Terrain();
 	if (terrain != NULL && terrain->Class->IsTiberiumSpawn) return(false);
 
-	if (!Ground[Land_Type()].Build) return(false);
+	if (!Rule->Ground[Land_Type()].Build) return(false);
 
 	if (Overlay != OVERLAY_NONE) return(false);
 
@@ -4572,7 +4572,7 @@ void CellClass::Recalc_Passability(void)
 			Passability = PASSABLE_BLOCKED;
 			return;
 		}
-		if (Ground[overlay->Land].Cost[SPEED_WHEEL] == 0) {
+		if (Rule->Ground[overlay->Land].Cost[SPEED_WHEEL] == 0) {
 			Passability = PASSABLE_NO;
 			return;
 		}
@@ -4583,7 +4583,7 @@ void CellClass::Recalc_Passability(void)
 		return;
 	}
 
-	if (Ground[Land].Cost[SPEED_WHEEL] <= 0.01) {
+	if (Rule->Ground[Land].Cost[SPEED_WHEEL] <= 0.01) {
 		Passability = PASSABLE_NO;
 		return;
 	}
@@ -6333,7 +6333,7 @@ bool CellClass::Can_Build_Here(void) const
 		}
 	}
 
-	return(Ground[Land].Build);
+	return(Rule->Ground[Land].Build);
 }
 
 

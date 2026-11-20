@@ -1723,7 +1723,7 @@ bool DriveLocomotionClass::Start_Of_Move(bool & stop_processing, bool retry, boo
 			ground = LAND_ROAD;
 		}
 
-		double speed = Ground[ground].Cost[LinkedTo->TClass->Speed];
+		double speed = Rule->Ground[ground].Cost[LinkedTo->TClass->Speed];
 		if (speed > 1.0) speed = 1.0;
 
 		int destheight = Map.Get_Height_GL(Map[destcell].Cell_Coord());

@@ -40,7 +40,6 @@
 #include "goptions.h"
 #include "ipxmgr.h"
 #include "logic.h"
-#include "mission.h"
 #include "partsys.h"
 #include "queue.h"
 #include "rndstraw.h"
@@ -183,13 +182,6 @@ int NewINIFormat = 0;
 **
 */
 bool GameInFocus = false;
-
-
-/***************************************************************************
-**	These are the mission control structures. They hold the information about
-**	how the missions should behave in the system.
-*/
-MissionControlClass MissionControl[MISSION_COUNT];
 
 
 /***************************************************************************

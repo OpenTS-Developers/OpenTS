@@ -1242,16 +1242,11 @@ static void Serialize_Misc_Values(SaveStreamClass & stream)
 	stream.Serialize(Frame);
 	stream.Serialize(CurrentObject);
 	stream.Serialize(ControlGroups);
-	stream.Serialize(Ground);
 
 	IonStormClass::Serialize(stream);
 
 	stream.Serialize(LogicTags);
 	stream.Serialize(MapTags);
-	stream.Serialize(CrateShares);
-	stream.Serialize(CrateAnims);
-	stream.Serialize(CrateData);
-	stream.Serialize(MissionControl);
 	stream.Serialize(Session.ObiWan);
 	stream.Serialize(Session.AIOnly);
 

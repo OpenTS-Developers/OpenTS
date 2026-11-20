@@ -921,7 +921,7 @@ int AircraftClass::Do_MISSION_RETREAT(void)
 		default:
 			break;
 	}
-	return(MissionControl[Mission].Normal_Delay() + Random_Pick(0, 2));
+	return(Rule->MissionControl[Mission].Normal_Delay() + Random_Pick(0, 2));
 #endif
 }
 

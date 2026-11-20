@@ -611,7 +611,52 @@ RulesClass::RulesClass(void) :
 	VoxUnitPromoted(VOX_NONE),
 	VeteranFlashTimer(0),
 	EliteFlashTimer(0),
-	ComesNearWaypointDistance(CELL_LEPTON_W * 5)
+	ComesNearWaypointDistance(CELL_LEPTON_W * 5),
+	Ground(),
+	CrateShares{
+		50,     // CRATE_MONEY
+		20,     // CRATE_UNIT
+		1,      // CRATE_HEAL_BASE
+		3,      // CRATE_CLOAK
+		5,      // CRATE_EXPLOSION
+		5,      // CRATE_NAPALM
+		20,     // CRATE_SQUAD
+		1,      // CRATE_DARKNESS
+		1,      // CRATE_REVEAL
+		10,     // CRATE_ARMOR
+		10,     // CRATE_SPEED
+		10,     // CRATE_FIREPOWER
+		1,      // CRATE_ICBM
+		3,      // CRATE_INVULN
+		1,      // CRATE_VETERAN
+		1,      // CRATE_ION_STORM
+		1,      // CRATE_GAS
+		1,      // CRATE_TIBERIUM
+		1       // CRATE_POD
+	},
+	CrateAnims{
+		ANIM_NONE,  // CRATE_MONEY
+		ANIM_NONE,  // CRATE_UNIT
+		ANIM_NONE,  // CRATE_HEAL_BASE
+		ANIM_NONE,  // CRATE_CLOAK
+		ANIM_NONE,  // CRATE_EXPLOSION
+		ANIM_NONE,  // CRATE_NAPALM
+		ANIM_NONE,  // CRATE_SQUAD
+		ANIM_NONE,  // CRATE_DARKNESS
+		ANIM_NONE,  // CRATE_REVEAL
+		ANIM_NONE,  // CRATE_ARMOR
+		ANIM_NONE,  // CRATE_SPEED
+		ANIM_NONE,  // CRATE_FIREPOWER
+		ANIM_NONE,  // CRATE_ICBM
+		ANIM_NONE,  // CRATE_INVULN
+		ANIM_NONE,  // CRATE_VETERAN
+		ANIM_NONE,  // CRATE_ION_STORM
+		ANIM_NONE,  // CRATE_GAS
+		ANIM_NONE,  // CRATE_TIBERIUM
+		ANIM_NONE   // CRATE_POD
+	},
+	CrateData(),
+	MissionControl()
 {
 	/// nothing
 }
@@ -2651,6 +2696,11 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(VeteranFlashTimer);
 	stream.Serialize(EliteFlashTimer);
 	stream.Serialize(ComesNearWaypointDistance);
+	stream.Serialize(Ground);
+	stream.Serialize(CrateShares);
+	stream.Serialize(CrateAnims);
+	stream.Serialize(CrateData);
+	stream.Serialize(MissionControl);
 }
 
 
