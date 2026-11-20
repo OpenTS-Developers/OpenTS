@@ -41,7 +41,7 @@ int BlastSurfaceStride = 0;
 BSurface * BlastSurfaces[80];
 
 /*
- * Parameters of the ion blast shockwave ripple. The ripple is an elliptical
+ * Parameters of the ion blast ripple. The ripple is an elliptical
  * band that sweeps outward from the blast center over the lifetime of the
  * blast, displacing the pixels it covers by the height of a decaying sine
  * wave. The band starts as [WaveStartDistance - WaveBandWidth, WaveStartDistance]
@@ -68,7 +68,7 @@ Point2D Spiral_Index_To_Point(int index);
 /// <summary>
 /// Creates an ion cannon ground blast at the specified location.
 /// The blast adds itself to the list of blasts in progress and is looked after from
-/// there until its shockwave has expired. The ion cannon superweapon and the trigger
+/// there until its ripple has expired. The ion cannon superweapon and the trigger
 /// action of the same name are the two things that set one off.
 /// </summary>
 IonBlastClass::IonBlastClass(Coord coord) :
@@ -91,7 +91,7 @@ IonBlastClass::~IonBlastClass(void)
 /// <summary>
 /// Advances this ion blast by a single frame.
 /// On the frame the blast lands it throws up the explosion animations, damages whatever
-/// is beneath it and lights the scene. From then on the expanding shockwave takes hold
+/// is beneath it and lights the scene. From then on the expanding ripple takes hold
 /// of the infantry and vehicles it rolls over, bringing them to a halt and rocking them
 /// away from the center. Once the wave has run its course the blast deletes itself.
 /// </summary>
@@ -274,7 +274,7 @@ void IonBlastClass::AI(void)
 /// <summary>
 /// Processes the logic of every ion blast in progress.
 /// This routine is called by the main game logic once per frame. Blasts that have
-/// outlived their shockwave delete themselves along the way.
+/// outlived their ripple delete themselves along the way.
 /// </summary>
 void IonBlastClass::Update_All(void)
 {
@@ -285,7 +285,7 @@ void IonBlastClass::Update_All(void)
 
 
 /// <summary>
-/// Precalculates the shockwave displacement surfaces.
+/// Precalculates the ripple displacement surfaces.
 /// One surface is built for each frame of the blast animation, holding the direction
 /// the ripple pushes every pixel around the blast center. This is far too expensive to
 /// work out while the game is running, so it is done once during startup and the
@@ -311,7 +311,7 @@ void IonBlastClass::One_Time(void)
 		 * The surface is 256x128 with the blast center in the middle; only one
 		 * quadrant is computed and the result is mirrored into the other three.
 		 * The vertical axis counts double toward the distance because the
-		 * shockwave ellipse is half as tall as it is wide.
+		 * ripple ellipse is half as tall as it is wide.
 		 */
 		char * center = (char *)BlastSurfaces[frame]->Lock() + 0x4080;
 		for (int y = 63; y >= 0; y--) {
@@ -347,7 +347,7 @@ void IonBlastClass::One_Time(void)
 
 
 /// <summary>
-/// Frees the precalculated shockwave surfaces.
+/// Frees the precalculated ripple surfaces.
 /// This routine is called as the game shuts down, to give back the memory One_Time
 /// claimed for the wave animation.
 /// </summary>
@@ -372,7 +372,7 @@ void IonBlastClass::Delete_All(void)
 
 
 /// <summary>
-/// Decides whether a displaced pixel may be fetched for the shockwave.
+/// Decides whether a displaced pixel may be fetched for the ripple.
 /// The neighbor a warped pixel is replaced by must itself lie within the view, or the
 /// warp would carry interface pixels or memory past the frame into the blast.
 /// </summary>
@@ -390,7 +390,7 @@ static bool Fetch_In_View(int x, int y, int index)
 
 
 /// <summary>
-/// Draws this blast's shockwave onto the tactical view.
+/// Draws this blast's ripple onto the tactical view.
 /// Nothing of the wave is actually drawn; instead the scene already on the surface is
 /// warped, each pixel the ripple band covers being replaced by a neighbor pulled from
 /// the direction the wave is pushing. The depth buffer is consulted so that anything
@@ -472,7 +472,7 @@ void IonBlastClass::Draw_It(void)
 
 
 /// <summary>
-/// Draws the shockwave of every ion blast in progress.
+/// Draws the ripple of every ion blast in progress.
 /// The tactical map calls this routine after the scene has been rendered, since the
 /// blast distorts what is already on the surface rather than drawing anything of its
 /// own.
@@ -531,7 +531,7 @@ Point2D Spiral_Index_To_Point(int index)
 
 /// <summary>
 /// Converts a grid point into its index within the spiral.
-/// This routine is the inverse of Spiral_Index_To_Point. The shockwave rasterizer uses
+/// This routine is the inverse of Spiral_Index_To_Point. The ripple rasterizer uses
 /// it to fold a displacement offset down into the single byte that is stored per pixel
 /// of the wave surface.
 /// </summary>

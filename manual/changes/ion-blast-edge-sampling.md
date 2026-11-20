@@ -6,4 +6,4 @@ targets: []
 credit: [ZivDero]
 ---
 
-An ion cannon shockwave near the edge of the view no longer risks a crash at the highest detail level. Pixels whose replacement would come from outside the view keep their original color.
+An ion blast's ripple near the edge of the view no longer risks a crash at the highest detail level. Pixels whose replacement would come from outside the view keep their original color.

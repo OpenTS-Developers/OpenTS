@@ -6,4 +6,4 @@ targets: []
 credit: [ZivDero]
 ---
 
-An ion cannon shockwave now reaches the bottom of the view instead of leaving a seven-row band undisturbed. Pixels near the bottom move less when their replacement would come from outside the view.
+An ion blast's ripple now reaches the bottom of the view instead of leaving a seven-row band undisturbed. Pixels near the bottom move less when their replacement would come from outside the view.

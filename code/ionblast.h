@@ -30,7 +30,7 @@ class IonBlastClass
 
 	private:
 		/*
-		 * This is the location the blast landed at. It is the center that the shockwave
+		 * This is the location the blast landed at. It is the center that the ripple
 		 * expands from as well as the point the damage and the explosion animations are
 		 * applied at.
 		 */
@@ -38,7 +38,7 @@ class IonBlastClass
 
 		/*
 		 * This is the age of the blast in game frames. It doubles as the index of the
-		 * precalculated shockwave surface for this frame, and when it reaches the last
+		 * precalculated ripple surface for this frame, and when it reaches the last
 		 * of them the wave has run its course and the blast deletes itself.
 		 */
 		int Lifetime;
