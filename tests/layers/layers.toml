@@ -71,7 +71,7 @@ files = [
     "_astar", "_event", "_isotile", "_logic", "_map", "_mission", "_rtti", "_rules", "_script",
     "_source", "_syncrec", "_theater", "_vanim", "_warhead", "_weapon", "abstract", "abstype",
     "addon", "aircraft", "airctype", "aitrig", "ambient", "anim", "animtype", "astar", "base",
-    "blight", "bounce", "brain", "building", "builtype", "bullet", "bullettype", "campaign",
+    "blight", "bounce", "building", "builtype", "bullet", "bullettype", "campaign",
     "cargo", "carry", "category", "cell", "combat", "const", "coord", "crate", "desync", "drive",
     "droppod", "dropship", "egos", "emember", "empulse", "enviro", "event", "expand", "facing",
     "factory", "findpath", "flasher", "fly", "fog", "foot", "fuse", "globals", "house", "houstype",

@@ -55,7 +55,6 @@
 #include "animtype.h"
 #include "audio/audioengine.h"
 #include "blight.h"
-#include "brain.h"
 #include "bsurface.h"
 #include "building.h"
 #include "builtype.h"
@@ -297,7 +296,6 @@ static void RegisterClasses(void)
 	REGISTER_CLASS(ParticleSystemClass, ClassID_ParticleSystemClass);
 	REGISTER_CLASS(ParticleSystemTypeClass, ClassID_ParticleSystemTypeClass);
 	REGISTER_CLASS(AITriggerTypeClass, ClassID_AITriggerTypeClass);
-	REGISTER_CLASS(NeuronClass, ClassID_NeuronClass);
 	REGISTER_CLASS(FoggedObjectClass, ClassID_FoggedObjectClass);
 	REGISTER_CLASS(AlphaShapeClass, ClassID_AlphaShapeClass);
 }

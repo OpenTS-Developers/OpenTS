@@ -38,7 +38,6 @@ extern DynamicVectorClass<AbstractClass *> EventActionPtrTracker;
 extern DynamicVectorClass<AbstractClass *> WaypointPathPtrTracker;
 extern DynamicVectorClass<AbstractClass *> TeamPtrTracker;
 extern DynamicVectorClass<AbstractClass *> HousePtrTracker;
-extern DynamicVectorClass<AbstractClass *> NeuronPtrTracker;
 
 /*
  * This vector holds all objects marked by ObjectClass::Delete_Me.
