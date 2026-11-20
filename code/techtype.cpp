@@ -951,7 +951,6 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	BASECLASS::Serialize(stream);
 
 	stream.Serialize(CollateralDamageCoefficient);
-	stream.Serialize(Unused1);
 	stream.Serialize(WalkRate);
 	stream.Serialize(VeteranAbilities);
 	stream.Serialize(EliteAbilities);

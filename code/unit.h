@@ -133,9 +133,6 @@ class UnitClass : public FootClass
 		 */
 		int DeathCounter;
 
-		/// Unused
-		int Unused1;
-
 		/*---------------------------------------------------------------------
 		**	Constructors, Destructors, and overloaded operators.
 		*/

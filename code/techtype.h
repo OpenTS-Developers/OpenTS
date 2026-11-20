@@ -54,9 +54,6 @@ class TechnoTypeClass : public ObjectTypeClass
 		 */
 		float CollateralDamageCoefficient;
 
-		/// Unused
-		float Unused1;
-
 		/*
 		 * This is the number of game frames that each step of this object's walk cycle holds
 		 * for. It is what paces the TotalFramesWalked counter the animations are indexed from.

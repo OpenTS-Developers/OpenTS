@@ -737,9 +737,6 @@ class BuildingTypeClass : public TechnoTypeClass
 		 */
 		bool IsTurretAnimExclusive;
 
-		/// Unused
-		bool UnusedBTypeBool1;
-
 		/*
 		 * If this building's door animation carries a second set of frames for when the
 		 * structure is damaged, then this flag will be true. The damaged frames follow the

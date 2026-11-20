@@ -6121,7 +6121,6 @@ void UnitClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(VisceroidFacing);
 	stream.Serialize(Charge);
 	stream.Serialize(DeathCounter);
-	stream.Serialize(Unused1);
 }
 
 

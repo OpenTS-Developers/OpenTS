@@ -6632,7 +6632,6 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Credits);
 	stream.Serialize(Capacity);
 	stream.Serialize(Weed);
-	stream.Serialize(field_1BC);
 
 	// The constructor builds the tallies only in internet games, and a load restores the saved
 	// game type before any house, so a record with tallies loads only into a house with them.
@@ -6735,7 +6734,6 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(field_10E20);
 	stream.Serialize(field_10E28);
 	stream.Serialize(DefenseCostMultiplier);
-	stream.Serialize(field_10E38);
 	stream.Serialize(EnemyArmorForcePrediction);
 	stream.Serialize(EnemyAirForcePrediction);
 	stream.Serialize(EnemyInfantryForcePrediction);

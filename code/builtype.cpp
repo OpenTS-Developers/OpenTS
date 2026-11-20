@@ -1927,7 +1927,6 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsCoreDefender);
 	stream.Serialize(IsBarrelAnimAVoxel);
 	stream.Serialize(IsTurretAnimExclusive);
-	stream.Serialize(UnusedBTypeBool1);
 	stream.Serialize(IsDamagedDoor);
 	stream.Serialize(IsInvisibleInGame);
 	stream.Serialize(IsTerrainPalette);

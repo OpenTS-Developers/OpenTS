@@ -1268,7 +1268,6 @@ bool RulesClass::General(CCINIClass const & ini)
 		IsBlendedFog = ini.Get_Bool(GENERAL, "BlendedFog", IsBlendedFog);
 		AttackingAircraftSightRange = ini.Get_Int(GENERAL, "AttackingAircraftSightRange", AttackingAircraftSightRange);
 		LeptonsPerSightIncrease = ini.Get_Int(GENERAL, "LeptonsPerSightIncrease", LeptonsPerSightIncrease);
-		TiberiumTransmogrify = ini.Get_Int(GENERAL, "TiberiumTransmogrify", TiberiumTransmogrify);
 		LightningFrequency = int(ini.Get_Float(GENERAL, "IonLightningFrequency", LightningFrequency / 10) * 10);
 		LightningRandomness = ini.Get_Int(GENERAL, "IonLightningRandomness", LightningRandomness);
 		LightningDamage = ini.Get_Int(GENERAL, "IonLightningDamage", LightningDamage);
@@ -2556,7 +2555,6 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AmbientLightChangeStep);
 	stream.Serialize(CrateTime);
 	stream.Serialize(TimerWarning);
-	stream.Serialize(TiberiumTransmogrify);
 	stream.Serialize(NukeTime);
 	stream.Serialize(EMPulseTime);
 	stream.Serialize(IonCannonTime);

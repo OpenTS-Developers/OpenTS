@@ -484,9 +484,6 @@ class HouseClass : public AbstractClass
 		int Capacity;
 		StorageClass Weed;
 
-		/// Unused
-		int field_1BC;
-
 		/*
 		**	Stuff to keep track of the total number of units built by this house.
 		*/
@@ -1124,9 +1121,6 @@ class HouseClass : public AbstractClass
 		 * base it is protecting. It is left at 1.0 throughout, so cost alone decides.
 		 */
 		double DefenseCostMultiplier;
-
-		/// Unused
-		int field_10E38;
 
 		/*
 		 * These are the shares of armor, air and infantry the house expects the enemy to

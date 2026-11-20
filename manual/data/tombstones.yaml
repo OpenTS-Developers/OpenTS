@@ -251,3 +251,9 @@
     - "-MESSAGES"
     - Disable network protection
   summary: Let in-game chat from outside the match through. Removed when a line began to be accepted only from a seat of the match.
+- type: key
+  id: TiberiumTransmogrify
+  route: /keys/tiberiumtransmogrify/
+  search_aliases:
+    - TiberiumTransmogrify
+  summary: Stored a number from the General section of rules.ini that nothing used. Removed.

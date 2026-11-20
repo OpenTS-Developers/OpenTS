@@ -23802,24 +23802,6 @@ TiberiumToSpawn:
       source: code/terrtype.cpp
       guard: null
     level: TerrainTypeClass
-TiberiumTransmogrify:
-  key: TiberiumTransmogrify
-  scopes:
-  - applies_to:
-    - global rules
-    file: rules.ini
-    section:
-      kind: literal
-      name: General
-    value_type: integer
-    status: generated
-    _provenance:
-      default_candidate: null
-      declared_in: RulesClass
-      member: TiberiumTransmogrify
-      source: code/rules.cpp
-      guard: null
-    level: RulesClass
 TiberiumWildlife:
   key: TiberiumWildlife
   scopes:

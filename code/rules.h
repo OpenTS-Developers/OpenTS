@@ -1862,9 +1862,6 @@ class RulesClass
 		*/
 		double TimerWarning;
 
-		/// Unused
-		int TiberiumTransmogrify;
-
 		/*
 		**	This specifies the minutes of delay between recharges for these
 		**	special weapon types.
