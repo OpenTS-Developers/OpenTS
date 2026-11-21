@@ -5,7 +5,7 @@ see_also: [HarvesterUnit, LimpetFactor, "system:target-selection"]
 when_omitted:
   kind: value
   value: "no"
-  note: The special options are initialized with this built-in default when the game starts.
+  note: Each scenario starts with this built-in default.
 ---
 
 ```ini title="map file"
@@ -27,5 +27,5 @@ While the truce is on, the hunter-seeker drone skips any vehicle whose type is [
 Outside single-player missions the truce has two more effects. When a player is defeated, all of that player's vehicles are taken off the map. Outside a short game, vehicles listed in `HarvesterUnit` do not count toward keeping a player in the game.
 
 :::caution[The entry is read in campaigns only]
-Only a single-player mission reads `[SpecialFlags]` from the map. In a game against other machines, the game's harvester truce option sets the truce: the launch file's `HarvesterTruce`, or the truce checkbox in the network lobby. A skirmish leaves it off, unless a network match earlier in the same session turned it on.
+Only a single-player mission reads `[SpecialFlags]` from the map. In a skirmish or a game against other machines, the game's harvester truce option sets the truce: the launch file's `HarvesterTruce`, or the truce checkbox in the network lobby. The skirmish setup screen has no truce option, so a skirmish set up from the menu has the truce off.
 :::

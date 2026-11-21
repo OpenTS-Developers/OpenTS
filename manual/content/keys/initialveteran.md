@@ -5,7 +5,7 @@ see_also: ["system:veterancy", "system:starting-forces"]
 when_omitted:
   kind: value
   value: "no"
-  note: The special options are initialized with this built-in default when the game starts.
+  note: Each scenario starts with this built-in default.
 ---
 
 ```ini title="map file"

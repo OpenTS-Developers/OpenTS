@@ -14,4 +14,4 @@ The blast is a [wide-area blast](/systems/warheads/#the-wide-area-blast) over th
 
 The blast needs the vehicle's death explosion, so a vehicle type with none never blasts, whatever it carries. The death explosion comes from the type's [`Explosion`](/keys/explosion/) list, or from its [`ScrapExplosion`](/keys/scrapexplosion/) list while [`ScrapMetal`](/keys/scrapmetal/) is on and that list is not empty. [Spilled harvester loads](/systems/destruction-and-debris/#spilled-harvester-loads) covers when a vehicle plays it.
 
-The harvester truce skips the blast. A mission turns the truce on with [`HarvesterImmune=yes`](/keys/harvesterimmune/), and a game against other machines turns it on with its truce option.
+The harvester truce skips the blast. A mission turns the truce on with [`HarvesterImmune=yes`](/keys/harvesterimmune/). In a skirmish or a game against other machines, the game's truce option sets it.

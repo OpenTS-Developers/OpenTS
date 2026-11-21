@@ -4,7 +4,7 @@ summary: Stops ordinary weapon hits in the scenario from doing damage.
 when_omitted:
   kind: value
   value: "no"
-  note: The special options are initialized with this built-in default when the game starts.
+  note: Each scenario starts with this built-in default.
 ---
 
 `Inert=yes` stops weapon fire from doing damage. Ordinary hits deal no damage, and an explosion damages nothing around it, walls and bridge spans included. Healing weapons stop healing as well. Weapons still reload and fire, projectiles still travel, and firing and impact effects still play. A [wide-area blast](/systems/warheads/#the-wide-area-blast) can still leave a crater.
