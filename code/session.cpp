@@ -234,6 +234,7 @@ SessionClass::SessionClass(void)
 	NetOpen = 0;
 	SkipScoreScreen = false;
 	QuickMatch = false;
+	LocalPlayer = -1;
 	LoadScreen[0] = '\0';
 	LoadScreenX = 0;
 	LoadScreenY = 0;
@@ -1113,18 +1114,36 @@ std::string SessionClass::Shown_Name(HouseClass const * house) const
 
 
 /// <summary>
+/// Returns the human players in the order their houses are created, which is the same on every
+/// machine. A launch or a capture with listed seats numbers its players, and that number is the
+/// order; a game set up from the menu orders them by color, lowest first.
+/// </summary>
+std::vector<NodeNameType *> SessionClass::Humans_In_House_Order(void) const
+{
+	std::vector<NodeNameType *> humans;
+	int const local = LocalPlayer;
+	for (int seat = 0; seat < Players.Count(); seat++) {
+		int const index = (local == -1) ? seat : (seat == local ? 0 : (seat < local ? seat + 1 : seat));
+		humans.push_back(Players[index]);
+	}
+
+	if (local == -1) {
+		std::stable_sort(humans.begin(), humans.end(), [](NodeNameType const * a, NodeNameType const * b) {
+			return(a->Player.Color < b->Player.Color);
+		});
+	}
+	return(humans);
+}
+
+
+/// <summary>
 /// The name shown for a seat before the houses exist, matching its house's later name.
 /// </summary>
 std::string SessionClass::Shown_Seat_Name(NodeNameType const * node) const
 {
-	// Assign_Houses makes the human houses first, lowest color first, and no two share a color.
-	int house = 0;
-	for (int index = 0; index < Players.Count(); index++) {
-		if (Players[index]->Player.Color < node->Player.Color) {
-			house++;
-		}
-	}
-
+	// Assign_Houses creates the human houses first, in this order.
+	std::vector<NodeNameType *> const humans = Humans_In_House_Order();
+	int const house = int(std::find(humans.begin(), humans.end(), node) - humans.begin());
 	return(Shown_Name(house, node->Name));
 }
 

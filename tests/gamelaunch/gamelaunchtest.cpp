@@ -269,7 +269,7 @@ TEST_CASE("a player's name, observer flag, and ai_level are checked")
 }
 
 
-TEST_CASE("country, color, and start must be in range, and a human player may not ask for random")
+TEST_CASE("country, color, and start must be in range, and any player may ask for random")
 {
 	Launch::Message::Game launch = Skirmish();
 	launch.Players[1].Country = 2;
@@ -291,27 +291,31 @@ TEST_CASE("country, color, and start must be in range, and a human player may no
 
 	launch = Skirmish();
 	launch.Players[0].Country = -1;
-	Refusal(launch);
-
-	launch = Skirmish();
 	launch.Players[0].Color = -1;
+	Accepted(launch);
+	launch.Players[0].Country = -2;
 	Refusal(launch);
 }
 
 
-TEST_CASE("human players come first, in strictly ascending color")
+TEST_CASE("human players come first and ask for different colors")
 {
 	Launch::Message::Game launch = Match();
 	std::swap(launch.Players[1], launch.Players[2]);
 	Refusal(launch);
 
+	// A player's house is its position, whatever order the colors come in.
 	launch = Match();
 	std::swap(launch.Players[0], launch.Players[1]);
-	Refusal(launch);
+	Accepted(launch);
 
 	launch = Match();
 	launch.Players[1].Color = launch.Players[0].Color;
 	Refusal(launch);
+
+	launch.Players[0].Color = -1;
+	launch.Players[1].Color = -1;
+	Accepted(launch);
 }
 
 

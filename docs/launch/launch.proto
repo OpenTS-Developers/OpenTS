@@ -121,7 +121,6 @@ message FileHash {
 //   given, 0 included. When a campaign or skirmish request leaves it out,
 //   the engine draws one and writes it in LNCH.
 // - players has at most 8 entries, human players before computer players.
-//   OpenTS also needs the human players in ascending color.
 //   In a skirmish or multiplayer game a player's house number is its
 //   position in `players`, for human and computer players. The launcher
 //   leaves out Player.house, country_name, and the resolved fields, and the
@@ -134,8 +133,11 @@ message FileHash {
 //   a position in the rules' player colors, from 0, and human players need
 //   different colors. start is 0 to 7. Each may be -1: the engine then draws
 //   a value, for a human or a computer player, and writes it in the resolved
-//   field. OpenTS refuses -1 for a human player's country or color. A field
-//   left out means 0, because the encoding leaves out a zero.
+//   field. The engine draws countries and colors before the scenario loads,
+//   human players first and then computer players, each in list order,
+//   from random numbers that start from the seed, so every machine draws
+//   the same values. A field left out means 0, because the encoding leaves
+//   out a zero.
 // - Player.observer is set only on a human player.
 // - Player.ai_level is set only on a computer player, to 0 for the hardest,
 //   1, or 2 for the easiest. For a computer player without it, the game's

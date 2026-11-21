@@ -57,7 +57,7 @@ A request sets exactly one verb:
 | --- | --- |
 | `game.kind` | `1` for a campaign mission, `2` for a skirmish, `3` for a game against other machines. Use `3` exactly when more than one player is human, observers included. |
 | `game.seed` | The random seed. A game against other machines needs one. A seed that is set is used as given, `0` included; a campaign mission or skirmish without one draws a seed. |
-| `game.players` | At most eight players, human players first and in ascending color. In a skirmish or against other machines a player's position in the list is the house it becomes. |
+| `game.players` | At most eight players, human players first. In a skirmish or against other machines a player's position in the list is the house it becomes. |
 | `game.options` | The game options, each key at most once, from the table below. |
 | `game.anonymous` | Shows players as "Player N" in place of their names. |
 | `game.global_flags` | The numbers of the scenario's global flags that are set when a campaign mission starts, from `0` to `49`, ascending, each once. Refused in any other game. |
@@ -85,8 +85,8 @@ A player in `game.players` takes these fields:
 | `name` | At most 63 bytes. A human player needs one, and in a game against other machines no two human players have the same name, ignoring case. A computer player without one is shown under a name the game picks. |
 | `human` | Set for a human player, unset for a computer player. |
 | `observer` | Set for a human player who watches and does not play. |
-| `country` | A position in the rules' list of countries, from `0`. A computer player may give `-1` for one the game picks. |
-| `color` | A position in the rules' `[Colors]` list, from `0`. Human players need different colors. A computer player may give `-1`. |
+| `country` | A position in the rules' list of countries, from `0`, or `-1` for one the game picks. |
+| `color` | A position in the rules' `[Colors]` list, from `0`, or `-1` for one the game picks. Human players who give a color need different ones. |
 | `start` | A start position from `0` to `7`, or `-1` for one the game picks. |
 | `ai_level` | A computer player's difficulty: `0` for the hardest, `1`, or `2` for the easiest. Without it the `AIDifficulty` option applies. |
 | `allies` | The positions of the players this one is allied with, ascending, never an observer or the player itself. |
@@ -156,7 +156,7 @@ A load request resumes a saved game, as [`LoadSaveGame=yes`](/formats/spawn-ini/
 | `game_speed` | The speed, `0` to `6`, to play at. Without it the game plays at the saved speed. |
 | `anonymous` | Shows players as "Player N" in place of their names, as `game.anonymous` does. A save does not keep it. |
 
-In a game against other machines, each machine loads the save it wrote itself, and `players` lists the human players who rejoin, the same list on every machine. `session.local_player` is the position of the player on this machine, and each entry of `network.peers` gives another position in the list. Each player needs a `name` of 1 to 63 bytes that no other player in the list has, ignoring case, and a `country` and `color` the rules have.
+In a game against other machines, each machine loads the save it wrote itself, and `players` lists the human players who rejoin, the same list on every machine. `session.local_player` is the position of the player on this machine, and each entry of `network.peers` gives another position in the list. Each player needs a `name` of 1 to 63 bytes that no other player in the list has, ignoring case, and a `country` and `color` that are `-1` or ones the rules have.
 
 After loading the save, the game gives each player the saved human house with the same name, ignoring case. The houses keep the countries and colors the save gives them. The resume fails when:
 

@@ -1222,7 +1222,9 @@ restart:
 
 		Show_Mouse();
 
+		// The random countries and colors come from the seed Init_Random set.
 		if (Session.Type != GAME_NORMAL) {
+			Draw_Player_Choices();
 			Session.PlayerHouse = (HousesType)Session.Players[0]->Player.House;
 		}
 

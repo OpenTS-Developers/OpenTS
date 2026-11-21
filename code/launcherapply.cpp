@@ -261,6 +261,7 @@ void Apply_Match(Launch::Game const & game, Launch::Machine const & machine)
 
 	Add_Human_Players(game, machine);
 	Add_Computer_Players(game);
+	Session.LocalPlayer = machine.LocalPlayer;
 	Apply_Scenario(machine);
 }
 
@@ -301,12 +302,12 @@ bool Take_Load(Launch::Message::Load const & request, Launch::Machine & machine,
 			Launch::Message::Player const & player = request.Players[index];
 			if (site != nullptr) {
 				site->Player = int(index);
-				site->Field = (player.Country < 0 || player.Country >= countries) ? "country" : "color";
+				site->Field = (player.Country < -1 || player.Country >= countries) ? "country" : "color";
 			}
-			if (player.Country < 0 || player.Country >= countries) {
+			if (player.Country < -1 || player.Country >= countries) {
 				return(Fault(fault, "Player %d has country %d; the rules have %d, numbered from 0.", int(index), player.Country, countries));
 			}
-			if (player.Color < 0 || player.Color >= colors) {
+			if (player.Color < -1 || player.Color >= colors) {
 				return(Fault(fault, "Player %d has color %d; the rules have %d, numbered from 0.", int(index), player.Color, colors));
 			}
 		}
@@ -436,8 +437,9 @@ bool Launch::Apply_Load(Launch::Message::Load const & request, bool & gameloaded
 			human.Name = player.Name;
 			human.Human = true;
 			human.Observer = player.Observer;
-			human.Country = player.Country;
-			human.Color = player.Color;
+			// The save gives each player's house, so a random choice needs no draw here.
+			human.Country = std::max(player.Country, 0);
+			human.Color = std::max(player.Color, 0);
 			human.Start = player.Start;
 			humans.Players.push_back(std::move(human));
 		}

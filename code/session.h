@@ -54,6 +54,7 @@
 #include <array>
 #include <optional>
 #include <string>
+#include <vector>
 
 //---------------------------------------------------------------------------
 // Forward declarations
@@ -518,6 +519,7 @@ class SessionClass
 		int Color_Index_To_Scheme(int id) const;
 		std::string Shown_Name(int house, char const * name) const;
 		std::string Shown_Name(HouseClass const * house) const;
+		std::vector<NodeNameType *> Humans_In_House_Order(void) const;
 		std::string Shown_Seat_Name(NodeNameType const * node) const;
 
 		//.....................................................................
@@ -740,6 +742,8 @@ class SessionClass
 		bool NetOpen;                                   // 1 = game is open for joining
 		bool SkipScoreScreen;                           // a launch file asked that the score screen be passed over
 		bool QuickMatch;                                // a launch file asked that players be shown by number
+		int LocalPlayer;                                // the local player's position among the human players, in house order,
+		                                                // for a launch or a capture with listed seats; -1 for a menu match
 		char LoadScreen[_MAX_PATH];                     // the picture to show while the scenario loads, or empty
 		int LoadScreenX;                                // where in that picture the loading bars go, or zero for
 		int LoadScreenY;                                // the position the game picks for its own
@@ -755,7 +759,8 @@ class SessionClass
 		DynamicVectorClass <NodeNameType *> Players;    // list of players
 		DynamicVectorClass <NodeNameType *> Chat;       // list of chat nodes
 
-		// The computer players a launch file seated, after the humans; the menu leaves this empty.
+		// The computer players, in house order after the human players. For a match from the menu,
+		// Draw_Player_Choices makes an entry for each.
 		DynamicVectorClass <NodeNameType *> Computers;
 		int Suspended;
 

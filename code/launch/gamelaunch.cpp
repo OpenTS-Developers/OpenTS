@@ -275,12 +275,6 @@ bool Take_Player(Launch::Message::Game const & request, std::size_t index, unsig
 		if (player.Start < -1 || player.Start >= G::START_MAX) {
 			return(Fault_At(fault, number, "start", "Player %d asks for start position %d, outside -1 to %d.", number, player.Start, G::START_MAX - 1));
 		}
-		if (player.Human && player.Country == -1) {
-			return(Fault_At(fault, number, "country", "Player %d is human and asks for a random country; only a computer player may.", number));
-		}
-		if (player.Human && player.Color == -1) {
-			return(Fault_At(fault, number, "color", "Player %d is human and asks for a random color; only a computer player may.", number));
-		}
 	}
 
 	int previous = -1;
@@ -372,17 +366,19 @@ bool Launch::Game::From_Message(Launch::Message::Game const & request, LimitsTyp
 		game.Players.push_back(std::move(player));
 	}
 
-	// The engine creates human houses in ascending color, so a player's position is its house only
-	// when the request lists them that way.
 	if (kind != KIND_CAMPAIGN) {
 		for (std::size_t index = 1; index < game.Players.size(); index++) {
 			PlayerType const & player = game.Players[index];
-			PlayerType const & before = game.Players[index - 1];
-			if (player.Human && !before.Human) {
+			if (!player.Human) {
+				continue;
+			}
+			if (!game.Players[index - 1].Human) {
 				return(Fault_At(out, int(index), "human", "Player %d is human and follows a computer player; human players come first.", int(index)));
 			}
-			if (player.Human && player.Color <= before.Color) {
-				return(Fault_At(out, int(index), "color", "Player %d has color %d; each human player needs a higher color than the one before.", int(index), player.Color));
+			for (std::size_t other = 0; other < index; other++) {
+				if (player.Color != -1 && game.Players[other].Color == player.Color) {
+					return(Fault_At(out, int(index), "color", "Players %d and %d are human and ask for the same color, %d.", int(other), int(index), player.Color));
+				}
 			}
 		}
 	}

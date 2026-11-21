@@ -326,7 +326,7 @@ namespace MapCapture
 			}
 
 			Session.NumPlayers = ListedSeats.HumanCount;
-			Session.PlayerHouse = (HousesType)local.Country;
+			Session.LocalPlayer = ListedSeats.LocalSlot;
 			return(true);
 		}
 
@@ -460,6 +460,14 @@ namespace MapCapture
 
 			CustomSeed = (listed && ListedSeats.Seed != 0) ? ListedSeats.Seed : CAPTURE_SEED;
 			Init_Random();
+
+			// The random countries and colors come from the seed just set, as in a launched match.
+			if (!campaign) {
+				Draw_Player_Choices();
+			}
+			if (listed) {
+				Session.PlayerHouse = (HousesType)Session.Players[0]->Player.House;
+			}
 
 			std::snprintf(Scen->ScenarioName, sizeof(Scen->ScenarioName), "%s", Capture.Map.c_str());
 			DebugString("MapCapture: loading %s as a %s.\n", Scen->ScenarioName,

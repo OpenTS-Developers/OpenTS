@@ -785,13 +785,13 @@ TEST_CASE("reading a launch file cannot fail")
 		"[Settings]\n"
 		"Name=Commander\n"
 		"Color=0\n";
-	CHECK_MESSAGE(!Judge(nameless_country, sizeof(nameless_country) - 1, 2, 8, fault), "a person's country is never the game's to draw");
+	CHECK_MESSAGE(Judge(nameless_country, sizeof(nameless_country) - 1, 2, 8, fault), "a person who names no country is given one");
 
 	char const nameless_color[] =
 		"[Settings]\n"
 		"Name=Commander\n"
 		"Side=0\n";
-	CHECK_MESSAGE(!Judge(nameless_color, sizeof(nameless_color) - 1, 2, 8, fault), "a person's color is never the game's to draw either");
+	CHECK_MESSAGE(Judge(nameless_color, sizeof(nameless_color) - 1, 2, 8, fault), "a person who names no color is given one");
 
 	char const drawn_computer[] =
 		"[Settings]\n"

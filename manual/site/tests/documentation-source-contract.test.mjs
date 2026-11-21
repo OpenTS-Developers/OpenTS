@@ -353,12 +353,14 @@ test('House assignment takes each seat as written before the neutral houses exis
 
 	assertOrdered(assign, [
 		'housep->SpawnWaypoint = player->Player.SpawnChoice;',
-		'seat->Player.House != -1',
-		'seat->Player.Color != -1',
+		'(HousesType)seat->Player.House;',
+		'seat->Player.Color;',
 		'seat->Player.Handicap >= 0',
 		'housep->SpawnWaypoint = seat->Player.SpawnChoice;',
 		'seat->Player.ID = housep->HeapID;',
 	], 'a seated house takes its country, color, difficulty and start position');
+
+	assert.doesNotMatch(assign, /Random_Pick/, 'every country and color is drawn before the houses are created');
 
 	assertOrdered(assign, [
 		'Seated_Node(seatnum)',
@@ -762,11 +764,25 @@ test('A match against other machines is assembled whole and wired to its network
 		'Seed = int(*game.Seed);',
 		'CustomSeed = game.Seed;',
 		'Add_Human_Players(game, machine);',
-	], 'the seed is set with the match options, before any player is added');
+		'Session.LocalPlayer = machine.LocalPlayer;',
+	], 'the seed is set with the match options before any player is added');
+
+	assertOrdered(functionBody(source('code/init.cpp'), 'bool Select_Game(bool )'), [
+		'Init_Random();',
+		'Draw_Player_Choices();',
+		'Session.PlayerHouse = (HousesType)Session.Players[0]->Player.House;',
+		'Start_Scenario(Scen->ScenarioName',
+	], 'random countries and colors are drawn from the seeded scenario numbers before the player’s house is read');
+
+	assertOrdered(functionBody(source('code/mapcapture.cpp'), 'bool Run(void)'), [
+		'Init_Random();',
+		'Draw_Player_Choices();',
+		'Read_Scenario(Scen->ScenarioName)',
+	], 'a capture draws its seats’ random countries and colors as a launched match does');
 
 	assertOrdered(functionBody(source('code/launch/gamelaunch.cpp'), 'bool Launch::Game::From_Message(Launch::Message::Game const & request, LimitsType const & limits, std::string & fault, Launch::FaultSite * site)'), [
-		'player.Human && !before.Human',
-		'player.Human && player.Color <= before.Color',
+		'!game.Players[index - 1].Human',
+		'player.Color != -1 && game.Players[other].Color == player.Color',
 		'Same_Name(game.Players[other].Name, game.Players[index].Name)',
 	], 'the player order the machines share is what the order, color and name rules are checked for');
 });
@@ -1022,12 +1038,12 @@ test('A base unit is handed out through the resolver', () => {
 	assert.match(source('code/cell.cpp'), /object->House->Get_Preferred\(Rule->BaseUnit\)/, 'the crate rescue hands out the preferred entry');
 });
 
-test('A computer player draws a country from the lobby roster', () => {
-	assertOrdered(functionBody(source('code/scenario.cpp'), 'void Assign_Houses(void)'), [
+test('A player without a country draws one from the lobby roster', () => {
+	assertOrdered(functionBody(source('code/scenario.cpp'), 'void Draw_Player_Choices(void)'), [
 		'HouseTypes[country]->IsMultiplay',
-		'playable[Random_Pick(0, playable.Count() - 1)]',
-		'seat->Player.House != -1',
-	], 'the roster is drawn from before a launch file seat overrides it');
+		'node->Player.House == -1',
+		'countries[Random_Pick(0, int(countries.size()) - 1)]',
+	], 'only a player who names no country draws one, from the roster');
 });
 
 test('A lobby side entry carries its country', () => {
