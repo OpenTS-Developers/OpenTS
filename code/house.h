@@ -847,6 +847,7 @@ class HouseClass : public AbstractClass
 
 		void Recalc_Power_Drain(void);
 		void Recalc_Radar_Availability(void);
+		bool Can_Use_Radar(void);
 
 		void Update_Present_Super_Weapons(void);
 		void Enable_Available_Super_Weapons(void);

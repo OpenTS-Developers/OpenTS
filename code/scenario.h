@@ -376,6 +376,12 @@ class ScenarioClass {
 		bool IsFreeRadar;
 
 		/*
+		 * Determines whether Free Radar would still apply even during Low Power.
+		 * Requires 'FreeRadar=yes' on the scenario to properly apply.
+		 */
+		bool IsFreeRadarOnLowPower;
+
+		/*
 		 * If trains are supposed to drop wood crates when they explode, then this flag
 		 * will be set to true. This is the train counterpart of the IsTruckCrate flag.
 		 */
