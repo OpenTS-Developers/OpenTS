@@ -202,6 +202,11 @@ class TiberiumClass : public AbstractTypeClass
 		 * This counts down the frames remaining until this tiberium's next growth pass.
 		 */
 		CDTimerClass<FrameTimerClass> GrowthTimer;
+
+		/*
+		 * The damage this Tiberium does to infantry.
+		 */
+		int DamageToInfantry;
 };
 
 extern DynamicVectorClass<TiberiumClass *> Tiberiums;

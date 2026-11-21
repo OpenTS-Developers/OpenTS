@@ -66,7 +66,8 @@ TiberiumClass::TiberiumClass(char const * ininame) :
 	GrowthCount(0),
 	GrowthQueue(NULL),
 	GrowthState(NULL),
-	GrowthTimer()
+	GrowthTimer(),
+	DamageToInfantry(-1)
 {
 	HeapID = (TiberiumType)Tiberiums.Count();
 	Tiberiums.Add(this);
@@ -109,6 +110,7 @@ bool TiberiumClass::Read_INI(CCINIClass const & ini)
 		Power = ini.Get_Int(IniName, "Power", Power);
 		Color = ini.Get_Scheme_Index(IniName, "Color", Color);
 		Debris = TGet_TypeList<AnimTypeClass>(ini, IniName, "Debris", Debris);
+		DamageToInfantry = ini.Get_Int(IniName, "DamageToInfantry", DamageToInfantry);
 
 		switch (ini.Get_Int(IniName, "Image", -1)) {
 			case -1:
@@ -269,6 +271,7 @@ void TiberiumClass::Serialize(SaveStreamClass & stream)
 	// GrowthQueue -- the growth records, dropped and rebuilt the same way.
 	// GrowthState
 	stream.Serialize(GrowthTimer);
+	stream.Serialize(DamageToInfantry);	
 }
 
 
