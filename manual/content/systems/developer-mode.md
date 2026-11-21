@@ -96,7 +96,7 @@ The file opens with the frame count, the average frame rate, the largest look-ah
 
 ## The sync dump
 
-A network game that goes out of sync writes an [out-of-sync report](/using/out-of-sync-reports/) into the `Debug` folder beside the executable, in either configuration. The [`PrintCRC`](/keys/printcrc/) playback trap writes the same report at a chosen frame and then exits. The report page describes what the report holds.
+A network game that goes out of sync writes an [out-of-sync report](/using/out-of-sync-reports/) into the `Debug` folder beside the debug log, in either configuration. The [`PrintCRC`](/keys/printcrc/) playback trap writes the same report at a chosen frame and then exits. The report page describes what the report holds.
 
 Seven `sun.ini` settings exist for tracking down a desynchronized game, and only `PrintCRC` has an effect:
 

@@ -33,7 +33,7 @@ The game offers Firestorm only when it finds `FIRESTRM.INI`, either as a loose f
 
 [`-DATADIR=<path>`](/using/command-line/#data-directory) names the game data directory, which the game reads its data from and never writes to. Without it, the game reads its data from the directory that holds the executable.
 
-[`-USERDIR=<path>`](/using/command-line/#user-directory) names the user data directory, which receives every file the game writes, including settings, saved games, recordings and downloaded maps. Without it, the game writes these files beside the executable. The exceptions are the debug log, [out-of-sync reports](/using/out-of-sync-reports/) and [crash reports](/using/crash-reports/), which always go into folders beside the executable.
+[`-USERDIR=<path>`](/using/command-line/#user-directory) names the user data directory, which receives every file the game writes, including settings, saved games, recordings and downloaded maps. Without it, the game writes these files beside the executable. The debug log and [out-of-sync reports](/using/out-of-sync-reports/) go into a `Debug` folder in the user data directory. The exception is [crash reports](/using/crash-reports/), which always go into a folder beside the executable.
 
 When the game looks for a file, it checks the user data directory first, so a player's copy is read ahead of a shipped copy with the same name. One copy of the data can therefore serve several players, each with a user data directory that holds their own settings and saves. [`OPENTS.INI`](/formats/opents-ini/#the-order-files-are-searched-for-in) gives the full search order and the files it does not apply to.
 
