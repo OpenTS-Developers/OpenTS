@@ -455,7 +455,7 @@ TEST_CASE("each limit holds at its value and refuses one more")
 	CHECK(limited.FrameError == ReadResult::LIMIT);
 
 	limits = LimitsType();
-	limits.EventsPerRecord = 0;
+	limits.EventsPerFrame = 0;
 	CHECK(Read_All(file, limits).FrameError == ReadResult::LIMIT);
 
 	InputFile source(file);

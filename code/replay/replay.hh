@@ -57,6 +57,9 @@ namespace Replay
 	// The format's size limits: those of a message, and those of a section. Each reader has a
 	// separate copy.
 	struct LimitsType : ProtoMessage::LimitsType {
+		std::size_t EventsPerFrame = 16384;
+		std::size_t EventPayload = 4096;             // each payload and sealed_payload
+		std::size_t IncomeKinds = 4096;
 		std::uint64_t SmallSection = 1u << 20;       // INFO, LNCH, END
 		std::uint64_t LargeSection = 32u << 20;      // MAP, INIT, STAT
 		std::uint64_t Checkpoint = 64u << 20;

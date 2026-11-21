@@ -13,10 +13,11 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string_view>
 #include <vector>
 
-// What message structs share: the fields a decoder keeps without reading, the limits a decoder
-// applies, and the limit a message broke.
+// What message structs share: the fields a decoder keeps without reading, the limits both
+// schemas set, and the rule a message broke.
 
 namespace ProtoMessage
 {
@@ -28,25 +29,33 @@ namespace ProtoMessage
 
 	using UnknownFields = std::vector<UnknownField>;
 
-	// The limits on a message's contents.
+	// The limits on a message's contents that both schemas set.
 	struct LimitsType {
-		std::size_t EventsPerRecord = 16384;
-		std::size_t EventPayload = 4096;
 		std::size_t String = 1024;
 		std::size_t Players = 64;
-		std::size_t IncomeKinds = 4096;
 	};
 
 	enum class RuleError : std::uint8_t {
 		NONE,
-		STRING_TOO_LONG,
-		TOO_MANY_PLAYERS,
-		TOO_MANY_HOUSES,
-		TOO_MANY_EVENTS,
-		PAYLOAD_TOO_LARGE,
+		TOO_LONG,          // a string or bytes value is longer than its limit
+		TOO_MANY,          // a repeated field has more entries than its limit
 		NOT_ASCENDING,     // a list the format orders is out of order or repeats a value
-		TOO_MANY_INCOME_KINDS,
-		INCOME_KIND,       // two income kinds share a number or id, an id is empty, or a kind is not listed
+		INVALID,           // the values break a rule the schema sets for them
+	};
+
+	// A broken rule and the field that broke it, given as the field's message in the schema and
+	// its number.
+	struct RuleBreak {
+		RuleError Error = RuleError::NONE;
+		std::string_view Message;    // such as "Frame"; empty when Error is NONE
+		std::uint32_t Field = 0;
+
+		bool operator==(RuleBreak const &) const = default;
+
+		bool operator==(RuleError error) const
+		{
+			return(Error == error);
+		}
 	};
 
 	// Returns the canonical encoding of a message whose namespace declares Encode for it.

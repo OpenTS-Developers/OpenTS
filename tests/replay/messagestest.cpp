@@ -11,12 +11,19 @@
 #include "replay/replaymessages.h"
 #include "replaytest.h"
 
+#include "replay/replayfields.hh"
+
 #include <random>
 
 using namespace Replay;
 
 
 namespace {
+
+RuleBreak Broke(RuleError error, std::string_view message, std::uint32_t field)
+{
+	return(RuleBreak{ error, message, field });
+}
 
 template<typename T>
 std::string Encoded_Hex(T const & message)
@@ -510,7 +517,7 @@ TEST_CASE("the limits of section 10 hold at their values and refuse one more")
 	LimitsType limits;
 	limits.String = 4;
 	limits.Players = 2;
-	limits.EventsPerRecord = 2;
+	limits.EventsPerFrame = 2;
 	limits.EventPayload = 3;
 
 	Message::Launch launch;
@@ -518,19 +525,19 @@ TEST_CASE("the limits of section 10 hold at their values and refuse one more")
 	launch.Players[0].Name = "abcd";
 	CHECK(Check_Limits(launch, limits) == RuleError::NONE);
 	launch.Players.resize(3);
-	CHECK(Check_Limits(launch, limits) == RuleError::TOO_MANY_PLAYERS);
+	CHECK(Check_Limits(launch, limits) == Broke(RuleError::TOO_MANY, "Launch", Field::Launch::PLAYERS));
 	launch.Players.resize(2);
 	launch.Players[0].Name = "abcde";
-	CHECK(Check_Limits(launch, limits) == RuleError::STRING_TOO_LONG);
+	CHECK(Check_Limits(launch, limits) == Broke(RuleError::TOO_LONG, "Player", Field::Player::NAME));
 
 	Message::Frame frame;
 	frame.Events.resize(2);
 	frame.Events[0].Payload.assign(3, 0);
 	CHECK(Check_Limits(frame, limits) == RuleError::NONE);
 	frame.Events[1].SealedPayload = Replay::Bytes(4, 0);
-	CHECK(Check_Limits(frame, limits) == RuleError::PAYLOAD_TOO_LARGE);
+	CHECK(Check_Limits(frame, limits) == Broke(RuleError::TOO_LONG, "Event", Field::Event::SEALED_PAYLOAD));
 	frame.Events.resize(3);
-	CHECK(Check_Limits(frame, limits) == RuleError::TOO_MANY_EVENTS);
+	CHECK(Check_Limits(frame, limits) == Broke(RuleError::TOO_MANY, "Frame", Field::Frame::EVENTS));
 
 	limits.IncomeKinds = 2;
 	Message::RecordingInfo kinds;
@@ -538,29 +545,29 @@ TEST_CASE("the limits of section 10 hold at their values and refuse one more")
 	kinds.IncomeKinds[0].Id = "abcd";
 	CHECK(Check_Limits(kinds, limits) == RuleError::NONE);
 	kinds.IncomeKinds[1].Id = "abcde";
-	CHECK(Check_Limits(kinds, limits) == RuleError::STRING_TOO_LONG);
+	CHECK(Check_Limits(kinds, limits) == Broke(RuleError::TOO_LONG, "IncomeKind", Field::IncomeKind::ID));
 	kinds.IncomeKinds.resize(3);
-	CHECK(Check_Limits(kinds, limits) == RuleError::TOO_MANY_INCOME_KINDS);
+	CHECK(Check_Limits(kinds, limits) == Broke(RuleError::TOO_MANY, "RecordingInfo", Field::RecordingInfo::INCOME_KINDS));
 
 	Message::Statistics statistics;
 	statistics.Houses.resize(3);
-	CHECK(Check_Limits(statistics, limits) == RuleError::TOO_MANY_HOUSES);
+	CHECK(Check_Limits(statistics, limits) == Broke(RuleError::TOO_MANY, "Statistics", Field::Statistics::HOUSES));
 	statistics.Houses.resize(2);
 	statistics.Houses[1].Crates.push_back(Message::CrateCount{ "abcd", 1, {} });
 	CHECK(Check_Limits(statistics, limits) == RuleError::NONE);
 	statistics.Houses[1].Crates.push_back(Message::CrateCount{ "abcde", 1, {} });
-	CHECK(Check_Limits(statistics, limits) == RuleError::STRING_TOO_LONG);
+	CHECK(Check_Limits(statistics, limits) == Broke(RuleError::TOO_LONG, "CrateCount", Field::CrateCount::ID));
 
 	Message::RecordingInfo info;
 	info.Files.push_back(Message::FileHash{ "abcde", "", {} });
-	CHECK(Check_Limits(info, limits) == RuleError::STRING_TOO_LONG);
+	CHECK(Check_Limits(info, limits) == Broke(RuleError::TOO_LONG, "FileHash", Field::FileHash::PATH));
 
 	LimitsType const standard;
 	CHECK(standard.SmallSection == 1024 * 1024);
 	CHECK(standard.LargeSection == 32 * 1024 * 1024);
 	CHECK(standard.Checkpoint == 64 * 1024 * 1024);
 	CHECK(standard.FrameRecord == 1024 * 1024);
-	CHECK(standard.EventsPerRecord == 16384);
+	CHECK(standard.EventsPerFrame == 16384);
 	CHECK(standard.EventPayload == 4096);
 	CHECK(standard.String == 1024);
 	CHECK(standard.Players == 64);
@@ -587,7 +594,7 @@ ByteVector Repeat(char const * hex, std::size_t times)
 TEST_CASE("a limited decode refuses each occurrence past a limit, a replaced one included")
 {
 	LimitsType const limits;
-	RuleError broken = RuleError::NONE;
+	RuleBreak broken;
 
 	// engine is one byte past the string limit, and a later engine field replaces it.
 	ByteVector info_bytes = From_Hex("0a8108");
@@ -601,7 +608,7 @@ TEST_CASE("a limited decode refuses each occurrence past a limit, a replaced one
 	CHECK(info.Engine == "opents");
 	CHECK(Check_Limits(info, limits) == RuleError::NONE);
 	CHECK(!Decode(info_bytes, info, limits, broken));
-	CHECK(broken == RuleError::STRING_TOO_LONG);
+	CHECK(broken == Broke(RuleError::TOO_LONG, "RecordingInfo", Field::RecordingInfo::ENGINE));
 
 	// A payload one byte past the payload limit, which a second payload replaces.
 	ByteVector event = From_Hex("228120");
@@ -615,7 +622,7 @@ TEST_CASE("a limited decode refuses each occurrence past a limit, a replaced one
 	REQUIRE(Decode(frame_bytes, frame));
 	CHECK(Check_Limits(frame, limits) == RuleError::NONE);
 	CHECK(!Decode(frame_bytes, frame, limits, broken));
-	CHECK(broken == RuleError::PAYLOAD_TOO_LARGE);
+	CHECK(broken == Broke(RuleError::TOO_LONG, "Event", Field::Event::PAYLOAD));
 
 	Message::Frame within;
 	CHECK(Decode(Encoded(frame), within, limits, broken));
@@ -628,30 +635,30 @@ TEST_CASE("a limited decode refuses each occurrence past a limit, a replaced one
 TEST_CASE("a limited decode stops a count at its limit before storing more")
 {
 	LimitsType const limits;
-	RuleError broken = RuleError::NONE;
+	RuleBreak broken;
 
 	// Far more empty players than the limit.
 	Message::Launch launch;
 	CHECK(!Decode(Repeat("1a00", 1 << 19), launch, limits, broken));
-	CHECK(broken == RuleError::TOO_MANY_PLAYERS);
+	CHECK(broken == Broke(RuleError::TOO_MANY, "Launch", Field::Launch::PLAYERS));
 	CHECK(launch.Players.size() == limits.Players);
 	CHECK(Decode(Repeat("1a00", limits.Players), launch, limits, broken));
 
 	// Far more empty houses than the limit.
 	Message::Statistics statistics;
 	CHECK(!Decode(Repeat("1200", 1 << 24), statistics, limits, broken));
-	CHECK(broken == RuleError::TOO_MANY_HOUSES);
+	CHECK(broken == Broke(RuleError::TOO_MANY, "Statistics", Field::Statistics::HOUSES));
 	CHECK(statistics.Houses.size() == limits.Players);
 
 	Message::Frame frame;
-	CHECK(!Decode(Repeat("1a00", limits.EventsPerRecord + 1), frame, limits, broken));
-	CHECK(broken == RuleError::TOO_MANY_EVENTS);
-	CHECK(frame.Events.size() == limits.EventsPerRecord);
-	CHECK(Decode(Repeat("1a00", limits.EventsPerRecord), frame, limits, broken));
+	CHECK(!Decode(Repeat("1a00", limits.EventsPerFrame + 1), frame, limits, broken));
+	CHECK(broken == Broke(RuleError::TOO_MANY, "Frame", Field::Frame::EVENTS));
+	CHECK(frame.Events.size() == limits.EventsPerFrame);
+	CHECK(Decode(Repeat("1a00", limits.EventsPerFrame), frame, limits, broken));
 
 	Message::RecordingInfo info;
 	CHECK(!Decode(Repeat("7a00", limits.IncomeKinds + 1), info, limits, broken));
-	CHECK(broken == RuleError::TOO_MANY_INCOME_KINDS);
+	CHECK(broken == Broke(RuleError::TOO_MANY, "RecordingInfo", Field::RecordingInfo::INCOME_KINDS));
 	CHECK(info.IncomeKinds.size() == limits.IncomeKinds);
 	CHECK(Decode(Repeat("7a00", limits.IncomeKinds), info, limits, broken));
 
@@ -669,30 +676,30 @@ TEST_CASE("the writer's ordering rules catch lists out of order")
 	launch.Players.resize(2);
 	launch.Players[0].House = 3;
 	launch.Players[1].House = 1;
-	CHECK(Check_Order(launch) == RuleError::NOT_ASCENDING);
+	CHECK(Check_Order(launch) == Broke(RuleError::NOT_ASCENDING, "Launch", Field::Launch::PLAYERS));
 	launch.Players[1].House = 4;
 	CHECK(Check_Order(launch) == RuleError::NONE);
 	launch.Players[1].Allies = { 4 };
-	CHECK_MESSAGE(Check_Order(launch) == RuleError::NOT_ASCENDING, "a house never lists itself");
+	CHECK_MESSAGE(Check_Order(launch) == Broke(RuleError::NOT_ASCENDING, "Player", Field::Player::ALLIES), "a house never lists itself");
 	launch.Players[1].Allies = { 3 };
 
 	launch.Options.resize(2);
 	launch.Options[0].Key = "b";
 	launch.Options[1].Key = "a";
-	CHECK(Check_Order(launch) == RuleError::NOT_ASCENDING);
+	CHECK(Check_Order(launch) == Broke(RuleError::NOT_ASCENDING, "Launch", Field::Launch::OPTIONS));
 	launch.Options[1].Key = "b";
-	CHECK_MESSAGE(Check_Order(launch) == RuleError::NOT_ASCENDING, "each key once");
+	CHECK_MESSAGE(Check_Order(launch) == Broke(RuleError::NOT_ASCENDING, "Launch", Field::Launch::OPTIONS), "each key once");
 	launch.Options[0].Key = "Z";
 	launch.Options[1].Key = "\xC3\xA9";
 	CHECK_MESSAGE(Check_Order(launch) == RuleError::NONE, "keys compare as unsigned bytes");
 
 	Message::Frame frame;
 	frame.Defeated = { 1, 1 };
-	CHECK(Check_Order(frame) == RuleError::NOT_ASCENDING);
+	CHECK(Check_Order(frame) == Broke(RuleError::NOT_ASCENDING, "Frame", Field::Frame::DEFEATED));
 
 	Message::RecordingInfo info;
 	info.Colors.resize(2);
-	CHECK(Check_Order(info) == RuleError::NOT_ASCENDING);
+	CHECK(Check_Order(info) == Broke(RuleError::NOT_ASCENDING, "RecordingInfo", Field::RecordingInfo::COLORS));
 }
 
 
@@ -730,15 +737,17 @@ TEST_CASE("INFO lists each income kind once, and income uses only listed kinds")
 {
 	CHECK(Check_Income_Kinds(With_Kinds({})) == RuleError::NONE);
 	CHECK(Check_Income_Kinds(With_Kinds({ { 1, "Crate" }, { 2, "Sold/Unit" } })) == RuleError::NONE);
-	CHECK_MESSAGE(Check_Income_Kinds(With_Kinds({ { 1, "" } })) == RuleError::INCOME_KIND, "an empty id");
-	CHECK_MESSAGE(Check_Income_Kinds(With_Kinds({ { 1, "Crate" }, { 1, "Trigger" } })) == RuleError::INCOME_KIND, "a number twice");
-	CHECK_MESSAGE(Check_Income_Kinds(With_Kinds({ { 1, "Crate" }, { 2, "Crate" } })) == RuleError::INCOME_KIND, "an id twice");
+	RuleBreak const listing = Broke(RuleError::INVALID, "RecordingInfo", Field::RecordingInfo::INCOME_KINDS);
+	CHECK_MESSAGE(Check_Income_Kinds(With_Kinds({ { 1, "" } })) == listing, "an empty id");
+	CHECK_MESSAGE(Check_Income_Kinds(With_Kinds({ { 1, "Crate" }, { 1, "Trigger" } })) == listing, "a number twice");
+	CHECK_MESSAGE(Check_Income_Kinds(With_Kinds({ { 1, "Crate" }, { 2, "Crate" } })) == listing, "an id twice");
 
 	IncomeKindSet const listed(With_Kinds({ { 1, "Crate" }, { 3, "Trigger" } }));
 	CHECK(listed.Check(Paying({})) == RuleError::NONE);
 	CHECK(listed.Check(Paying({ 3, 1, 3 })) == RuleError::NONE);
-	CHECK_MESSAGE(listed.Check(Paying({ 1, 2 })) == RuleError::INCOME_KIND, "a kind INFO does not list");
-	CHECK_MESSAGE(IncomeKindSet().Check(Paying({ 0 })) == RuleError::INCOME_KIND, "kind 0 must be listed too");
+	RuleBreak const unlisted = Broke(RuleError::INVALID, "Income", Field::Income::KIND);
+	CHECK_MESSAGE(listed.Check(Paying({ 1, 2 })) == unlisted, "a kind INFO does not list");
+	CHECK_MESSAGE(IncomeKindSet().Check(Paying({ 0 })) == unlisted, "kind 0 must be listed too");
 }
 
 

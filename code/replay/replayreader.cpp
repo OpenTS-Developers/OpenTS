@@ -61,15 +61,15 @@ ReadResult Guarded(Body body)
 
 
 template<typename T>
-bool Decode_Record(ByteSpan data, T & record, LimitsType const & limits, RuleError & broken)
+bool Decode_Record(ByteSpan data, T & record, LimitsType const & limits, RuleBreak & broken)
 {
 	return(Decode(data, record, limits, broken));
 }
 
 
-bool Decode_Record(ByteSpan data, Message::RecordingSummary & record, LimitsType const &, RuleError & broken)
+bool Decode_Record(ByteSpan data, Message::RecordingSummary & record, LimitsType const &, RuleBreak & broken)
 {
-	broken = RuleError::NONE;
+	broken = RuleBreak();
 	return(Decode(data, record));
 }
 
@@ -381,7 +381,7 @@ ReadResult Reader::Read_Record(std::uint32_t tag, T & record)
 	if (result != ReadResult::OK) {
 		return(result);
 	}
-	RuleError broken = RuleError::NONE;
+	RuleBreak broken;
 	if (!Decode_Record(body, record, Limit, broken)) {
 		return((broken != RuleError::NONE) ? ReadResult::LIMIT : ReadResult::MALFORMED);
 	}
@@ -680,7 +680,7 @@ FrameStep FrameReader::Next_Record(std::uint32_t & frame, Message::Frame & recor
 			return(Section.Open ? FrameStep::END : End_Closed());
 		}
 
-		RuleError broken = RuleError::NONE;
+		RuleBreak broken;
 		if (!Decode(ByteSpan(Buffer.data() + offset, std::size_t(length)), record, Owner.Limits(), broken)) {
 			return(Fail((broken != RuleError::NONE) ? ReadResult::LIMIT : ReadResult::MALFORMED));
 		}

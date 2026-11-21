@@ -40,8 +40,15 @@ using ProtoWire::Read_Repeated_Uint32;
 
 struct DecodeContext {
 	LimitsType const & Limits;
-	RuleError Broken = RuleError::NONE;
+	RuleBreak Broken;
 };
+
+
+// Returns one of the limits a context applies; without a context nothing is limited.
+inline std::size_t Limit(DecodeContext const * context, std::size_t LimitsType::* limit)
+{
+	return((context != nullptr) ? context->Limits.*limit : SIZE_MAX);
+}
 
 
 // Writes the known fields a caller gives in ascending field number, and puts each kept unknown
@@ -162,13 +169,14 @@ inline std::optional<std::uint64_t> Widen(std::optional<std::uint32_t> value)
 }
 
 
-// Reads the fields of one message. A getter keeps a field of another wire type as unknown, and
-// a malformed nested body makes the whole message malformed.
+// Reads the fields of one message, which the schema names message. A getter keeps a field of
+// another wire type as unknown, and a malformed nested body makes the whole message malformed.
 class Fields
 {
 	public:
-		Fields(ByteSpan data, UnknownFields & unknown, DecodeContext * context) :
+		Fields(char const * message, ByteSpan data, UnknownFields & unknown, DecodeContext * context) :
 			Reader(data),
+			Name(message),
 			Unknown(unknown),
 			Context(context),
 			Bad(false)
@@ -288,7 +296,7 @@ class Fields
 				return(false);
 			}
 			if (Context != nullptr && Field.Body.size() > Context->Limits.String) {
-				return(Break(RuleError::STRING_TOO_LONG));
+				return(Break(RuleError::TOO_LONG));
 			}
 			std::string_view const text(reinterpret_cast<char const *>(Field.Body.data()), Field.Body.size());
 			if (!UTF8::Is_Valid(text)) {
@@ -299,19 +307,19 @@ class Fields
 			return(true);
 		}
 
-		bool Payload(Bytes & value)
+		bool Limited_Blob(Bytes & value, std::size_t limit)
 		{
-			if (Field.Type == WireType::LENGTH && Context != nullptr && Field.Body.size() > Context->Limits.EventPayload) {
-				return(Break(RuleError::PAYLOAD_TOO_LARGE));
+			if (Field.Type == WireType::LENGTH && Context != nullptr && Field.Body.size() > limit) {
+				return(Break(RuleError::TOO_LONG));
 			}
 			return(Blob(value));
 		}
 
-		template<typename T, typename Getter>
-		void Optional(std::optional<T> & value, Getter get)
+		template<typename T, typename Getter, typename... Args>
+		void Optional(std::optional<T> & value, Getter get, Args... args)
 		{
 			T taken{};
-			if ((this->*get)(taken)) {
+			if ((this->*get)(taken, args...)) {
 				value = taken;
 			}
 		}
@@ -362,10 +370,10 @@ class Fields
 
 		// Refuses the element that would pass the limit before decoding it.
 		template<typename T>
-		void Repeated(std::vector<T> & values, std::size_t LimitsType::* limit, RuleError error)
+		void Repeated(std::vector<T> & values, std::size_t limit)
 		{
-			if (Field.Type == WireType::LENGTH && Context != nullptr && values.size() >= Context->Limits.*limit) {
-				Break(error);
+			if (Field.Type == WireType::LENGTH && Context != nullptr && values.size() >= limit) {
+				Break(RuleError::TOO_MANY);
 				return;
 			}
 			Repeated(values);
@@ -375,7 +383,7 @@ class Fields
 		bool Break(RuleError error)
 		{
 			if (Context->Broken == RuleError::NONE) {
-				Context->Broken = error;
+				Context->Broken = RuleBreak{ error, Name, Field.Number };
 			}
 			Bad = true;
 			return(false);
@@ -383,6 +391,7 @@ class Fields
 
 		WireReader Reader;
 		WireField Field;
+		char const * Name;
 		UnknownFields & Unknown;
 		DecodeContext * Context;
 		bool Bad;

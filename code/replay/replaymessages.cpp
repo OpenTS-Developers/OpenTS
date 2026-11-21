@@ -89,6 +89,14 @@ void Encode(FileHash const & message, Bytes & out)
 }
 
 
+// Every decode context of this file holds a Replay::LimitsType, because only the Decode
+// functions below create one.
+std::size_t Limit(DecodeContext const * context, std::size_t LimitsType::* limit)
+{
+	return((context != nullptr) ? static_cast<LimitsType const &>(context->Limits).*limit : SIZE_MAX);
+}
+
+
 void Encode(PlayerColor const & message, Bytes & out)
 {
 	Emitter emit(out, message.Unknown);
@@ -377,7 +385,7 @@ void Encode(RecordingSummary const & message, Bytes & out)
 bool Read_Message(ByteSpan data, FileHash & message, DecodeContext * context)
 {
 	message = FileHash();
-	Fields fields(data, message.Unknown, context);
+	Fields fields("FileHash", data, message.Unknown, context);
 	while (fields.Next()) {
 		switch (fields.Number()) {
 			case F::FileHash::PATH: fields.Text(message.Path); break;
@@ -392,7 +400,7 @@ bool Read_Message(ByteSpan data, FileHash & message, DecodeContext * context)
 bool Read_Message(ByteSpan data, PlayerColor & message, DecodeContext * context)
 {
 	message = PlayerColor();
-	Fields fields(data, message.Unknown, context);
+	Fields fields("PlayerColor", data, message.Unknown, context);
 	while (fields.Next()) {
 		switch (fields.Number()) {
 			case F::PlayerColor::NUMBER: fields.Uint32(message.Number); break;
@@ -408,7 +416,7 @@ bool Read_Message(ByteSpan data, RecordingInfo & message, DecodeContext * contex
 {
 	namespace I = F::RecordingInfo;
 	message = RecordingInfo();
-	Fields fields(data, message.Unknown, context);
+	Fields fields("RecordingInfo", data, message.Unknown, context);
 	while (fields.Next()) {
 		switch (fields.Number()) {
 			case I::ENGINE: fields.Text(message.Engine); break;
@@ -425,7 +433,7 @@ bool Read_Message(ByteSpan data, RecordingInfo & message, DecodeContext * contex
 			case I::GAME_MODE: fields.Text(message.GameMode); break;
 			case I::SEAL_VERSION: fields.Uint32(message.SealVersion); break;
 			case I::COLORS: fields.Repeated(message.Colors); break;
-			case I::INCOME_KINDS: fields.Repeated(message.IncomeKinds, &LimitsType::IncomeKinds, RuleError::TOO_MANY_INCOME_KINDS); break;
+			case I::INCOME_KINDS: fields.Repeated(message.IncomeKinds, Limit(context, &LimitsType::IncomeKinds)); break;
 			default: fields.Keep(); break;
 		}
 	}
@@ -437,7 +445,7 @@ bool Read_Message(ByteSpan data, Player & message, DecodeContext * context)
 {
 	namespace P = F::Player;
 	message = Player();
-	Fields fields(data, message.Unknown, context);
+	Fields fields("Player", data, message.Unknown, context);
 	while (fields.Next()) {
 		switch (fields.Number()) {
 			case P::HOUSE: fields.Uint32(message.House); break;
@@ -463,7 +471,7 @@ bool Read_Message(ByteSpan data, Player & message, DecodeContext * context)
 bool Read_Message(ByteSpan data, GameOption & message, DecodeContext * context)
 {
 	message = GameOption();
-	Fields fields(data, message.Unknown, context);
+	Fields fields("GameOption", data, message.Unknown, context);
 	while (fields.Next()) {
 		switch (fields.Number()) {
 			case F::GameOption::KEY:
@@ -509,12 +517,12 @@ bool Read_Message(ByteSpan data, GameOption & message, DecodeContext * context)
 bool Read_Message(ByteSpan data, Launch & message, DecodeContext * context)
 {
 	message = Launch();
-	Fields fields(data, message.Unknown, context);
+	Fields fields("Launch", data, message.Unknown, context);
 	while (fields.Next()) {
 		switch (fields.Number()) {
 			case F::Launch::KIND: fields.Enum(message.Kind); break;
 			case F::Launch::SEED: fields.Optional(message.Seed, &Fields::Fixed32); break;
-			case F::Launch::PLAYERS: fields.Repeated(message.Players, &LimitsType::Players, RuleError::TOO_MANY_PLAYERS); break;
+			case F::Launch::PLAYERS: fields.Repeated(message.Players, Limit(context, &LimitsType::Players)); break;
 			case F::Launch::OPTIONS: fields.Repeated(message.Options); break;
 			case F::Launch::ANONYMOUS: fields.Bool(message.Anonymous); break;
 			default: fields.Keep(); break;
@@ -527,16 +535,16 @@ bool Read_Message(ByteSpan data, Launch & message, DecodeContext * context)
 bool Read_Message(ByteSpan data, Event & message, DecodeContext * context)
 {
 	message = Event();
-	Fields fields(data, message.Unknown, context);
+	Fields fields("Event", data, message.Unknown, context);
 	while (fields.Next()) {
 		switch (fields.Number()) {
 			case F::Event::TYPE: fields.Uint32(message.Type); break;
 			case F::Event::HOUSE: fields.Uint32(message.House); break;
 			case F::Event::DUE: fields.Sint32(message.Due); break;
-			case F::Event::PAYLOAD: fields.Payload(message.Payload); break;
+			case F::Event::PAYLOAD: fields.Limited_Blob(message.Payload, Limit(context, &LimitsType::EventPayload)); break;
 			case F::Event::LOCAL: fields.Bool(message.Local); break;
 			case F::Event::ROLE: fields.Enum(message.Role); break;
-			case F::Event::SEALED_PAYLOAD: fields.Optional(message.SealedPayload, &Fields::Payload); break;
+			case F::Event::SEALED_PAYLOAD: fields.Optional(message.SealedPayload, &Fields::Limited_Blob, Limit(context, &LimitsType::EventPayload)); break;
 			default: fields.Keep(); break;
 		}
 	}
@@ -547,7 +555,7 @@ bool Read_Message(ByteSpan data, Event & message, DecodeContext * context)
 bool Read_Message(ByteSpan data, Point & message, DecodeContext * context)
 {
 	message = Point();
-	Fields fields(data, message.Unknown, context);
+	Fields fields("Point", data, message.Unknown, context);
 	while (fields.Next()) {
 		switch (fields.Number()) {
 			case F::Point::X: fields.Sint32(message.X); break;
@@ -562,7 +570,7 @@ bool Read_Message(ByteSpan data, Point & message, DecodeContext * context)
 bool Read_Message(ByteSpan data, Selection & message, DecodeContext * context)
 {
 	message = Selection();
-	Fields fields(data, message.Unknown, context);
+	Fields fields("Selection", data, message.Unknown, context);
 	while (fields.Next()) {
 		switch (fields.Number()) {
 			case F::Selection::IDS: fields.Packed(message.Ids); break;
@@ -576,7 +584,7 @@ bool Read_Message(ByteSpan data, Selection & message, DecodeContext * context)
 bool Read_Message(ByteSpan data, ViewState & message, DecodeContext * context)
 {
 	message = ViewState();
-	Fields fields(data, message.Unknown, context);
+	Fields fields("ViewState", data, message.Unknown, context);
 	while (fields.Next()) {
 		switch (fields.Number()) {
 			case F::ViewState::CAMERA: fields.Optional_Message(message.Camera); break;
@@ -592,7 +600,7 @@ bool Read_Message(ByteSpan data, PlayerMessage & message, DecodeContext * contex
 {
 	namespace M = F::PlayerMessage;
 	message = PlayerMessage();
-	Fields fields(data, message.Unknown, context);
+	Fields fields("PlayerMessage", data, message.Unknown, context);
 	while (fields.Next()) {
 		switch (fields.Number()) {
 			case M::HOUSE: fields.Uint32(message.House); break;
@@ -613,7 +621,7 @@ bool Read_Message(ByteSpan data, HouseSample & message, DecodeContext * context)
 {
 	namespace S = F::HouseSample;
 	message = HouseSample();
-	Fields fields(data, message.Unknown, context);
+	Fields fields("HouseSample", data, message.Unknown, context);
 	while (fields.Next()) {
 		switch (fields.Number()) {
 			case S::HOUSE: fields.Uint32(message.House); break;
@@ -647,7 +655,7 @@ bool Read_Message(ByteSpan data, HouseSample & message, DecodeContext * context)
 bool Read_Message(ByteSpan data, Income & message, DecodeContext * context)
 {
 	message = Income();
-	Fields fields(data, message.Unknown, context);
+	Fields fields("Income", data, message.Unknown, context);
 	while (fields.Next()) {
 		switch (fields.Number()) {
 			case F::Income::HOUSE: fields.Uint32(message.House); break;
@@ -663,7 +671,7 @@ bool Read_Message(ByteSpan data, Income & message, DecodeContext * context)
 bool Read_Message(ByteSpan data, IncomeKind & message, DecodeContext * context)
 {
 	message = IncomeKind();
-	Fields fields(data, message.Unknown, context);
+	Fields fields("IncomeKind", data, message.Unknown, context);
 	while (fields.Next()) {
 		switch (fields.Number()) {
 			case F::IncomeKind::NUMBER: fields.Uint32(message.Number); break;
@@ -678,7 +686,7 @@ bool Read_Message(ByteSpan data, IncomeKind & message, DecodeContext * context)
 bool Read_Message(ByteSpan data, Seal & message, DecodeContext * context)
 {
 	message = Seal();
-	Fields fields(data, message.Unknown, context);
+	Fields fields("Seal", data, message.Unknown, context);
 	while (fields.Next()) {
 		switch (fields.Number()) {
 			case F::Seal::THROUGH: fields.Uint32(message.Through); break;
@@ -693,12 +701,12 @@ bool Read_Message(ByteSpan data, Seal & message, DecodeContext * context)
 bool Read_Message(ByteSpan data, Frame & message, DecodeContext * context)
 {
 	message = Frame();
-	Fields fields(data, message.Unknown, context);
+	Fields fields("Frame", data, message.Unknown, context);
 	while (fields.Next()) {
 		switch (fields.Number()) {
 			case F::Frame::SKIPPED: fields.Uint32(message.Skipped); break;
 			case F::Frame::HASH: fields.Optional(message.Hash, &Fields::Fixed32); break;
-			case F::Frame::EVENTS: fields.Repeated(message.Events, &LimitsType::EventsPerRecord, RuleError::TOO_MANY_EVENTS); break;
+			case F::Frame::EVENTS: fields.Repeated(message.Events, Limit(context, &LimitsType::EventsPerFrame)); break;
 			case F::Frame::VIEW: fields.Message(message.View); break;
 			case F::Frame::MESSAGES: fields.Repeated(message.Messages); break;
 			case F::Frame::FRAME_MICROS: fields.Optional(message.FrameMicros, &Fields::Uint32); break;
@@ -716,7 +724,7 @@ bool Read_Message(ByteSpan data, Frame & message, DecodeContext * context)
 bool Read_Message(ByteSpan data, Checkpoint & message, DecodeContext * context)
 {
 	message = Checkpoint();
-	Fields fields(data, message.Unknown, context);
+	Fields fields("Checkpoint", data, message.Unknown, context);
 	while (fields.Next()) {
 		switch (fields.Number()) {
 			case F::Checkpoint::FRAME: fields.Uint32(message.Frame); break;
@@ -733,7 +741,7 @@ bool Read_Message(ByteSpan data, ObjectType & message, DecodeContext * context)
 {
 	namespace O = F::ObjectType;
 	message = ObjectType();
-	Fields fields(data, message.Unknown, context);
+	Fields fields("ObjectType", data, message.Unknown, context);
 	while (fields.Next()) {
 		switch (fields.Number()) {
 			case O::CATEGORY: fields.Enum(message.Category); break;
@@ -755,7 +763,7 @@ bool Read_Message(ByteSpan data, ObjectType & message, DecodeContext * context)
 bool Read_Message(ByteSpan data, TypeCount & message, DecodeContext * context)
 {
 	message = TypeCount();
-	Fields fields(data, message.Unknown, context);
+	Fields fields("TypeCount", data, message.Unknown, context);
 	while (fields.Next()) {
 		switch (fields.Number()) {
 			case F::TypeCount::KIND: fields.Enum(message.Kind); break;
@@ -772,7 +780,7 @@ bool Read_Message(ByteSpan data, TypeCount & message, DecodeContext * context)
 bool Read_Message(ByteSpan data, CrateCount & message, DecodeContext * context)
 {
 	message = CrateCount();
-	Fields fields(data, message.Unknown, context);
+	Fields fields("CrateCount", data, message.Unknown, context);
 	while (fields.Next()) {
 		switch (fields.Number()) {
 			case F::CrateCount::ID: fields.Text(message.Id); break;
@@ -787,7 +795,7 @@ bool Read_Message(ByteSpan data, CrateCount & message, DecodeContext * context)
 bool Read_Message(ByteSpan data, HouseKills & message, DecodeContext * context)
 {
 	message = HouseKills();
-	Fields fields(data, message.Unknown, context);
+	Fields fields("HouseKills", data, message.Unknown, context);
 	while (fields.Next()) {
 		switch (fields.Number()) {
 			case F::HouseKills::HOUSE: fields.Uint32(message.House); break;
@@ -804,7 +812,7 @@ bool Read_Message(ByteSpan data, HouseStatistics & message, DecodeContext * cont
 {
 	namespace H = F::HouseStatistics;
 	message = HouseStatistics();
-	Fields fields(data, message.Unknown, context);
+	Fields fields("HouseStatistics", data, message.Unknown, context);
 	while (fields.Next()) {
 		switch (fields.Number()) {
 			case H::HOUSE: fields.Uint32(message.House); break;
@@ -829,11 +837,11 @@ bool Read_Message(ByteSpan data, HouseStatistics & message, DecodeContext * cont
 bool Read_Message(ByteSpan data, Statistics & message, DecodeContext * context)
 {
 	message = Statistics();
-	Fields fields(data, message.Unknown, context);
+	Fields fields("Statistics", data, message.Unknown, context);
 	while (fields.Next()) {
 		switch (fields.Number()) {
 			case F::Statistics::TYPES: fields.Repeated(message.Types); break;
-			case F::Statistics::HOUSES: fields.Repeated(message.Houses, &LimitsType::Players, RuleError::TOO_MANY_HOUSES); break;
+			case F::Statistics::HOUSES: fields.Repeated(message.Houses, Limit(context, &LimitsType::Players)); break;
 			default: fields.Keep(); break;
 		}
 	}
@@ -845,7 +853,7 @@ bool Read_Message(ByteSpan data, RecordingSummary & message, DecodeContext * con
 {
 	namespace R = F::RecordingSummary;
 	message = RecordingSummary();
-	Fields fields(data, message.Unknown, context);
+	Fields fields("RecordingSummary", data, message.Unknown, context);
 	while (fields.Next()) {
 		switch (fields.Number()) {
 			case R::LAST_FRAME: fields.Optional(message.LastFrame, &Fields::Uint32); break;
@@ -1006,7 +1014,7 @@ bool Decode(ByteSpan data, RecordingSummary & message)
 }
 
 
-bool Decode(ByteSpan data, RecordingInfo & message, LimitsType const & limits, RuleError & broken)
+bool Decode(ByteSpan data, RecordingInfo & message, LimitsType const & limits, RuleBreak & broken)
 {
 	DecodeContext context{ limits };
 	bool const good = Read_Message(data, message, &context);
@@ -1015,7 +1023,7 @@ bool Decode(ByteSpan data, RecordingInfo & message, LimitsType const & limits, R
 }
 
 
-bool Decode(ByteSpan data, Launch & message, LimitsType const & limits, RuleError & broken)
+bool Decode(ByteSpan data, Launch & message, LimitsType const & limits, RuleBreak & broken)
 {
 	DecodeContext context{ limits };
 	bool const good = Read_Message(data, message, &context);
@@ -1024,7 +1032,7 @@ bool Decode(ByteSpan data, Launch & message, LimitsType const & limits, RuleErro
 }
 
 
-bool Decode(ByteSpan data, Frame & message, LimitsType const & limits, RuleError & broken)
+bool Decode(ByteSpan data, Frame & message, LimitsType const & limits, RuleBreak & broken)
 {
 	DecodeContext context{ limits };
 	bool const good = Read_Message(data, message, &context);
@@ -1033,7 +1041,7 @@ bool Decode(ByteSpan data, Frame & message, LimitsType const & limits, RuleError
 }
 
 
-bool Decode(ByteSpan data, Statistics & message, LimitsType const & limits, RuleError & broken)
+bool Decode(ByteSpan data, Statistics & message, LimitsType const & limits, RuleBreak & broken)
 {
 	DecodeContext context{ limits };
 	bool const good = Read_Message(data, message, &context);
@@ -1042,160 +1050,185 @@ bool Decode(ByteSpan data, Statistics & message, LimitsType const & limits, Rule
 }
 
 
-RuleError Check_Limits(RecordingInfo const & message, LimitsType const & limits)
+RuleBreak Check_Limits(RecordingInfo const & message, LimitsType const & limits)
 {
-	for (std::string const * text : { &message.Engine, &message.EngineVersion, &message.Package,
-		&message.PackageVersion, &message.MapName, &message.GameMode, &message.MapPath }) {
+	namespace I = F::RecordingInfo;
+	std::pair<std::string const *, std::uint32_t> const texts[] = {
+		{ &message.Engine, I::ENGINE }, { &message.EngineVersion, I::ENGINE_VERSION },
+		{ &message.Package, I::PACKAGE }, { &message.PackageVersion, I::PACKAGE_VERSION },
+		{ &message.MapName, I::MAP_NAME }, { &message.GameMode, I::GAME_MODE }, { &message.MapPath, I::MAP_PATH } };
+	for (auto const & [text, field] : texts) {
 		if (!Fits(*text, limits)) {
-			return(RuleError::STRING_TOO_LONG);
+			return(RuleBreak{ RuleError::TOO_LONG, "RecordingInfo", field });
 		}
 	}
 	for (FileHash const & file : message.Files) {
-		if (!Fits(file.Path, limits) || !Fits(file.Hash, limits)) {
-			return(RuleError::STRING_TOO_LONG);
+		if (!Fits(file.Path, limits)) {
+			return(RuleBreak{ RuleError::TOO_LONG, "FileHash", F::FileHash::PATH });
+		}
+		if (!Fits(file.Hash, limits)) {
+			return(RuleBreak{ RuleError::TOO_LONG, "FileHash", F::FileHash::HASH });
 		}
 	}
 	if (message.IncomeKinds.size() > limits.IncomeKinds) {
-		return(RuleError::TOO_MANY_INCOME_KINDS);
+		return(RuleBreak{ RuleError::TOO_MANY, "RecordingInfo", I::INCOME_KINDS });
 	}
 	for (IncomeKind const & kind : message.IncomeKinds) {
 		if (!Fits(kind.Id, limits)) {
-			return(RuleError::STRING_TOO_LONG);
+			return(RuleBreak{ RuleError::TOO_LONG, "IncomeKind", F::IncomeKind::ID });
 		}
 	}
-	return(RuleError::NONE);
+	return(RuleBreak());
 }
 
 
-RuleError Check_Limits(Launch const & message, LimitsType const & limits)
+RuleBreak Check_Limits(Launch const & message, LimitsType const & limits)
 {
 	if (message.Players.size() > limits.Players) {
-		return(RuleError::TOO_MANY_PLAYERS);
+		return(RuleBreak{ RuleError::TOO_MANY, "Launch", F::Launch::PLAYERS });
 	}
 	for (Player const & player : message.Players) {
-		if (!Fits(player.Name, limits) || !Fits(player.CountryName, limits)) {
-			return(RuleError::STRING_TOO_LONG);
+		if (!Fits(player.Name, limits)) {
+			return(RuleBreak{ RuleError::TOO_LONG, "Player", F::Player::NAME });
+		}
+		if (!Fits(player.CountryName, limits)) {
+			return(RuleBreak{ RuleError::TOO_LONG, "Player", F::Player::COUNTRY_NAME });
 		}
 	}
 	for (GameOption const & option : message.Options) {
+		if (!Fits(option.Key, limits)) {
+			return(RuleBreak{ RuleError::TOO_LONG, "GameOption", F::GameOption::KEY });
+		}
 		auto text = std::get_if<std::string>(&option.Value);
-		if (!Fits(option.Key, limits) || (text != nullptr && !Fits(*text, limits))) {
-			return(RuleError::STRING_TOO_LONG);
+		if (text != nullptr && !Fits(*text, limits)) {
+			return(RuleBreak{ RuleError::TOO_LONG, "GameOption", F::GameOption::TEXT });
 		}
 	}
-	return(RuleError::NONE);
+	return(RuleBreak());
 }
 
 
-RuleError Check_Limits(Frame const & message, LimitsType const & limits)
+RuleBreak Check_Limits(Frame const & message, LimitsType const & limits)
 {
-	if (message.Events.size() > limits.EventsPerRecord) {
-		return(RuleError::TOO_MANY_EVENTS);
+	if (message.Events.size() > limits.EventsPerFrame) {
+		return(RuleBreak{ RuleError::TOO_MANY, "Frame", F::Frame::EVENTS });
 	}
 	for (Event const & event : message.Events) {
-		if (event.Payload.size() > limits.EventPayload
-			|| (event.SealedPayload && event.SealedPayload->size() > limits.EventPayload)) {
-			return(RuleError::PAYLOAD_TOO_LARGE);
+		if (event.Payload.size() > limits.EventPayload) {
+			return(RuleBreak{ RuleError::TOO_LONG, "Event", F::Event::PAYLOAD });
+		}
+		if (event.SealedPayload && event.SealedPayload->size() > limits.EventPayload) {
+			return(RuleBreak{ RuleError::TOO_LONG, "Event", F::Event::SEALED_PAYLOAD });
 		}
 	}
 	for (PlayerMessage const & chat : message.Messages) {
-		if (!Fits(chat.Sender, limits) || !Fits(chat.Text, limits)) {
-			return(RuleError::STRING_TOO_LONG);
+		if (!Fits(chat.Sender, limits)) {
+			return(RuleBreak{ RuleError::TOO_LONG, "PlayerMessage", F::PlayerMessage::SENDER });
+		}
+		if (!Fits(chat.Text, limits)) {
+			return(RuleBreak{ RuleError::TOO_LONG, "PlayerMessage", F::PlayerMessage::TEXT });
 		}
 	}
-	return(RuleError::NONE);
+	return(RuleBreak());
 }
 
 
-RuleError Check_Limits(Statistics const & message, LimitsType const & limits)
+RuleBreak Check_Limits(Statistics const & message, LimitsType const & limits)
 {
 	if (message.Houses.size() > limits.Players) {
-		return(RuleError::TOO_MANY_HOUSES);
+		return(RuleBreak{ RuleError::TOO_MANY, "Statistics", F::Statistics::HOUSES });
 	}
 	for (ObjectType const & type : message.Types) {
-		if (!Fits(type.Id, limits) || !Fits(type.Name, limits) || !Fits(type.Icon, limits)) {
-			return(RuleError::STRING_TOO_LONG);
-		}
-	}
-	for (HouseStatistics const & house : message.Houses) {
-		if (!Fits(house.Name, limits) || !Fits(house.CountryName, limits)) {
-			return(RuleError::STRING_TOO_LONG);
-		}
-		for (CrateCount const & crate : house.Crates) {
-			if (!Fits(crate.Id, limits)) {
-				return(RuleError::STRING_TOO_LONG);
+		std::pair<std::string const *, std::uint32_t> const texts[] = {
+			{ &type.Id, F::ObjectType::ID }, { &type.Name, F::ObjectType::NAME }, { &type.Icon, F::ObjectType::ICON } };
+		for (auto const & [text, field] : texts) {
+			if (!Fits(*text, limits)) {
+				return(RuleBreak{ RuleError::TOO_LONG, "ObjectType", field });
 			}
 		}
 	}
-	return(RuleError::NONE);
+	for (HouseStatistics const & house : message.Houses) {
+		if (!Fits(house.Name, limits)) {
+			return(RuleBreak{ RuleError::TOO_LONG, "HouseStatistics", F::HouseStatistics::NAME });
+		}
+		if (!Fits(house.CountryName, limits)) {
+			return(RuleBreak{ RuleError::TOO_LONG, "HouseStatistics", F::HouseStatistics::COUNTRY_NAME });
+		}
+		for (CrateCount const & crate : house.Crates) {
+			if (!Fits(crate.Id, limits)) {
+				return(RuleBreak{ RuleError::TOO_LONG, "CrateCount", F::CrateCount::ID });
+			}
+		}
+	}
+	return(RuleBreak());
 }
 
 
-RuleError Check_Order(RecordingInfo const & message)
+RuleBreak Check_Order(RecordingInfo const & message)
 {
 	for (std::size_t i = 1; i < message.Colors.size(); i++) {
 		if (message.Colors[i].Number <= message.Colors[i - 1].Number) {
-			return(RuleError::NOT_ASCENDING);
+			return(RuleBreak{ RuleError::NOT_ASCENDING, "RecordingInfo", F::RecordingInfo::COLORS });
 		}
 	}
-	return(RuleError::NONE);
+	return(RuleBreak());
 }
 
 
-RuleError Check_Order(Launch const & message)
+RuleBreak Check_Order(Launch const & message)
 {
 	for (std::size_t i = 0; i < message.Players.size(); i++) {
 		if (i > 0 && message.Players[i].House <= message.Players[i - 1].House) {
-			return(RuleError::NOT_ASCENDING);
+			return(RuleBreak{ RuleError::NOT_ASCENDING, "Launch", F::Launch::PLAYERS });
 		}
 		if (!Allies_In_Order(message.Players[i].Allies, message.Players[i].House)) {
-			return(RuleError::NOT_ASCENDING);
+			return(RuleBreak{ RuleError::NOT_ASCENDING, "Player", F::Player::ALLIES });
 		}
 	}
 	for (std::size_t i = 1; i < message.Options.size(); i++) {
 		if (!(message.Options[i - 1].Key < message.Options[i].Key)) {
-			return(RuleError::NOT_ASCENDING);
+			return(RuleBreak{ RuleError::NOT_ASCENDING, "Launch", F::Launch::OPTIONS });
 		}
 	}
-	return(RuleError::NONE);
+	return(RuleBreak());
 }
 
 
-RuleError Check_Order(Frame const & message)
+RuleBreak Check_Order(Frame const & message)
 {
 	if (!Ascending(message.Defeated)) {
-		return(RuleError::NOT_ASCENDING);
+		return(RuleBreak{ RuleError::NOT_ASCENDING, "Frame", F::Frame::DEFEATED });
 	}
 	for (std::size_t i = 1; i < message.Seals.size(); i++) {
 		if (message.Seals[i].Through <= message.Seals[i - 1].Through) {
-			return(RuleError::NOT_ASCENDING);
+			return(RuleBreak{ RuleError::NOT_ASCENDING, "Frame", F::Frame::SEALS });
 		}
 	}
-	return(RuleError::NONE);
+	return(RuleBreak());
 }
 
 
-RuleError Check_Order(Statistics const & message)
+RuleBreak Check_Order(Statistics const & message)
 {
 	for (HouseStatistics const & house : message.Houses) {
 		if (!Allies_In_Order(house.Allies, house.House)) {
-			return(RuleError::NOT_ASCENDING);
+			return(RuleBreak{ RuleError::NOT_ASCENDING, "HouseStatistics", F::HouseStatistics::ALLIES });
 		}
 	}
-	return(RuleError::NONE);
+	return(RuleBreak());
 }
 
 
-RuleError Check_Income_Kinds(RecordingInfo const & message)
+RuleBreak Check_Income_Kinds(RecordingInfo const & message)
 {
 	std::set<std::uint32_t> numbers;
 	std::set<std::string_view> ids;
 	for (IncomeKind const & kind : message.IncomeKinds) {
 		if (kind.Id.empty() || !numbers.insert(kind.Number).second || !ids.insert(kind.Id).second) {
-			return(RuleError::INCOME_KIND);
+			return(RuleBreak{ RuleError::INVALID, "RecordingInfo", F::RecordingInfo::INCOME_KINDS });
 		}
 	}
-	return(RuleError::NONE);
+	return(RuleBreak());
 }
 
 }
@@ -1212,14 +1245,14 @@ IncomeKindSet::IncomeKindSet(Message::RecordingInfo const & info)
 }
 
 
-RuleError IncomeKindSet::Check(Message::Frame const & frame) const
+RuleBreak IncomeKindSet::Check(Message::Frame const & frame) const
 {
 	for (Message::Income const & income : frame.Income) {
 		if (Numbers.count(income.Kind) == 0) {
-			return(RuleError::INCOME_KIND);
+			return(RuleBreak{ RuleError::INVALID, "Income", Field::Income::KIND });
 		}
 	}
-	return(RuleError::NONE);
+	return(RuleBreak());
 }
 
 

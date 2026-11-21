@@ -49,6 +49,7 @@ namespace Replay
 	using ProtoMessage::UnknownField;
 	using ProtoMessage::UnknownFields;
 	using ProtoMessage::RuleError;
+	using ProtoMessage::RuleBreak;
 	using ProtoMessage::Encoded;
 }
 
@@ -343,26 +344,26 @@ namespace Replay::Message
 	bool Decode(ByteSpan data, HouseKills & message);
 
 	// As Decode, but false also on a broken limit, which broken names (NONE when malformed).
-	bool Decode(ByteSpan data, RecordingInfo & message, LimitsType const & limits, RuleError & broken);
-	bool Decode(ByteSpan data, Launch & message, LimitsType const & limits, RuleError & broken);
-	bool Decode(ByteSpan data, Frame & message, LimitsType const & limits, RuleError & broken);
-	bool Decode(ByteSpan data, Statistics & message, LimitsType const & limits, RuleError & broken);
+	bool Decode(ByteSpan data, RecordingInfo & message, LimitsType const & limits, RuleBreak & broken);
+	bool Decode(ByteSpan data, Launch & message, LimitsType const & limits, RuleBreak & broken);
+	bool Decode(ByteSpan data, Frame & message, LimitsType const & limits, RuleBreak & broken);
+	bool Decode(ByteSpan data, Statistics & message, LimitsType const & limits, RuleBreak & broken);
 
 	// Returns the first of the format's limits that message breaks, or NONE.
-	RuleError Check_Limits(RecordingInfo const & message, LimitsType const & limits);
-	RuleError Check_Limits(Launch const & message, LimitsType const & limits);
-	RuleError Check_Limits(Frame const & message, LimitsType const & limits);
-	RuleError Check_Limits(Statistics const & message, LimitsType const & limits);
+	RuleBreak Check_Limits(RecordingInfo const & message, LimitsType const & limits);
+	RuleBreak Check_Limits(Launch const & message, LimitsType const & limits);
+	RuleBreak Check_Limits(Frame const & message, LimitsType const & limits);
+	RuleBreak Check_Limits(Statistics const & message, LimitsType const & limits);
 
 	// Returns NOT_ASCENDING when a list in message breaks the order the format sets, or NONE.
-	RuleError Check_Order(RecordingInfo const & message);
-	RuleError Check_Order(Launch const & message);
-	RuleError Check_Order(Frame const & message);
-	RuleError Check_Order(Statistics const & message);
+	RuleBreak Check_Order(RecordingInfo const & message);
+	RuleBreak Check_Order(Launch const & message);
+	RuleBreak Check_Order(Frame const & message);
+	RuleBreak Check_Order(Statistics const & message);
 
-	// Returns INCOME_KIND when two income kinds in message share a number or an id, or one has an
-	// empty id, and otherwise NONE.
-	RuleError Check_Income_Kinds(RecordingInfo const & message);
+	// Returns INVALID for RecordingInfo.income_kinds when two income kinds in message share a
+	// number or an id, or one has an empty id, and otherwise NONE.
+	RuleBreak Check_Income_Kinds(RecordingInfo const & message);
 }
 
 namespace Replay
@@ -380,8 +381,9 @@ namespace Replay
 			IncomeKindSet(void) = default;
 			explicit IncomeKindSet(Message::RecordingInfo const & info);
 
-			// Returns INCOME_KIND when an Income entry in frame uses a kind not in the set, and otherwise NONE.
-			RuleError Check(Message::Frame const & frame) const;
+			// Returns INVALID for Income.kind when an Income entry in frame uses a kind not in the
+			// set, and otherwise NONE.
+			RuleBreak Check(Message::Frame const & frame) const;
 
 		private:
 			std::set<std::uint32_t> Numbers;

@@ -22,7 +22,7 @@ The layer builds on two files outside `code/replay/`:
 
 | File | Content |
 | --- | --- |
-| `code/proto/message.h` | What the message structs share: the fields a decoder keeps without reading, `LimitsType`, and `RuleError` |
+| `code/proto/message.h` | What the message structs share: the fields a decoder keeps without reading, the string and player limits as `LimitsType`, and `RuleError` and `RuleBreak` |
 | `code/proto/messagecodec.h` | The encoder and decoder helpers that the files defining message structs share; nothing else includes it |
 
 The Protocol Buffers wire encoding lives in `code/proto/` and raw deflate
@@ -81,19 +81,34 @@ the format sets: players by house, options by key in byte order, allies and
 defeated houses ascending without repeats, a house never listed among its
 allies, colors by number, and seals by `through`.
 
-`Check_Income_Kinds` answers `INCOME_KIND` when two entries of
+`Check_Income_Kinds` answers `INVALID` when two entries of
 `RecordingInfo.income_kinds` have the same `number` or the same `id`, or an
 entry has an empty `id`. `IncomeKindSet` is built from a `RecordingInfo`, and
-its `Check` answers `INCOME_KIND` when an `Income` entry of a record uses a
+its `Check` answers `INVALID` when an `Income` entry of a record uses a
 `kind` that the `RecordingInfo` does not list. The writer and `FrameReader`
 each build one from `INFO` before the first record.
+
+`Check_Limits`, `Check_Order`, `Check_Income_Kinds`, and `IncomeKindSet::Check`
+return a `RuleBreak` for the first rule a message breaks, or one whose `Error`
+is `NONE`. A `RuleBreak` names the field by its message in the schema and its
+number, such as `Frame` and 3 for `Frame.events`, and gives one of these
+errors:
+
+| `Error` | Rule broken |
+| --- | --- |
+| `TOO_LONG` | A string, payload, or sealed payload is longer than its limit |
+| `TOO_MANY` | A repeated field has more entries than its limit |
+| `NOT_ASCENDING` | A list is out of the order the format sets, or repeats a value |
+| `INVALID` | An income kind entry or an `Income` entry fails `Check_Income_Kinds` or `IncomeKindSet::Check` |
 
 `Decode` with a `LimitsType` applies the same limits while it reads
 `RecordingInfo`, `Launch`, `Frame`, or `Statistics`. It checks every
 occurrence of a string or payload, including one a later occurrence replaces,
 and it refuses a player, house, event, or income kind past its count limit
 before decoding it, so a forged count allocates nothing past the limit. It
-returns false and names the broken limit in a `RuleError`.
+returns false and fills a `RuleBreak` with `TOO_LONG` or `TOO_MANY` and the
+field past its limit. On a malformed message it returns false and leaves the
+`Error` at `NONE`.
 
 ## Writing
 
