@@ -1010,7 +1010,6 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 		}
 		Commence();
 
-		// The unit performs looking around at this time. Do a full look around.
 		Look();
 
 		/*

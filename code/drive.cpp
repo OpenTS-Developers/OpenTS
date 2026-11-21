@@ -1529,7 +1529,7 @@ bool DriveLocomotionClass::Start_Of_Move(bool & stop_processing, bool retry, boo
 	Coord dest = Adjacent_Cell(LinkedTo->PositionCoord, facing);
 
 	int cell_height = Map[(Coord const &)LinkedTo->PositionCoord].Height + (LinkedTo->IsOnBridge ? BRIDGE_CELL_HEIGHT : 0);
-	
+
 	if (!LinkedTo->Is_Ready_To_Move()) {
 		return(true);
 	}

@@ -3513,7 +3513,7 @@ void DisplayClass::All_To_Look(bool units_only, bool is_fog, HouseClass const * 
 				}
 			} else {
 				if (tech->RTTI == RTTI_BUILDING && Rule->IsAllyReveal && tech->House->Is_Ally(PlayerPtr)) {
-					tech->Look(is_fog);
+					tech->Look(false);
 				}
 			}
 		}

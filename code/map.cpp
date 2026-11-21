@@ -991,7 +991,7 @@ void MapClass::Set_Local_Dimensions(Rect const & size)
  *                                                                                             *
  * HISTORY:                                                                                    *
  *   05/19/1992 JLB : Created.                                                                 *
- *   03/08/1994 JLB : Updated to use sight table.											   *
+ *   03/08/1994 JLB : Updated to use sight table and incremental flag.                         *
  *   05/18/1994 JLB : Converted to member function.                                            *
  *=============================================================================================*/
 void MapClass::Sight_From(Coord const & xcoord, int sightrange, HouseClass * house, bool dont_map, bool unfog, bool byheight)
@@ -1056,7 +1056,7 @@ void MapClass::Sight_From(Coord const & xcoord, int sightrange, HouseClass * hou
 		xdiff = abs(xdiff);
 		if (xdiff > sightrange) continue;
 		if (Distance(newcell, cell) > sightrange) continue;
-      
+
 		// Map the cell if it is not already mapped.
 		bool ok = false;
 		CellClass * cellptr = &(*this)[newcell];
@@ -12394,8 +12394,14 @@ void MapClass::Calculate_Sight_Radius_If_Needed(int sight_range)
 
 					if (absolute_x > absolute_y) {
 						parent_direction_x = (cell_x > 0) ? -1 : 1;
+						if (2 * absolute_y >= absolute_x) {
+							parent_direction_y = (cell_y > 0) ? -1 : 1;
+						}
 					} else if (absolute_y > absolute_x) {
 						parent_direction_y = (cell_y > 0) ? -1 : 1;
+						if (2 * absolute_x >= absolute_y) {
+							parent_direction_x = (cell_x > 0) ? -1 : 1;
+						}
 					} else {
 						parent_direction_x = (cell_x > 0) ? -1 : 1;
 						parent_direction_y = (cell_y > 0) ? -1 : 1;

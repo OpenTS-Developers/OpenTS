@@ -432,7 +432,7 @@ void UnitClass::Tunnel_AI(void)
 			if (NavCom == cellptr) {
 				Scatter(Coord(0, 0, 0), true, true);
 			}
-			
+
 			Per_Cell_Process(PCP_END);
 			Set_Speed(1);
 
@@ -2274,8 +2274,6 @@ void UnitClass::Per_Cell_Process(PCPType why)
 			return;
 		}
 
-		
-		// The unit performs looking around at this time. Do a full look around.
 		Look();
 
 		bool broke_ice = false;

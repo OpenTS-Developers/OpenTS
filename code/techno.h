@@ -394,8 +394,7 @@ class TechnoClass :	public RadioClass,
 		/*
 		 * This is the bonus added to this object's sight range, expressed as a percentage of
 		 * the range its type normally has. An object standing high up can see further, so the
-		 * bonus is derived from its height each time it looks, and a bonus that has grown since
-		 * the last look forces a full reveal.
+		 * bonus is derived from its height each time it looks.
 		 */
 		char SightIncrease;
 

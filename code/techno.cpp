@@ -8042,7 +8042,7 @@ void TechnoClass::Look(bool dontmap)
 	}
 
 	if (IsLocked && (!House->Class->IsMultiplayPassive || Session.Type == GAME_NORMAL)) {
-		int sight_increase = 10 * (Get_Coord().Z / Rule->LeptonsPerSightIncrease);		
+		int sight_increase = 10 * (Get_Coord().Z / Rule->LeptonsPerSightIncrease);
 		SightIncrease = sight_increase;
 
 		int sight_range = TClass->SightRange * (SightIncrease * 0.01 + 1.0);
