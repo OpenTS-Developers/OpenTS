@@ -203,7 +203,9 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	ZFudgeBridge(0),
 	Description(""),
 	CloakSound(VOC_NONE),
-	UncloakSound(VOC_NONE)
+	UncloakSound(VOC_NONE),
+	VeteranSightRange(-1),
+	EliteSightRange(-1)
 {
 	IsSentient = true;
 
@@ -680,6 +682,8 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		Description = ini.Get_String(Name(), "Description", Description.c_str());
 		CloakSound = ini.Get_VocType(Name(), "CloakSound", CloakSound);
 		UncloakSound = ini.Get_VocType(Name(), "UncloakSound", UncloakSound);
+		VeteranSightRange = ini.Get_Int(Name(), "VeteranSight", VeteranSightRange);
+		EliteSightRange = ini.Get_Int(Name(), "EliteSight", EliteSightRange);
 
 		IsLeader = false;
 		if (Weapons[0].Weapon != NULL && Weapons[0].Weapon->Attack > 0) {
@@ -1090,6 +1094,8 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Description);
 	stream.Serialize(CloakSound);
 	stream.Serialize(UncloakSound);
+	stream.Serialize(VeteranSightRange);
+	stream.Serialize(EliteSightRange);
 }
 
 
@@ -1194,6 +1200,8 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(Description.c_str());
 	crc(CloakSound);
 	crc(UncloakSound);
+	crc(VeteranSightRange);
+	crc(EliteSightRange);
 }
 
 

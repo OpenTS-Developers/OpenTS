@@ -70,7 +70,7 @@ Gates and wall towers are BuildingTypes without `Wall=yes` or `ToOverlay=`, so t
 
 ## From structure to overlay
 
-A [`Wall=yes`](/keys/wall/#scope-buildingtype) BuildingType never stays on the map as a structure. When it is placed, it checks the target cell again, puts its overlay in the cell and records the placing house as the cell's owner. It then reveals the map within its [`Sight`](/keys/sight/) and deletes itself. It never appears among the house's buildings, has no hit points, and cannot be selected, repaired or captured.
+A [`Wall=yes`](/keys/wall/#scope-buildingtype) BuildingType never stays on the map as a structure. When it is placed, it checks the target cell again, puts its overlay in the cell and records the placing house as the cell's owner. It then reveals the map within its [sight range](/systems/map-visibility/#sight-range) and deletes itself. It never appears among the house's buildings, has no hit points, and cannot be selected, repaired or captured.
 
 The overlay then applies a second cell test. It requires land that tracked vehicles can cross, and it does not read the land type's [`Buildable`](/keys/buildable/). It also refuses a cell that still holds a wall, or an overlay without [`BuildableOver=yes`](/keys/buildableover/). If this test fails, the placement fails and the wall stays in its production slot.
 
