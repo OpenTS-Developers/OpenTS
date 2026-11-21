@@ -2004,63 +2004,10 @@ void FootClass::Per_Cell_Process(PCPType why)
 			Path[0] = FACING_NONE;
 		}
 
+		TriggerCellTagEvents();
+
 		cell = PositionCell;
-		CellClass * cellptr = &Map[cell];
-
-		/*
-		**	Trigger event associated with the player entering the cell.
-		*/
-		if (Cloak != CLOAKED) {
-			TagClass * tag = cellptr->Tag;
-			int x = cell.X;
-			int y = cell.Y;
-			if (((!cellptr->IsUnderBridge && !cellptr->WasUnderBridge) || IsOnBridge) && tag != NULL) {
-				tag->Spring(TEVENT_PLAYER_ENTERED, this, PositionCell);
-			}
-
-			/*
-			**	Check for horizontal trigger crossing.
-			*/
-			if (cellptr->IsHorizontalLine) {
-				for (int index = 0; index < Map.MapRect.Width; index++) {
-					cellptr = &Map[Cell(index+Map.MapRect.X, y)];
-					tag = cellptr->Tag;
-					if (tag != NULL) {
-						if (tag->Is_Cross_Horizontal()) {
-							tag->Spring(TEVENT_CROSS_HORIZONTAL, this, PositionCell);
-						}
-					}
-				}
-			}
-
-			/*
-			**	Check for vertical trigger crossing.
-			*/
-			if (cellptr->IsVerticalLine) {
-				for (int index = 0; index < Map.MapRect.Height; index++) {
-					tag = Map[Cell(x, index+Map.MapRect.Y)].Tag;
-					if (tag != NULL) {
-						if (tag->Is_Cross_Vertical()) {
-							tag->Spring(TEVENT_CROSS_VERTICAL, this, PositionCell);
-						}
-					}
-				}
-			}
-
-			/*
-			**	Check for zone entry trigger events.
-			*/
-			for (MapTriggerID = 0; MapTriggerID < MapTags.Count(); MapTriggerID++) {
-				tag = MapTags[MapTriggerID];
-				if (tag != NULL) {
-					if (tag->Is_Enters_Zone()) {
-						if (Map.Is_Same_Cell_Zone(tag->Get_Position(), Destination_Coord().As_Cell(), TClass->MZone, Map[tag->Get_Position()].IsUnderBridge, Is_Moving_Onto_Bridge())) {
-							tag->Spring(TEVENT_ENTERS_ZONE, this, Destination_Coord().As_Cell());
-						}
-					}
-				}
-			}
-		}
+		CellClass * cellptr = &Map[cell];		
 
 		BuildingClass * building = cellptr->Cell_Building();
 		if (building != NULL) {
@@ -4789,4 +4736,67 @@ bool FootClass::On_Ground(void) const
 	ClassID const clsid = Locomotion_Class_ID(Locomotion.get());
 
 	return(IsDown && clsid == ClassID_HoverLocomotion);
+}
+
+
+/// <summary>
+/// Triggers cell tag events for the current cell position of the foot instance, if the cell has a celltag associated with it.
+/// When cloaked, the events can only be considered for being triggered if the rules are set to not ignore cloaked units.
+/// </summary>
+void FootClass::TriggerCellTagEvents() {
+	if (Cloak == CLOAKED && Rule->IsCellTagsIgnoreStealth) {
+		return;
+	}
+
+	CellClass * cellptr = &Map[PositionCell];
+	TagClass * tag = cellptr->Tag;
+	int x = PositionCell.X;
+	int y = PositionCell.Y;
+
+	if (((!cellptr->IsUnderBridge && !cellptr->WasUnderBridge) || IsOnBridge) && tag != NULL) {
+		tag->Spring(TEVENT_PLAYER_ENTERED, this, PositionCell);
+	}
+
+	/*
+	 **	Check for horizontal trigger crossing.
+	 */
+	if (cellptr->IsHorizontalLine) {
+		for (int index = 0; index < Map.MapRect.Width; index++) {
+			cellptr = &Map[Cell(index + Map.MapRect.X, y)];
+			tag = cellptr->Tag;
+			if (tag != NULL) {
+				if (tag->Is_Cross_Horizontal()) {
+					tag->Spring(TEVENT_CROSS_HORIZONTAL, this, PositionCell);
+				}
+			}
+		}
+	}
+
+	/*
+	 **	Check for vertical trigger crossing.
+	 */
+	if (cellptr->IsVerticalLine) {
+		for (int index = 0; index < Map.MapRect.Height; index++) {
+			tag = Map[Cell(x, index + Map.MapRect.Y)].Tag;
+			if (tag != NULL) {
+				if (tag->Is_Cross_Vertical()) {
+					tag->Spring(TEVENT_CROSS_VERTICAL, this, PositionCell);
+				}
+			}
+		}
+	}
+
+	/*
+	 **	Check for zone entry trigger events.
+	 */
+	for (MapTriggerID = 0; MapTriggerID < MapTags.Count(); MapTriggerID++) {
+		tag = MapTags[MapTriggerID];
+		if (tag != NULL) {
+			if (tag->Is_Enters_Zone()) {
+				if (Map.Is_Same_Cell_Zone(tag->Get_Position(), Destination_Coord().As_Cell(), TClass->MZone, Map[tag->Get_Position()].IsUnderBridge, Is_Moving_Onto_Bridge())) {
+					tag->Spring(TEVENT_ENTERS_ZONE, this, Destination_Coord().As_Cell());
+				}
+			}
+		}
+	}
 }

@@ -2296,4 +2296,9 @@ class RulesClass
 		 * Distance in leptons to consider "close enough" for TEVENT_NEAR_WAYPOINT.
 		 */
 		int ComesNearWaypointDistance;
+
+		/*
+		 * Determines whether the cloaked technos are ignored when checking cell tags for cell-process related trigger events.
+		 */
+		bool IsCellTagsIgnoreStealth;
 };
