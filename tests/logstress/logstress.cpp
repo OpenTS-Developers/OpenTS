@@ -248,7 +248,7 @@ TEST_CASE("the logger keeps up with many threads and writes every record whole, 
 
 
 // Pruning must leave a file that is younger than the threshold alone.
-TEST_CASE("pruning keeps a recent log and refuses a null directory")
+TEST_CASE("pruning keeps a recent log and refuses an absurd age or a null directory")
 {
 	std::filesystem::path const directory = Log_Directory();
 	CreateDirectoryW(directory.c_str(), NULL);
@@ -263,7 +263,7 @@ TEST_CASE("pruning keeps a recent log and refuses a null directory")
 	CHECK(GetFileAttributesW(keep.c_str()) != INVALID_FILE_ATTRIBUTES);
 	DeleteFileW(keep.c_str());
 
-	CHECK_MESSAGE(Delete_Files_Older_Than(directory, "DEBUG_.*\\.LOG", 9001), "an absurd age should not be refused anymore");
+	CHECK_MESSAGE(!Delete_Files_Older_Than(directory, "DEBUG_.*\\.LOG", 3651), "an absurd age is refused");
 	CHECK_MESSAGE(!Delete_Files_Older_Than("", "DEBUG_.*\\.LOG", 14), "a null directory is refused");
 }
 

@@ -107,9 +107,14 @@ class DebugPrint
 
 		~DebugPrint()
 		{
+			std::lock_guard<std::recursive_mutex> lock(Lock);
+
 			if (!Initialized && EarlyLogReplay.has_value()) {
 				std::cerr << "Warning: Messages logged with DebugString(), but Debug_Init() was never called!" << std::endl;
 			}
+#ifdef _WIN32
+			Flush_Console_Locked();
+#endif
 			if (File) {
 				fclose(File);
 				File = NULL;
@@ -128,6 +133,9 @@ class DebugPrint
 		void Debug_Command_Line_Parse(int argc, const T * argv[]);
 		std::filesystem::path Get_Logging_Directory(void);
 		bool Enable_Console_Locked(void);
+#ifdef _WIN32
+		void Flush_Console_Locked(void);
+#endif
 		void Init_Locked(void);
 		void Write_Text_Locked(char const * text, size_t length);
 		void Write_Message_Locked(char const * buffer, size_t length, bool with_prefix, const system_time_point * msg_ts = NULL);
@@ -137,12 +145,13 @@ class DebugPrint
 		// Recursive mutex allows calling debug functions from within debug functions.
 		std::recursive_mutex Lock;
 		bool Initialized;
-		bool Destroyed;
+		// Read without the lock by callers checking whether the logger still exists.
+		std::atomic<bool> Destroyed;
 		bool AtLineStart;
 		bool ConsoleActive;
 		std::filesystem::path Directory;
 		std::filesystem::path FilePath;
-		// C++20 doesn't support std::ios::noreplace (added in C++23), uset C API with "x" flag.
+		// C++20 doesn't support std::ios::noreplace (added in C++23), use C API with "x" flag.
 		FILE * File;
 		uint64_t FileBytesWritten;
 
@@ -267,17 +276,9 @@ void DebugPrint::Debug_Command_Line_Parse(int argc, const T * argv[])
 }
 
 
-/// <summary>
-/// Get the location of the directory appropriate for storing logs for OpenTS.
-/// </summary>
-std::filesystem::path DebugPrint::Get_Logging_Directory(void)
+#ifdef _WIN32
+static std::filesystem::path Get_Executable_Directory(void)
 {
-	if (!ArgsUserDirectory.empty()) {
-		return std::filesystem::path(ArgsUserDirectory) / u8"Debug";
-	}
-
-#if defined(_WIN32)
-
 	std::vector<wchar_t> path_buf;
 	path_buf.resize(MAX_PATH);
 
@@ -295,8 +296,44 @@ std::filesystem::path DebugPrint::Get_Logging_Directory(void)
 		}
 	} while (path_truncated);
 
-	if (path_len > 0) {
-		return std::filesystem::path(std::wstring_view(path_buf.data(), path_len)).remove_filename() / u8"Debug";
+	if (path_len == 0) {
+		return std::filesystem::path();
+	}
+	return std::filesystem::path(std::wstring_view(path_buf.data(), path_len)).remove_filename();
+}
+#endif
+
+
+/// <summary>
+/// Get the location of the directory appropriate for storing logs for OpenTS.
+/// </summary>
+std::filesystem::path DebugPrint::Get_Logging_Directory(void)
+{
+	// Trimmed the way the game trims -USERDIR, so both name the same folder.
+	std::u8string_view user_dir = ArgsUserDirectory;
+	size_t const first = user_dir.find_first_not_of(u8" \t");
+	if (first != std::u8string_view::npos) {
+		user_dir = user_dir.substr(first, user_dir.find_last_not_of(u8" \t") - first + 1);
+		std::filesystem::path user_path(user_dir);
+
+#ifdef _WIN32
+		// The game changes to the executable's folder before it reads -USERDIR, which is
+		// after this runs, so a relative path is taken from there too.
+		if (user_path.is_relative()) {
+			std::filesystem::path const exe_dir = Get_Executable_Directory();
+			if (!exe_dir.empty()) {
+				user_path = exe_dir / user_path;
+			}
+		}
+#endif
+		return user_path / u8"Debug";
+	}
+
+#if defined(_WIN32)
+
+	std::filesystem::path const exe_dir = Get_Executable_Directory();
+	if (!exe_dir.empty()) {
+		return exe_dir / u8"Debug";
 	}
 
 #elif defined(__APPLE__)
@@ -328,11 +365,11 @@ std::filesystem::path DebugPrint::Get_Logging_Directory(void)
 /// </summary>
 /// <param name="directory">Directory to search.</param>
 /// <param name="pattern">File name regex pattern, such as "DEBUG_.*\\.LOG".</param>
-/// <param name="days">Age threshold in days.</param>
+/// <param name="days">Age threshold in days. Values above 3650, about ten years, are rejected.</param>
 /// <returns>True if the directory was searched.</returns>
 bool Delete_Files_Older_Than(const std::filesystem::path & directory, const std::string_view & pattern, unsigned int days)
 {
-	if (directory.empty() || pattern.empty()) {
+	if (directory.empty() || pattern.empty() || days > 3650) {
 		return (false);
 	}
 
@@ -354,9 +391,13 @@ bool Delete_Files_Older_Than(const std::filesystem::path & directory, const std:
 		const std::u8string fname = dir_entry.path().filename().u8string();
 		const std::string_view fname_cast((const char *)fname.data(), fname.size());
 
-		if (std::regex_match(fname_cast.cbegin(), fname_cast.cend(), regex) && dir_entry.last_write_time() < cutoff && !dir_entry.is_directory()) {
-
-			to_remove.push_back(dir_entry.path());
+		if (std::regex_match(fname_cast.cbegin(), fname_cast.cend(), regex)) {
+			// A file another process removes during the search has no time to read, and is skipped.
+			std::error_code entry_ec;
+			std::filesystem::file_time_type const written = dir_entry.last_write_time(entry_ec);
+			if (!entry_ec && written < cutoff && !dir_entry.is_directory(entry_ec) && !entry_ec) {
+				to_remove.push_back(dir_entry.path());
+			}
 		}
 		dir_searched = true;
 	}
@@ -443,6 +484,19 @@ bool DebugPrint::Enable_Console_Locked(void)
 	}
 	ConsoleReplay.reset();
 	return true;
+}
+
+
+/// <summary>
+/// Writes the text still held in the console buffer. The caller holds the logging lock.
+/// </summary>
+void DebugPrint::Flush_Console_Locked(void)
+{
+	if (ConsoleActive && ConsoleBufFill > 0) {
+		DWORD actual;
+		WriteConsole(DebugConsole, ConsoleBuf, (DWORD)ConsoleBufFill, &actual, NULL);
+	}
+	ConsoleBufFill = 0;
 }
 
 #else
@@ -642,15 +696,13 @@ void DebugPrint::Write_Text_Locked(char const * text, size_t length)
 #ifdef _WIN32
 		size_t to_write = length;
 		size_t wrote_bytes = 0;
-		DWORD actual;
 
 		while (to_write > 0) {
 			size_t free_bytes = sizeof(ConsoleBuf) - ConsoleBufFill;
 			size_t can_write = std::min(free_bytes, to_write);
 
 			if (can_write == 0) {
-				WriteConsole(DebugConsole, ConsoleBuf, (DWORD)ConsoleBufFill, &actual, NULL);
-				ConsoleBufFill = 0;
+				Flush_Console_Locked();
 				free_bytes = sizeof(ConsoleBuf);
 				can_write = std::min(free_bytes, to_write);
 			}
@@ -664,8 +716,7 @@ void DebugPrint::Write_Text_Locked(char const * text, size_t length)
 		}
 
 		if (should_flush || ConsoleBufFill == sizeof(ConsoleBuf)) {
-			WriteConsole(DebugConsole, ConsoleBuf, (DWORD)ConsoleBufFill, &actual, NULL);
-			ConsoleBufFill = 0;
+			Flush_Console_Locked();
 		}
 #else
 		std::cout.write(text, length);
@@ -1014,8 +1065,7 @@ static std::string Get_UNAME(void)
 
 /// <summary>
 /// Opens the log with the wordmark and the facts that identify the build and the run. The
-/// caller holds the logging lock, so the text goes through the unlocked sink directly;
-/// DebugStringNoPrefix would meet the re-entrancy guard and reach the debugger only.
+/// caller holds the logging lock.
 /// </summary>
 /// <param name="started_utc">The time this run's log was opened.</param>
 void DebugPrint::Write_Banner_Locked(const system_time_point & started_utc)
@@ -1145,6 +1195,9 @@ R"ART(
 void DebugPrint::Emit(char const * buffer, size_t length, bool with_prefix)
 {
 	std::lock_guard<std::recursive_mutex> lock(Lock);
+	if (Destroyed) {
+		return;
+	}
 	Write_Message_Locked(buffer, length, with_prefix);
 }
 
@@ -1255,6 +1308,7 @@ void Debug_Console_Hold(void)
 		if (!dbg.ConsoleActive) {
 			return;
 		}
+		dbg.Flush_Console_Locked();
 	}
 	std::cout << "Press any key to close this window." << std::endl;
 	_getch();
@@ -1364,7 +1418,7 @@ static void DebugString_Perform(bool with_prefix, char const * fmt, va_list va_i
 		dbg.Emit(t_PrintfBuf.Vec.data(), text_bytes, with_prefix);
 	}
 
-	// Prevent uncontrolled balooning of the buffer's size.
+	// Prevent uncontrolled ballooning of the buffer's size.
 	if (t_PrintfBuf.Vec.size() > DEBUG_MESSAGE_MAX * 2) {
 		t_PrintfBuf.Vec.resize(DEBUG_MESSAGE_MAX);
 		t_PrintfBuf.Vec.shrink_to_fit();
