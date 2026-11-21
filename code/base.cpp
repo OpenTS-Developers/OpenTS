@@ -57,11 +57,6 @@
 
 #include <cstdio>
 
-/*
- * Unused, only ever nulled in HouseClass DTOR
- */
-HouseClass *UnusedHouse = NULL;
-
 
 char const * const BaseClass::INI_NAME = "Base";
 

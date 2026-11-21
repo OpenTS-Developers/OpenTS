@@ -337,7 +337,6 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	RatioTeamUnits(75),
 	BaseDefenseTeamCount(0),
 	CurrentDropship(0),
-	HasCloakGenerator(0),
 	RecalcPower(true),
 	RecalcRadar(true),
 	EMPDest(0,0),
@@ -354,8 +353,6 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	IniName(NULL),
 	Scheme(0),
 	BaseAreaMap(0),
-	field_10E20(0),
-	field_10E28(1.0),
 	DefenseCostMultiplier(1.0),
 	EnemyArmorForcePrediction(0.33f),
 	EnemyAirForcePrediction(0.33f),
@@ -414,8 +411,7 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	*/
 	int attack = Random_Pick(TICKS_PER_MINUTE/2, TICKS_PER_MINUTE*2);
 	attack = int(attack * Rule->AttackDelay);
-	Attack.Timer = attack;
-	Attack.InitialAttack = attack;
+	Attack = attack;
 
 	AircraftTotals = new UnitTrackerClass(AircraftTypes.Count());
 	InfantryTotals = new UnitTrackerClass(InfantryTypes.Count());
@@ -704,10 +700,6 @@ HouseClass::~HouseClass (void)
 	TagPtrTracker.Delete(this);
 	ObjectPtrTracker.Delete(this);
 
-	if (UnusedHouse == this) {
-		UnusedHouse = NULL;
-	}
-
 	Houses.Delete(this);
 }
 
@@ -779,7 +771,7 @@ void HouseClass::Debug_Dump(MonoClass * mono) const
 	mono->Set_Cursor(27, 7);mono->Printf("%8d", Control.InitialCredits);
 	mono->Set_Cursor(38, 7);mono->Printf("%5d", UnitsLost);
 	mono->Set_Cursor(44, 7);mono->Printf("%08X", (unsigned)Allies.Raw());
-	mono->Set_Cursor(71, 7);mono->Printf("%5d", (int)Attack.Timer);
+	mono->Set_Cursor(71, 7);mono->Printf("%5d", (int)Attack);
 
 	mono->Set_Cursor(10, 9);mono->Printf("%8.8s", (BuildInfantry == INFANTRY_NONE) ? " " : InfantryTypes[BuildInfantry]->Graphic_Name());
 	mono->Set_Cursor(21, 9);mono->Printf("%3d", CurInfantry);
@@ -6810,7 +6802,6 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(BaseDefenseTeamCount);
 	stream.Serialize(DropshipLoadouts);
 	stream.Serialize(CurrentDropship);
-	stream.Serialize(HasCloakGenerator);
 	stream.Serialize(RemapColorRGB);
 	stream.Serialize(Base);
 	stream.Serialize(RecalcPower);
@@ -6833,8 +6824,6 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Scheme);
 	// BaseAreaMap -- points at a defense grid that only exists while a base defense is being
 	// placed.
-	stream.Serialize(field_10E20);
-	stream.Serialize(field_10E28);
 	stream.Serialize(DefenseCostMultiplier);
 	stream.Serialize(EnemyArmorForcePrediction);
 	stream.Serialize(EnemyAirForcePrediction);

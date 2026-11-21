@@ -223,8 +223,6 @@ TerrainClass::TerrainClass(TerrainTypeClass const * type, Cell const & cell) :
 	Class((TerrainTypeClass *)type),
 	IsOnFire(false),
 	IsCrumbling(false),
-	Unused1(0),
-	Unused2(0),
 	RenderPixelPos(0,0)
 {
 	Create_ID();
@@ -252,8 +250,6 @@ TerrainClass::TerrainClass(void) :
 	Class(NULL),
 	IsOnFire(false),
 	IsCrumbling(false),
-	Unused1(0),
-	Unused2(0),
 	RenderPixelPos(0,0)
 {
 	Terrains.Add(this);
@@ -945,8 +941,6 @@ void TerrainClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Class);
 	stream.Serialize(IsOnFire);
 	stream.Serialize(IsCrumbling);
-	stream.Serialize(Unused1);
-	stream.Serialize(Unused2);
 	stream.Serialize(RenderPixelPos);
 }
 
@@ -977,8 +971,6 @@ void TerrainClass::Compute_CRC(CRCEngine &crc) const
 	crc(Class->Fetch_ID());
 	crc(IsOnFire);
 	crc(IsCrumbling);
-	crc(Unused1);
-	crc(Unused2);
 
 	crc(Fetch_Stage());
 	crc(Fetch_Rate());

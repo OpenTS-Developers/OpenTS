@@ -218,9 +218,6 @@ class ScenarioClass {
 		 */
 		CDTimerClass<FrameTimerClass> IceGrowthTimer;
 
-		/// Unused. Never started or checked -- it only feeds the scenario CRC.
-		CDTimerClass<FrameTimerClass> VeinGrowthTimer;
-
 		/*
 		 * The gradual change of the ambient light level is regulated by this timer. When
 		 * the timer expires, the current level takes one more step toward the desired one.

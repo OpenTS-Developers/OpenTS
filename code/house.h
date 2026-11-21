@@ -652,21 +652,7 @@ class HouseClass : public AbstractClass
 		**	When this timer expires, send most of this house's units in an
 		**	attack.
 		*/
-		struct AttackStruct {
-			CDTimerClass<FrameTimerClass> Timer;
-
-			/// Unused
-			unsigned InitialAttack;
-			AttackStruct(void) { InitialAttack = 0; }
-
-			// Carries the all out attack schedule to or from a save game.
-			template<typename S>
-			void Serialize(S & stream)
-			{
-				stream.Serialize(Timer);
-				stream.Serialize(InitialAttack);
-			}
-		} Attack;
+		CDTimerClass<FrameTimerClass> Attack;
 
 	public:
 		/*
@@ -960,9 +946,6 @@ class HouseClass : public AbstractClass
 		 */
 		int CurrentDropship;
 
-		/// Unused
-		bool HasCloakGenerator;
-
 		/*
 		 * This is the color that identifies this house on the radar, derived from its color
 		 * scheme in the pixel format the display is currently running in.
@@ -1109,12 +1092,6 @@ class HouseClass : public AbstractClass
 		 * planned. The cell weighing routine is static, so this is how it reaches the grid.
 		 */
 		int *BaseAreaMap;
-
-		/// Unused
-		int field_10E20;
-
-		/// Unused
-		double field_10E28;
 
 		/*
 		 * This scales the number of base defenses the computer plans against the value of the

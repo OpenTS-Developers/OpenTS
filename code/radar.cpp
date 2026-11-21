@@ -151,7 +151,6 @@ RadarClass::RadarClass(void) :
 	ZoomFactor(0),
 	RadarScale(1),
 	RadarX(0),
-	field_149C(0),
 	RadarY(0),
 	RadarRect(RECT_NONE),
 	RadarState(0),
@@ -741,12 +740,8 @@ void RadarClass::Set_Local_Dimensions(Rect const & size)
 
 	Cell corner(LocalRect.Y + LocalRect.X + 1, LocalRect.Y + PlayRect.Width - LocalRect.X);
 	Cell corner2(corner);
-	int x = LocalRect.Width - 1;
-	int y = 1 - LocalRect.Width;
-	Cell opposite = corner + Cell(x, y);
 
 	RadarX = corner2.Y - corner.X;
-	field_149C = opposite.X - opposite.Y;
 	RadarY = -1;
 
 	Map.Reset_Iterator();
@@ -1784,7 +1779,6 @@ void RadarClass::Serialize(SaveStreamClass & stream)
 
 	// RadarX -- the radar picture's origin and extent, recomputed by Set_Local_Dimensions and
 	// Compute_Radar_Image.
-	// field_149C
 	// RadarY
 	// RadarRect
 	stream.Serialize(RadarState);

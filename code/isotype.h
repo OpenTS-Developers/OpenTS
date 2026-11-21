@@ -211,7 +211,7 @@ class IsometricTileTypeClass : public ObjectTypeClass
 		typedef ObjectTypeClass BASECLASS;
 
 	public:
-		IsometricTileTypeClass(IsometricTileType type = ISOTILE_CLEAR, int unknown1 = 0, unsigned char unknown2 = 0, char const *ininame = NULL, bool skip_registration = false);
+		IsometricTileTypeClass(IsometricTileType type = ISOTILE_CLEAR, char const *ininame = NULL, bool skip_registration = false);
 		virtual ~IsometricTileTypeClass(void) override;
 
 		virtual ClassID Class_ID(void) const override;
@@ -318,9 +318,6 @@ class IsometricTileTypeClass : public ObjectTypeClass
 		int AttachesTo;
 		int ZAdjust;
 
-		/// Unused
-		int Unused1;
-
 		/*
 		 * Can this tile set be modified using the raise/lower ground function?
 		 */
@@ -349,9 +346,6 @@ class IsometricTileTypeClass : public ObjectTypeClass
 		*/
 		int Width;
 		int Height;
-
-		/// Unused
-		int Unused2;
 
 		/*
 		 * This is the number of visual variations on this tile's chain, counting this one. A

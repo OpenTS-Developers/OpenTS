@@ -54,7 +54,6 @@
 VoxelAnimClass::VoxelAnimClass(VoxelAnimTypeClass const * type, Coord const & coord, HouseClass * house) :
 	BASECLASS(),
 	Class((VoxelAnimTypeClass *)type),
-	Unused1(-1),
 	AttachedParticleSys(NULL),
 	House(house),
 	IsToDie(false),
@@ -117,7 +116,6 @@ VoxelAnimClass::VoxelAnimClass(VoxelAnimTypeClass const * type, Coord const & co
 VoxelAnimClass::VoxelAnimClass(void) :
 	BASECLASS(),
 	Class(NULL),
-	Unused1(-1),
 	AttachedParticleSys(NULL),
 	House(NULL),
 	IsToDie(false),
@@ -518,7 +516,6 @@ void VoxelAnimClass::Serialize(SaveStreamClass & stream)
 	BASECLASS::Serialize(stream);
 	BounceClass::Serialize(stream);
 
-	stream.Serialize(Unused1);
 	stream.Serialize(Class);
 	stream.Serialize(AttachedParticleSys);
 	stream.Serialize(House);
@@ -537,7 +534,6 @@ void VoxelAnimClass::Serialize(SaveStreamClass & stream)
 void VoxelAnimClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
-	crc(Unused1);
 	crc(Class->Fetch_ID());
 	if (AttachedParticleSys != NULL) {
 		crc(AttachedParticleSys->Fetch_ID());

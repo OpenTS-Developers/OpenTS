@@ -53,8 +53,6 @@ class VoxelAnimClass : public ObjectClass, public BounceClass
 		void Make_Visible(void) {IsInvisible = false;}
 
 	public:
-		/// Unused
-		int Unused1;
 
 		/*
 		 * This points to the type class that describes this voxel animation -- the voxel to

@@ -210,8 +210,6 @@ AircraftClass::AircraftClass(AircraftTypeClass const * type, HouseClass * house)
 	IsToSpendAmmo(false),
 	Class((AircraftTypeClass *)type),
 	Passenger(false),
-	IsKamikaze(false),
-	field_35B(false),
 	IsLockedStraight(false),
 	SightTimer(0),
 	AttacksRemaining(1),
@@ -3914,8 +3912,6 @@ void AircraftClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Class);
 	stream.Serialize(IsToSpendAmmo);
 	stream.Serialize(Passenger);
-	stream.Serialize(IsKamikaze);
-	stream.Serialize(field_35B);
 	stream.Serialize(IsLockedStraight);
 	stream.Serialize(SightTimer);
 	stream.Serialize(AttacksRemaining);
@@ -3964,8 +3960,6 @@ void AircraftClass::Compute_CRC(CRCEngine & crc) const
 	if (Class != NULL) crc(Class->Fetch_ID());
 	crc(IsToSpendAmmo);
 	crc(Passenger);
-	crc(IsKamikaze);
-	crc(field_35B);
 	crc(IsLockedStraight);
 	crc((int)SightTimer);
 	crc(AttacksRemaining);

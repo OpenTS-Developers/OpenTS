@@ -386,7 +386,7 @@ void IonStormClass::Lightning_Bolt(Cell cell)
 			crd.X += Random_Pick(-128, 128);
 			crd.Y += Random_Pick(-128, 128);
 			crd.Z += Random_Pick(0, 3 * LEVEL_LEPTON_H);
-			new LaserDrawClass(coord, crd, 0, true, RGBClass(240, 240, 255), RGBClass(230, 230, 240), RGBClass(0, 0, 0), 10, true, false, 1, 0);
+			new LaserDrawClass(coord, crd, 0, RGBClass(240, 240, 255), RGBClass(230, 230, 240), RGBClass(0, 0, 0), 10, true, false, 1, 0);
 			coord = crd;
 		}
 	}

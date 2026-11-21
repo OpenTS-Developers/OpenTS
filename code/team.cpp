@@ -265,7 +265,7 @@ void TeamClass::Debug_Dump(MonoClass * mono) const
  * HISTORY:                                                                                    *
  *   09/21/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-TeamClass::TeamClass(TeamTypeClass const * type, HouseClass * owner, void * unknown) :
+TeamClass::TeamClass(TeamTypeClass const * type, HouseClass * owner) :
 	BASECLASS(),
 	Class((TeamTypeClass *)type),
 	House(owner),
@@ -293,7 +293,6 @@ TeamClass::TeamClass(TeamTypeClass const * type, HouseClass * owner, void * unkn
 	Member(0),
 	Script(NULL),
 	HouseToScout(NULL),
-	UnusedPtr1(unknown),
 	CreationFrame(Frame),
 	Tag(NULL),
 	IsDeleteTypeWhenDone(false),
@@ -1388,10 +1387,6 @@ void TeamClass::Detach(AbstractClass const * target, bool all)
 		ClosestMember = NULL;
 	}
 
-	if ((AbstractClass *)UnusedPtr1 == target) {
-		UnusedPtr1 = NULL;
-	}
-
 	if (HouseToScout == target) {
 		HouseToScout = NULL;
 	}
@@ -2266,7 +2261,6 @@ void TeamClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ClosestMember);
 	stream.Serialize(MissionTarget);
 	stream.Serialize(Target);
-	// UnusedPtr1 -- untyped, so it carries no swizzle identity, and nothing reads it.
 	stream.Serialize(Total);
 	stream.Serialize(Risk);
 	stream.Serialize(CreationFrame);

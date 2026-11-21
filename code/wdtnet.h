@@ -1152,9 +1152,6 @@ namespace WorldDominationTour
 			 */
 			Point2D MapOrigin;
 
-			/// Unused
-			ConvertClass * RegionDrawer;
-
 			/*
 			 * This is the palette the territory overlays are drawn through, taken from the
 			 * region artwork so that they match the map beneath them.

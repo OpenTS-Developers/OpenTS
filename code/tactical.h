@@ -276,10 +276,6 @@ class Tactical : public AbstractClass
 		 */
 		int LastAIFrame;
 
-		/// Unused
-		bool field_58;
-		bool field_59;
-
 		/*
 		**	This is the pixel offset for the upper left corner of the tactical map.
 		*/
@@ -365,9 +361,6 @@ class Tactical : public AbstractClass
 		**	If something in the tactical map is to be redrawn, this flag is set to true.
 		*/
 		bool IsToRedraw;
-
-		/// Unused
-		bool UnusedBool;
 
 		/*
 		 * This is the range of cells the tactical view covers, expressed in cell coordinates

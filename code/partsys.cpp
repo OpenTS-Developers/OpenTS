@@ -602,7 +602,7 @@ void ParticleSystemClass::Railgun_AI(void)
 		}
 
 		if (Class->IsLaser) {
-			new LaserDrawClass(PositionCoord, SpawnCoord, 0, true, Class->LaserColor, RGBClass(0, 0, 0), RGBClass(0, 0, 0), 10, false, true, 0.5f, 0.0f);
+			new LaserDrawClass(PositionCoord, SpawnCoord, 0, Class->LaserColor, RGBClass(0, 0, 0), RGBClass(0, 0, 0), 10, false, true, 0.5f, 0.0f);
 		}
 
 		IsMarkedForDeletion = true;

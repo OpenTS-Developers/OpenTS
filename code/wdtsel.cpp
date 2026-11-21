@@ -60,7 +60,6 @@ Selection::Selection(Campaign * campaign, bool vq_anim) :
 	LastHoverZone(-1),
 	WorldMap(campaign->Properties.Get_Map_ID()),
 	MapOrigin(0, 0),
-	RegionDrawer(NULL),
 	TerritoryDrawer(NULL),
 	LogoDrawer(NULL),
 	RegionAnim(NULL),
@@ -126,7 +125,6 @@ Selection::~Selection(void)
 		delete entry;
 	}
 
-	delete RegionDrawer;
 	delete TerritoryDrawer;
 	delete LogoDrawer;
 	delete ClickMapImage;
@@ -234,7 +232,6 @@ void Selection::Init_Regions(INIClass const & ini, const char * section, bool vq
 	Add_Animation(RegionAnim);
 
 	sprintf(buffer, "%s%s.pal", faction_name, region_name);
-	RegionDrawer = Create_Drawer(buffer);
 	TerritoryDrawer = Create_Drawer(buffer);
 
 	ini.Get_String(section, "ClickMap", 0, buffer, sizeof(buffer));

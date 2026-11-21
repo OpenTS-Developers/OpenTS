@@ -256,7 +256,6 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 	LastRenderRect(RECT_NONE),
 	LastRenderCoord(COORD_NONE),
 	LastRenderOffset(Point2D(0,0)),
-	UnusedBuildingBool1(false),
 	IsDamagedAnims(false),
 	IsFogged(false),
 	HasBuildupData(false),
@@ -1933,10 +1932,6 @@ bool BuildingClass::Unlimbo(Coord const & coord, Dir256 dir)
 	**	Normal building unlimbo process.
 	*/
 	if (BASECLASS::Unlimbo(coord, dir)) {
-
-		if (Class->IsCloakGenerator) {
-			House->HasCloakGenerator = true;
-		}
 
 		if (!IsActive) {
 			return(true);
@@ -4334,10 +4329,6 @@ bool BuildingClass::Toggle_Primary(void)
 bool BuildingClass::Captured(HouseClass * newowner)
 {
 	if (newowner != House) {
-
-		if (Class->IsCloakGenerator) {
-			newowner->HasCloakGenerator = true;
-		}
 
 		/*
 		**	Make sure the capturer isn't spying on his own building, and if
@@ -9032,7 +9023,6 @@ void BuildingClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsCharged);
 	stream.Serialize(IsCaptured);
 	stream.Serialize(HasOpened);
-	stream.Serialize(UnusedBuildingBool1);
 	stream.Serialize(IsDamagedAnims);
 	stream.Serialize(IsFogged);
 	stream.Serialize(IsRepairing);
@@ -9132,7 +9122,6 @@ void BuildingClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsCharged);
 	crc(IsCaptured);
 	crc(HasOpened);
-	crc(UnusedBuildingBool1);
 	crc(IsDamagedAnims);
 	crc(IsRepairing);
 	crc(HasBuildupData);

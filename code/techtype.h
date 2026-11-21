@@ -170,9 +170,6 @@ class TechnoTypeClass : public ObjectTypeClass
 		 */
 		CategoryType Category;
 
-		/// Unused
-		int Unused2;
-
 		/*
 		 * This is how long this object's door takes to swing fully open or shut, expressed in
 		 * game minutes. It paces a factory door as a newly built unit files out, a gate as it

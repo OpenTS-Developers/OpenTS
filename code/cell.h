@@ -88,9 +88,6 @@ class CellClass : public AbstractClass
 		 */
 		CellClass * BridgeDeckCell;
 
-		/// Unused
-		CellClass * UnusedCell;
-
 		/*
 		 * This is the converter that supplies the remap tables the cell's terrain is drawn
 		 * through, chosen to match its tint values. Cells that light alike share one, so
@@ -154,9 +151,6 @@ class CellClass : public AbstractClass
 		 * frame is recognized here and dropped rather than drawn a second time.
 		 */
 		int LastRedrawFrame;
-
-		/// Unused
-		int LastUnknownDrawFrame;
 
 		/*
 		 * These record the frame and the clipping rectangle the bridge deck over this

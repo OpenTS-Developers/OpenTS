@@ -289,12 +289,10 @@ CellClass::CellClass(void) :
 	Land(LAND_CLEAR),
 	FoggedObjects(NULL),
 	BridgeDeckCell(NULL),
-	UnusedCell(NULL),
 	Drawer(NULL),
 	Tag(NULL),
 	Passability(PASSABLE_LAND),
 	LastRedrawFrame(-1),
-	LastUnknownDrawFrame(-1),
 	LastBridgeDrawFrame(-1),
 	LastBridgeDrawRect(Rect(0,0,0,0)),
 	Tube(-1),
@@ -4448,7 +4446,6 @@ void CellClass::Serialize(SaveStreamClass & stream)
 	}
 
 	stream.Serialize(BridgeDeckCell);
-	stream.Serialize(UnusedCell);
 	// Drawer -- no save has ever carried it; a shared object the cell picks again when it is lit.
 	stream.Serialize(ITType);
 	stream.Serialize(Tag);
@@ -4460,7 +4457,6 @@ void CellClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(InfType);
 	stream.Serialize(BridgeInfType);
 	stream.Serialize(LastRedrawFrame);
-	stream.Serialize(LastUnknownDrawFrame);
 	stream.Serialize(LastBridgeDrawFrame);
 	stream.Serialize(LastBridgeDrawRect);
 	stream.Serialize(CloakCount);
@@ -5273,9 +5269,6 @@ void CellClass::Detach(AbstractClass const * target)
 	}
 	if (BridgeDeckCell == target) {
 		BridgeDeckCell = NULL;
-	}
-	if (UnusedCell == target) {
-		UnusedCell = NULL;
 	}
 	if (FoggedObjects != NULL) {
 		if (target->RTTI == RTTI_FOGGEDOBJECT) {

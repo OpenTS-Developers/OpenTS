@@ -183,5 +183,3 @@ class BaseClass
 		/// Unused
 		static char const * const INI_NAME;
 };
-
-extern HouseClass *UnusedHouse;

@@ -290,8 +290,6 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	SinkingYOffset(0),
 	IsSinking(false),
 	IsNeedingRescue(false),
-	UnusedCooldown(0),
-	Unused1(0),
 	SightIncrease(0),
 	IsTeamRecruitable(true),
 	IsAutocreateRecruitable(true),
@@ -3038,10 +3036,6 @@ void TechnoClass::AI(void)
 
 	Door.AI();
 
-	if (UnusedCooldown) {
-		UnusedCooldown--;
-	}
-
 	Cargo.AI();
 
 	if (IsBurstResetPending && BurstResetTimer == 0) {
@@ -3869,7 +3863,7 @@ void TechnoClass::Laser_Zap(AbstractClass * target, int which, WeaponTypeClass c
 		((BuildingClass *)this)->IsCharging = false;
 	}
 
-	new LaserDrawClass(source, dest, zadjust, true, weapon->LaserInnerColor, weapon->LaserOuterColor, weapon->LaserOuterSpread, duration, false, false, 1.0, 0.0);
+	new LaserDrawClass(source, dest, zadjust, weapon->LaserInnerColor, weapon->LaserOuterColor, weapon->LaserOuterSpread, duration, false, false, 1.0, 0.0);
 	new WaveClass(source, dest, this, weapon->IsBigLaser ? WAVE_BIG_LASER : WAVE_LASER, (TechnoClass *)target);
 }
 
@@ -8374,8 +8368,6 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsOwnedByPlayer);
 	stream.Serialize(DiscoveredBy);
 	stream.Serialize(IsALemon);
-	stream.Serialize(UnusedCooldown);
-	stream.Serialize(Unused1);
 	stream.Serialize(SightIncrease);
 	stream.Serialize(IsTeamRecruitable);
 	stream.Serialize(IsAutocreateRecruitable);
@@ -8470,8 +8462,6 @@ void TechnoClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsTethered);
 	DiscoveredBy.Compute_CRC(crc);
 	crc(IsALemon);
-	crc(UnusedCooldown);
-	crc(Unused1);
 	crc(SightIncrease);
 	crc(IsTeamRecruitable);
 	crc(IsAutocreateRecruitable);

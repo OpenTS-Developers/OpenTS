@@ -55,9 +55,6 @@ class ScriptClass : public AbstractClass
 		 */
 		ScriptTypeClass *Class;
 
-		/// Unused
-		int Unused1;
-
 		/*
 		 * This is the mission line that the script is presently sitting on. It advances as
 		 * the team satisfies each mission in turn, and is -1 while the script has yet to be

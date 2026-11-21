@@ -125,7 +125,6 @@ BulletClass::BulletClass(void) :
 	Fuse(),
 	IsBright(false),
 	SmoothedClosure(0),
-	field_A4(true),
 	IsLaunching(true),
 	BounceCount(0),
 	TarCom(NULL),
@@ -1446,7 +1445,6 @@ void BulletClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsBright);
 	stream.Serialize(Velocity);
 	stream.Serialize(BounceCount);
-	stream.Serialize(field_A4);
 	stream.Serialize(IsLaunching);
 	stream.Serialize(TarCom);
 	stream.Serialize(MaxSpeed);

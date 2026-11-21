@@ -242,7 +242,6 @@ MapRegionClass::MapRegionClass(Cell cell) :
 	Position(cell),
 	Unsplittable(false),
 	HasConnections(true),
-	SplitCount(0),
 	Discardable(false),
 	Cells(),
 	RegionBounds(0,0,0,0)
@@ -1185,7 +1184,6 @@ bool MapRegionClass::Split_Region(void)
 		}
 	}
 
-	SplitCount++;
 	return(true);
 }
 

@@ -279,9 +279,6 @@ class RadarClass: public DisplayClass
 		int RadarScale;
 		int RadarX;
 
-		/// Unused
-		int field_149C;
-
 		/*
 		 * This is the row origin of the radar picture -- the smallest sum of X and Y among the
 		 * cells of the local map. Subtracting it puts that corner on the radar's first row.

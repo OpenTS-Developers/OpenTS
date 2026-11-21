@@ -265,7 +265,6 @@ void ScenarioClass::Reset(void)
 	ShroudTimer = 0;
 	FogTimer = 0;
 	IceGrowthTimer = 0;
-	VeinGrowthTimer = 0;
 	AmbientChangeTimer = 0;
 	Theater = THEATER_NONE;
 	IntroMovie = VQ_NONE;
@@ -3408,7 +3407,6 @@ void ScenarioClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ShroudTimer);
 	stream.Serialize(FogTimer);
 	stream.Serialize(IceGrowthTimer);
-	stream.Serialize(VeinGrowthTimer);
 	stream.Serialize(AmbientChangeTimer);
 	stream.Serialize(Scenario);
 	stream.Serialize(Theater);
@@ -4088,7 +4086,6 @@ void ScenarioClass::Compute_CRC(CRCEngine & crc, std::vector<StateHash::Checkpoi
 	crc((int)ShroudTimer);
 	crc((int)FogTimer);
 	crc((int)IceGrowthTimer);
-	crc((int)VeinGrowthTimer);
 	checkpoint("timers");
 	crc(Difficulty);
 	crc(CDifficulty);

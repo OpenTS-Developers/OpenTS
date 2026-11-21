@@ -391,12 +391,6 @@ class TechnoClass :	public RadioClass,
 		*/
 		bool IsALemon;
 
-		/// Unused
-		unsigned char UnusedCooldown;
-
-		/// Unused
-		unsigned char Unused1;
-
 		/*
 		 * This is the bonus added to this object's sight range, expressed as a percentage of
 		 * the range its type normally has. An object standing high up can see further, so the

@@ -141,7 +141,6 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	PitchAngle(DEG_TO_RAD(20)),
 	BuildLimit(0x7FFFFFFF),
 	Category(CATEGORY_NONE),
-	Unused2(0),
 	DeployTime(0),
 	FireAngle(8),
 	PipScale(PIPSCALE_NONE),
@@ -984,7 +983,6 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(PitchAngle);
 	stream.Serialize(BuildLimit);
 	stream.Serialize(Category);
-	stream.Serialize(Unused2);
 	stream.Serialize(DeployTime);
 	stream.Serialize(FireAngle);
 	stream.Serialize(PipScale);

@@ -136,9 +136,6 @@ class BulletClass : public ObjectClass
 		 */
 		int BounceCount;
 
-		/// Unused
-		bool field_A4;
-
 		/*
 		 * Set while a homing projectile is still in its launch phase: acceleration is
 		 * ramped gently, no turning toward the target is performed and the closure

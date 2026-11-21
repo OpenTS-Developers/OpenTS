@@ -35,12 +35,6 @@ class DropshipLoadoutClass
 		static int Get_Allowable_Index(TechnoTypeClass * ttype);
 
 	public:
-		/// Unused
-		int CreationFrame;
-		int Unused1;
-		int Unused2;
-		bool UnusedBool1;
-
 		/*
 		 * This is the number of units currently loaded aboard the dropship.
 		 */
@@ -61,10 +55,6 @@ class DropshipLoadoutClass
 		template<typename S>
 		void Serialize(S & stream)
 		{
-			stream.Serialize(CreationFrame);
-			stream.Serialize(Unused1);
-			stream.Serialize(Unused2);
-			stream.Serialize(UnusedBool1);
 			stream.Serialize(EntryCount);
 			stream.Serialize(Entries);
 			stream.Serialize(TotalCost);

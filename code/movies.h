@@ -43,9 +43,6 @@ struct VQHandle
 	 */
 	VQAClass *VQA;
 
-	/// Unused
-	int field_4;
-
 	/*
 	 * Pointer to the surface that the movie's frames are decoded onto before display.
 	 */
@@ -87,9 +84,6 @@ struct VQHandle
 	 */
 	Rect InitialRect;
 	Rect StretchRect;
-
-	/// Unused
-	bool field_44;
 
 	/*
 	 * If a movie is attached to this handle and ready to play, then this flag will be

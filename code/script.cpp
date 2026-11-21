@@ -33,7 +33,6 @@
 /// </summary>
 /// <param name="type">Pointer to the script type that supplies the mission list.</param>
 ScriptClass::ScriptClass(ScriptTypeClass *type):
-	Unused1(0),
 	Class(type),
 	CurrentLineNumber(-1)
 {
@@ -166,7 +165,6 @@ void ScriptClass::Serialize(SaveStreamClass & stream)
 	BASECLASS::Serialize(stream);
 
 	stream.Serialize(Class);
-	stream.Serialize(Unused1);
 	stream.Serialize(CurrentLineNumber);
 }
 

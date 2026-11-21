@@ -60,10 +60,6 @@ void Draw_Unit_Info(Surface *surface, ConvertClass *drawer, TechnoTypeClass *tec
 /// Creates an empty dropship loadout.
 /// </summary>
 DropshipLoadoutClass::DropshipLoadoutClass(void) :
-	CreationFrame(Frame),
-	Unused1(0),
-	Unused2(INT_MAX),
-	UnusedBool1(false),
 	EntryCount(0),
 	Entries{},
 	TotalCost(0)
@@ -161,7 +157,6 @@ bool DropshipLoadoutClass::Remove(int index)
 /// </summary>
 void DropshipLoadoutClass::Clear(void)
 {
-	UnusedBool1 = false;
 	int count = EntryCount;
 	while (count > 0) {
 		Remove(0);

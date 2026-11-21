@@ -138,10 +138,6 @@ class TerrainClass : public ObjectClass, public StageClass
 		*/
 		bool IsCrumbling;
 
-		/// Unused
-		int Unused1;
-		int Unused2;
-
 		/*
 		 * This is the position of this terrain object in absolute tactical pixel space,
 		 * computed once when the object is unlimboed and biased by the terrain type's

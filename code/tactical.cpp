@@ -99,8 +99,6 @@ DynamicVectorClass<ShadowControlClass *> Tactical::ShadowControls;
 /// </summary>
 Tactical::Tactical(void) :
 	LastAIFrame(-1),
-	field_58(0),
-	field_59(0),
 	TacPixelX(0),
 	TacPixelY(0),
 	LastTacPixelX(0),
@@ -115,7 +113,6 @@ Tactical::Tactical(void) :
 	DesiredTacticalCoord(0,0),
 	IsFirstRender(true),
 	IsToRedraw(false),
-	UnusedBool(false),
 	VisibleCellRect(RECT_NONE),
 	RubberBandStart(0,0),
 	RubberBandEnd(0,0),
@@ -3794,8 +3791,6 @@ void Tactical::Serialize(SaveStreamClass & stream)
 
 	stream.Serialize(ScreenText);
 	stream.Serialize(LastAIFrame);
-	stream.Serialize(field_58);
-	stream.Serialize(field_59);
 	stream.Serialize(TacPixelX);
 	stream.Serialize(TacPixelY);
 	stream.Serialize(LastTacPixelX);
@@ -3812,7 +3807,6 @@ void Tactical::Serialize(SaveStreamClass & stream)
 	stream.Serialize(DesiredTacticalCoord);
 	stream.Serialize(IsFirstRender);
 	stream.Serialize(IsToRedraw);
-	stream.Serialize(UnusedBool);
 	stream.Serialize(VisibleCellRect);
 	stream.Serialize(RubberBandStart);
 	stream.Serialize(RubberBandEnd);

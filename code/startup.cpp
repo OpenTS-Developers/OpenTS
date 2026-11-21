@@ -897,11 +897,6 @@ void __cdecl Prog_End(void)
 		SlopeZShapes[3] = NULL;
 	}
 
-	if (PreviewSurface != NULL) {
-		delete PreviewSurface;
-		PreviewSurface = NULL;
-	}
-
 	if (MoviesMix != NULL) {
 		delete MoviesMix;
 		MoviesMix = NULL;
