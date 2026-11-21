@@ -118,7 +118,7 @@ Flying aircraft never make cell or zone offers. Infantry or a vehicle passing un
 
 A fully cloaked infantryman or vehicle makes the cell and zone offers when [`CellTagsIgnoreStealth`](/keys/celltagsignorestealth/) is `no`. An object that is still cloaking or uncloaking makes them whether the key is `yes` or `no`.
 
-A cell where a horizontal and a vertical line cross always offers the horizontal crossing. It offers the vertical crossing only if a vertical line also passes through the last cell of that row.
+A cell where a horizontal and a vertical line cross offers both crossings.
 
 Only tags whose triggers include zone entry receive offers from the zone list, so in practice the zone list is the list of zone tags.
 

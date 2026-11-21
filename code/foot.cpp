@@ -4762,8 +4762,7 @@ void FootClass::TriggerCellTagEvents() {
 	 */
 	if (cellptr->IsHorizontalLine) {
 		for (int index = 0; index < Map.MapRect.Width; index++) {
-			cellptr = &Map[Cell(index + Map.MapRect.X, y)];
-			tag = cellptr->Tag;
+			tag = Map[Cell(index + Map.MapRect.X, y)].Tag;
 			if (tag != NULL) {
 				if (tag->Is_Cross_Horizontal()) {
 					tag->Spring(TEVENT_CROSS_HORIZONTAL, this, PositionCell);
