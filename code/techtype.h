@@ -750,6 +750,13 @@ class TechnoTypeClass : public ObjectTypeClass
 		 */
 		std::string Description;
 
+		/*
+		 * These are the sounds this type plays as it starts to cloak and to uncloak.
+		 * VOC_NONE plays the rules-wide CloakSound in either case.
+		 */
+		VocType CloakSound;
+		VocType UncloakSound;
+
 		//--------------------------------------------------------------------
 		TechnoTypeClass(char const * ininame, SpeedType speed);
 		virtual ~TechnoTypeClass() override;

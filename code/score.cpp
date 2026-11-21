@@ -75,6 +75,8 @@
 #include "winstub.h"
 
 #include <algorithm>
+#include <chrono>
+#include <thread>
 
 
 #define SIZEGBAR			140
@@ -1053,7 +1055,7 @@ void ScoreClass::Call_Back_Delay(int time)
 				cd.Start();
 			}
 
-			Sleep(0);
+			std::this_thread::yield();
 
 		} while (cd > 0);
 
@@ -1114,7 +1116,7 @@ void ScoreClass::Timing(void)
 	}
 
 	while (!GameInFocus) {
-		Sleep(500);
+		std::this_thread::sleep_for(std::chrono::milliseconds(500));
 		Windows_Message_Handler();
 	}
 

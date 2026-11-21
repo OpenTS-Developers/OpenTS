@@ -41,7 +41,9 @@ const allChangesHref = withBase(`/changes/#release-${release.version}`);
 		<p>
 			{release.status === 'development'
 				? <Badge text="In development" variant="caution" size="small" />
-				: <Badge text="Released" variant="success" size="small" />}
+				: release.status === 'candidate'
+					? <Badge text="Release candidate" variant="note" size="small" />
+					: <Badge text="Released" variant="success" size="small" />}
 			{release.date && <> <time datetime={release.date}>{release.date}</time></>}
 		</p>
 

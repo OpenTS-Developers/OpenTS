@@ -11,6 +11,10 @@ The developer guides are split by subject:
 - [Project direction](DIRECTION.md) — long-term architecture.
 - [The saved game format](SAVE-FORMAT.md) — the layout of a `.SAV` file: its
   header, listing fields, compressed content, and object records.
+- [The replay file format](replay/REPLAY-FORMAT.md) — the `.cncr` format shared
+  between engines, with its schema in [replay.proto](replay/replay.proto).
+- [The replay format layer](replay/FORMAT-LAYER.md) — the code in `code/replay/`
+  that writes and reads that format, and the choices it makes.
 - [ts-patches in OpenTS](TS-PATCHES.md) — each CnCNet ts-patches patch and
   what OpenTS does in its place.
 

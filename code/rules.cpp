@@ -610,7 +610,8 @@ RulesClass::RulesClass(void) :
 	UpgradeEliteSound(VOC_NONE),
 	VoxUnitPromoted(VOX_NONE),
 	VeteranFlashTimer(0),
-	EliteFlashTimer(0)
+	EliteFlashTimer(0),
+	ComesNearWaypointDistance(CELL_LEPTON_W * 5)
 {
 	/// nothing
 }
@@ -1332,6 +1333,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		EngineerCaptureLevel = (float)ini.Get_Float(GENERAL, "EngineerCaptureLevel", EngineerCaptureLevel);
 		EngineerDamage = (float)ini.Get_Float(GENERAL, "EngineerDamage", EngineerDamage);
 		TalkBubbleTime = int(TIMER_SECOND * ini.Get_Float(GENERAL, "TalkBubbleTime", TalkBubbleTime * (1.0f/TIMER_SECOND)));
+		ComesNearWaypointDistance = ini.Get_Int(GENERAL, "ComesNearWaypointDistance", ComesNearWaypointDistance);
 		return(true);
 	}
 	return(false);
@@ -2650,6 +2652,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(VoxUnitPromoted);
 	stream.Serialize(VeteranFlashTimer);
 	stream.Serialize(EliteFlashTimer);
+	stream.Serialize(ComesNearWaypointDistance);
 }
 
 

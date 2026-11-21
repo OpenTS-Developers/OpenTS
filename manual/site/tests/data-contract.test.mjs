@@ -110,6 +110,7 @@ test('suffixed scope routes follow recorded content rather than extraction order
 
 test('release registry and legacy scripting aliases use stable structured identities', () => {
 	assert.equal(releases.filter((release) => release.status === 'development').length, 1);
+	assert.ok(releases.filter((release) => release.status === 'candidate').length <= 1);
 	assert.ok(compare('1.10.0', '1.9.0') > 0);
 	assert.ok(compare('1.0.0', '1.0.0-rc.1') > 0);
 	assert.equal(scriptingAliases.actions['41'], 'TACTION_PLAY_ANIM');

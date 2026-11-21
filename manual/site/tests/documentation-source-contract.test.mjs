@@ -1537,7 +1537,7 @@ test('A solo game may keep running while the window is away', () => {
 			'while (!GameInFocus) {',
 			'if (!parks) {',
 			'break;',
-			'Sleep(10);',
+			'std::this_thread::sleep_for(std::chrono::milliseconds(10));',
 		],
 		'and only a session that parks waits for the focus to come back',
 	);

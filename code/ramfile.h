@@ -34,14 +34,22 @@
 
 #include "wwfile.h"
 
+#include <cstdint>
+#include <span>
+#include <vector>
+
 
 class RAMFileClass : public FileClass
 {
 		typedef FileClass BASECLASS;
 
 	public:
+		RAMFileClass(void);
 		RAMFileClass(void * buffer, int len);
 		virtual ~RAMFileClass(void) override;
+
+		RAMFileClass(RAMFileClass const &) = delete;
+		RAMFileClass & operator = (RAMFileClass const &) = delete;
 
 		virtual char const * File_Name(void) const override {return("UNKNOWN");}
 		virtual char const * Set_Name(char const * ) override {return(File_Name());}
@@ -62,7 +70,12 @@ class RAMFileClass : public FileClass
 
 		operator char const * () {return(File_Name());}
 
+		// The file's bytes. A write that grows a growable file moves them.
+		std::span<std::uint8_t const> Contents(void) const;
+
 	private:
+
+		void Grow(int length);
 
 		/*
 		**	Pointer to the buffer that the "file" will reside in.
@@ -99,4 +112,8 @@ class RAMFileClass : public FileClass
 		**	Was the file buffer allocated during construction of this object?
 		*/
 		bool IsAllocated;
+
+		// A growable file keeps its bytes here, and Buffer and MaxLength describe them.
+		std::vector<char> Storage;
+		bool IsGrowable;
 };
