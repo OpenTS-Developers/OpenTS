@@ -1758,6 +1758,36 @@ registered_commands:
     source: code/init.cpp
     class: QuickLoadCommandClass
     guard: null
+- id: IncreaseGameSpeed
+  route_id: increasegamespeed
+  kind: registered
+  title: Increase Game Speed
+  description: Increase game speed by one step.
+  category: Interface
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: IncreaseGameSpeedCommandClass
+    guard: null
+- id: DecreaseGameSpeed
+  route_id: decreasegamespeed
+  kind: registered
+  title: Decrease Game Speed
+  description: Decrease game speed by one step.
+  category: Interface
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: DecreaseGameSpeedCommandClass
+    guard: null
 - id: ChatToAll
   route_id: chattoall
   kind: registered

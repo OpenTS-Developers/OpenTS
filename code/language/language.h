@@ -1167,6 +1167,10 @@
 #define TXT_CONTROL_WITHDRAWN           1719
 #define TXT_DIPLOMACY                   1720
 #define TXT_DIPLOMACY_DESC              1721
+#define TXT_INCREASE_GAME_SPEED			1722
+#define TXT_INCREASE_GAME_SPEED_DESC    1723
+#define TXT_DECREASE_GAME_SPEED			1724
+#define TXT_DECREASE_GAME_SPEED_DESC	1725
 
 // Next default values for new objects
 //

@@ -35,13 +35,7 @@ class UIGameControlsEngineServiceClass : public UIGameControlsServiceClass
 	public:
 		virtual void Set_Game_Speed(int speed) override
 		{
-			if (Options.GameSpeed != speed) {
-				if (GameActive == true && Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
-					OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::GAMESPEED, speed));
-				} else {
-					Options.GameSpeed = speed;
-				}
-			}
+			Options.Set_Game_Speed(speed);
 		}
 
 		virtual void Set_Scroll_Rate(int rate) override
