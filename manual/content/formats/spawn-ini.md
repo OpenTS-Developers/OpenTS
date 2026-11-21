@@ -55,7 +55,9 @@ The [master](/systems/out-of-sync-recovery/#the-master) of a game against other 
 
 `LoadSaveGame=yes` resumes the save named by `SaveGameName`, from the game's saved-games folder. Write the file name alone; a path written before it is ignored.
 
-The save supplies the kind of game, its scenario, its options and its houses, so `IsSinglePlayer`, `Scenario` and the [match options](#the-options-every-house-plays-under) are not used. The file still sets `GameSpeed`, `PlayMoviesInMultiplayer`, the [automatic-save interval](#automatic-saves), the two [waits](#a-game-against-other-machines) for other machines, `SkipScoreScreen`, `QuickMatch` and the [match results file](#the-match-results-file) keys. `CustomLoadScreen`, `CustomLoadScreenPos` and `DifficultyName` take effect only when the mission is restarted, because loading a save shows no loading picture and no difficulty message. The computer players keep the names the save holds, so `DifficultyBasedAINames` has no effect.
+The save supplies the kind of game, its scenario, its options and its houses, so `IsSinglePlayer`, `Scenario` and the [match options](#the-options-every-house-plays-under) are not used. The file still sets `GameSpeed`, the [automatic-save interval](#automatic-saves), the two [waits](#a-game-against-other-machines) for other machines, `SkipScoreScreen`, `QuickMatch` and the [match results file](#the-match-results-file) keys. `CustomLoadScreen`, `CustomLoadScreenPos` and `DifficultyName` take effect only when the mission is restarted, because loading a save shows no loading picture and no difficulty message. The computer players keep the names the save contains, so `DifficultyBasedAINames` has no effect.
+
+A resumed game against other machines first runs at the speed the match was playing at when it was saved. The player in the lowest seat, observers left out, then changes the speed for every machine to the `GameSpeed` that player's file sets, as a speed change from the game controls dialog does. The `GameSpeed` in the other players' files is not used.
 
 A restart after the resume replays the scenario the save names, or the [copy of it](/formats/save-games/#what-the-file-holds) the save carries when `CarryScenarioFile` in `OPENTS.INI` asks saves to include one.
 
@@ -269,7 +271,7 @@ Each machine writes its own file, with itself in `[Settings]` and the other peop
 
 The keys under [What a player is shown](#what-a-player-is-shown) and [The match results file](#the-match-results-file), and the two waits below, may differ between machines.
 
-Before play begins, the machines compare the scenarios they loaded. If they differ, the match stops with the message `Scenarios don't match.`
+Before play begins, the machines compare the games they loaded, and the match stops with the message `Scenarios don't match.` if they differ. [Out-of-sync recovery](/systems/out-of-sync-recovery/#games-that-differ-at-the-start) lists what is compared.
 
 The `Session identity:` line in an [out-of-sync report](/using/out-of-sync-reports/) differs between machines whose files disagree on anything in the list above, except `Name`, `AutoSaveGame` and the `[Tunnel]` section. Scenario files that differ under the same name give the same identity. `Host`, the `Ip` and `Port` entries, the waits and the keys under [What a player is shown](#what-a-player-is-shown) and [The match results file](#the-match-results-file) do not change it.
 

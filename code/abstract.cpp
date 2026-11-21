@@ -208,7 +208,6 @@ void AbstractClass::Compute_CRC(CRCEngine & crc) const
 	assert(this != NULL);
 
 	crc(ID);
-	crc(Dirty);
 }
 
 

@@ -571,7 +571,7 @@ bool TerrainClass::Catch_Fire(void)
 		if (anim) {
 			anim->Attach_To(this);
 		}
-		anim->ZAdjust -= 20;
+		anim->Draw.ZAdjust -= 20;
 		IsOnFire = true;
 		return(true);
 	}
@@ -979,6 +979,10 @@ void TerrainClass::Compute_CRC(CRCEngine &crc) const
 	crc(IsCrumbling);
 	crc(Unused1);
 	crc(Unused2);
+
+	crc(Fetch_Stage());
+	crc(Fetch_Rate());
+	crc(Fetch_Step());
 }
 
 

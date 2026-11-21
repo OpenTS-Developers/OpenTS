@@ -103,9 +103,9 @@ The game reads these palettes only from archives it caches at startup, such as `
 CarryScenarioFile=yes
 ```
 
-With `CarryScenarioFile=yes`, the game keeps a copy of the scenario file when a mission loads and stores it in every [saved game](/formats/save-games/#what-the-file-holds) of that mission. A generated random map has no file, so its saves hold no copy. Restarting the mission reads that copy, including after the save is loaded. With the default, `no`, a save holds no copy and a restart reads the scenario file from disk again.
+The game keeps a copy of the scenario file when a mission loads, and restarting the mission reads that copy. With `CarryScenarioFile=yes`, the copy is also stored in every [saved game](/formats/save-games/#what-the-file-holds) of that mission, and a restart after the save is loaded reads it too. With the default, `no`, a save contains no copy, so a restart after loading it reads the scenario file from disk. A generated random map has no file, so its saves contain no copy.
 
-Use the copy where the file on disk may have changed since the mission started. A client resuming a save replaces `spawnmap.ini` with a stub, and a restart that reads the stub fails.
+Turn it on where the scenario file on disk may have changed by the time a save is loaded. A client resuming a save replaces `spawnmap.ini` with a stub, and a restart that reads the stub fails.
 
 The copy makes every save larger, by about the compressed size of the scenario file.
 
@@ -134,7 +134,7 @@ A search by pattern covers every directory in the list, and does not stop at the
 [Saved games](/formats/save-games/) and [screen captures](/commands/screencapture/) are not searched for. Saves are written, listed, loaded and deleted only in a `Saved Games` folder in the user data directory, or in the game's own directory when there is none, so a launcher finds every save in one place. Screen captures go only to a `Screenshots` folder in the same directory.
 
 :::caution[Do not ship a file the game writes in the game's own directory]
-Settings, saved games, recordings, screen captures and the other files the game writes go to the user data directory, or to the game's own directory when there is none. The debug log and out-of-sync reports go into a `Debug` folder in the user data directory, and crash reports always go into a folder beside the executable, as [Game data](/using/game-data/#keeping-the-data-somewhere-else) describes. `mpstats.txt` always goes to the game's own directory.
+Settings, saved games, screen captures and the other files the game writes go to the user data directory, or to the game's own directory when there is none. The debug log and out-of-sync reports go into a `Debug` folder in the user data directory, and crash reports always go into a folder beside the executable, as [Game data](/using/game-data/#keeping-the-data-somewhere-else) describes. `mpstats.txt` always goes to the game's own directory.
 
 A file the game writes is found ahead of a shipped copy in a later directory, so a player's saved `SUN.INI` is read instead of one shipped in the `INI` folder. When the player's copy of a file such as `KEYBOARD.INI` is removed, the game reads the shipped copy again. Without a user data directory, the game writes and deletes in its own directory, so a copy shipped there is overwritten or removed and cannot be read again.
 :::

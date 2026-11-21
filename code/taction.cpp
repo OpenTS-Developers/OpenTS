@@ -1116,8 +1116,7 @@ bool TActionClass::TAction_CHANGE_HOUSE(HouseClass * , ObjectClass * , TriggerCl
 
 /// <summary>
 /// Assigns the triggering object to a numbered group.
-/// This routine handles the trigger action that drops an object into one of the player's
-/// team hotkey groups. Anything that is not a techno is quietly ignored.
+/// Anything that is not a techno is ignored.
 /// </summary>
 /// <param name="object">The object that sprung the trigger.</param>
 bool TActionClass::TAction_SET_GROUP_ID(HouseClass * , ObjectClass * object, TriggerClass *, Cell const & )
@@ -2522,7 +2521,7 @@ bool TActionClass::TAction_GIVE_CREDITS(HouseClass * , ObjectClass * , TriggerCl
 	int amount = TriggerRect.X;
 	if (amount >= 0) {
 		if (hptr->Credits > std::numeric_limits<int>::max() - amount) return(false);
-		hptr->Refund_Money(amount);
+		hptr->Refund_Money(amount, INCOME_TRIGGER);
 	} else {
 		if (amount == std::numeric_limits<int>::min()) return(false);
 		hptr->Spend_Money(-amount);
@@ -3022,11 +3021,16 @@ void TActionClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
 
-	if (Next != NULL) crc(Next->Fetch_ID());
+	if (Next != NULL) crc(Next->HeapID);
 	crc(Action);
-	if (Team != NULL) crc(Team->Fetch_ID());
-	if (Tag != NULL) crc(Tag->Fetch_ID());
-	if (Trigger != NULL) crc(Trigger->Fetch_ID());
+	if (Team != NULL) crc(Team->HeapID);
+	crc(TriggerRect.X);
+	crc(TriggerRect.Y);
+	crc(TriggerRect.Width);
+	crc(TriggerRect.Height);
+	crc((int)EffectLocation);
+	if (Tag != NULL) crc(Tag->HeapID);
+	if (Trigger != NULL) crc(Trigger->HeapID);
 	crc((int)Data.Value);
 }
 

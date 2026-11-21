@@ -101,6 +101,7 @@
 #include "chat.h"
 #include "command.h"
 #include "conquer.h"
+#include "ctrlgroup.h"
 #include "data.h"
 #include "dbgprint.h"
 #include "deploymentconfig.h"
@@ -259,11 +260,6 @@ static void Init_Threads(void);
 void Draw_Version_Text(Surface * surface);
 void Version_Dialog(void);
 
-#define ATTRACT_MODE_TIMEOUT	TIMER_MINUTE		// timeout for attract mode
-
-bool Load_Recording_Values(CCFileClass & file);
-bool Save_Recording_Values(CCFileClass & file);
-
 struct CheatEntryStruct {
 	bool * State;
 	char const * CheatString;
@@ -410,8 +406,7 @@ int Init_Game(int , char * [])
 	Init_Threads();
 
 	/*
-	**	Read game options, so the GameSpeed is initialized when multiplayer
-	**	dialogs are invoked. (GameSpeed must be synchronized between systems.)
+	**	Read game options.
 	*/
 	DebugString("Reading Game Settings\n");
 	Options.Load_Settings();
@@ -803,6 +798,8 @@ static bool Init_Rules(void)
 		Rule->Addition(lang_ini);
 	}
 
+	Rule->Set_Baseline();
+
 	CCFileClass ai_file(DeploymentConfig.AIFile.c_str());
 	AIINI.Load(ai_file, true);
 
@@ -874,6 +871,26 @@ restart:
 	PlayerAborts = false;
 	Session.ObiWan = false;
 	Session.AIOnly = false;
+
+	// Game options start from their defaults; only the launch switches are kept for the next game.
+	bool const from_install = Special.IsFromInstall;
+	Special.Init();
+	Special.IsFromInstall = from_install;
+	Special.IsInert = Debug_Inert;
+	Special.IsSpeedBuild = Debug_SpeedBuild;
+
+	// Only a launch file or a save sets these, so a menu game must not keep a loaded save's values.
+	Session.Options.CoachMode = false;
+	Session.Options.AITakeover = true;
+	Session.Options.BuildOffAlly = false;
+	Session.Options.AutoDeployMCV = false;
+	Session.Options.AttackNeutralUnits = false;
+	Session.Options.ScrapMetal = false;
+	Session.Options.SharedControl = false;
+	Session.Options.PlayMovies = false;
+
+	// A new game must not read an earlier game's copy of a scenario file with the same name.
+	Scen->SourceFile.Clear();
 #ifdef _DEBUG
 	Debug_Unshroud = false;
 #endif
@@ -933,20 +950,6 @@ restart:
 		Theme.Play_Song(Fetch_Main_Menu_Theme());
 
 		/*
-		**	If we're playing back a recording, load all pertinent values & skip
-		**	the menu loop.  Hide the now-useless mouse pointer.
-		*/
-		if (Session.Play && Session.RecordFile.Is_Available()) {
-			if (Session.RecordFile.Open(FileClass::READ)) {
-				Load_Recording_Values(Session.RecordFile);
-				process = false;
-				Theme.Stop(true);
-			} else {
-				Session.Play = false;
-			}
-		}
-
-		/*
 		 * A launch replaces the menu once. An ended match or a refusal answers false, so the
 		 * process exits and the client sees it go.
 		 */
@@ -971,7 +974,7 @@ restart:
 				if (Get_New_Menu()->MixFile) {
 					selection = New_Main_Menu();
 				} else {
-					selection = Main_Menu(ATTRACT_MODE_TIMEOUT);
+					selection = Main_Menu();
 				}
 			}
 
@@ -1175,24 +1178,6 @@ restart:
 				case SEL_FAME:
 					break;
 
-				case SEL_TIMEOUT: {
-						if (Session.Attract && Session.RecordFile.Is_Available()) {
-							Session.Play = true;
-
-							if (Session.RecordFile.Open(FileClass::READ)) {
-								Load_Recording_Values(Session.RecordFile);
-								process = false;
-								Theme.Stop(true);
-							} else {
-								Session.Play = false;
-								selection = SEL_NONE;
-							}
-						} else {
-							selection = SEL_NONE;
-						}
-					}
-					break;
-
 				default:
 					break;
 			}
@@ -1247,7 +1232,13 @@ restart:
 			Session.CampaignCDifficulty = (DiffType)(DIFF_COUNT - 1 - Options.Difficulty);
 		}
 
-		if (Session.Type != GAME_NORMAL || Debug_ForceScenario || Session.Play || Spawner_Is_Active()) {
+		// A campaign from the menu plays at the player's speed setting; every other game was
+		// given its speed when it was set up.
+		if (Session.Type == GAME_NORMAL && !Spawner_Is_Active()) {
+			Session.Options.GameSpeed = Options.GameSpeed;
+		}
+
+		if (Session.Type != GAME_NORMAL || Debug_ForceScenario || Spawner_Is_Active()) {
 			if (!Start_Scenario(Scen->ScenarioName, true, Spawner_Is_Active() ? Scen->Campaign : CAMPAIGN_NONE)) {
 				if (Debug_Map) {
 					return(false);
@@ -1272,17 +1263,6 @@ restart:
 			}
 		}
 
-		/*
-		**	Save initialization values if we're recording this game.
-		*/
-		if (Session.Record) {
-			if (Session.RecordFile.Open(FileClass::WRITE)) {
-				Save_Recording_Values(Session.RecordFile);
-			} else {
-				Session.Record = false;
-			}
-		}
-
 		if (Special.IsFromInstall == true) {
 			Show_Mouse();
 		}
@@ -1293,7 +1273,7 @@ restart:
 	DebugString("IsTGrowth = %d\n", Special.IsTGrowth);
 	DebugString("IsTSpread = %d\n", Special.IsTSpread);
 
-	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH && !Session.Play) {
+	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
 		Session.Create_Connections();
 		Spawner_Announce_Master();
 		SaveManager.Multiplayer_Saves_Begin_Match(gameloaded || Session.LoadGame);
@@ -1308,8 +1288,6 @@ restart:
 				Ipx.Set_Timing(std::max<unsigned>(TIMER_SECOND, Ipx.Global_Response_Time() + 2), (unsigned int) -1, 10 * TIMER_SECOND);
 			}
 		}
-	} else if (Session.Play && Session.Is_Network_Game()) {
-		Session.Reset_Network_Timing(Frame >= 0 ? static_cast<unsigned int>(Frame) : 0u);
 	}
 
 	/*
@@ -1568,14 +1546,6 @@ bool Parse_Command_Line(int argc, char * argv[])
 			continue;
 		}
 
-		/*
-		**	Allow "attract" mode
-		*/
-		if (strstr(string, "-ATTRACT")) {
-			Session.Attract = true;
-			continue;
-		}
-
 		if (isdigit((unsigned char)string[1])) {
 			sscanf(string, "-%dX%d", &Options.ScreenWidth, &Options.ScreenHeight);
 			continue;
@@ -1652,20 +1622,6 @@ bool Parse_Command_Line(int argc, char * argv[])
 						break;
 
 					/*
-					**	"Record" a multi-player game
-					*/
-					case 'X':
-						Session.Record = 1;
-						break;
-
-					/*
-					**	"Play Back" a multi-player game
-					*/
-					case 'Y':
-						Session.Play = 1;
-						break;
-
-					/*
 					**	Print lots of debug stuff about events & packets
 					*/
 					case 'P':
@@ -1723,25 +1679,17 @@ void Init_Random(void)
 {
 	DebugString("Init random number\n");
 	/*
-	**	Do nothing if we've loaded a multiplayer game, or we're playing back
-	**	a recording; the random number generator is initialized by loading
-	**	the game.
+	**	Do nothing if we've loaded a multiplayer game; the random number
+	**	generator is initialized by loading the game.
 	*/
 	if (Session.LoadGame) {
 		return;
 	}
 
-	if (Session.Play) {
-		Scen->RandomNumber = Seed;
-		NonCriticalRandomNumber = Seed;
-		DebugString("Seed is %08x\n", Seed);
-		return;
-	}
-
 	/*
 	**	Initialize the random number Seed.  For multiplayer, this will have been done
-	**	in the connection dialogs.  For single-player games, AND if we're not playing
-	**	back a recording, init the Seed to a random value.
+	**	in the connection dialogs.  For single-player games, init the Seed to a
+	**	random value.
 	*/
 	if (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) {
 
@@ -2635,80 +2583,6 @@ static void Init_Keys(void)
 }
 
 
-/***************************************************************************
- * Save_Recording_Values -- Saves multiplayer-specific values              *
- *                                                                         *
- * This routine saves multiplayer values that need to be restored for a    *
- * save game.  In addition to saving the random # seed for this scenario,  *
- * it saves the contents of the actual random number generator; this       *
- * ensures that the random # sequencer will pick up where it left off when *
- * the game was saved.                                                     *
- * This routine also saves the header for a Recording file, so it must     *
- * save some data not needed specifically by a save-game file (ie Seed).   *
- *                                                                         *
- * INPUT:                                                                  *
- *      file      file to save to                                          *
- *                                                                         *
- * OUTPUT:                                                                 *
- *      true = success, false = failure                                    *
- *                                                                         *
- * WARNINGS:                                                               *
- *      none.                                                              *
- *                                                                         *
- * HISTORY:                                                                *
- *   09/28/1995 BRR : Created.                                             *
- *=========================================================================*/
-bool Save_Recording_Values(CCFileClass & file)
-{
-	//Session.Save(file);
-	DebugString("Saving recording values for scenario : %s\n", Scen->ScenarioName);
-	file.Write(&BuildLevel, sizeof(BuildLevel));
-#if defined(_DEBUG)
-	file.Write(&Debug_Unshroud, sizeof(Debug_Unshroud));
-#endif
-	file.Write(&Seed, sizeof(Seed));
-	file.Write(&Scen->Scenario, sizeof(Scen->Scenario));
-	file.Write(Scen->ScenarioName, sizeof(Scen->ScenarioName));
-	file.Write(&Whom, sizeof(Whom));
-	file.Write(&Special, sizeof(SpecialClass));
-	file.Write(&Options, sizeof(OptionsClass));
-	return(true);
-}
-
-
-/***************************************************************************
- * Load_Recording_Values -- Loads multiplayer-specific values              *
- *                                                                         *
- * INPUT:                                                                  *
- *      file         file to load from                                     *
- *                                                                         *
- * OUTPUT:                                                                 *
- *      true = success, false = failure                                    *
- *                                                                         *
- * WARNINGS:                                                               *
- *      none.                                                              *
- *                                                                         *
- * HISTORY:                                                                *
- *   09/28/1995 BRR : Created.                                             *
- *=========================================================================*/
-bool Load_Recording_Values(CCFileClass & file)
-{
-	//Session.Load(file);
-	file.Read(&BuildLevel, sizeof(BuildLevel));
-#if defined(_DEBUG)
-	file.Read(&Debug_Unshroud, sizeof(Debug_Unshroud));
-#endif
-	file.Read(&Seed, sizeof(Seed));
-	file.Read(&Scen->Scenario, sizeof(Scen->Scenario));
-	file.Read(Scen->ScenarioName, sizeof(Scen->ScenarioName));
-	file.Read(&Whom, sizeof(Whom));
-	file.Read(&Special, sizeof(SpecialClass));
-	file.Read(&Options, sizeof(OptionsClass));
-	DebugString("Loaded recording values for scenario : %s\n", Scen->ScenarioName);
-	return(true);
-}
-
-
 /// <summary>
 /// Appends the code letters of the active cheats to the version string.
 /// This routine is used by the version text so that the corner of the screen betrays
@@ -2830,7 +2704,7 @@ static bool Main_Menu_Keys(void)
  *      none.                                                              *
  *                                                                         *
  * OUTPUT:                                                                 *
- *      index of item selected, -1 if time out                             *
+ *      index of item selected                                             *
  *                                                                         *
  * WARNINGS:                                                               *
  *      none.                                                              *
@@ -2838,11 +2712,9 @@ static bool Main_Menu_Keys(void)
  * HISTORY:                                                                *
  *   05/17/1995 BRR : Created.                                             *
  *=========================================================================*/
-int Main_Menu(unsigned int timeout)
+int Main_Menu(void)
 {
 	int retval = SEL_NONE;
-
-	timeout = 0;
 
 	MainMenuKeyResult = SEL_NONE;
 
@@ -2955,7 +2827,7 @@ static void Select_Team_Members(int team)
 {
 	for (int i = 0; i < Technos.Count(); i++) {
 		TechnoClass * obj = Technos[i];
-		if (obj && !obj->IsInLimbo && obj->Group == team - 1 && obj->House->Is_Player_Commanded()) {
+		if (obj && !obj->IsInLimbo && ControlGroups.Group_Of(obj) == team - 1 && obj->House->Is_Player_Commanded()) {
 			if (!obj->IsSelected) {
 				obj->Select();
 				AllowVoice = false;
@@ -2970,11 +2842,11 @@ static void Assign_Selection_To_Team(int team)
 	for (int i = 0; i < Technos.Count(); i++) {
 		TechnoClass * obj = Technos[i];
 		if (obj && !obj->IsInLimbo && obj->House->Is_Player_Commanded()) {
-			if (obj->Group == team - 1) {
-				obj->Group = -1;
+			if (ControlGroups.Group_Of(obj) == team - 1) {
+				ControlGroups.Remove(obj);
 			}
 			if (obj->IsSelected) {
-				obj->Group = team - 1;
+				ControlGroups.Assign(obj, team - 1);
 			}
 		}
 	}
@@ -3036,7 +2908,7 @@ class SelectTeamCommandClass : public CommandClass
 			Map.Repair_Mode_Control(0);
 			Map.Sell_Mode_Control(0);
 
-			bool already = CurrentObject.Count() > 0 && CurrentObject[0]->Is_Foot() && ((FootClass *)CurrentObject[0])->Group == (Team - 1);
+			bool already = CurrentObject.Count() > 0 && CurrentObject[0]->Is_Foot() && ControlGroups.Group_Of((FootClass *)CurrentObject[0]) == (Team - 1);
 			if (CurrentObject.Count() > 0 && !already) {
 				Unselect_All();
 			}
@@ -3168,7 +3040,7 @@ class CenterTeamCommandClass : public CommandClass
 			Map.Repair_Mode_Control(0);
 			Map.Sell_Mode_Control(0);
 
-			if (CurrentObject.Count() && (!CurrentObject[0]->Is_Foot() || ((TechnoClass *)CurrentObject[0])->Group != Team - 1)) {
+			if (CurrentObject.Count() && (!CurrentObject[0]->Is_Foot() || ControlGroups.Group_Of((TechnoClass *)CurrentObject[0]) != Team - 1)) {
 				Unselect_All();
 			}
 
@@ -5194,7 +5066,7 @@ class RepeatLastAircraftCommandClass : public CommandClass
 /// </summary>
 static bool Quick_Save_Allowed(void)
 {
-	if (!ScenarioActive || Session.Play || Scen->IsInputLocked) {
+	if (!ScenarioActive || Scen->IsInputLocked) {
 		return(false);
 	}
 	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
@@ -5841,6 +5713,8 @@ void Delete_All_Objects(void)
 	Process_Deferred_Deletion();
 
 	LaserDrawClass::All_Clear();
+	IonBlastClass::Delete_All();
+	MoveFlashClass::Clear_All();
 
 	while (AbstractTypes.Count()) {
 		delete AbstractTypes[0];
@@ -6379,7 +6253,7 @@ int New_Main_Menu(void)
 	int selection = newmenu->Process_Game_Select();
 
 	if (selection == NSEL_OLD_MENU) {
-		return(Main_Menu(TIMER_MINUTE));
+		return(Main_Menu());
 	}
 
 	switch (selection) {

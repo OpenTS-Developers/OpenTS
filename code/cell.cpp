@@ -123,6 +123,7 @@
 #include "suprtype.h"
 #include "tactical.h"
 #include "tag.h"
+#include "tagtype.h"
 #include "terrain.h"
 #include "tiberium.h"
 #include "tracker.h"
@@ -838,11 +839,11 @@ bool CellClass::Is_Clear_To_Build(SpeedType loco, BuildingTypeClass * what, Hous
 			return(false);
 		}
 
-		return(::Ground[Land_Type()].Build);
+		return(Rule->Ground[Land_Type()].Build);
 
 	} else {
 
-		if (::Ground[Land_Type()].Cost[loco] == 0) {
+		if (Rule->Ground[Land_Type()].Cost[loco] == 0) {
 			return(false);
 		}
 		return(true);
@@ -3516,7 +3517,7 @@ bool CellClass::Goodie_Check(FootClass * object)
 		int total_shares = 0;
 		int index;
 		for (index = CRATE_FIRST; index < CRATE_COUNT; index++) {
-			total_shares += CrateShares[index];
+			total_shares += Rule->CrateShares[index];
 		}
 
 		/*
@@ -3550,7 +3551,7 @@ bool CellClass::Goodie_Check(FootClass * object)
 
 			int share_count = 0;
 			for (powerup = CRATE_FIRST; powerup < CRATE_COUNT; powerup++) {
-				share_count += CrateShares[powerup];
+				share_count += Rule->CrateShares[powerup];
 				if (pick <= share_count) break;
 			}
 			assert(powerup != CRATE_COUNT);
@@ -3649,9 +3650,7 @@ bool CellClass::Goodie_Check(FootClass * object)
 		/*
 		**	Keep track of the number of each type of crate found
 		*/
-		if (Session.Type == GAME_INTERNET) {
-			object->House->TotalCrates->Increment_Unit_Total(powerup);
-		}
+		object->House->TotalCrates->Increment_Unit_Total(powerup);
 
 		/*
 		**	Remove the crate from the map.
@@ -3677,7 +3676,7 @@ bool CellClass::Goodie_Check(FootClass * object)
 		/*
 		**	Create the effect requested.
 		*/
-		double data = CrateData[powerup];
+		double data = Rule->CrateData[powerup];
 		bool tospeak = false;
 		switch (powerup) {
 
@@ -3838,9 +3837,9 @@ crate_money:
 					force_money = Random_Pick((int)data, (int)data + std::max(Rule->CrateMoneyBonus, 0));
 				}
 				if (!object->House->Is_Player_Control() || Session.Type != GAME_NORMAL) {
-					object->House->Refund_Money(force_money);
+					object->House->Refund_Money(force_money, INCOME_CRATE);
 				} else {
-					PlayerPtr->Refund_Money(force_money);
+					PlayerPtr->Refund_Money(force_money, INCOME_CRATE);
 				}
 				break;
 
@@ -4010,9 +4009,9 @@ crate_money:
 				break;
 		}
 
-		if (CrateAnims[powerup] != ANIM_NONE) {
+		if (Rule->CrateAnims[powerup] != ANIM_NONE) {
 			coord = Cell_Coord() + Coord(0, 0, 200);
-			new AnimClass(AnimTypes[CrateAnims[powerup]], coord);
+			new AnimClass(AnimTypes[Rule->CrateAnims[powerup]], coord);
 		}
 	}
 
@@ -4206,7 +4205,7 @@ bool CellClass::Is_Clear_To_Move(SpeedType loco, bool ignoreinfantry, bool ignor
 	**	See if the ground type is impassable to this locomotion type and if
 	**	so, return the error condition.
 	*/
-	if (::Ground[land].Cost[loco] == 0 && !bridge) {
+	if (Rule->Ground[land].Cost[loco] == 0 && !bridge) {
 		return(false);
 	}
 
@@ -4406,7 +4405,7 @@ bool CellClass::Can_Tiberium_Germinate(TiberiumClass const * tiberium) const
 	TerrainClass * terrain = Cell_Terrain();
 	if (terrain != NULL && terrain->Class->IsTiberiumSpawn) return(false);
 
-	if (!Ground[Land_Type()].Build) return(false);
+	if (!Rule->Ground[Land_Type()].Build) return(false);
 
 	if (Overlay != OVERLAY_NONE) return(false);
 
@@ -4550,6 +4549,53 @@ void CellClass::Post_Load(void)
 
 
 /// <summary>
+/// Adds the cell's terrain, contents, and movement state to a checksum. Fog snapshots,
+/// lighting, drawing records, and what each house has seen are left out.
+/// </summary>
+/// <param name="crc">The checksum the values are added to.</param>
+void CellClass::Compute_CRC(CRCEngine & crc) const
+{
+	// The cell's position identifies it, so the ID AbstractClass would add is skipped.
+	crc((int)CellID.X);
+	crc((int)CellID.Y);
+	crc(BridgeDeckCell != NULL ? (int)BridgeDeckCell->CellID.X : -1);
+	crc(BridgeDeckCell != NULL ? (int)BridgeDeckCell->CellID.Y : -1);
+	crc((int)ITType);
+	crc(Tag != NULL ? Tag->Class->Fetch_Heap_ID() : -1);
+	crc((int)Overlay);
+	crc((int)Smudge);
+	crc((int)Passability);
+	crc((int)Owner);
+	crc((int)InfType);
+	crc((int)BridgeInfType);
+	CloakCount.Compute_CRC(crc);
+	SensorCount.Compute_CRC(crc);
+	OccupiedBy.Compute_CRC(crc);
+	crc(OccupierPtr != NULL ? OccupierPtr->Fetch_ID() : -1);
+	crc(BridgeOccupierPtr != NULL ? BridgeOccupierPtr->Fetch_ID() : -1);
+	crc((int)Land);
+	crc((int)Tube);
+	crc((int)IsIceGrowthAllowed);
+	crc((int)SubTile);
+	crc((int)Height);
+	crc((int)Ramp);
+	crc((int)OverlayData);
+	crc((int)SmudgeData);
+	crc((int)AdjacentObjectCount);
+	crc((int)Flag.Composite);
+	crc((int)BridgeFlag.Composite);
+
+	int const bits =
+		IsWaypoint << 0 | IsFlagged << 1 | IsBridgeDeck << 2 | IsUnderBridge << 3 |
+		IsBridgeTraversable << 4 | WasUnderBridge << 5 | IsBridgeEastWest << 6 |
+		IsBridgeSurface << 7 | IsBridgeDamaged << 8 | IsToGrowIce << 9 | IsToGrowVeins << 10 |
+		IsAnimAttached << 11 | IsPredictedPath << 12 | IsAffectedByEMP << 13 |
+		IsHorizontalLine << 14 | IsVerticalLine << 15;
+	crc(bits);
+}
+
+
+/// <summary>
 /// Recalculates the movement passability of this cell.
 /// This routine boils the cell's terrain, overlay and occupiers down to the single
 /// passability value that the zone builder and the pathfinder work from. Call it whenever
@@ -4572,7 +4618,7 @@ void CellClass::Recalc_Passability(void)
 			Passability = PASSABLE_BLOCKED;
 			return;
 		}
-		if (Ground[overlay->Land].Cost[SPEED_WHEEL] == 0) {
+		if (Rule->Ground[overlay->Land].Cost[SPEED_WHEEL] == 0) {
 			Passability = PASSABLE_NO;
 			return;
 		}
@@ -4583,7 +4629,7 @@ void CellClass::Recalc_Passability(void)
 		return;
 	}
 
-	if (Ground[Land].Cost[SPEED_WHEEL] <= 0.01) {
+	if (Rule->Ground[Land].Cost[SPEED_WHEEL] <= 0.01) {
 		Passability = PASSABLE_NO;
 		return;
 	}
@@ -6333,7 +6379,7 @@ bool CellClass::Can_Build_Here(void) const
 		}
 	}
 
-	return(Ground[Land].Build);
+	return(Rule->Ground[Land].Build);
 }
 
 

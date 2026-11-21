@@ -434,10 +434,6 @@ void Tactical::AI(void)
 {
 	bool coordchanged = false;
 
-	if (Session.Play) {
-		return;
-	}
-
 	if (LastAIFrame != Frame) {
 		if (ScenarioActive) {
 			if (MoveTo != COORD_NONE && MoveSpeed != 0) {
@@ -2737,6 +2733,30 @@ void Tactical::Draw_Render_Hooks(ObjectClass * object, Rect const & cliprect)
 
 
 /// <summary>
+/// Draws the move flashes that belong in the display layer, in the order they started. A
+/// flash is not drawn while a delay between its loops pauses it, or while its type sets
+/// ShouldFogRemove and its cell is fogged.
+/// </summary>
+static void Render_Move_Flashes(LayerType layer)
+{
+	for (MoveFlashClass const & anim : MoveFlashClass::All()) {
+		if (anim.In_Which_Layer() != layer || anim.Is_Delayed()) {
+			continue;
+		}
+
+		if (MainWindow && !Debug_Map && Map.Is_Fogged(anim.Center_Coord()) && anim.Class_Of()->IsShouldFogRemove) {
+			continue;
+		}
+
+		Point2D point;
+		if (TacticalMap->Coord_To_Pixel(anim.Center_Coord(), point)) {
+			anim.Draw_It(point, TacticalRect);
+		}
+	}
+}
+
+
+/// <summary>
 /// Renders every object in each display layer (and, after the ground layer, the overlay sprites
 /// of placed buildings). Each object kind takes a slightly different path: buildings and static
 /// terrain draw only their selection brackets and decorations here (buildings additionally render
@@ -2747,6 +2767,12 @@ void Tactical::Draw_Render_Hooks(ObjectClass * object, Rect const & cliprect)
 void Tactical::Draw_Objects(bool forced)
 {
 	for (int layer = LAYER_FIRST; layer < LAYER_COUNT; layer++) {
+
+		// Move flashes are in no display layer; in the ground layer they go behind the objects.
+		if (layer == LAYER_GROUND) {
+			Render_Move_Flashes((LayerType)layer);
+		}
+
 		for (int index = 0; index < DisplayClass::Layer[layer].Count(); index++) {
 			ObjectClass * obj = DisplayClass::Layer[layer][index];
 			RTTIType rtti = obj->RTTI;
@@ -2821,6 +2847,10 @@ void Tactical::Draw_Objects(bool forced)
 					obj->Draw_Post_Render(pixel, TacticalRect);
 				}
 			}
+		}
+
+		if (layer != LAYER_GROUND) {
+			Render_Move_Flashes((LayerType)layer);
 		}
 
 		if (layer == LAYER_GROUND) {

@@ -1308,22 +1308,6 @@ int IsometricTileTypeClass::Load_Tile_Data(void)
 
 
 /// <summary>
-/// Clears the usage count of every isometric tile type.
-/// This routine is used before the map is scanned, so that the tile loader can tell which
-/// tile types the scenario really needs and which may be dropped from memory.
-/// </summary>
-void IsometricTileTypeClass::Clear_Use_Counts(void)
-{
-	IsometricTileTypeClass * t;
-	for (int i = 0; i < IsometricTileTypes.Count(); i++) {
-		for (t = IsometricTileTypes[i]; t != NULL; t = t->NextTileTypeInSet) {
-			t->UseCount = 0;
-		}
-	}
-}
-
-
-/// <summary>
 /// Fetches the pixel dimensions of a sub-tile.
 /// The height reported takes in any extra artwork that hangs above the tile diamond, so
 /// the caller gets the full extent of what will be drawn.
@@ -2718,21 +2702,24 @@ void IsometricTileTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(MarbleMadness);
 	crc(NonMarbleMadness);
 	crc(TileSetBaseID);
-	crc(PreviewTiles.Count());
 	if (NextTileTypeInSet != NULL) {
-		crc(NextTileTypeInSet->Fetch_ID());
+		crc(NextTileTypeInSet->HeapID);
 	}
 	crc(ToSnowTheater);
 	crc(ToTemperateTheater);
+	crc((int)Anim);
+	crc(Offset.X);
+	crc(Offset.Y);
 	crc(AttachesTo);
 	crc(ZAdjust);
 	crc(Unused1);
 	crc(IsMorphable);
 	crc(IsShadowCaster);
-	crc(Width);
-	crc(Height);
+	// Width and Height stay 0 until the tile file loads, which drawing can cause, so they are left out.
 	crc(Unused2);
 	crc(NumTileTypesInSet);
+	crc(IsAllowBurrowing);
+	crc(IsAllowTiberium);
 }
 
 

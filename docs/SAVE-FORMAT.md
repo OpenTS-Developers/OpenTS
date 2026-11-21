@@ -103,6 +103,12 @@ that had finished loading have already taken their place in the map or a side
 table. A failed load therefore leaves a partly built game that the caller has
 to clear, not one it can carry on from.
 
+Pointers are filled in once every record has been read. A pointer whose
+identity no record announced fails the load at that point, with each such
+pointer's slot type, record and source line in the debug log. The pointers
+that did match are filled in and the unmatched ones stay null, so the caller
+is left with the same kind of partly built game.
+
 A character buffer travels as its text: a length and that many characters, and
 a load clears the rest of the buffer. How much room a build keeps for a string
 is its own business, so the file carries neither the capacity nor whatever the
@@ -125,10 +131,34 @@ the file, and a reader refuses a version above its own. The header flags are
 gated the same way: a reader refuses a file with a flag bit it does not know,
 so a later version can mark content it stores differently without moving the
 format version. The internal version in the field table,
-`PIDSI_INTERNAL_VER`, is `ExpectedGameVersion`, the packed project version,
-and a save whose value differs from the running build's is not offered to the
-player. The format version moves only when the layout in this document
-changes; the internal version moves with every release.
+`PIDSI_INTERNAL_VER`, is `ExpectedGameVersion` in `code/saveload.cpp`, and a
+save whose value differs from the running build's is neither offered to the
+player nor loaded. The format version moves only when the layout in this
+document changes.
+
+`ExpectedGameVersion` contains the packed project version,
+`major << 16 | minor << 8 | patch`, in its low three bytes and the serial
+`GameVersionSerial` in its top byte, so it changes with every release and with
+every raise of the serial:
+
+- Raise the serial by one in a commit that changes what a `Serialize` function
+  writes or what the simulation computes. Development builds of one version
+  then refuse each other's saves instead of misreading them.
+- Reset it to 0 in the commit that changes the project version number. The
+  packed version changes in the same commit, so the internal versions of two
+  different versions never match.
+
+`tests/saveserial` hashes the text of every function whose parameter list
+uses `SaveStreamClass` or whose name contains `Serialize`, of `Compute_CRC`,
+`Compute_Game_CRC`, `Object_CRCs`, `Add_CRC`, `Put_All` and `Get_All`, and of
+the `SERIALIZE_BIT` macro, leaving out `SaveFileClass::Serialize_Fields`,
+which writes the field table that the format version covers. It fails when
+one changes, apart from comments and whitespace, and its message gives the
+serial and the file of recorded hashes to replace. The test cannot see a
+member whose type changes in a header: that changes the layout without
+changing any hashed text, so raise the serial for it by hand. The LAN lobby's
+version range and `Build_Number` use the packed version alone, so builds whose
+serials differ still meet in the lobby.
 
 ## What the reader refuses
 

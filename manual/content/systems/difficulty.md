@@ -105,7 +105,7 @@ The first eight settings are copied into the house when it gets its slot, as [th
 :::caution[Keep all three sections in the rules files]
 Until some file supplies a difficulty section, every value in it is zero and each flag is `no`. A house in that slot deals no damage, has zero ground speed and airspeed and pays nothing. Each hit it takes does only 1 point of damage, the least a hit can do. A computer house in that slot also ignores walls as targets, since `DestroyWalls` is `no`.
 
-When no rules file supplies a section, the version a map or a campaign's companion file supplied stays in force for later scenarios in the same session, until another file supplies that section again. A rules file that supplies the section replaces the map's version at the next scenario load.
+A version a map or a campaign's companion file supplies lasts only for that scenario. The next scenario starts again from the version the rules files supply, or from zeros when none does.
 :::
 
 :::caution[Repeat the whole section when overriding it]

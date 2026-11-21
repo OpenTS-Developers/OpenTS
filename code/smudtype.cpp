@@ -299,10 +299,10 @@ void SmudgeTypeClass::Compute_CRC(CRCEngine &crc) const
 {
 	BASECLASS::Compute_CRC(crc);
 	crc(HeapID);
-	crc(IsCrater);
-	crc(IsScorch);
 	crc(Width);
 	crc(Height);
+	crc(IsCrater);
+	crc(IsScorch);
 }
 
 

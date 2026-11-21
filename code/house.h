@@ -484,9 +484,6 @@ class HouseClass : public AbstractClass
 		int Capacity;
 		StorageClass Weed;
 
-		/// Unused
-		int field_1BC;
-
 		/*
 		**	Stuff to keep track of the total number of units built by this house.
 		*/
@@ -555,9 +552,9 @@ class HouseClass : public AbstractClass
 		**	For multiplayer games, each house needs to keep track of how many
 		**	objects of each other house they've killed.
 		*/
-		int UnitsKilled[20];
+		int UnitsKilled[HOUSE_MAX];
 		int UnitsLost;
-		int BuildingsKilled[20];
+		int BuildingsKilled[HOUSE_MAX];
 		int BuildingsLost;
 
 		/*
@@ -586,7 +583,7 @@ class HouseClass : public AbstractClass
 				stream.Serialize(ArmorDefense);
 				stream.Serialize(InfantryDefense);
 			}
-		} ZoneInfo[ZONE_COUNT];
+		} ZoneInfo[ZONE_COUNT] = {};
 
 		/*
 		**	This records information about the last time a building of this
@@ -884,10 +881,10 @@ class HouseClass : public AbstractClass
 		BuildingTypeClass const * Suggest_New_Building(void) const;
 		void Recalc_Center(void);
 		bool Does_Enemy_Building_Exist(StructType) const;
-		void Harvested(int tiberium, TiberiumType slot);
+		void Harvested(int tiberium, TiberiumType slot, IncomeType income);
 		void Harvested_Weed(int weed, int slot);
 		void Spend_Money(int money);
-		void Refund_Money(int money);
+		void Refund_Money(int money, IncomeType income);
 		void Attacked(BuildingClass * source);
 		void Adjust_Power(int adjust);
 		void Adjust_Drain(int adjust);
@@ -1124,9 +1121,6 @@ class HouseClass : public AbstractClass
 		 * base it is protecting. It is left at 1.0 throughout, so cost alone decides.
 		 */
 		double DefenseCostMultiplier;
-
-		/// Unused
-		int field_10E38;
 
 		/*
 		 * These are the shares of armor, air and infantry the house expects the enemy to

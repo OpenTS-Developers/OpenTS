@@ -55,7 +55,6 @@
 #include "animtype.h"
 #include "audio/audioengine.h"
 #include "blight.h"
-#include "brain.h"
 #include "bsurface.h"
 #include "building.h"
 #include "builtype.h"
@@ -297,7 +296,6 @@ static void RegisterClasses(void)
 	REGISTER_CLASS(ParticleSystemClass, ClassID_ParticleSystemClass);
 	REGISTER_CLASS(ParticleSystemTypeClass, ClassID_ParticleSystemTypeClass);
 	REGISTER_CLASS(AITriggerTypeClass, ClassID_AITriggerTypeClass);
-	REGISTER_CLASS(NeuronClass, ClassID_NeuronClass);
 	REGISTER_CLASS(FoggedObjectClass, ClassID_FoggedObjectClass);
 	REGISTER_CLASS(AlphaShapeClass, ClassID_AlphaShapeClass);
 }
@@ -535,10 +533,6 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 		}
 		uidirectory += "ui\\";
 		CDFileClass::Add_Search_Drive(uidirectory.c_str());
-
-		// The recording's name was settled during static initialization, before there was
-		// anywhere for a player's files to go. Naming it again settles it where it belongs.
-		Session.RecordFile.Set_Name("RECORD.BIN");
 
 		CDFileClass *cfile = new CDFileClass(DeploymentConfig.SettingsFile.c_str());
 

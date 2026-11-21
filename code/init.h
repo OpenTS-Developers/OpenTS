@@ -31,7 +31,7 @@ int Init_Game(int argc, char * argv[]);
 void Init_Random(void);
 bool Select_Game(bool fade);
 
-int Main_Menu(unsigned int timeout);
+int Main_Menu(void);
 
 bool Allocate_Surfaces(const Rect & hidden_rect, const Rect & composite_rect, const Rect & tile_rect, const Rect & sidebar_rect, bool hidden_first = false);
 
@@ -40,8 +40,6 @@ void Execute_Command(char const * name);
 void Reset_Selection_Filters(void);
 bool Request_Alliance_Toggle(HouseClass const * house);
 bool Request_Control_Grant_Toggle(HouseClass const * house);
-
-#define ATTRACT_MODE_TIMEOUT	TIMER_MINUTE
 
 void Title_Screen_Restore(bool force=false);
 

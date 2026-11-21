@@ -46,6 +46,8 @@ class ScriptClass : public AbstractClass
 		bool Next_Mission(void);
 		bool Has_Missions_Remaining(void);
 
+		ScriptTypeClass const * Class_Of(void) const {return(Class);}
+
 	private:
 		/*
 		 * Pointer to the script type that supplies the mission list this script is working

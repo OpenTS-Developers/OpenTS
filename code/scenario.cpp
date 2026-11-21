@@ -92,6 +92,7 @@
 #include "conquer.h"
 #include "convert.h"
 #include "crc.h"
+#include "ctrlgroup.h"
 #include "data.h"
 #include "dbgprint.h"
 #include "deploymentconfig.h"
@@ -145,6 +146,7 @@
 #include "session.h"
 #include "smudge.h"
 #include "spawnhouse.h"
+#include "statehash.h"
 #include "stats.h"
 #include "surface.h"
 #include "swizzle.h"
@@ -322,6 +324,7 @@ void ScenarioClass::Reset(void)
 	Stage = 0;
 	IsInputLocked = false;
 	IsTiberiumDeathToVisceroid = true;
+	Special.Init();
 
 	AllowableUnits.Clear();
 	AllowableUnitMaximums.Clear();
@@ -362,6 +365,20 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 
 	Scen->Campaign = campaign;
 
+	// Only a campaign numbers its missions; elsewhere the number is hashed, so every machine uses 1.
+	if (Session.Type != GAME_NORMAL) {
+		Scen->Scenario = 1;
+	}
+
+	// A game played alone starts at the speed it was set up with or last ran at, or at the speed
+	// of an order the last scenario left waiting. Orders the last scenario left queued are
+	// dropped, since their frame numbers belong to it.
+	if (!Session.Is_Network_Game()) {
+		Session.Options.GameSpeed = Session.Pending_Game_Speed();
+		OutList.clear();
+		DoList.clear();
+	}
+
 	DebugString("\n----- Starting scnenario: %s -----\n", name);
 	DebugString("Player Count: %d\n", Session.Players.Count());
 
@@ -375,6 +392,8 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 	}
 
 	DebugString("Reading scenario: %s\n", name);
+
+	Reset_Float_State();
 
 	if (!Read_Scenario(name)) {
 		return(false);
@@ -417,7 +436,8 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 		Theme.Stop(true);
 	}
 
-	if (Scen->StartingDropships > 0) {
+	// The loadout is picked on this machine alone, so only a campaign offers the screen.
+	if (Scen->StartingDropships > 0 && Session.Type == GAME_NORMAL) {
 		Dropship_Screen();
 	}
 
@@ -463,6 +483,10 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 			TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW),
 			int(Rule->MessageDelay * TICKS_PER_MINUTE));
 	}
+
+	// A campaign mission's carried-over money and globals are restored after this returns,
+	// so the start state is recorded at the first frame rather than here.
+	StateHash::Arm_Start();
 
 	ScenarioActive = true;
 	TacticalActive = true;
@@ -969,7 +993,7 @@ void Fill_In_Data(void)
 				TiberiumClass const * tib = Tiberiums[0];
 
 				while (money > tib->CreditValue && hptr->Available_Storage() > 0) {
-					hptr->Harvested(1, TiberiumType(0));
+					hptr->Harvested(1, TiberiumType(0), INCOME_STARTING_FILL_SILOS);
 					money -= tib->CreditValue;
 				}
 			}
@@ -1062,6 +1086,7 @@ void Clear_Scenario(void)
 {
 	Stop_All_Sound_Effects();
 	Sync_Recorder_Disarm();
+	StateHash::Clear_Start();
 	UI_Diplomacy_Close();
 
 	int index;
@@ -1097,6 +1122,9 @@ void Clear_Scenario(void)
 	for (index = 0; index < ARRAY_SIZE(Scen->GlobalFlags); index++) {
 		Scen->Set_Global_To(index, false);
 	}
+
+	// Clearing a global left set by the previous game marks a change the next game must not see.
+	Scen->IsGlobalChanged = false;
 
 	delete TacticalMap;
 	TacticalMap = new Tactical;
@@ -1141,6 +1169,7 @@ void Clear_Scenario(void)
 
 	DebugString("CurrentObjects.Clear()\n");
 	CurrentObject.Clear();
+	ControlGroups.Clear();
 
 	DebugString("Scen->Clear_All_Waypoints()\n");
 	Scen->Clear_All_Waypoints();
@@ -1179,9 +1208,7 @@ void Clear_Scenario(void)
 void Do_Win(void)
 {
 	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
-		if (!Session.Play) {
-			Wait_For_End_Of_Queue();
-		}
+		Wait_For_End_Of_Queue();
 	}
 
 	ScenarioActive = false;
@@ -1207,24 +1234,22 @@ void Do_Win(void)
 	**	Stop here if this is a multiplayer game.
 	*/
 	if (Session.Type != GAME_NORMAL) {
-		if (!Session.Play) {
-			Session.GamesPlayed++;
+		Session.GamesPlayed++;
 
-			if (Session.SkipScoreScreen) {
-				DebugString("Passing over the score screen.\n");
-			} else {
-				Multi_Score_Presentation();
-			}
-
-			Session.CurGame++;
-			if (Session.CurGame >= MAX_MULTI_GAMES) {
-				Session.CurGame = MAX_MULTI_GAMES - 1;
-			}
-
-			// Nothing keeps the machines in step past the score screen, so ESC ends this movie alone.
-			MovieSkip::LocalScope local;
-			Play_Movie(Scen->WinMovie);
+		if (Session.SkipScoreScreen) {
+			DebugString("Passing over the score screen.\n");
+		} else {
+			Multi_Score_Presentation();
 		}
+
+		Session.CurGame++;
+		if (Session.CurGame >= MAX_MULTI_GAMES) {
+			Session.CurGame = MAX_MULTI_GAMES - 1;
+		}
+
+		// Nothing keeps the machines in step past the score screen, so ESC ends this movie alone.
+		MovieSkip::LocalScope local;
+		Play_Movie(Scen->WinMovie);
 
 		GameActive = false;
 		Show_Mouse();
@@ -1234,77 +1259,72 @@ void Do_Win(void)
 	Play_Movie(Scen->WinMovie);
 
 	/*
-	**	Do the ending screens only if not playing back a recorded game.
+	**	If the score presentation should be performed, then do
+	**	so now.
 	*/
-	if (!Session.Play) {
-		/*
-		**	If the score presentation should be performed, then do
-		**	so now.
-		*/
-		Keyboard->Clear();
+	Keyboard->Clear();
 
-		if (!Scen->IsSkipScore) {
-			ScoreClass().Presentation();
-		}
-
-		if (Scen->PostScoreMovie != VQ_NONE) {
-			Play_Movie(Scen->PostScoreMovie);
-		}
-		if (Scen->PreMapSelectMovie != VQ_NONE) {
-			Play_Movie(Scen->PreMapSelectMovie);
-		}
-
-		if (Scen->IsOneTimeOnly) {
-			GameActive = false;
-			Show_Mouse();
-			return;
-		}
-
-		/*
-		**	If this scenario is flagged as ending the game then print the credits and exit.
-		*/
-		if (Scen->IsEndOfGame) {
-			if (Scen->Campaign != CAMPAIGN_NONE) {
-				Play_Movie(Campaigns[Scen->Campaign]->FinalMovie);
-			}
-			Show_Who_Was_Responsible();
-#ifdef _DEMO
-			Load_Title_Page("tsdemoss.pcx", true);
-			Keyboard->Clear();
-			Keyboard->Get();
-#endif
-			GameActive = false;
-			Show_Mouse();
-			return;
-		}
-
-		/*
-		** Hack section.  If it's allied scenario 10, variation A, then skip the
-		** score and map selection, don't increment scenario, and set it to
-		** variation B.
-		*/
-		if (Scen->IsNoMapSel) {
-#ifdef _DEMO
-			if (Scen->GlobalFlags[1].Value) {
-				strcpy(Scen->ScenarioName, Scen->AltNextScenarioName);
-			} else {
-				strcpy(Scen->ScenarioName, Scen->NextScenarioName);
-			}
-#else
-			if (Scen->GlobalFlags[1].Value) {
-				Map_Select_Advance(Scen, Scen->AltNextScenarioName);
-			} else {
-				Map_Select_Advance(Scen, Scen->NextScenarioName);
-			}
-#endif
-		} else {
-			Show_Mouse();
-			Map_Selection(Scen);
-			Hide_Mouse();
-		}
-
-		Keyboard->Clear();
+	if (!Scen->IsSkipScore) {
+		ScoreClass().Presentation();
 	}
+
+	if (Scen->PostScoreMovie != VQ_NONE) {
+		Play_Movie(Scen->PostScoreMovie);
+	}
+	if (Scen->PreMapSelectMovie != VQ_NONE) {
+		Play_Movie(Scen->PreMapSelectMovie);
+	}
+
+	if (Scen->IsOneTimeOnly) {
+		GameActive = false;
+		Show_Mouse();
+		return;
+	}
+
+	/*
+	**	If this scenario is flagged as ending the game then print the credits and exit.
+	*/
+	if (Scen->IsEndOfGame) {
+		if (Scen->Campaign != CAMPAIGN_NONE) {
+			Play_Movie(Campaigns[Scen->Campaign]->FinalMovie);
+		}
+		Show_Who_Was_Responsible();
+#ifdef _DEMO
+		Load_Title_Page("tsdemoss.pcx", true);
+		Keyboard->Clear();
+		Keyboard->Get();
+#endif
+		GameActive = false;
+		Show_Mouse();
+		return;
+	}
+
+	/*
+	** Hack section.  If it's allied scenario 10, variation A, then skip the
+	** score and map selection, don't increment scenario, and set it to
+	** variation B.
+	*/
+	if (Scen->IsNoMapSel) {
+#ifdef _DEMO
+		if (Scen->GlobalFlags[1].Value) {
+			strcpy(Scen->ScenarioName, Scen->AltNextScenarioName);
+		} else {
+			strcpy(Scen->ScenarioName, Scen->NextScenarioName);
+		}
+#else
+		if (Scen->GlobalFlags[1].Value) {
+			Map_Select_Advance(Scen, Scen->AltNextScenarioName);
+		} else {
+			Map_Select_Advance(Scen, Scen->NextScenarioName);
+		}
+#endif
+	} else {
+		Show_Mouse();
+		Map_Selection(Scen);
+		Hide_Mouse();
+	}
+
+	Keyboard->Clear();
 
 	Show_Mouse();
 
@@ -1341,9 +1361,7 @@ void Do_Win(void)
 void Do_Lose(void)
 {
 	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
-		if (!Session.Play) {
-			Wait_For_End_Of_Queue();
-		}
+		Wait_For_End_Of_Queue();
 	}
 
 	ScenarioActive = false;
@@ -1381,24 +1399,22 @@ void Do_Lose(void)
 	**	Stop here if this is a multiplayer game.
 	*/
 	if (Session.Type != GAME_NORMAL) {
-		if (!Session.Play) {
-			Session.GamesPlayed++;
+		Session.GamesPlayed++;
 
-			if (Session.SkipScoreScreen) {
-				DebugString("Passing over the score screen.\n");
-			} else {
-				Multi_Score_Presentation();
-			}
-
-			Session.CurGame++;
-
-			if (Session.CurGame >= MAX_MULTI_GAMES) {
-				Session.CurGame = MAX_MULTI_GAMES - 1;
-			}
-
-			MovieSkip::LocalScope local;
-			Play_Movie(Scen->LoseMovie);
+		if (Session.SkipScoreScreen) {
+			DebugString("Passing over the score screen.\n");
+		} else {
+			Multi_Score_Presentation();
 		}
+
+		Session.CurGame++;
+
+		if (Session.CurGame >= MAX_MULTI_GAMES) {
+			Session.CurGame = MAX_MULTI_GAMES - 1;
+		}
+
+		MovieSkip::LocalScope local;
+		Play_Movie(Scen->LoseMovie);
 		GameActive = false;
 		Show_Mouse();
 		return;
@@ -1412,7 +1428,7 @@ void Do_Lose(void)
 	Draw_Menu_Background();
 	Show_Mouse();
 
-	if (!Session.Play && !WWMessageBox().Process(TXT_TO_REPLAY, TXT_YES, TXT_NO)) {
+	if (!WWMessageBox().Process(TXT_TO_REPLAY, TXT_YES, TXT_NO)) {
 		Keyboard->Clear();
 		Start_Scenario(Scen->ScenarioName, false, Scen->Campaign);
 		Environment.Restore();
@@ -1537,9 +1553,8 @@ static int Load_Held_Scenario_File(CCINIClass & ini, char const * name, bool wit
 
 
 /// <summary>
-/// Fills the database from the scenario file named: from the copy the scenario holds when
-/// that is the file, and otherwise from disk, which the scenario then holds in its place
-/// where the deployment asked for the file to travel in the save.
+/// Fills the database from the scenario file with the given name: from the copy the scenario
+/// keeps when that is the file, and otherwise from disk, whose bytes then replace the kept copy.
 /// </summary>
 /// <returns>What the INI load returned: 0 when nothing loaded.</returns>
 static int Load_Scenario_File(CCINIClass & ini, char const * name, bool withdigest)
@@ -1570,7 +1585,7 @@ static int Load_Scenario_File(CCINIClass & ini, char const * name, bool withdige
 
 	BufferStraw straw(bytes.data(), (int)bytes.size());
 	int result = ini.Load(straw, withdigest, false, file.File_Name());
-	if (result != 0 && DeploymentConfig.CarryScenarioFile) {
+	if (result != 0) {
 		Scen->SourceFile.Assign(name, std::move(bytes));
 	}
 	return(result);
@@ -1639,7 +1654,7 @@ char const * Pick_Load_Background_Name(Point2D & pos)
 		player = 0;
 	}
 
-	int choice = (player << 1) + Random_Pick(0, 1);
+	int choice = (player << 1) + Sim_Random_Pick(0, 1);
 
 	if (VisibleRect.Width == 640) {
 		if (VisibleRect.Height == 480) {
@@ -1749,7 +1764,7 @@ void Multiplayer_Last_Minute_Fixups(bool official)
 			Houses[i]->PickEnemyTimer = Rule->AIHateDelays[Houses[i]->Difficulty];
 
 			int available_money = Houses[i]->Available_Money();
-			Houses[i]->Refund_Money((int)((Rule->MultiplayerAICreditMultipliers[Houses[i]->Difficulty] / 100.0) * available_money));
+			Houses[i]->Refund_Money((int)((Rule->MultiplayerAICreditMultipliers[Houses[i]->Difficulty] / 100.0) * available_money), INCOME_STARTING_MULTIPLIER);
 		}
 
 		if (Houses[i]->Class->IsMultiplayPassive) {
@@ -2120,6 +2135,7 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 	*/
 	CCINIClass mini;
 	CCFileClass cfile;
+	bool rules_reread = false;
 
 	if (Session.Type == GAME_NORMAL) {
 		_splitpath(Scen->ScenarioName, NULL, NULL, buffer, NULL);
@@ -2130,9 +2146,11 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 		if (Scen->SourceFile.Matches(buffer)) {
 			Load_Held_Scenario_File(mini, buffer, false);
 			Rule->Addition(mini);
+			rules_reread = true;
 		} else if (cfile.Is_Available() == true) {
 			mini.Load(cfile, false);
 			Rule->Addition(mini);
+			rules_reread = true;
 		}
 
 		cfile.Close();
@@ -2169,8 +2187,17 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 			if (cfile.Is_Available() == true) {
 				mini.Load(cfile, false);
 				Rule->Addition(mini);
+				rules_reread = true;
 			}
 		}
+	}
+
+	// These rereads come after the map loaded the types' art, so a type they created or whose
+	// art they released loads it again.
+	if (rules_reread) {
+		OverlayTypeClass::Load_Uncached_Art(Scen->Theater);
+		BuildingTypeClass::Load_Uncached_Art(Scen->Theater);
+		AnimTypeClass::Init(Scen->Theater);
 	}
 
 	Session.Update_Progress(82);
@@ -3455,7 +3482,13 @@ void ScenarioClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Stage);
 	stream.Serialize(IsInputLocked);
 	stream.Serialize(IsMPAIBaseNodes);
-	stream.Serialize(SourceFile);
+	// The scenario file is always kept, but a save includes it only where the deployment asks.
+	if (stream.Is_Loading() || DeploymentConfig.CarryScenarioFile) {
+		stream.Serialize(SourceFile);
+	} else {
+		ScenarioFileClass none;
+		stream.Serialize(none);
+	}
 }
 
 
@@ -3694,6 +3727,7 @@ bool ScenarioClass::Read_Local_INI(CCINIClass const & ini)
 
 	for (index = 0; index < ARRAY_SIZE(LocalFlags); index++) {
 		LocalFlags[index].VariableName[0] = '\0';
+		LocalFlags[index].Value = false;
 	}
 
 	char const * const SECTION = "VariableNames";
@@ -4020,20 +4054,19 @@ int Adjust_To_CPU_Timing(int time)
 /// This routine is used by the multiplayer sync check, which compares the CRC taken on
 /// each machine in order to spot a game that has drifted out of step.
 /// </summary>
-void ScenarioClass::Compute_CRC(CRCEngine & crc) const
+/// <param name="checkpoints">When not null, receives the running checksum after each group
+/// of values.</param>
+void ScenarioClass::Compute_CRC(CRCEngine & crc, std::vector<StateHash::Checkpoint> * checkpoints) const
 {
-	crc(Description);
-	crc(IntroMovie);
-	crc(BriefMovie);
-	crc(BriefingText);
-	crc(WinMovie);
-	crc(LoseMovie);
-	crc(ActionMovie);
-	crc(PostScoreMovie);
-	crc(PreMapSelectMovie);
-	crc(PlayerHouse);
+	auto checkpoint = [&](char const * label) {
+		if (checkpoints != nullptr) {
+			checkpoints->push_back({label, (unsigned int)crc()});
+		}
+	};
+
+	// The movies and the transit theme are left out: each is a position in a list that every
+	// installation builds from its own ART.INI or THEME.INI, and none affects the simulation.
 	crc(Percent);
-	crc(TransitTheme);
 	crc(CarryOverPercent);
 	crc(IsMultiplayerOnly);
 	crc(IsMPAIBaseNodes);
@@ -4050,12 +4083,13 @@ void ScenarioClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsTruckCrate);
 	crc(Percent);
 	crc(StartingDropships);
+	checkpoint("settings");
 	crc((int)MissionTimer);
 	crc((int)ShroudTimer);
 	crc((int)FogTimer);
 	crc((int)IceGrowthTimer);
 	crc((int)VeinGrowthTimer);
-	crc((int)ElapsedTimer);
+	checkpoint("timers");
 	crc(Difficulty);
 	crc(CDifficulty);
 	crc(Theater);
@@ -4071,6 +4105,53 @@ void ScenarioClass::Compute_CRC(CRCEngine & crc) const
 	crc(AmbientLight);
 	crc(CurrentAmbientLight);
 	crc(DesiredAmbientLight);
+	checkpoint("difficulty and lighting");
+
+	crc((bool)Special.IsCaptureTheFlag);
+	crc((bool)Special.IsInert);
+	crc((bool)Special.IsTGrowth);
+	crc((bool)Special.IsTSpread);
+	crc((bool)Special.IsMCVDeploy);
+	crc((bool)Special.IsInitialVeteran);
+	crc((bool)Special.IsAllianceFixed);
+	crc((bool)Special.IsHarvesterImmune);
+	crc((bool)Special.IsFogOfWar);
+	crc((bool)Special.IsDestroyBridges);
+	crc((bool)Special.IsScrapMetal);
+	checkpoint("special options");
+	crc(UniqueID);
+	crc(RandomNumber.Index_1());
+	crc(RandomNumber.Index_2());
+	crc(RandomNumber.Peek());
+	checkpoint("unique ID and generator");
+	for (int i = 0; i < WAYPT_COUNT; i++) {
+		crc(Waypoint[i].X);
+		crc(Waypoint[i].Y);
+	}
+	checkpoint("waypoints");
+	crc((int)AmbientChangeTimer);
+	crc(Scenario);
+	checkpoint("light timer and number");
+	for (int i = 0; i < SCEN_GLOBAL_COUNT; i++) {
+		crc(GlobalFlags[i].Value);
+	}
+	checkpoint("globals");
+	for (int i = 0; i < SCEN_LOCAL_COUNT; i++) {
+		crc(LocalFlags[i].Value);
+	}
+	checkpoint("locals");
+	crc(IsTrainCargo);
+	crc(IsTibGrowth);
+	crc(IsVeinGrowth);
+	crc(IsIceGrowth);
+	crc(IsBridgeChanged);
+	crc(IsGlobalChanged);
+	crc(IsAmbientLightChanged);
+	crc(IsTiberiumDeathToVisceroid);
+	crc(IsRandom);
+	crc(IsCrateBeenPickedUp);
+	crc((int)RequiredAddOn);
+	checkpoint("flags");
 }
 
 

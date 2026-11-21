@@ -838,9 +838,9 @@ void TEventClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
 
-	if (Next != NULL) crc(Next->Fetch_ID());
+	if (Next != NULL) crc(Next->HeapID);
 	crc(Event);
-	if (Team != NULL) crc(Team->Fetch_ID());
+	if (Team != NULL) crc(Team->HeapID);
 	crc((int)Data.Value);
 }
 

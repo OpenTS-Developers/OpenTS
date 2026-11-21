@@ -155,6 +155,7 @@
 #include "ccrand.h"
 #include "cell.h"
 #include "combat.h"
+#include "ctrlgroup.h"
 #include "data.h"
 #include "dbgprint.h"
 #include "dialog.h"
@@ -193,6 +194,7 @@
 #include "tag.h"
 #include "team.h"
 #include "techtype.h"
+#include "tiberium.h"
 #include "tracker.h"
 #include "uicontrol.h"
 #include "unit.h"
@@ -793,13 +795,14 @@ void TechnoClass::Init(void)
 /// <summary>
 /// Destroys the techno object and unlinks it from the game.
 /// The object gives up its house and drops out of the global techno lists that were holding
-/// it.
+/// it and out of the player's control groups.
 /// </summary>
 TechnoClass::~TechnoClass(void)
 {
 	House=0;
 	Technos.Delete(this);
 	HousePtrTracker.Delete(this);
+	ControlGroups.Remove(this);
 }
 
 
@@ -3191,7 +3194,7 @@ void TechnoClass::AI(void)
 				for (int i = 0; i < Anims.Count(); i++) {
 					AnimClass * anim = Anims[i];
 					if (anim != NULL && anim->xObject == this && anim->Class == Rule->EMPulseSparkles) {
-						anim->Loops = 0;
+						anim->Stage.Loops = 0;
 					}
 				}
 			} else if (Is_Foot()) {
@@ -3209,7 +3212,7 @@ void TechnoClass::AI(void)
 				for (int i = 0; i < Anims.Count(); i++) {
 					AnimClass * anim = Anims[i];
 					if (anim != NULL && anim->xObject == this && anim->Class == Rule->EMPulseSparkles) {
-						anim->Loops = 0;
+						anim->Stage.Loops = 0;
 					}
 				}
 			}
@@ -3473,9 +3476,10 @@ bool TechnoClass::Select(void)
 		**	Speak a confirmation of selection.
 		*/
 		if (House->Is_Player_Commanded() && AllowVoice) {
-			// A shared control commander hears the unit, but only its owner springs the trigger.
+			// A shared control commander hears the unit, but only its owner springs the trigger,
+			// through an event so that every machine and a replay spring it on the same frame.
 			if (Tag != NULL && House->Is_Player_Control()) {
-				Tag->Spring(TEVENT_SELECTED, this);
+				OutList.push_back(EventClass(House->HeapID, EventClass::SELECTED, TargetClass(this)));
 			}
 			Response_Select();
 		}
@@ -4155,7 +4159,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 					AnimClass * anim = new AnimClass(a, anim_coord);
 					if (RTTI == RTTI_BUILDING) {
 						int zadjust = (anim_coord.Y - Render_Coord().Y) / -4;
-						anim->ZAdjust = std::min(zadjust, 0);
+						anim->Draw.ZAdjust = std::min(zadjust, 0);
 					}
 					if (anim != NULL && RTTI != RTTI_BUILDING) {
 						anim->Attach_To(this);
@@ -5188,8 +5192,8 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 			 * Half-strength transition may trigger a feedback voice response.
 			 */
 			TechnoTypeClass const * ttype = TClass;
-			if (ttype->VoiceFeedback.Count() > 0 && Scen->RandomNumber(0, 99) < 30) {
-				VocType voc = (VocType)ttype->VoiceFeedback.Pick(Scen->RandomNumber());
+			if (ttype->VoiceFeedback.Count() > 0 && Sim_Random_Pick(0, 99) < 30) {
+				VocType voc = (VocType)ttype->VoiceFeedback.Pick(NonCriticalRandomNumber());
 				Sound_Effect(voc, Center_Coord());
 			}
 			break;
@@ -5365,9 +5369,7 @@ void TechnoClass::Record_The_Kill(TechnoClass * source)
 					}
 
 					if (source != NULL) {
-						if (Session.Type == GAME_INTERNET) {
-							source->House->DestroyedBuildings->Increment_Unit_Total(((BuildingClass*)this)->Class->HeapID);
-						}
+						source->House->DestroyedBuildings->Increment_Unit_Total(((BuildingClass*)this)->Class->HeapID);
 						source->House->BuildingsKilled[Owner()]++;
 					}
 				}
@@ -5375,19 +5377,19 @@ void TechnoClass::Record_The_Kill(TechnoClass * source)
 			break;
 
 		case RTTI_AIRCRAFT:
-			if (source != NULL && Session.Type == GAME_INTERNET) {
+			if (source != NULL) {
 				source->House->DestroyedAircraft->Increment_Unit_Total(((AircraftClass*)this)->Class->HeapID);
 				total_recorded++;
 			}
 			//Fall through.....
 		case RTTI_INFANTRY:
-			if (source != NULL && !total_recorded && Session.Type == GAME_INTERNET) {
+			if (source != NULL && !total_recorded) {
 				source->House->DestroyedInfantry->Increment_Unit_Total(((InfantryClass*)this)->Class->HeapID);
 				total_recorded++;
 			}
 			//Fall through.....
 		case RTTI_UNIT:
-			if (source != NULL && !total_recorded && Session.Type == GAME_INTERNET) {
+			if (source != NULL && !total_recorded) {
 				source->House->DestroyedUnits->Increment_Unit_Total(((UnitClass*)this)->Class->HeapID);
 				total_recorded++;
 			}
@@ -5548,8 +5550,16 @@ void TechnoClass::Do_Shimmer(void)
  *=============================================================================================*/
 VisualType TechnoClass::Visual_Character(bool raw, HouseClass const * house) const
 {
-	if (TClass->IsInvisible && IsOwnedByPlayer) return(VISUAL_NORMAL);
-	if (TClass->IsInvisible && !IsOwnedByPlayer && !Debug_Map) return(VISUAL_HIDDEN);
+	if (TClass->IsInvisible) {
+		if (raw) {
+			// The simulation uses this result, so it must depend on the observing house and never on
+			// the local player.
+			if (house != NULL) return((house == House) ? VISUAL_NORMAL : VISUAL_HIDDEN);
+		} else {
+			if (IsOwnedByPlayer) return(VISUAL_NORMAL);
+			if (!Debug_Map) return(VISUAL_HIDDEN);
+		}
+	}
 
 	/*
 	**	When uncloaked or in map editor mode, always draw the object normally.
@@ -7697,8 +7707,9 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 	**	Display what group this unit belongs to. This corresponds to the team
 	**	number assigned with the <CTRL> key.
 	*/
-	if (Group >= 0 && Group < 10) {
-		int group = Group+1;
+	int control_group = ControlGroups.Group_Of(this);
+	if (control_group >= 0 && control_group < ControlGroupsClass::COUNT) {
+		int group = control_group+1;
 
 		if (group == 10) group = 0;
 
@@ -8395,27 +8406,58 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 void TechnoClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
-	crc(Group);
 	crc(ActLike);
+	crc(Cargo.How_Many());
+	if (Cargo.Attached_Object() != NULL) crc(Cargo.Attached_Object()->Fetch_ID());
+	crc(Veterancy.Get_Experience());
 	crc(ArmorBias);
 	crc(FirepowerBias);
 	crc((int)IdleTimer);
 	SpiedBy.Compute_CRC(crc);
+	crc(Group);
+	if (ArchivedTarget != NULL) crc(ArchivedTarget->Fetch_ID());
+	if (House != NULL) crc(House->Fetch_ID());
 	crc(Cloak);
+	crc(CloakingDevice.Fetch_Stage());
+	crc(CloakingDevice.Fetch_Rate());
+	crc(CloakingDevice.Fetch_Step());
 	crc((int)CloakDelay);
 	crc(PredatorOffset);
+	if (TarCom != NULL) crc(TarCom->Fetch_ID());
+	if (SuspendedTarCom != NULL) crc(SuspendedTarCom->Fetch_ID());
 	crc(PitchAngle);
 	crc((int)Arm);
 	crc(Ammo);
 	crc(PurchasePrice);
-	crc(BurstIndex);
-	crc(IsBurstResetPending);
-	crc((int)BurstResetTimer);
+	for (int i = 0; i < ATTACHED_PARTICLE_COUNT; i++) {
+		if (ParticleSystems[i] != NULL) crc(ParticleSystems[i]->Fetch_ID());
+	}
+	if (Wave != NULL) crc(Wave->Fetch_ID());
 	crc(AngleRotatedSideways);
 	crc(AngleRotatedForwards);
 	crc(RockingSidewaysPerFrame);
 	crc(RockingForwardsPerFrame);
-	crc(SinkingYOffset);
+	crc((int)EnteredByInfType);
+	for (int i = 0; i < Tiberiums.Count(); i++) {
+		crc(Storage.Get_Amount(i));
+	}
+	crc(Door.Is_Count_Up_Active());
+	crc(Door.Is_Count_Down_Active());
+	crc(Door.Is_Count_Up_Complete());
+	crc(Door.Has_Ended());
+	crc(Door.Percent_Complete());
+	crc(BarrelPitch.Current().As_Int());
+	crc(BarrelPitch.Desired().As_Int());
+	crc(BarrelPitch.Turn_Arc());
+	crc(PrimaryFacing.Current().As_Int());
+	crc(PrimaryFacing.Desired().As_Int());
+	crc(PrimaryFacing.Turn_Arc());
+	crc(SecondaryFacing.Current().As_Int());
+	crc(SecondaryFacing.Desired().As_Int());
+	crc(SecondaryFacing.Turn_Arc());
+	crc(BurstIndex);
+	crc(IsBurstResetPending);
+	crc((int)BurstResetTimer);
 	crc(IsSinking);
 	crc(IsNeedingRescue);
 	crc(IsUseless);
@@ -8426,16 +8468,22 @@ void TechnoClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsLocked);
 	crc(IsInRecoilState);
 	crc(IsTethered);
-	if (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) {
-		crc(IsOwnedByPlayer);
-	}
 	DiscoveredBy.Compute_CRC(crc);
 	crc(IsALemon);
-	crc(StunDuration);
 	crc(UnusedCooldown);
 	crc(Unused1);
 	crc(SightIncrease);
+	crc(IsTeamRecruitable);
+	crc(IsAutocreateRecruitable);
+	crc(IsInTransport);
+	crc(IsRocking);
+	if (NearbyObject != NULL) crc(NearbyObject->Fetch_ID());
+	crc(StunDuration);
 	LimpetType.Compute_CRC(crc);
+	crc(StageClass::Fetch_Stage());
+	crc(StageClass::Fetch_Rate());
+	crc(StageClass::Fetch_Step());
+	crc(LimpetSpeedFactor);
 }
 
 

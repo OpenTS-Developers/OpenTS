@@ -1335,7 +1335,7 @@ bool ObjectClass::Limbo(void)
 		/*
 		**	Remove the object from the logic processing list.
 		*/
-		if (Class_Of() != NULL && Class_Of()->IsSentient && (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH || Fetch_ID() != -2)) {
+		if (Class_Of() != NULL && Class_Of()->IsSentient) {
 			Logic.Remove(this);
 		}
 
@@ -1408,7 +1408,7 @@ bool ObjectClass::Unlimbo(Coord const & coord, Dir256 )
 
 					if (objclass != NULL) {
 
-						if (objclass->IsSentient && (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH || Fetch_ID() != -2)) {
+						if (objclass->IsSentient) {
 							Logic.Submit(this);
 						}
 
@@ -2250,27 +2250,25 @@ void ObjectClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
 
+	crc(Riser.X);
+	crc(Riser.Y);
+	crc(Riser.Z);
 	if (Next != NULL) {
 		crc(Next->Fetch_ID());
 	}
-
-	if (Tag != NULL) {
-		crc(Tag->Fetch_ID());
-	}
-
+	// A tag is never given an ID, so its type's heap position is hashed, or -1 for none.
+	crc(Tag != NULL ? Tag->Class->Fetch_Heap_ID() : -1);
 	crc(Strength);
 	crc(IsDown);
 	crc(IsToDamage);
-	if (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) {
-		crc(IsToDisplay);
-		crc(IsSelected);
-	}
 	crc(IsInLimbo);
 	crc(IsAnimAttached);
 	crc(IsOnBridge);
 	crc(IsFalling);
 	crc(IsToExplode);
 	crc(IsActive);
+	crc((int)Layer);
+	crc(IsSubmittedToLayer);
 	crc(Position.X);
 	crc(Position.Y);
 	crc(Position.Z);

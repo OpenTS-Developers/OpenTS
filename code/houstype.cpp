@@ -214,6 +214,7 @@ bool HouseTypeClass::Read_INI(CCINIClass const & ini)
 void HouseTypeClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
+	crc((int)HeapID);
 	crc(House);
 	crc(Side);
 	crc(Scheme);
@@ -227,6 +228,8 @@ void HouseTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(Suffix, strlen(Suffix));
 	crc(Prefix);
 	crc(IsMultiplay);
+	crc(IsMultiplayPassive);
+	crc(IsWallOwner);
 }
 
 

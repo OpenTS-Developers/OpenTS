@@ -506,11 +506,7 @@ bool MouseClass::Load(SaveStreamClass & stream)
 		}
 
 		TerrainTypeClass::Init(Scen->Theater);
-		if (Scen->Theater != LastTheater) {
-			IsometricTileTypeClass::Read_Control_File(Scen->Theater, true);
-		} else {
-			IsometricTileTypeClass::Clear_Use_Counts();
-		}
+		IsometricTileTypeClass::Read_Control_File(Scen->Theater, true);
 		IsometricTileTypeClass::Load_Tiles(false, false);
 		OverlayTypeClass::Init(Scen->Theater);
 		BuildingTypeClass::Init(Scen->Theater);

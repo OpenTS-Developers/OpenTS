@@ -7388,7 +7388,7 @@ bool MapClass::Crack_Ice(CellClass * cellptr, FootClass * object)
 					TacticalMap->Register_Dirty_Area(dirty);
 
 					if (Rule->IceCrackSounds.Count() > 0) {
-						Sound_Effect((VocType)Rule->IceCrackSounds.Pick(Scen->RandomNumber()));
+						Sound_Effect((VocType)Rule->IceCrackSounds.Pick(NonCriticalRandomNumber()));
 					}
 				}
 				return(false);

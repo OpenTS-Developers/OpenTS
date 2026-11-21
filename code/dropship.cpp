@@ -948,7 +948,7 @@ void Dropship_Screen(void)
 			}
 		} else {
 			if (pilot_timer == 0) {
-				if (Scen->RandomNumber(0, INT_MAX - 1) / (double)(INT_MAX - 1) < _pilot_chance) {
+				if (NonCriticalRandomNumber(0, INT_MAX - 1) / (double)(INT_MAX - 1) < _pilot_chance) {
 					pilot_frame = 0;
 					pilot_start_time = ::timeGetTime();
 					Draw_Shape(*HiddenSurface, *drawer_dropship, pilotlight_shape, 0, Point2D(0, 0), Rect(x + _pilot_x, y + _pilot_y, pilotlight_shape->Get_Width(), pilotlight_shape->Get_Height()), SHAPE_NORMAL);

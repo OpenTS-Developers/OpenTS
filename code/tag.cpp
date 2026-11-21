@@ -439,10 +439,14 @@ void TagClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
 
-	crc(Class->Fetch_ID());
-	if (Trigger != NULL) crc(Trigger->Fetch_ID());
-
+	crc(Class->HeapID);
+	// A trigger is never given an ID, so its type's heap position is hashed, or -1 for none.
+	crc(Trigger != NULL ? Trigger->Class->Fetch_Heap_ID() : -1);
+	crc(AttachCount);
+	crc(CellID.X);
+	crc(CellID.Y);
 	crc(IsToDie);
+	crc(IsCurrentlySprung);
 }
 
 

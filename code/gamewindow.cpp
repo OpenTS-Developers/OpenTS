@@ -197,7 +197,7 @@ static bool Handle_Event(WindowEvent const & event)
 		// A running game resigns through the queue and then ends itself; otherwise the request
 		// is ignored.
 		case WINDOW_EVENT_CLOSE_REQUESTED:
-			if (GameActive && PlayerPtr != NULL && !Session.Play) {
+			if (GameActive && PlayerPtr != NULL) {
 				Queue_Exit();
 			}
 			break;

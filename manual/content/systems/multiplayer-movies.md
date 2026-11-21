@@ -14,7 +14,7 @@ related:
     id: fixed:skip-vqa
 ---
 
-`PlayMoviesInMultiplayer=yes` in the [client launch file](/formats/spawn-ini/) turns movies on for the skirmish or game against other machines that the file starts. Without it, neither kind of game shows a movie. With it, the game shows the scenario movies listed below.
+`PlayMoviesInMultiplayer=yes` in the [client launch file](/formats/spawn-ini/) turns movies on for the skirmish or game against other machines that the file starts. Without it, neither kind of game shows a movie. With it, the game shows the scenario movies listed below. A save keeps the setting, and a resumed game uses the saved one.
 
 ## What plays
 

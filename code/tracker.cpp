@@ -63,7 +63,6 @@ DynamicVectorClass<AbstractClass *> EventActionPtrTracker;
 DynamicVectorClass<AbstractClass *> WaypointPathPtrTracker;
 DynamicVectorClass<AbstractClass *> TeamPtrTracker;
 DynamicVectorClass<AbstractClass *> HousePtrTracker;
-DynamicVectorClass<AbstractClass *> NeuronPtrTracker;
 
 DynamicVectorClass<AbstractClass *> ObjectsToDelete;
 
@@ -195,12 +194,6 @@ void Detach_This_From_All(AbstractClass const * target, bool all)
 		case RTTI_TEAM:
 			for (index = 0; index < TeamPtrTracker.Count(); index++) {
 				TeamPtrTracker[index]->Detach(target, all);
-			}
-			break;
-
-		case RTTI_NEURON:
-			for (index = 0; index < NeuronPtrTracker.Count(); index++) {
-				NeuronPtrTracker[index]->Detach(target, all);
 			}
 			break;
 	}

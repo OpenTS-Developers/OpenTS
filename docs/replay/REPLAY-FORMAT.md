@@ -1227,6 +1227,7 @@ OpenTS writes these `IncomeKind.id` values:
 | `Stolen/Storage` | A captured building's stored resources went to the capturing house |
 | `Starting/Multiplier` | A computer player's credit multiplier was applied at the start |
 | `Starting/CarryOver` | Money was brought over from the previous campaign mission |
+| `Starting/FillSilos` | The scenario's `[Basic] FillSilos=` filled the house's storage at the start |
 | `Trigger` | A trigger action gave credits |
 
 ## 13. Reference files

@@ -19,6 +19,8 @@
 
 class WarheadTypeClass;
 class OverlayTypeClass;
+class ShapeSet;
+struct AnimSequence;
 
 /****************************************************************************
 **	All the animation objects are controlled by this class. It holds the static
@@ -77,6 +79,7 @@ class AnimTypeClass : public ObjectTypeClass
 		**	of the animation. The last loop of the animation will proceed until the Stages
 		**	has been fully completed.
 		*/
+		// Read this and Stages through Sequence, which turns their 0 and -1 into counts from the art.
 		int LoopEnd;
 
 		/*
@@ -326,18 +329,11 @@ class AnimTypeClass : public ObjectTypeClass
 		bool IsUseNormalLight;
 
 		/*
-		 * If this animation's artwork should be fetched only when it is first needed rather
-		 * than up front with the rest of the theater, then this flag will be true. It keeps
-		 * rarely played animations out of memory, at the cost of a load when one is asked for.
+		 * If this animation's artwork is loaded through the file layer when a scenario starts
+		 * or a saved game is loaded, rather than fetched from a cached archive, then this flag
+		 * will be true. The file layer also finds loose files and archives that are not cached.
 		 */
 		bool IsDemandLoad;
-
-		/*
-		 * If a demand loaded animation should release its artwork again as soon as an
-		 * instance of it finishes playing, then this flag will be true. Without it the
-		 * artwork stays resident for the rest of the scenario once it has been loaded.
-		 */
-		bool IsFreeAfterPlaying;
 
 		/*
 		 * If this animation is the moving overlay that dresses a tiberium field, then this
@@ -453,8 +449,14 @@ class AnimTypeClass : public ObjectTypeClass
 
 		virtual bool Create_And_Place(Cell const &, HouseClass * house = NULL) const override {return(false);};
 		virtual ObjectClass * Create_One_Of(HouseClass *) const override {return(NULL);};
-		virtual void const * Get_Image_Data(void) const override;
 
 		virtual void Load_Image(TheaterType theater);
-		void Free_Image(void);
+
+		AnimSequence Sequence(void) const;
+
+	private:
+		void Uncached_Image_Name(char * fullname, TheaterType theater) const;
+		void const * Find_Image(TheaterType theater) const;
+		void Load_Uncached_Image(TheaterType theater);
+		void Measure_Image(ShapeSet const * shape);
 };

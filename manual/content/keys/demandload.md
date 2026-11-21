@@ -1,4 +1,4 @@
 ---
 key: DemandLoad
-summary: Defers loading a type's artwork until something first needs to draw it.
+summary: Loads a type's artwork when each scenario starts, from a loose file or any archive.
 ---

@@ -803,10 +803,15 @@ void TriggerTypeClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
 
+	crc(_IsEnabled);
+	crc(IsEnabledOnEasy);
+	crc(IsEnabledOnMedium);
+	crc(IsEnabledOnHard);
+	crc(IsToInherit);
 	if (House != NULL) crc(House->Fetch_ID());
-	if (LinkedTo != NULL) crc(LinkedTo->Fetch_ID());
-	if (FirstEvent != NULL) crc(FirstEvent->Fetch_ID());
-	if (FirstAction != NULL) crc(FirstAction->Fetch_ID());
+	if (LinkedTo != NULL) crc(LinkedTo->HeapID);
+	if (FirstEvent != NULL) crc(FirstEvent->HeapID);
+	if (FirstAction != NULL) crc(FirstAction->HeapID);
 }
 
 

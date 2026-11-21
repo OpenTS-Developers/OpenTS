@@ -62,6 +62,7 @@ ScriptClass::~ScriptClass(void)
 void ScriptClass::Compute_CRC(CRCEngine &crc) const
 {
 	BASECLASS::Compute_CRC(crc);
+	if (Class != NULL) crc(Class->HeapID);
 	crc(CurrentLineNumber);
 }
 
@@ -390,4 +391,9 @@ void ScriptTypeClass::Compute_CRC(CRCEngine & crc) const
 	BASECLASS::Compute_CRC(crc);
 
 	crc(MissionCount);
+
+	for (int index = 0; index < MissionCount; index++) {
+		crc((int)MissionList[index].Mission);
+		crc(MissionList[index].Data.Value);
+	}
 }

@@ -15,7 +15,6 @@
 
 // Enums in Select_Game() must match order of buttons in Main_Menu().
 enum {
-	SEL_TIMEOUT = -1,				// main menu timeout--go into attract mode
 	SEL_NEW_SCENARIO,				// Expansion scenario to play.
 	SEL_CAMPAIGN_GAME,				// start a new game
 	SEL_LOAD_GAME,					// load a saved game

@@ -244,7 +244,6 @@ class IsometricTileTypeClass : public ObjectTypeClass
 		static void Read_Control_File(TheaterType theater, bool from_ccfile);
 		static void Load_Tiles(bool,bool);
 		int Load_Tile_Data(void);
-		static void Clear_Use_Counts(void);
 		bool Get_Tile_Pixel_Dimensions(int tile, int & width, int & height);
 		int Ramp_Type(int tile) const;
 		bool Is_Randomized(int tile) const;

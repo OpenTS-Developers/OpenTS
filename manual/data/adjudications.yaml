@@ -368,7 +368,6 @@ TurboBoost:
 
 Type:
   "SuperWeaponTypeClass::buffer": {verdict: distinct}
-  "SessionClass::None": {verdict: distinct}
 
 Volume:
   "VocClass::volume": {verdict: distinct}

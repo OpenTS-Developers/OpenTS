@@ -123,6 +123,7 @@
 #include "classids.h"
 #include "combat.h"
 #include "conquer.h"
+#include "ctrlgroup.h"
 #include "draw.h"
 #include "drive.h"
 #include "fog.h"
@@ -1966,6 +1967,7 @@ bool UnitClass::Try_To_Deploy(void)
 
 					building->ActLike = ActLike;
 					building->Group = Group;
+					ControlGroups.Transfer(this, building);
 					building->Veterancy.Set_Experience(Veterancy.Get_Experience(), false);
 					building->LimpetType = LimpetType;
 					building->LimpetSpeedFactor = LimpetSpeedFactor;
@@ -1976,7 +1978,8 @@ bool UnitClass::Try_To_Deploy(void)
 					*/
 					if (building->House->Is_Player_Control()) {
 						Sound_Effect(Rule->BuildingDrop, Center_Coord());
-					} else {
+					}
+					if (!building->House->Is_Human_Player()) {
 						building->IsToRebuild = true;
 						building->IsToRepair = true;
 					}
@@ -3297,7 +3300,7 @@ int UnitClass::Do_MISSION_UNLOAD(void)
 								if (Class->IsToVeinHarvest) {
 									House->Harvested_Weed(amount, slot);
 								} else {
-									House->Harvested(amount, (TiberiumType)slot);
+									House->Harvested(amount, (TiberiumType)slot, INCOME_HARVESTED);
 								}
 								Set_Stage(0);
 							}
@@ -4114,7 +4117,7 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 	**	If the cell is out and out impassable because of underlying terrain, then
 	**	return this immutable fact.
 	*/
-	if (!bridge && Ground[cellptr->Land_Type()].Cost[Class->Speed] == 0) {
+	if (!bridge && Rule->Ground[cellptr->Land_Type()].Cost[Class->Speed] == 0) {
 		return(MOVE_NO);
 	}
 
@@ -4247,7 +4250,7 @@ ActionType UnitClass::What_Action(ObjectClass const * object, bool disallow_forc
 					} else {
 						CellClass * cellptr = &Map[(Coord const &)PositionCoord];
 						ObjectClass * object = Cargo.Attached_Object();
-						if (object == NULL || Ground[cellptr->Land_Type()].Cost[object->TClass->Speed] >= 0.01) {
+						if (object == NULL || Rule->Ground[cellptr->Land_Type()].Cost[object->TClass->Speed] >= 0.01) {
 							can_deploy = true;
 						}
 					}
@@ -4571,7 +4574,7 @@ FacingType UnitClass::Desired_Load_Dir(ObjectClass * passenger, Cell & moveto) c
 			value = (passenger->Can_Enter_Cell(&Map[cellnum], face, Get_Cell_Height()) == MOVE_OK || passenger->PositionCell == cellnum) ? 128 : -128;
 		} else {
 			CellClass * cell = &Map[Cell(cellnum)];
-			if (Ground[cell->Land_Type()].Cost[SPEED_FOOT] == 0 || cell->Flag.Occupy.Building || cell->Flag.Occupy.Vehicle || cell->Flag.Occupy.Monolith || (cell->Flag.Composite & 0x01F) == 0x01F) {
+			if (Rule->Ground[cell->Land_Type()].Cost[SPEED_FOOT] == 0 || cell->Flag.Occupy.Building || cell->Flag.Occupy.Vehicle || cell->Flag.Occupy.Monolith || (cell->Flag.Composite & 0x01F) == 0x01F) {
 				value = -128;
 			} else {
 				if (cell->Cell_Techno() && !House->Is_Ally(cell->Cell_Techno())) {
@@ -6121,7 +6124,6 @@ void UnitClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(VisceroidFacing);
 	stream.Serialize(Charge);
 	stream.Serialize(DeathCounter);
-	stream.Serialize(Unused1);
 }
 
 
@@ -6146,6 +6148,7 @@ void UnitClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
 
+	crc(FiringSyncDelay);
 	crc((int)Reload);
 	crc(Class->Fetch_RTTI());
 	crc(Class->Fetch_ID());
@@ -6160,6 +6163,9 @@ void UnitClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsDumping);
 	crc(IsHarvesting);
 	crc(IsToScatter);
+	crc((int)VisceroidFacing);
+	crc((int)Charge);
+	crc(DeathCounter);
 }
 
 

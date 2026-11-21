@@ -115,9 +115,9 @@ class OverlayTypeClass: public ObjectTypeClass
 		bool IsVeins;
 
 		/*
-		 * If this overlay's artwork should be fetched only when it is first needed, then this
-		 * flag will be true. Theater initialization skips such overlays, which keeps rarely
-		 * used art out of memory until something asks for it.
+		 * If this overlay's artwork is loaded through the file layer when a scenario starts
+		 * or a saved game is loaded, rather than fetched from a cached archive, then this flag
+		 * will be true. The file layer also finds loose files and archives that are not cached.
 		 */
 		bool DemandLoad;
 
@@ -173,6 +173,7 @@ class OverlayTypeClass: public ObjectTypeClass
 		static OverlayTypeClass * Find_Or_Make(char const * name);
 		static OverlayType From_Name(char const * name);
 		static void Init(TheaterType);
+		static void Load_Uncached_Art(TheaterType theater);
 		static void Prep_For_Add(void);
 
 		virtual RTTIType Fetch_RTTI(void) const override {return(RTTI_OVERLAYTYPE);}
@@ -185,9 +186,11 @@ class OverlayTypeClass: public ObjectTypeClass
 
 		virtual bool Read_INI(CCINIClass const & ini) override;
 
-		virtual void const * Get_Image_Data(void) const override;
-
 		RGBClass Get_Radar_Color(int shape) const;
 
 		bool Can_Build_Over(void) const {return(IsBuildableOver && !IsWall);}
+
+	private:
+		void Load_Uncached_Image(TheaterType theater);
+		void Uncached_Image_Name(char * fullname, TheaterType theater) const;
 };

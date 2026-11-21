@@ -10,5 +10,4 @@ The command does nothing in any of these cases:
 
 - the game is not a campaign or a skirmish;
 - a scripted sequence has locked input;
-- the game is already being won or lost;
-- a recording is playing back.
+- the game is already being won or lost.

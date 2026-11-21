@@ -517,6 +517,7 @@ ClassID UnitTypeClass::Class_ID(void) const
 void UnitTypeClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
+	crc((int)HeapID);
 	crc(MovementRestrictedTo);
 	crc(IsPassive);
 	crc(IsCrateGoodie);
@@ -525,9 +526,26 @@ void UnitTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsFireAnim);
 	crc(IsLockTurret);
 	crc(IsNoFireWhileMoving);
+	crc(IsDeployToFire);
 	crc(IsTilter);
 	crc(IsUseTurretShadow);
 	crc(IsTotable);
+	crc(IsSmallVisceroid);
+	crc(IsLargeVisceroid);
+	crc(IsCarriesCrate);
+	crc(IsNonVehicle);
+	crc(IsJellyfish);
+	crc(IsLimpetDrone);
+	crc(IsMobileEMP);
+	crc(IsCoreDefender);
+	crc(DeathFrames);
+	crc((int)MaxCharge);
+	crc(StartCharge);
+	for (int i = 0; i < FIRING_SYNC_FRAME_MAX; i++) {
+		crc(FiringSyncFrame[i]);
+	}
+	crc(MaxDeathCounter);
+	crc(FiringFrames);
 }
 
 

@@ -522,6 +522,7 @@ class CellClass : public AbstractClass
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 		virtual void Post_Load(void) override;
+		virtual void Compute_CRC(CRCEngine & crc) const override;
 
 		virtual int What_Am_I(void) const override;
 

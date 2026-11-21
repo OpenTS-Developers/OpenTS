@@ -154,12 +154,6 @@ bool Map_Edit_Loop(void);
 
 void Print_MP_Stats(void);
 
-//
-// Special module globals for recording and playback
-//
-extern int TeamEvent;
-extern int TeamNumber;
-
 
 void conquer_noop(void)
 {
@@ -382,14 +376,6 @@ void Main_Game(int argc, char * argv[])
 		**	told the map to draw itself.
 		*/
 		Keyboard->Clear();
-		/*
-		**	Only show the mouse if we're not playing back a recording.
-		*/
-		if (Session.Play) {
-			Hide_Mouse();
-			TeamEvent = 0;
-			TeamNumber = 0;
-		}
 
 		if (Session.Type == GAME_INTERNET) {
 			Register_Game_Start_Time();
@@ -479,25 +465,9 @@ void Main_Game(int argc, char * argv[])
 
 		// Un-initialize whatever needs it, for each game played. The network is shut
 		// down rather than left running, so that the next game starts from a fresh
-		// one. Playback never opened it, so that case is skipped.
-		if (Session.Record || Session.Play) {
-			Session.RecordFile.Close();
-		}
-
+		// one.
 		if (Session.Type == GAME_IPX) {
-			if (!Session.Play) {
-				Shutdown_Network();
-			}
-		}
-
-		/*
-		**	If we're playing back, the mouse will be hidden; show it.
-		**	Also, set all variables back to normal, to return to the main menu.
-		*/
-		if (Session.Play) {
-			Session.Type = GAME_NORMAL;
-			Session.Play = 0;
-			Show_Mouse();
+			Shutdown_Network();
 		}
 	}
 
@@ -1442,7 +1412,7 @@ void Print_MP_Stats(void)
 			fprintf(file, "Average FPS: %d\n", SecondsPassed != 0 ? TotalFrames / SecondsPassed : 0);
 			fprintf(file, "Max MaxAhead: %d\n", Session.MaxMaxAhead);
 			fprintf(file, "Latency setting: %d\n", Session.LatencyFudge);
-			fprintf(file, "Game speed setting: %d\n", Options.GameSpeed);
+			fprintf(file, "Game speed setting: %d\n", Session.Options.GameSpeed);
 
 			if (PacketTransport != NULL) {
 				for (int i = 0; i < PacketTransport->Get_Num_Local_Addresses(); i++) {

@@ -488,14 +488,13 @@ void TriggerClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
 
-	crc(Class->Fetch_ID());
-	if (LinkedTo != NULL) crc(LinkedTo->Fetch_ID());
-
+	crc(Class->HeapID);
+	// A trigger is never given an ID, so its type's heap position is hashed, or -1 for none.
+	crc(LinkedTo != NULL ? LinkedTo->Class->Fetch_Heap_ID() : -1);
 	crc(IsToDelete);
-	crc(IsActive);
-
 	crc((int)Timer);
 	crc(IsTripped);
+	crc(IsActive);
 }
 
 

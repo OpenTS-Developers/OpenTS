@@ -52,7 +52,7 @@ In a game against other machines, the Save button in the options menu sends a `S
 
 The [Create Autosave](/mapping/actions/taction-create-autosave/) trigger action requests an automatic save. The save is written at the end of the frame in which the action runs, under the names and descriptions given in [Automatic saves](#automatic-saves). A trigger save posts a message only when it fails.
 
-The action works even when timed saves are turned off, including in a game against other machines started from the menu. Several requests in one frame produce one save. Nothing is saved while a recording plays back.
+The action works even when timed saves are turned off, including in a game against other machines started from the menu. Several requests in one frame produce one save.
 
 In a game against other machines, a trigger save or timed save written in the frame of a player's save command joins the player's save. That save keeps the player's file name, description, saving box, and `Game saved.` message.
 
@@ -100,7 +100,7 @@ Picking a save starts a five-second countdown on every machine. Each machine the
 2. It gives each seated player the saved house with that player's name.
 3. It reconnects to the other machines and compares its restored game with theirs, as a resumed save does. If the games differ, the match stops with a mismatch message.
 
-A player who has left since the save was written has their house played by the computer.
+A player who has left since the save was written has their house played by the computer. The loaded match plays at the speed it was playing at when the save was written.
 
 No save is written while a load is pending. A machine that cannot load the save shows the loading error and leaves the match.
 
@@ -120,8 +120,8 @@ When [`CarryScenarioFile`](/formats/opents-ini/#what-a-save-carries) in `OPENTS.
 
 A save is offered and loaded only when its version stamp matches the running version of OpenTS. The load dialog reads the header and listing table of every `.SAV` file in the `Saved Games` folder and skips any file stamped by another version, including another OpenTS release. Tiberian Sun and earlier OpenTS releases wrote saves in a compound-document layout, which this format does not recognize, so those files are skipped as well. There is no conversion.
 
-A save loaded without the dialog, such as a network save or one resumed from a [launch file](/formats/spawn-ini/), is refused in the same way when its stamp differs. Development snapshots of one version share its stamp, although their save layouts can still differ, so a listed save from another snapshot can fail to load.
+A save loaded without the dialog, such as a network save or one resumed from a [launch file](/formats/spawn-ini/), is refused in the same way when its stamp differs. Development snapshots of one version share its stamp until a change to the save layout or the simulation raises a serial the stamp includes. A snapshot whose layout changed without that raise can still list a save it fails to load.
 
 Apart from the version stamp and the add-on the saved scenario requires, a save is not compared with the game loading it. A save made under one set of rules and loaded under another is not detected. The type definitions stored in the file replace the ones the current rules built.
 
-The whole file, checksums included, is read and checked before the game in progress is cleared. A file that is truncated, damaged, or written in a later format version is therefore refused before anything is replaced. Restoring then clears the game in progress and stops at the first record it cannot restore, or when the add-on the saved scenario requires is not installed. A load that stops there fails, and the game in progress is already gone.
+The whole file, checksums included, is read and checked before the game in progress is cleared. A file that is truncated, damaged, or written in a later format version is therefore refused before anything is replaced. Restoring then clears the game in progress and stops at the first record it cannot restore, or when the add-on the saved scenario requires is not installed. After the last record it also fails when a reference between objects refers to an object the file does not contain. A load that stops at any of these points fails, and the game in progress is already gone.

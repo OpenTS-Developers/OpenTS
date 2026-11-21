@@ -40,6 +40,7 @@ extern "C" {
 }
 
 unsigned int Get_CPU_Rate(unsigned int & high);
+void Reset_Float_State(void);
 
 void RDTSC(void);
 int Get_RDTSC_CPU_Speed(void);

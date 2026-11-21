@@ -4502,24 +4502,6 @@ Category:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
-Cell:
-  key: Cell
-  scopes:
-  - applies_to:
-    - multiplayer settings
-    file: sun.ini
-    section:
-      kind: literal
-      name: SyncBug
-    value_type: string
-    status: generated
-    _provenance:
-      default_candidate: 0,0
-      declared_in: SessionClass
-      member: null
-      source: code/session.cpp
-      guard: null
-    level: SessionClass
 CellAnim:
   key: CellAnim
   scopes:
@@ -5509,24 +5491,6 @@ Conventional:
       source: code/warhead.cpp
       guard: null
     level: WarheadTypeClass
-Coord:
-  key: Coord
-  scopes:
-  - applies_to:
-    - multiplayer settings
-    file: sun.ini
-    section:
-      kind: literal
-      name: SyncBug
-    value_type: string
-    status: generated
-    _provenance:
-      default_candidate: '0'
-      declared_in: SessionClass
-      member: null
-      source: code/session.cpp
-      guard: null
-    level: SessionClass
 Cost:
   key: Cost
   scopes:
@@ -9380,58 +9344,6 @@ Fraidycat:
       source: code/infatype.cpp
       guard: null
     level: InfantryTypeClass
-Frame:
-  key: Frame
-  scopes:
-  - applies_to:
-    - multiplayer settings
-    file: sun.ini
-    section:
-      kind: literal
-      name: SyncBug
-    value_type: integer
-    status: generated
-    _provenance:
-      default_candidate: null
-      declared_in: SessionClass
-      member: TrapFrame
-      source: code/session.cpp
-      guard: null
-    level: SessionClass
-FreeAfterPlaying:
-  key: FreeAfterPlaying
-  scopes:
-  - applies_to: *id005
-    file: art.ini
-    section:
-      kind: identifier
-      source: object-type
-    value_type: boolean
-    status: generated
-    _provenance:
-      default_candidate: 'no'
-      declared_in: AnimTypeClass
-      member: IsFreeAfterPlaying
-      source: code/animtype.cpp
-      guard: null
-    level: AnimTypeClass
-FreeBuildup:
-  key: FreeBuildup
-  scopes:
-  - applies_to: *id004
-    file: art.ini
-    section:
-      kind: image
-      fallback: object-type
-    value_type: boolean
-    status: generated
-    _provenance:
-      default_candidate: 'no'
-      declared_in: BuildingTypeClass
-      member: IsFreeBuildup
-      source: code/builtype.cpp
-      guard: null
-    level: BuildingTypeClass
 FreeMCV:
   key: FreeMCV
   scopes:
@@ -17369,24 +17281,6 @@ PrimaryFirePixelOffset:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
-PrintCRC:
-  key: PrintCRC
-  scopes:
-  - applies_to:
-    - multiplayer settings
-    file: sun.ini
-    section:
-      kind: literal
-      name: SyncBug
-    value_type: integer
-    status: generated
-    _provenance:
-      default_candidate: null
-      declared_in: SessionClass
-      member: TrapPrintCRC
-      source: code/session.cpp
-      guard: null
-    level: SessionClass
 Priority:
   key: Priority
   scopes:
@@ -22688,24 +22582,6 @@ TalkBubbleTime:
       source: code/rules.cpp
       guard: null
     level: RulesClass
-Target:
-  key: Target
-  scopes:
-  - applies_to:
-    - multiplayer settings
-    file: sun.ini
-    section:
-      kind: literal
-      name: SyncBug
-    value_type: integer
-    status: generated
-    _provenance:
-      default_candidate: null
-      declared_in: SessionClass
-      member: target
-      source: code/session.cpp
-      guard: null
-    level: SessionClass
 TargetDistanceCoefficient:
   key: TargetDistanceCoefficient
   scopes:
@@ -23802,24 +23678,6 @@ TiberiumToSpawn:
       source: code/terrtype.cpp
       guard: null
     level: TerrainTypeClass
-TiberiumTransmogrify:
-  key: TiberiumTransmogrify
-  scopes:
-  - applies_to:
-    - global rules
-    file: rules.ini
-    section:
-      kind: literal
-      name: General
-    value_type: integer
-    status: generated
-    _provenance:
-      default_candidate: null
-      declared_in: RulesClass
-      member: TiberiumTransmogrify
-      source: code/rules.cpp
-      guard: null
-    level: RulesClass
 TiberiumWildlife:
   key: TiberiumWildlife
   scopes:
@@ -24868,21 +24726,6 @@ Type:
       source: code/suprtype.cpp
       guard: null
     level: SuperWeaponTypeClass
-  - applies_to:
-    - multiplayer settings
-    file: sun.ini
-    section:
-      kind: literal
-      name: SyncBug
-    value_type: string
-    status: reviewed
-    _provenance:
-      default_candidate: NONE
-      declared_in: SessionClass
-      member: null
-      source: code/session.cpp
-      guard: null
-    level: SessionClass
   - applies_to:
     - Sounds
     file: sound01.ini

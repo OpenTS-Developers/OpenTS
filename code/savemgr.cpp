@@ -97,12 +97,20 @@ void SaveManagerClass::Post_Save_Notice(int text)
 /// Solo and skirmish games save immediately. A synchronized multiplayer request is held
 /// until the frame has finished retiring dead objects. A quiet request is written without
 /// the saving box; the first request of a frame settles that and what the save reports.
+/// A request while no scenario is active, such as after a refused load, is refused, since
+/// the game may be partly built.
 /// </summary>
 /// <returns>Returns true when the save completed or the multiplayer request was accepted.</returns>
 bool SaveManagerClass::Request_Save_Game(char const * file_name, char const * descr, bool quiet,
 	NoticeType notice)
 {
 	if (file_name == NULL || descr == NULL) return(false);
+
+	if (!ScenarioActive) {
+		DebugString("Ignoring save request because no scenario is active\n");
+		Record_Save_Outcome(notice, false);
+		return(false);
+	}
 
 	if (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) {
 		bool saved = Save_Game(file_name, descr);
@@ -196,7 +204,7 @@ void SaveManagerClass::Post_Pending_Notice(void)
 	OutcomeNotice = NoticeType::None;
 	OutcomeSaved = false;
 
-	if (!ScenarioActive || Session.Play || PlayerPtr == NULL) return;
+	if (!ScenarioActive || PlayerPtr == NULL) return;
 
 	if (notice == NoticeType::Requested) {
 		Post_Save_Notice(saved ? TXT_GAME_SAVED : TXT_SAVE_FAILED);
@@ -259,8 +267,6 @@ bool SaveManagerClass::Is_Multiplayer_Saving_Allowed(void) const
 /// </summary>
 void SaveManagerClass::Autosave_Service(void)
 {
-	if (Session.Play) return;
-
 	bool single = Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH;
 
 	if (!single && (!MultiplayerSavingAllowed || MultiplayerLoad.Is_Pending())) return;
@@ -308,7 +314,7 @@ void SaveManagerClass::Quick_Save_Service(void)
 	if (!QuickSaveRequested) return;
 	QuickSaveRequested = false;
 
-	if (!ScenarioActive || Session.Play) return;
+	if (!ScenarioActive) return;
 	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) return;
 
 	char description[512];
@@ -410,12 +416,11 @@ void SaveManagerClass::Write_Spawn_Copy(void)
 
 /// <summary>
 /// May this machine ask every machine to load a multiplayer save now? Only the master of a
-/// network game may, while no load is pending and no recording plays.
+/// network game may, while no load is pending.
 /// </summary>
 bool SaveManagerClass::Multiplayer_Load_Is_Allowed(void) const
 {
-	return(Session.Is_Network_Game() && !Session.Play
-		&& Session.Am_I_Master() && !MultiplayerLoad.Is_Pending());
+	return(Session.Is_Network_Game() && Session.Am_I_Master() && !MultiplayerLoad.Is_Pending());
 }
 
 

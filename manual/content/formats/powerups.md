@@ -34,12 +34,7 @@ Reveal=8,REVEAL
 
 Each rules file that has a `[Powerups]` section applies it in the [order the rules files are read](/formats/multiplayer-rules/#when-they-are-read). A map's section is applied after all of them, so a map can reweight the draw for games on that map.
 
-Crate settings are not reset between games. At each scenario load the rules files' `[Powerups]` sections are applied again, and any value they leave unwritten keeps what the previous game used, including a value an earlier map set. A rules file with a `[Powerups]` section writes every share, so with one present a map's shares apply only to games on that map. Two values a map sets can still carry into later games until you quit:
-
-- a result's animation, when each rules file with a `[Powerups]` section lists that result with only a share
-- a result's number, unless a rules file's entry for that result has all three fields
-
-When no rules file has a `[Powerups]` section, every value a map sets carries into later games.
+Each time a scenario loads, the crate settings first return to the values they had before the first scenario, and the `[Powerups]` sections are then applied again. A value a map sets therefore applies only to games on that map.
 
 ## Reading an entry
 

@@ -53,6 +53,7 @@
 #include "waypoint.hh"
 
 #include <cstdlib>
+#include <vector>
 
 #define SCEN_LOCAL_COUNT 50
 #define SCEN_GLOBAL_COUNT 50
@@ -64,6 +65,11 @@ class TechnoTypeClass;
 class AbstractClass;
 class CellClass;
 class ObjectClass;
+
+namespace StateHash
+{
+	struct Checkpoint;
+}
 
 
 /*
@@ -106,7 +112,7 @@ class ScenarioClass {
 
 		void Serialize(SaveStreamClass & stream);
 
-		void Compute_CRC(CRCEngine & crc) const;
+		void Compute_CRC(CRCEngine & crc, std::vector<StateHash::Checkpoint> * checkpoints = nullptr) const;
 
 		bool Is_Campaign_Base_AI(void) const;
 

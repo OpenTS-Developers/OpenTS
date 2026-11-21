@@ -147,9 +147,21 @@ void AITriggerTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(Type);
 	crc(Scope);
 	crc(TrigHouse);
+	crc(IsEnabled);
 	crc(House);
+	crc(MultiSide);
 	crc(TechLevelNeeded);
-
+	crc(CurWeight);
+	crc(MinWeight);
+	crc(MaxWeight);
+	crc(IsAvailableInSkirmish);
+	crc(IsForBaseDefense);
+	crc(IsEnabledInEasy);
+	crc(IsEnabledInMedium);
+	crc(IsEnabledInHard);
+	if (ConditionObject != NULL) crc(ConditionObject->Fetch_ID());
+	if (TeamTypeOne != NULL) crc(TeamTypeOne->HeapID);
+	if (TeamTypeTwo != NULL) crc(TeamTypeTwo->HeapID);
 	switch (Type) {
 		case AIT_ENEMY_OWNS_X_COND_N:
 		case AIT_HOUSE_OWNS_X_COND_N:
@@ -158,16 +170,8 @@ void AITriggerTypeClass::Compute_CRC(CRCEngine & crc) const
 			crc(Params.Condition);
 			break;
 	}
-
-	crc(CurWeight);
-	crc(MinWeight);
-	crc(MaxWeight);
-	crc(IsAvailableInSkirmish);
-	crc(IsEnabledInEasy);
-	crc(IsEnabledInMedium);
-	crc(IsEnabledInHard);
-	crc(MultiSide);
-	crc(IsForBaseDefense);
+	crc(TimesSucceded);
+	crc(TimesExecuted);
 }
 
 /// Spring?
