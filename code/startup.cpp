@@ -460,7 +460,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 
 	// Handed over now because the exception path may not ask the logger for anything: the
 	// thread that crashed may be the one holding the logger's lock.
-	Exception_Register_Log_File(Debug_Log_File_Name());
+	Exception_Register_Log_File((const char *)Debug_Log_File_Path().u8string().c_str());
 
 	// LZO asks for this before any codec call. It validates rather than initializes, and a
 	// vendored static build cannot fail it, but thirdparty/lzo is upgraded in place and a
@@ -509,7 +509,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 #ifdef _DEBUG
 	// Debug builds show the console without -XC, except to a headless run, which shows nothing.
 	if (!Headless::Is_Active()) {
-		Debug_Init_Console();
+		Debug_Enable_Console();
 	}
 #endif
 

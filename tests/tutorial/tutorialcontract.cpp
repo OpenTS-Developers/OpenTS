@@ -14,6 +14,7 @@
 #include <cstring>
 #include <string>
 
+#include "dbgprint.h"
 #include "ini.h"
 #include "tutorial.h"
 #include "xstraw.h"
@@ -78,6 +79,7 @@ TEST_CASE("a second base read layers on top")
 // Anything else is refused rather than read as the number in front of it.
 TEST_CASE("an entry name has to be a whole number")
 {
+	Debug_Init(0, (const char **)NULL);
 	INIClass ini;
 	Read(ini,
 		"[Tutorial]\n"

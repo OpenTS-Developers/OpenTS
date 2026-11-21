@@ -16,20 +16,40 @@
 #include "dbgprint.h"
 
 #include "opents_build.h"
+
+#ifdef _WIN32
 #include "win.h"
 
-#include <shellapi.h>
-
-#include <algorithm>
-#include <cerrno>
 #include <conio.h>
-#include <cstdarg>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <string>
+#include <shellapi.h>
+#else
+#include <unistd.h>
+#endif
 
-#define CONSOLE_WINDOW_NAME		"Debug Console"
+#ifdef __APPLE__
+// For parsing .plist files.
+#include <libxml/parser.h>
+#endif
+
+#include <atomic>
+#include <chrono>
+#include <cstdarg>
+#include <cstdint>
+#include <cstdio>
+#include <ctime>
+#include <filesystem>
+#include <format>
+#include <fstream>
+#include <iostream>
+#include <mutex>
+#include <optional>
+#include <regex>
+#include <string>
+#include <system_error>
+#include <thread>
+#include <vector>
+
+#define CONSOLE_WINDOW_NAME "Debug Console"
 
 #ifdef _DEBUG
 static char const BuildType[] = "debug";
@@ -37,143 +57,371 @@ static char const BuildType[] = "debug";
 static char const BuildType[] = "release";
 #endif
 
-static char const DebugTruncationNotice[] = "\n*** Log size limit reached. Nothing further will be written to this file. ***\n";
+static char const DebugTruncationNotice[] = "\n\n*** Log size limit reached. Nothing further will be written to this file. ***\n";
 
 static constexpr size_t DEBUG_MESSAGE_MAX = 4096;
 static constexpr unsigned DEBUG_LOG_MAX_AGE_DAYS = 14;
-static constexpr unsigned __int64 DEBUG_LOG_MAX_BYTES = 64ui64 * 1024ui64 * 1024ui64;
-static constexpr unsigned __int64 DEBUG_LOG_NOTICE_RESERVE = sizeof(DebugTruncationNotice) - 1;
-static constexpr unsigned __int64 DEBUG_LOG_BUDGET = DEBUG_LOG_MAX_BYTES - DEBUG_LOG_NOTICE_RESERVE;
+static constexpr uint64_t DEBUG_LOG_MAX_BYTES = (uint64_t)64 * 1024 * 1024;
+static constexpr uint64_t DEBUG_LOG_NOTICE_RESERVE = sizeof(DebugTruncationNotice) - 1;
+static constexpr uint64_t DEBUG_LOG_BUDGET = DEBUG_LOG_MAX_BYTES - DEBUG_LOG_NOTICE_RESERVE;
 static constexpr size_t DEBUG_CONSOLE_REPLAY_MAX = 64 * 1024;
 
-static SRWLOCK DebugLock = SRWLOCK_INIT;
-static DWORD DebugLockOwner = 0;
-static bool DebugInitDone = false;
-static bool AtLineStart = true;
-static bool ConsoleActive = false;
-static HANDLE DebugFile = INVALID_HANDLE_VALUE;
-static HANDLE DebugConsole = INVALID_HANDLE_VALUE;
-static char DebugDirectory[MAX_PATH];
-static char DebugFileName[MAX_PATH];
-static unsigned __int64 DebugBytesWritten = 0;
+typedef std::chrono::time_point<std::chrono::system_clock> system_time_point;
 
-// Text logged before the console opens, written to it when it does. Past the limit, the rest
-// of that text is in the log file only.
-static std::string ConsoleReplay;
-
-/// <summary>
-/// Reports whether the command line asks for the debug console. The game's own parser runs
-/// too late to catch the messages written during early startup, so the raw command line is
-/// read here instead.
-/// </summary>
-static bool Command_Line_Requests_Console(void)
+class EarlyInitMessage
 {
-	int argc = 0;
-	LPWSTR * argv = CommandLineToArgvW(GetCommandLineW(), &argc);
-
-	if (argv == NULL) {
-		return(false);
-	}
-
-	bool requested = false;
-
-	// Index zero is the executable path, which may itself look like an option.
-	for (int index = 1; index < argc && !requested; index++) {
-		wchar_t const * token = argv[index];
-
-		if (token[0] != L'-' || (token[1] != L'X' && token[1] != L'x')) {
-			continue;
+	public:
+		EarlyInitMessage(const system_time_point & timestamp_utc_in, const std::string_view & text_in, bool with_prefix_in) :
+			timestamp_utc(timestamp_utc_in),
+			text(text_in),
+			with_prefix(with_prefix_in)
+		{
 		}
 
-		for (wchar_t const * code = token + 2; *code != L'\0'; code++) {
-			if (*code == L'C' || *code == L'c') {
-				requested = true;
-				break;
+		system_time_point timestamp_utc;
+		std::string text;
+		bool with_prefix;
+};
+
+// Lazy Initialization singleton to make sure the module's state is valid
+// when accessed through static initializers.
+class DebugPrint
+{
+	private:
+		DebugPrint() :
+			Initialized(false),
+			Destroyed(false),
+			AtLineStart(true),
+			ConsoleActive(false),
+			File(NULL),
+			FileBytesWritten(0),
+#ifdef _WIN32
+			DebugConsole(INVALID_HANDLE_VALUE),
+			ConsoleBufFill(0),
+#endif
+			UTCtoLocal(std::chrono::seconds(0)),
+			ArgsConsoleRequested(false),
+			ArgsFullCommandLine(u8"(unknown)")
+		{
+		}
+
+		~DebugPrint()
+		{
+			std::lock_guard<std::recursive_mutex> lock(Lock);
+
+			if (!Initialized && EarlyLogReplay.has_value()) {
+				std::cerr << "Warning: Messages logged with DebugString(), but Debug_Init() was never called!" << std::endl;
 			}
+#ifdef _WIN32
+			Flush_Console_Locked();
+#endif
+			if (File) {
+				fclose(File);
+				File = NULL;
+			}
+			Destroyed = true;
 		}
-	}
 
-	LocalFree(argv);
-	return(requested);
+	public:
+		static DebugPrint & instance(void)
+		{
+			static DebugPrint global_state;
+			return global_state;
+		}
+
+		template<typename T>
+		void Debug_Command_Line_Parse(int argc, const T * argv[]);
+		std::filesystem::path Get_Logging_Directory(void);
+		bool Enable_Console_Locked(void);
+#ifdef _WIN32
+		void Flush_Console_Locked(void);
+#endif
+		void Init_Locked(void);
+		void Write_Text_Locked(char const * text, size_t length);
+		void Write_Message_Locked(char const * buffer, size_t length, bool with_prefix, const system_time_point * msg_ts = NULL);
+		void Write_Banner_Locked(const system_time_point & started_utc);
+		void Emit(char const * buffer, size_t length, bool with_prefix);
+
+		// Recursive mutex allows calling debug functions from within debug functions.
+		std::recursive_mutex Lock;
+		bool Initialized;
+		// Read without the lock by callers checking whether the logger still exists.
+		std::atomic<bool> Destroyed;
+		bool AtLineStart;
+		bool ConsoleActive;
+		std::filesystem::path Directory;
+		std::filesystem::path FilePath;
+		// C++20 doesn't support std::ios::noreplace (added in C++23), use C API with "x" flag.
+		FILE * File;
+		uint64_t FileBytesWritten;
+
+#ifdef _WIN32
+		// Implement our own console buffering on Windows, since the std::cout stuff is slow.
+		HANDLE DebugConsole;
+		char ConsoleBuf[BUFSIZ];
+		size_t ConsoleBufFill;
+#endif
+
+		// Needed for fast timestamp evaluation. Not accurate when running the game during a DST switch.
+		std::chrono::seconds UTCtoLocal;
+
+		// Information collected from command-line arguments.
+		bool ArgsConsoleRequested;
+		std::u8string ArgsUserDirectory;
+		std::u8string ArgsFullCommandLine;
+
+		// Text logged before Debug_Init() is called. No limit is in place, it's expected that only
+		// a handful of messages will be generated by static initializers of other modules. Destroyed
+		// after Debug_Init() is called.
+		std::optional<std::vector<EarlyInitMessage>> EarlyLogReplay;
+
+		// Text logged before the console opens, written to it when it does. Past the limit, the rest
+		// of that text is in the log file only. Destroyed after the console is opened.
+		std::optional<std::string> ConsoleReplay;
+};
+
+static void Assign_Arg_String(std::u8string & arg_str, const std::u8string_view & value, const std::u8string_view & defVal)
+{
+	(void)defVal;
+	arg_str = value;
 }
 
+#ifdef _WIN32
+static void Assign_Arg_String(std::u8string & arg_str, const std::wstring_view & val_str, const std::u8string_view & defVal)
+{
+	int buf_siz = WideCharToMultiByte(CP_UTF8, 0, val_str.data(), val_str.size(), NULL, 0, NULL, NULL);
+	if (buf_siz > 0) {
+		arg_str.resize(buf_siz);
+		int conv_count = WideCharToMultiByte(CP_UTF8, 0, val_str.data(), val_str.size(), reinterpret_cast<char *>(arg_str.data()), arg_str.size(), NULL, NULL);
+		if (conv_count > 0) {
+			// Should realistically never happen, but just to be sure.
+			if ((size_t)conv_count < arg_str.size()) {
+				arg_str.resize(conv_count);
+			}
+
+			// success
+			return;
+		}
+	}
+	arg_str = defVal;
+}
+#endif
+
+/// <summary>
+/// Parse the command-line arguments relevant for the debug print module. The game's
+/// own parser runs too late to catch the messages written during early startup,
+/// so the raw command line is read here instead.
+/// </summary>
+template<typename T>
+void DebugPrint::Debug_Command_Line_Parse(int argc, const T * argv[])
+{
+	if (argv == NULL) {
+		return;
+	}
+
+	bool console_requested = false;
+	std::basic_string<T> full_cmdline;
+	std::basic_string<T> user_dir;
+
+	// Index zero is the executable path, which may itself look like an option.
+	for (int index = 1; index < argc; index++) {
+		T const * token = argv[index];
+
+		if (token[0] == L'-' && (token[1] == L'X' || token[1] == L'x')) {
+			for (T const * code = token + 2; *code != L'\0'; code++) {
+				if (*code == L'C' || *code == L'c') {
+					console_requested = true;
+					break;
+				}
+			}
+		}
+
+		if constexpr (sizeof(T) == 1) {
+
+			const char * prefix = "-USERDIR=";
+			size_t prefix_len = strlen(prefix);
+			size_t token_len = strlen(reinterpret_cast<const char *>(token));
+
+			if (token_len >= prefix_len && strnicmp(reinterpret_cast<const char *>(token), prefix, prefix_len) == 0) {
+				user_dir = std::basic_string<T>(&token[prefix_len], token_len - prefix_len);
+			}
+		} else {
+			const wchar_t * prefix = L"-USERDIR=";
+			size_t prefix_len = wcslen(prefix);
+			size_t token_len = wcslen(token);
+
+			if (token_len >= prefix_len && _wcsnicmp(token, prefix, prefix_len) == 0) {
+				user_dir = std::basic_string<T>(&token[prefix_len], token_len - prefix_len);
+			}
+		}
+
+		// The arguments only. The executable path usually carries the account name, and re-joining
+		// the arguments loses the shell's original quoting, which a diagnostic can live without.
+		if (index > 1) {
+			full_cmdline.push_back(L' ');
+		}
+		full_cmdline += token;
+	}
+	if (full_cmdline.empty()) {
+		ArgsFullCommandLine = u8"(none)";
+	} else {
+		Assign_Arg_String(ArgsFullCommandLine, full_cmdline, u8"(unknown)");
+	}
+	if (!user_dir.empty()) {
+		Assign_Arg_String(ArgsUserDirectory, user_dir, u8"");
+	}
+	if (console_requested) {
+		ArgsConsoleRequested = true;
+	}
+}
+
+
+#ifdef _WIN32
+static std::filesystem::path Get_Executable_Directory(void)
+{
+	std::vector<wchar_t> path_buf;
+	path_buf.resize(MAX_PATH);
+
+	DWORD path_len = 0;
+	bool path_truncated;
+	do {
+		path_len = GetModuleFileNameW(GetModuleHandle(NULL), path_buf.data(), path_buf.size());
+		path_truncated = false;
+
+		if (path_len == 0) {
+			break;
+		} else if (path_len == path_buf.size()) {
+			path_buf.resize(path_buf.size() * 2);
+			path_truncated = true;
+		}
+	} while (path_truncated);
+
+	if (path_len == 0) {
+		return std::filesystem::path();
+	}
+	return std::filesystem::path(std::wstring_view(path_buf.data(), path_len)).remove_filename();
+}
+#endif
+
+
+/// <summary>
+/// Get the location of the directory appropriate for storing logs for OpenTS.
+/// </summary>
+std::filesystem::path DebugPrint::Get_Logging_Directory(void)
+{
+	// Trimmed the way the game trims -USERDIR, so both name the same folder.
+	std::u8string_view user_dir = ArgsUserDirectory;
+	size_t const first = user_dir.find_first_not_of(u8" \t");
+	if (first != std::u8string_view::npos) {
+		user_dir = user_dir.substr(first, user_dir.find_last_not_of(u8" \t") - first + 1);
+		std::filesystem::path user_path(user_dir);
+
+#ifdef _WIN32
+		// The game changes to the executable's folder before it reads -USERDIR, which is
+		// after this runs, so a relative path is taken from there too.
+		if (user_path.is_relative()) {
+			std::filesystem::path const exe_dir = Get_Executable_Directory();
+			if (!exe_dir.empty()) {
+				user_path = exe_dir / user_path;
+			}
+		}
+#endif
+		return user_path / u8"Debug";
+	}
+
+#if defined(_WIN32)
+
+	std::filesystem::path const exe_dir = Get_Executable_Directory();
+	if (!exe_dir.empty()) {
+		return exe_dir / u8"Debug";
+	}
+
+#elif defined(__APPLE__)
+
+	const char * home_path = getenv("HOME");
+	if (home_path != NULL && home_path[0] != '\0') {
+		return std::filesystem::path(std::u8string_view((const char8_t *)home_path, strlen(home_path))) / u8"Library" / u8"Logs" / u8"OpenTS";
+	}
+
+#else
+	const char * state_path = getenv("XDG_STATE_HOME");
+	if (state_path != NULL && state_path[0] != '\0') {
+		return std::filesystem::path(std::u8string_view((const char8_t *)state_path, strlen(state_path))) / u8"OpenTS";
+	}
+
+	const char * home_path = getenv("HOME");
+	if (home_path != NULL && home_path[0] != '\0') {
+		return std::filesystem::path(std::u8string_view((const char8_t *)home_path, strlen(home_path))) / u8".local" / u8"state" / u8"OpenTS";
+	}
+#endif
+
+	// If all else fails, store logs in the CWD
+	return std::filesystem::path(".") / "OpenTS-Logs";
+}
 
 /// <summary>
 /// Deletes files matching a pattern that were last written more than the given number of days
 /// ago. Directories are never removed.
 /// </summary>
-/// <param name="directory">Directory to search, without a trailing separator.</param>
-/// <param name="pattern">File name pattern, such as "DEBUG_*.LOG".</param>
-/// <param name="days">Age threshold in days. Values above 90 are rejected.</param>
+/// <param name="directory">Directory to search.</param>
+/// <param name="pattern">File name regex pattern, such as "DEBUG_.*\\.LOG".</param>
+/// <param name="days">Age threshold in days. Values above 3650, about ten years, are rejected.</param>
 /// <returns>True if the directory was searched.</returns>
-bool Delete_Files_Older_Than(char const * directory, char const * pattern, unsigned days)
+bool Delete_Files_Older_Than(const std::filesystem::path & directory, const std::string_view & pattern, unsigned int days)
 {
-	if (directory == NULL || pattern == NULL || days > 90) {
-		return(false);
+	if (directory.empty() || pattern.empty() || days > 3650) {
+		return (false);
 	}
 
-	SYSTEMTIME now;
-	FILETIME now_stamp;
-	GetSystemTime(&now);
-	if (!SystemTimeToFileTime(&now, &now_stamp)) {
-		return(false);
-	}
+	// Use "native encoding" regex - not perfect, but should be good enough.
+	// FIXME: Use ICU for proper UTF-8 regex support.
+	std::regex regex(pattern.cbegin(), pattern.cend(), std::regex::basic | std::regex::icase);
 
-	ULARGE_INTEGER cutoff;
-	cutoff.LowPart = now_stamp.dwLowDateTime;
-	cutoff.HighPart = now_stamp.dwHighDateTime;
+	std::chrono::time_point now = std::chrono::file_clock::now();
+	std::chrono::time_point cutoff = now - std::chrono::days(days);
+	std::vector<std::filesystem::path> to_remove;
+	bool dir_searched = false;
 
-	unsigned __int64 const age = (unsigned __int64)days * 24ui64 * 60ui64 * 60ui64 * 10000000ui64;
-	if (cutoff.QuadPart < age) {
-		return(false);
-	}
-	cutoff.QuadPart -= age;
-
-	char search[MAX_PATH];
-	snprintf(search, sizeof(search), "%s\\%s", directory, pattern);
-
-	WIN32_FIND_DATA found;
-	HANDLE search_handle = FindFirstFile(search, &found);
-	if (search_handle == INVALID_HANDLE_VALUE) {
-		return(false);
-	}
-
-	do {
-		if ((found.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0) {
-			continue;
+	std::error_code ec;
+	for (auto iter = std::filesystem::directory_iterator {directory, ec}; iter != end(iter); iter.increment(ec)) {
+		if (ec) {
+			break;
 		}
+		const std::filesystem::directory_entry & dir_entry = *iter;
+		const std::u8string fname = dir_entry.path().filename().u8string();
+		const std::string_view fname_cast((const char *)fname.data(), fname.size());
 
-		ULARGE_INTEGER written;
-		written.LowPart = found.ftLastWriteTime.dwLowDateTime;
-		written.HighPart = found.ftLastWriteTime.dwHighDateTime;
-
-		if (written.QuadPart == 0 || written.QuadPart >= cutoff.QuadPart) {
-			continue;
+		if (std::regex_match(fname_cast.cbegin(), fname_cast.cend(), regex)) {
+			// A file another process removes during the search has no time to read, and is skipped.
+			std::error_code entry_ec;
+			std::filesystem::file_time_type const written = dir_entry.last_write_time(entry_ec);
+			if (!entry_ec && written < cutoff && !dir_entry.is_directory(entry_ec) && !entry_ec) {
+				to_remove.push_back(dir_entry.path());
+			}
 		}
+		dir_searched = true;
+	}
+	for (auto const & path : to_remove) {
+		std::filesystem::remove(path, ec);
+	}
 
-		char victim[MAX_PATH];
-		snprintf(victim, sizeof(victim), "%s\\%s", directory, found.cFileName);
-		DeleteFile(victim);
-
-	} while (FindNextFile(search_handle, &found));
-
-	FindClose(search_handle);
-	return(true);
+	return dir_searched;
 }
 
+#ifdef _WIN32
 
 /// <summary>
 /// Allocates the console and points the standard streams at it. The caller holds the logging
 /// lock.
 /// </summary>
-static void Init_Console_Locked(void)
+bool DebugPrint::Enable_Console_Locked(void)
 {
 	if (ConsoleActive) {
-		return;
+		return true;
 	}
 
-	if (!AllocConsole()) {
-		return;
+	if (!Initialized || !AllocConsole()) {
+		return false;
 	}
 
 	SetConsoleTitle(CONSOLE_WINDOW_NAME);
@@ -227,17 +475,89 @@ static void Init_Console_Locked(void)
 		}
 	}
 
+	ConsoleBufFill = 0;
 	ConsoleActive = true;
 
-	if (DebugConsole != INVALID_HANDLE_VALUE && !ConsoleReplay.empty()) {
+	if (DebugConsole != INVALID_HANDLE_VALUE && ConsoleReplay.has_value() && !ConsoleReplay->empty()) {
 		DWORD actual;
-		WriteConsole(DebugConsole, ConsoleReplay.data(), (DWORD)ConsoleReplay.size(), &actual, NULL);
+		WriteConsole(DebugConsole, ConsoleReplay->data(), (DWORD)ConsoleReplay->size(), &actual, NULL);
 	}
-	std::string().swap(ConsoleReplay);
+	ConsoleReplay.reset();
+	return true;
 }
 
 
-static void Write_Banner_Locked(SYSTEMTIME const & started);
+/// <summary>
+/// Writes the text still held in the console buffer. The caller holds the logging lock.
+/// </summary>
+void DebugPrint::Flush_Console_Locked(void)
+{
+	if (ConsoleActive && ConsoleBufFill > 0) {
+		DWORD actual;
+		WriteConsole(DebugConsole, ConsoleBuf, (DWORD)ConsoleBufFill, &actual, NULL);
+	}
+	ConsoleBufFill = 0;
+}
+
+#else
+
+/// <summary>
+/// Enables logging to the console. Expects that the system can handle UTF-8
+/// by default, only very old UNIX systems do not. The caller holds
+/// the logging lock.
+/// </summary>
+bool DebugPrint::Enable_Console_Locked(void)
+{
+	if (ConsoleActive) {
+		return true;
+	}
+
+	if (!Initialized) {
+		return false;
+	}
+
+	ConsoleActive = true;
+
+	if (ConsoleReplay.has_value() && !ConsoleReplay->empty()) {
+		std::cout << *ConsoleReplay;
+		std::cout.flush();
+	}
+	ConsoleReplay.reset();
+	return true;
+}
+#endif
+
+
+/// <summary>
+/// Determines the time difference in seconds between the specified reference time in UTC
+/// and the local time. Useful for determining the current local time from <c>system_clock</c>
+/// timestamps, but only accurate until the next DST switch.
+/// </summary>
+/// <param name="reference_time">A <c>system_clock</c> timestamp. Should be close to the current time.</param>
+static std::chrono::seconds Get_UTC_Local_Offset(system_time_point reference_time)
+{
+	time_t utc_time = std::chrono::system_clock::to_time_t(reference_time);
+	struct tm buf;
+
+#ifdef _WIN32
+	errno_t rc = localtime_s(&buf, &utc_time);
+	if (rc != 0) {
+		return std::chrono::seconds(0);
+	}
+#else
+	struct tm * ret = localtime_r(&utc_time, &buf);
+	if (ret == NULL) {
+		return std::chrono::seconds(0);
+	}
+#endif
+	const std::chrono::hh_mm_ss time_local {std::chrono::seconds((((buf.tm_hour * 60) + buf.tm_min) * 60) + buf.tm_sec)};
+	const std::chrono::year_month_day date_local {std::chrono::year(buf.tm_year + 1900) / (buf.tm_mon + 1) / buf.tm_mday};
+
+	const auto ref_time_utc_rounded = std::chrono::time_point_cast<std::chrono::seconds>(std::chrono::system_clock::from_time_t(utc_time));
+	const auto ref_time_local = std::chrono::time_point_cast<std::chrono::seconds>(std::chrono::sys_days {date_local} + time_local.to_duration());
+
+	return ref_time_local - ref_time_utc_rounded;
+}
 
 
 /// <summary>
@@ -245,105 +565,197 @@ static void Write_Banner_Locked(SYSTEMTIME const & started);
 /// line asks for it. The caller holds the logging lock. A log that cannot be opened leaves the
 /// debugger and console sinks working.
 /// </summary>
-static void Init_Locked(void)
+void DebugPrint::Init_Locked(void)
 {
-	if (DebugInitDone) {
+	if (Initialized) {
 		return;
 	}
-	DebugInitDone = true;
 
-	char path_to_exe[MAX_PATH];
-	char drive[_MAX_DRIVE];
-	char dir[_MAX_DIR];
+	system_time_point now_utc;
 
-	// The log belongs beside the executable, which is not yet the current directory.
-	if (GetModuleFileName(GetModuleHandle(NULL), path_to_exe, sizeof(path_to_exe)) != 0) {
-		_splitpath(path_to_exe, drive, dir, NULL, NULL);
-		snprintf(DebugDirectory, sizeof(DebugDirectory), "%s%sDebug", drive, dir);
+	if (EarlyLogReplay.has_value() && !EarlyLogReplay->empty()) {
+		now_utc = (*EarlyLogReplay)[0].timestamp_utc;
+	} else {
+		now_utc = std::chrono::system_clock::now();
 	}
 
-	SYSTEMTIME now;
-	GetLocalTime(&now);
+	// Evaluate local timezone offset needed for fast timestamp generation.
+	UTCtoLocal = Get_UTC_Local_Offset(now_utc);
 
-	char timestamp[32];
-	snprintf(timestamp, sizeof(timestamp), "%02u-%02u-%04u_%02u-%02u-%02u",
-				now.wDay, now.wMonth, now.wYear, now.wHour, now.wMinute, now.wSecond);
+	// Round down the time to seconds, to avoid showing decimal digits in formatted string.
+	const auto now_local_sec = std::chrono::time_point_cast<std::chrono::seconds>(now_utc + UTCtoLocal);
+	Directory = Get_Logging_Directory();
 
-	if (DebugDirectory[0] != '\0'
-		&& (CreateDirectory(DebugDirectory, NULL) || GetLastError() == ERROR_ALREADY_EXISTS)) {
+	if (File != NULL) {
+		fclose(File);
+		File = NULL;
+	}
 
-		Delete_Files_Older_Than(DebugDirectory, "DEBUG_*.LOG", DEBUG_LOG_MAX_AGE_DAYS);
+	std::error_code ec;
+	std::filesystem::create_directories(Directory, ec);
+	if (ec) {
+		Directory.clear();
+	} else {
+		Delete_Files_Older_Than(Directory, "DEBUG_.*\\.LOG", DEBUG_LOG_MAX_AGE_DAYS);
+		FilePath = Directory / std::format("DEBUG_{:%d-%m-%Y_%H-%M-%S}.LOG", now_local_sec);
 
-		snprintf(DebugFileName, sizeof(DebugFileName), "%s\\DEBUG_%s.LOG", DebugDirectory, timestamp);
-		DebugFile = CreateFile(DebugFileName, GENERIC_WRITE, FILE_SHARE_READ, NULL,
-										CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+#ifdef _WIN32
+		File = _wfopen(FilePath.c_str(), L"wxb");
+#else
+		File = fopen(FilePath.c_str(), "wxb");
+#endif
 
 		// A second process started in the same second must not disturb the first one's log.
-		if (DebugFile == INVALID_HANDLE_VALUE) {
-			snprintf(DebugFileName, sizeof(DebugFileName), "%s\\DEBUG_%s_%lu.LOG",
-						DebugDirectory, timestamp, GetCurrentProcessId());
-			DebugFile = CreateFile(DebugFileName, GENERIC_WRITE, FILE_SHARE_READ, NULL,
-											CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+		if (File == NULL) {
+#ifdef _WIN32
+			DWORD process_id = GetCurrentProcessId();
+#else
+			pid_t process_id = getpid();
+#endif
+			FilePath = Directory / std::format("DEBUG_{:%d-%m-%Y_%H-%M-%S}_{}.LOG", now_local_sec, process_id);
+
+#ifdef _WIN32
+			File = _wfopen(FilePath.c_str(), L"wxb");
+#else
+			File = fopen(FilePath.c_str(), "wxb");
+#endif
 		}
 
-		if (DebugFile == INVALID_HANDLE_VALUE) {
-			DebugFileName[0] = '\0';
+		if (File == NULL) {
+			FilePath.clear();
 		}
 	}
+	Initialized = true;
 
-	if (Command_Line_Requests_Console()) {
-		Init_Console_Locked();
+	if (ArgsConsoleRequested) {
+		Enable_Console_Locked();
 	}
 
 	// Last, so that the banner heads the log and also reaches a console that has just opened.
-	Write_Banner_Locked(now);
+	Write_Banner_Locked(now_utc);
+
+	if (EarlyLogReplay.has_value()) {
+		for (const EarlyInitMessage & msg : *EarlyLogReplay) {
+			Write_Message_Locked(msg.text.data(), msg.text.size(), msg.with_prefix, &msg.timestamp_utc);
+		}
+	}
+	EarlyLogReplay.reset();
 }
 
 
 /// <summary>
 /// Writes raw text to every enabled sink. The caller holds the logging lock.
+/// The string buffer must be zero-terminated for OutputDebugString() to work correctly.
+/// When the text ends with a newline, the output buffers are flushed, so that the latest
+/// record is available in case of an imminent crash.
 /// </summary>
-static void Write_Text_Locked(char const * text, size_t length)
+/// <param name="text">String buffer to write. Must be zero-terminated.</param>
+/// <param name="length">Number of bytes in <c>text</c> to write.</param>
+void DebugPrint::Write_Text_Locked(char const * text, size_t length)
 {
-	DWORD actual;
-
-	if (DebugFile != INVALID_HANDLE_VALUE) {
-
-		// The notice is paid for out of the reserve, so the file never passes its limit.
-		if (DebugBytesWritten + length > DEBUG_LOG_BUDGET) {
-			WriteFile(DebugFile, DebugTruncationNotice, (DWORD)DEBUG_LOG_NOTICE_RESERVE, &actual, NULL);
-			CloseHandle(DebugFile);
-			DebugFile = INVALID_HANDLE_VALUE;
-		} else {
-			WriteFile(DebugFile, text, (DWORD)length, &actual, NULL);
-			DebugBytesWritten += length;
-		}
+	if (text == NULL || length == 0) {
+		return;
 	}
 
+	bool should_flush = false;
+	if (text[length - 1] == '\n') {
+		should_flush = true;
+	}
+
+	if (File != NULL && !ferror(File)) {
+
+		size_t file_bytes_total = std::min(FileBytesWritten + length, DEBUG_LOG_BUDGET);
+		if (file_bytes_total > FileBytesWritten) {
+			fwrite(text, 1, file_bytes_total - FileBytesWritten, File);
+			FileBytesWritten = file_bytes_total;
+		}
+
+		// The notice is paid for out of the reserve, so the file never passes its limit.
+		if (file_bytes_total == DEBUG_LOG_BUDGET) {
+			fwrite(DebugTruncationNotice, 1, DEBUG_LOG_NOTICE_RESERVE, File);
+			fclose(File);
+			File = NULL;
+		} else if (should_flush) {
+			fflush(File);
+		}
+
+	} else if (File != NULL) {
+		fclose(File);
+		File = NULL;
+	}
+
+#ifdef _WIN32
 	// Reporting to a debugger that is not there costs an exception round trip per message,
 	// which is far more than the rest of this function put together.
 	if (IsDebuggerPresent()) {
 		OutputDebugString(text);
 	}
+#endif
 
 	if (ConsoleActive) {
-		if (DebugConsole != INVALID_HANDLE_VALUE) {
-			WriteConsole(DebugConsole, text, (DWORD)length, &actual, NULL);
+#ifdef _WIN32
+		size_t to_write = length;
+		size_t wrote_bytes = 0;
+
+		while (to_write > 0) {
+			size_t free_bytes = sizeof(ConsoleBuf) - ConsoleBufFill;
+			size_t can_write = std::min(free_bytes, to_write);
+
+			if (can_write == 0) {
+				Flush_Console_Locked();
+				free_bytes = sizeof(ConsoleBuf);
+				can_write = std::min(free_bytes, to_write);
+			}
+
+			if (can_write > 0) {
+				memcpy(&ConsoleBuf[ConsoleBufFill], &text[wrote_bytes], can_write);
+				ConsoleBufFill += can_write;
+				wrote_bytes += can_write;
+				to_write -= can_write;
+			}
 		}
-	} else if (ConsoleReplay.size() + length <= DEBUG_CONSOLE_REPLAY_MAX) {
-		ConsoleReplay.append(text, length);
+
+		if (should_flush || ConsoleBufFill == sizeof(ConsoleBuf)) {
+			Flush_Console_Locked();
+		}
+#else
+		std::cout.write(text, length);
+		if (should_flush) {
+			std::cout.flush();
+		}
+#endif
+	} else {
+		if (!ConsoleReplay.has_value()) {
+			ConsoleReplay.emplace();
+		}
+		if (ConsoleReplay->size() + length <= DEBUG_CONSOLE_REPLAY_MAX) {
+			ConsoleReplay->append(text, length);
+		}
 	}
 }
 
 
 /// <summary>
 /// Writes one finished message, stamping the record prefix when one is due. The caller holds
-/// the logging lock.
+/// the logging lock. The string buffer must be zero-terminated for OutputDebugString()
+/// to work correctly. In the event that Debug_Init() had not yet been called, the message
+/// is recorded for processing at a later time.
 /// </summary>
-static void Write_Message_Locked(char const * buffer, bool with_prefix)
+/// <param name="buffer">String buffer to write. Must be zero-terminated.</param>
+/// <param name="length">Length of the string in the provided buffer.</param>
+/// <param name="with_prefix">Whether or not to stamp the message.</param>
+/// <param name="msg_ts">Optional timestamp associated with the message.</param>
+void DebugPrint::Write_Message_Locked(char const * buffer, size_t length, bool with_prefix, const system_time_point * msg_ts)
 {
-	size_t const length = strlen(buffer);
-	if (length == 0) {
+	if (length == 0 || buffer == NULL) {
+		return;
+	}
+
+	if (!Initialized) {
+		if (!EarlyLogReplay.has_value()) {
+			EarlyLogReplay.emplace();
+		}
+		EarlyLogReplay->emplace_back(std::chrono::system_clock::now(), std::string_view(buffer, length), with_prefix);
 		return;
 	}
 
@@ -351,19 +763,48 @@ static void Write_Message_Locked(char const * buffer, bool with_prefix)
 	// line assembled from several calls is stamped where it starts. Prefix and message go out
 	// together to keep this to one write per call.
 	if (with_prefix && AtLineStart) {
-		SYSTEMTIME now;
-		GetLocalTime(&now);
+		system_time_point now_utc;
 
-		char stamped[DEBUG_MESSAGE_MAX + 32];
-		int const written = snprintf(stamped, sizeof(stamped), "[%02u:%02u:%02u.%03u] %s",
-												now.wHour, now.wMinute, now.wSecond, now.wMilliseconds, buffer);
-		if (written > 0) {
-			// snprintf reports the length it wanted, which is not what was stored.
-			size_t const kept = std::min(size_t(written), sizeof(stamped) - 1);
-			Write_Text_Locked(stamped, kept);
-			AtLineStart = buffer[length - 1] == '\n';
-			return;
+		if (msg_ts != NULL) {
+			now_utc = *msg_ts;
+		} else {
+			now_utc = std::chrono::system_clock::now();
 		}
+
+		// Evaluation using std::chrono::current_zone()->to_local() and std::format() too slow under Debug build.
+		// This approach trades accuracy for speed, e.g. showing the wrong time if a DST switch happens while the game is running.
+		const auto now_utc_millis = std::chrono::time_point_cast<std::chrono::milliseconds>(now_utc + UTCtoLocal);
+
+		auto millis = now_utc_millis.time_since_epoch().count();
+		auto secs   = millis / 1000;
+		auto mins   = secs / 60;
+		auto hours  = mins / 60;
+
+		// snprintf() is too slow on the 32-bit Debug build, construct timestamp string manually.
+		unsigned int hours_field  = hours  % 24;
+		unsigned int mins_field   = mins   % 60;
+		unsigned int secs_field   = secs   % 60;
+		unsigned int millis_field = millis % 1000;
+
+		char timestamp_buf[16];
+		timestamp_buf[0]  = '[';
+		timestamp_buf[1]  = '0' + hours_field / 10;
+		timestamp_buf[2]  = '0' + hours_field % 10;
+		timestamp_buf[3]  = ':';
+		timestamp_buf[4]  = '0' + mins_field / 10;
+		timestamp_buf[5]  = '0' + mins_field % 10;
+		timestamp_buf[6]  = ':';
+		timestamp_buf[7]  = '0' + secs_field / 10;
+		timestamp_buf[8]  = '0' + secs_field % 10;
+		timestamp_buf[9]  = '.';
+		timestamp_buf[10] = '0' + millis_field / 100;
+		timestamp_buf[11] = '0' + (millis_field / 10) % 10;
+		timestamp_buf[12] = '0' + millis_field % 10;
+		timestamp_buf[13] = ']';
+		timestamp_buf[14] = ' ';
+		timestamp_buf[15] = '\0';
+
+		Write_Text_Locked(timestamp_buf, 15);
 	}
 
 	Write_Text_Locked(buffer, length);
@@ -371,13 +812,263 @@ static void Write_Message_Locked(char const * buffer, bool with_prefix)
 }
 
 
+#if defined(__APPLE__)
+/// <summary>
+/// Retrieves a string identifying the operating system version from a PLIST file.
+/// </summary>
+/// <param name="plist_path">Filesystem path to the SystemVersion.plist file.</param>
+static std::string Get_PLIST_Version(const char * plist_path)
+{
+	// Explicit check to avoid warning on stderr from libxml2
+	std::error_code ec;
+	bool file_exists = std::filesystem::exists(std::filesystem::path {(const char8_t *)plist_path}, ec);
+	if (ec || !file_exists) {
+		return std::string();
+	}
+
+	xmlDocPtr doc = xmlParseFile(plist_path);
+	if (doc == NULL) {
+		return std::string();
+	}
+
+	xmlNodePtr root = xmlDocGetRootElement(doc);
+	if (root == NULL) {
+		// empty plist file
+		xmlFreeDoc(doc);
+		return std::string();
+	}
+
+	if (xmlStrcmp(root->name, (const xmlChar *)"plist") != 0) {
+		// bad root element
+		xmlFreeDoc(doc);
+		return std::string();
+	}
+	xmlNodePtr dict = NULL;
+
+	for (xmlNodePtr iter = root->xmlChildrenNode; iter != NULL; iter = iter->next) {
+		if (xmlStrcmp(iter->name, (const xmlChar *)"dict") == 0) {
+			dict = iter;
+			break;
+		}
+	}
+	if (dict == NULL) {
+		// missing dictionary
+		xmlFreeDoc(doc);
+		return std::string();
+	}
+
+	enum {
+		OSX_PLIST_BUILD = 0,
+		OSX_PLIST_COPYRIGHT = 1,
+		OSX_PLIST_PRODUCT = 2,
+		OSX_PLIST_VER = 3,
+		OSX_PLIST_UNKNOWN = 4
+	} next_plist_item;
+
+	std::string build;
+	std::string copyright;
+	std::string product;
+	std::string ver;
+
+	next_plist_item = OSX_PLIST_UNKNOWN;
+	bool have_data = false;
+	for (xmlNodePtr iter = dict->xmlChildrenNode; iter != NULL; iter = iter->next) {
+		if (xmlStrcmp(iter->name, (const xmlChar *)"key") == 0) {
+			next_plist_item = OSX_PLIST_UNKNOWN;
+			xmlChar * key = NULL;
+			if (iter->xmlChildrenNode) {
+				key = xmlNodeListGetString(doc, iter->xmlChildrenNode, 1);
+			}
+			if (key != NULL) {
+				if (xmlStrcmp(key, (const xmlChar *)"ProductBuildVersion") == 0) {
+					next_plist_item = OSX_PLIST_BUILD;
+				} else if (xmlStrcmp(key, (const xmlChar *)"ProductCopyright") == 0) {
+					next_plist_item = OSX_PLIST_COPYRIGHT;
+				} else if (xmlStrcmp(key, (const xmlChar *)"ProductName") == 0) {
+					next_plist_item = OSX_PLIST_PRODUCT;
+				} else if (xmlStrcmp(key, (const xmlChar *)"ProductUserVisibleVersion") == 0) {
+					next_plist_item = OSX_PLIST_VER;
+				}
+				xmlFree(key);
+			}
+		} else if (next_plist_item < OSX_PLIST_UNKNOWN && xmlStrcmp(iter->name, (const xmlChar *)"string") == 0) {
+			xmlChar * val = NULL;
+			if (iter->xmlChildrenNode) {
+				val = xmlNodeListGetString(doc, iter->xmlChildrenNode, 1);
+			}
+			if (val != NULL) {
+				switch (next_plist_item) {
+				case OSX_PLIST_BUILD:
+					build = (const char *)val;
+					have_data = true;
+					break;
+				case OSX_PLIST_COPYRIGHT:
+					copyright = (const char *)val;
+					have_data = true;
+					break;
+				case OSX_PLIST_PRODUCT:
+					product = (const char *)val;
+					have_data = true;
+					break;
+				case OSX_PLIST_VER:
+					ver = (const char *)val;
+					have_data = true;
+					break;
+				default:
+					break;
+				}
+				xmlFree(val);
+			}
+		}
+	}
+
+	xmlFreeDoc(doc);
+
+	if (have_data) {
+		return std::format("{} {} (build {}), Copyright {}", product, ver, build, copyright);
+	} else {
+		return std::string();
+	}
+}
+#elif !defined(_WIN32)
+
+
+/// <summary>
+/// Strip quotes from a quoted string. This function doesn't handle all corner-cases
+/// and escape sequences, so it shouldn't be used for data that will be further processed,
+/// though it should be sufficient for displaying text to the user where potential
+/// formatting errors are inconsequential.
+/// </summary>
+/// <param name="input">Quoted string to be copied without outer quotes.</param>
+static std::string Strip_Quotes(const std::string_view & input)
+{
+	std::string ret;
+	bool escape = false;
+
+	for (const char & c : input) {
+		switch (c) {
+		case '\\':
+			if (!escape) {
+				escape = true;
+			} else {
+				ret.push_back(c);
+				escape = false;
+			}
+			break;
+		case '"':
+			if (escape) {
+				ret.push_back(c);
+				escape = false;
+			}
+			break;
+		default:
+			ret.push_back(c);
+			escape = false;
+		}
+	}
+	return ret;
+}
+
+
+/// <summary>
+/// Retrieves a string identifying the operating system version from an os-release(5) file.
+/// This is applicable for Linux and various other systems like FreeBSD.
+/// </summary>
+/// <param name="path">Filesystem path to the os-release file.</param>
+static std::string Get_OS_Release_Version(const std::filesystem::path & path)
+{
+	std::ifstream file(path);
+
+	if (!file.is_open() || !file) {
+		return std::string();
+	}
+
+	std::string name;
+	std::string version;
+	std::string pretty_name;
+
+	std::regex name_regex("NAME=\\(.*\\)", std::regex::basic);
+	std::regex ver_regex("VERSION=\\(.*\\)", std::regex::basic);
+	std::regex pretty_name_regex("PRETTY_NAME=\\(.*\\)", std::regex::basic);
+
+	for (std::string line; std::getline(file, line);) {
+
+		std::smatch results;
+		if (name.empty() && std::regex_match(line, results, name_regex) && results.size() > 1) {
+			name = results[1];
+			if (name[0] == '"') {
+				name = Strip_Quotes(name);
+			}
+			continue;
+		}
+		if (version.empty() && std::regex_match(line, results, ver_regex) && results.size() > 1) {
+			version = results[1];
+			if (version[0] == '"') {
+				version = Strip_Quotes(version);
+			}
+			continue;
+		}
+		if (pretty_name.empty() && std::regex_match(line, results, pretty_name_regex) && results.size() > 1) {
+			pretty_name = results[1];
+			if (pretty_name[0] == '"') {
+				pretty_name = Strip_Quotes(pretty_name);
+			}
+			continue;
+		}
+	}
+
+	if (!pretty_name.empty()) {
+		return pretty_name;
+
+	} else if (!name.empty() && !version.empty()) {
+		return std::format("{} {}", name, version);
+
+	} else if (!version.empty()) {
+		return std::format("{} {}", "Linux", version);
+
+	} else {
+		return name;
+	}
+}
+#endif /* !defined(__WIN32) && !defined(__APPLE__) */
+
+
+#ifndef _WIN32
+/// <summary>
+/// Retrieves a string identifying the operating system version using the uname command.
+/// This is applicable for all UNIX-like operating systems.
+/// </summary>
+static std::string Get_UNAME(void)
+{
+	std::string buffer;
+	FILE * stream = popen("uname -a", "r");
+
+	if (stream) {
+		for (int c = getc(stream); c != EOF; c = getc(stream)) {
+			buffer.push_back(c);
+		}
+		int status = pclose(stream);
+
+		if (status == 0) {
+			while (buffer.back() == '\n') {
+				buffer.pop_back();
+			}
+		} else {
+			buffer.clear();
+		}
+	}
+
+	return buffer;
+}
+#endif
+
+
 /// <summary>
 /// Opens the log with the wordmark and the facts that identify the build and the run. The
-/// caller holds the logging lock, so the text goes through the unlocked sink directly;
-/// DebugStringNoPrefix would meet the re-entrancy guard and reach the debugger only.
+/// caller holds the logging lock.
 /// </summary>
-/// <param name="started">The time this run's log was opened.</param>
-static void Write_Banner_Locked(SYSTEMTIME const & started)
+/// <param name="started_utc">The time this run's log was opened.</param>
+void DebugPrint::Write_Banner_Locked(const system_time_point & started_utc)
 {
 	// A raw literal keeps the lettering readable, and keeps its backslashes out of the reach of
 	// escape processing. It opens on its own line so the rows line up here, which costs a
@@ -393,201 +1084,370 @@ R"ART(
 
 )ART";
 
-	Write_Message_Locked(Wordmark + 1, false);
+	Write_Message_Locked(&Wordmark[1], sizeof(Wordmark) - 2, false);
 
-	char line[512];
+	// Buffer, to avoid needlessly repeated allocs/deallocs with std::format()
+	std::string line;
 
-	snprintf(line, sizeof(line), "Version  : OpenTS %s (%s %s build)\n", OPENTS_VERSION, OPENTS_ARCH, BuildType);
-	Write_Message_Locked(line, false);
+	std::format_to(std::back_inserter(line), "Version  : OpenTS {} ({} {} build)\n", OPENTS_VERSION, OPENTS_ARCH, BuildType);
+	Write_Message_Locked(line.data(), line.size(), false);
+	line.clear();
 
-	snprintf(line, sizeof(line), "Commit   : %s on %s%s\n", OPENTS_COMMIT, OPENTS_BRANCH,
-				OPENTS_COMMIT_DIRTY ? " (modified)" : "");
-	Write_Message_Locked(line, false);
+	std::format_to(std::back_inserter(line), "Commit   : {} on {}{}\n", OPENTS_COMMIT, OPENTS_BRANCH, OPENTS_COMMIT_DIRTY ? " (modified)" : "");
+	Write_Message_Locked(line.data(), line.size(), false);
+	line.clear();
 
-	snprintf(line, sizeof(line), "Committed: %s\n", OPENTS_COMMIT_DATE);
-	Write_Message_Locked(line, false);
+	std::format_to(std::back_inserter(line), "Committed: {}\n", OPENTS_COMMIT_DATE);
+	Write_Message_Locked(line.data(), line.size(), false);
+	line.clear();
 
-	snprintf(line, sizeof(line), "Started  : %04u-%02u-%02u %02u:%02u:%02u\n",
-				started.wYear, started.wMonth, started.wDay,
-				started.wHour, started.wMinute, started.wSecond);
-	Write_Message_Locked(line, false);
 
+	// Display the started time in the local timezone, rounded down to seconds.
+	const auto started_utc_sec = std::chrono::time_point_cast<std::chrono::seconds>(started_utc);
+	const auto started_local_sec = started_utc_sec + UTCtoLocal;
+
+	std::format_to(std::back_inserter(line), "Started  : {}\n", started_local_sec);
+	Write_Message_Locked(line.data(), line.size(), false);
+	line.clear();
+
+#ifdef _WIN32
 	// Windows answers GetVersionEx with 6.2 for want of a compatibility manifest, so the real
 	// build number has to come from RtlGetVersion.
-	char system[64] = "unknown";
+	std::string system = "unknown";
 	HMODULE ntdll = GetModuleHandle("ntdll.dll");
 	if (ntdll != NULL) {
-		typedef LONG (WINAPI * RtlGetVersionType)(PRTL_OSVERSIONINFOW);
-		RtlGetVersionType const rtl_get_version =
-			(RtlGetVersionType)GetProcAddress(ntdll, "RtlGetVersion");
+		typedef LONG(WINAPI * RtlGetVersionType)(PRTL_OSVERSIONINFOW);
+		RtlGetVersionType const rtl_get_version = (RtlGetVersionType)GetProcAddress(ntdll, "RtlGetVersion");
 
 		if (rtl_get_version != NULL) {
-			RTL_OSVERSIONINFOW version = { 0 };
+			RTL_OSVERSIONINFOW version = {0};
 			version.dwOSVersionInfoSize = sizeof(version);
 			if (rtl_get_version(&version) == 0) {
-				snprintf(system, sizeof(system), "Windows %lu.%lu.%lu",
-							version.dwMajorVersion, version.dwMinorVersion, version.dwBuildNumber);
+				system = std::format("Windows {}.{}.{}", version.dwMajorVersion, version.dwMinorVersion, version.dwBuildNumber);
 			}
 		}
 	}
-
-	snprintf(line, sizeof(line), "System   : %s\n", system);
-	Write_Message_Locked(line, false);
+	std::format_to(std::back_inserter(line), "System   : {}\n", system);
+	Write_Message_Locked(line.data(), line.size(), false);
+	line.clear();
 
 	// Windows before 10 version 1903 ignores the manifest's request for UTF-8.
-	snprintf(line, sizeof(line), "Codepage : ANSI %u, OEM %u\n", GetACP(), GetOEMCP());
-	Write_Message_Locked(line, false);
+	std::format_to(std::back_inserter(line), "Codepage : ANSI {}, OEM {}\n", GetACP(), GetOEMCP());
+	Write_Message_Locked(line.data(), line.size(), false);
+	line.clear();
 
-	// The arguments only. The executable path usually carries the account name, and re-joining
-	// the arguments loses the shell's original quoting, which a diagnostic can live without.
-	char options[256] = "(none)";
-	int argc = 0;
-	LPWSTR * argv = CommandLineToArgvW(GetCommandLineW(), &argc);
+#else
+	std::string system;
+	std::string uname;
 
-	if (argv != NULL) {
-		size_t used = 0;
-		for (int index = 1; index < argc; index++) {
-			int const written = snprintf(options + used, sizeof(options) - used, "%s%ls",
-													used == 0 ? "" : " ", argv[index]);
-			if (written <= 0 || size_t(written) >= sizeof(options) - used) {
-				break;
-			}
-			used += size_t(written);
-		}
-		LocalFree(argv);
+#if defined(__APPLE__)
+	// Hidden file provides real OS information on Big Sur and later:
+	system = Get_PLIST_Version("/System/Library/CoreServices/.SystemVersionPlatform.plist");
+	if (system.empty()) {
+		system = Get_PLIST_Version("/System/Library/CoreServices/SystemVersion.plist");
+	}
+	if (system.empty()) {
+		system = Get_PLIST_Version("/System/Library/CoreServices/ServerVersion.plist");
+	}
+#else
+	system = Get_OS_Release_Version(u8"/etc/os-release");
+	if (system.empty()) {
+		system = Get_OS_Release_Version(u8"/usr/lib/os-release");
+	}
+#endif
+	uname = Get_UNAME();
+
+	if (system.empty() && !uname.empty()) {
+		std::swap(system, uname);
+	}
+	if (system.empty()) {
+		system = "unknown";
 	}
 
-	snprintf(line, sizeof(line), "Options  : %s\n", options);
-	Write_Message_Locked(line, false);
+	std::format_to(std::back_inserter(line), "System   : {}\n", system);
+	Write_Message_Locked(line.data(), line.size(), false);
+	line.clear();
 
-	Write_Message_Locked("--------------------------------------------------------------------------------\n", false);
+	if (!uname.empty()) {
+		std::format_to(std::back_inserter(line), "uname -a : {}\n", uname);
+		Write_Message_Locked(line.data(), line.size(), false);
+		line.clear();
+	}
+#endif
+
+	std::format_to(std::back_inserter(line), "Options  : {}\n", std::string_view((const char *)ArgsFullCommandLine.data(), ArgsFullCommandLine.size()));
+	Write_Message_Locked(line.data(), line.size(), false);
+	line.clear();
+
+	static char const Footer[] = "--------------------------------------------------------------------------------\n";
+	Write_Message_Locked(Footer, sizeof(Footer) - 1, false);
 }
 
 
 /// <summary>
-/// Takes the logging lock and reports one finished message.
+/// Takes the logging lock and reports one finished message. Can be called before Debug_Init(),
+/// but the messages will only be logged after Debug_Init() is called. The string buffer
+/// must be zero-terminated for OutputDebugString() to work correctly.
 /// </summary>
-static void Emit(char const * buffer, bool with_prefix)
+/// <param name="buffer">String buffer to write. Must be zero-terminated.</param>
+/// <param name="length">Length of the string in the provided buffer.</param>
+/// <param name="with_prefix">Whether or not to stamp the message.</param>
+void DebugPrint::Emit(char const * buffer, size_t length, bool with_prefix)
 {
-	DWORD const self = GetCurrentThreadId();
-
-	// A fault raised inside a logging call brings the handler back here on the same thread,
-	// where taking the lock again would deadlock. Such a message reaches the debugger only.
-	if (DebugLockOwner == self) {
-		if (IsDebuggerPresent()) {
-			OutputDebugString(buffer);
-		}
+	std::lock_guard<std::recursive_mutex> lock(Lock);
+	if (Destroyed) {
 		return;
 	}
-
-	AcquireSRWLockExclusive(&DebugLock);
-	DebugLockOwner = self;
-
-	Init_Locked();
-	Write_Message_Locked(buffer, with_prefix);
-
-	DebugLockOwner = 0;
-	ReleaseSRWLockExclusive(&DebugLock);
+	Write_Message_Locked(buffer, length, with_prefix);
 }
 
 
 /// <summary>
-/// Runs first time initialisation under the logging lock.
+/// Prepares the debug log and, when the command line asks for it, the debug console.
+/// Messages may be logged before this function is called, but they will only be emitted
+/// after Debug_Init() is invoked to configure the location of the logging directory.
+/// This is the variant for use with main(). The data in argv[] should be encoded in UTF-8.
 /// </summary>
-static void Init_Once(bool with_console)
+void Debug_Init(int argc, char const * argv[])
 {
-	AcquireSRWLockExclusive(&DebugLock);
-	DebugLockOwner = GetCurrentThreadId();
-
-	Init_Locked();
-	if (with_console) {
-		Init_Console_Locked();
+	DebugPrint & dbg = DebugPrint::instance();
+	if (dbg.Destroyed) {
+		return;
 	}
+	std::lock_guard<std::recursive_mutex> lock(dbg.Lock);
 
-	DebugLockOwner = 0;
-	ReleaseSRWLockExclusive(&DebugLock);
+	if (!dbg.Initialized) {
+		dbg.Debug_Command_Line_Parse(argc, (const char8_t **)argv);
+		dbg.Init_Locked();
+	}
 }
 
 
+#ifdef _WIN32
+
 /// <summary>
-/// Prepares the debug log and, when the command line asks for it, the debug console. Logging
-/// works without this call, but calling it early fixes the log's timestamp at process start.
+/// Prepares the debug log and, when the command line asks for it, the debug console.
+/// Messages may be logged before this function is called, but they will only be emitted
+/// after Debug_Init() is invoked to configure the location of the logging directory.
+/// This is the variant for use with wmain().
+/// </summary>
+void Debug_Init(int argc, wchar_t const * argv[])
+{
+	DebugPrint & dbg = DebugPrint::instance();
+	if (dbg.Destroyed) {
+		return;
+	}
+	std::lock_guard<std::recursive_mutex> lock(dbg.Lock);
+
+	if (!dbg.Initialized) {
+		dbg.Debug_Command_Line_Parse(argc, argv);
+		dbg.Init_Locked();
+	}
+}
+
+/// <summary>
+/// Prepares the debug log and, when the command line asks for it, the debug console.
+/// Messages may be logged before this function is called, but they will only be emitted
+/// after Debug_Init() is invoked to configure the location of the logging directory.
+/// This is the variant for use with WinMain() and wWinMain().
 /// </summary>
 void Debug_Init(void)
 {
-	Init_Once(false);
+	DebugPrint & dbg = DebugPrint::instance();
+	if (dbg.Destroyed) {
+		return;
+	}
+	std::lock_guard<std::recursive_mutex> lock(dbg.Lock);
+
+	if (!dbg.Initialized) {
+		int argc = 0;
+		LPWSTR * argv = CommandLineToArgvW(GetCommandLineW(), &argc);
+
+		dbg.Debug_Command_Line_Parse(argc, (const wchar_t **)argv);
+		LocalFree(argv);
+
+		dbg.Init_Locked();
+	}
 }
+
+#endif
 
 
 /// <summary>
 /// Opens the debug console if it is not open already, starting it with the text logged so far.
+/// The Debug_Init() function needs to be called first in order to process command-line arguments.
 /// </summary>
-void Debug_Init_Console(void)
+bool Debug_Enable_Console(void)
 {
-	Init_Once(true);
+	DebugPrint & dbg = DebugPrint::instance();
+	if (dbg.Destroyed) {
+		return false;
+	}
+	std::lock_guard<std::recursive_mutex> lock(dbg.Lock);
+
+	return dbg.Enable_Console_Locked();
 }
 
 
 /// <summary>
 /// Waits for a keypress when the debug console is open, so that text written just before the
-/// process exits stays readable. Does nothing when there is no console.
+/// process exits stays readable. Does nothing when there is no console. Also does nothing
+/// on non-Windows OSes, since console windows there generally don't disappear on program exit.
 /// </summary>
 void Debug_Console_Hold(void)
 {
-	if (!ConsoleActive) {
+#ifdef _WIN32
+	DebugPrint & dbg = DebugPrint::instance();
+	if (dbg.Destroyed) {
 		return;
 	}
+	// Lock scope
+	{
+		std::lock_guard<std::recursive_mutex> lock(dbg.Lock);
 
-	DebugString("Press any key to close this window.\n");
+		if (!dbg.ConsoleActive) {
+			return;
+		}
+		dbg.Flush_Console_Locked();
+	}
+	std::cout << "Press any key to close this window." << std::endl;
 	_getch();
+#endif
 }
 
 
 /// <summary>
-/// Returns the full path of this run's debug log, or an empty string when no log could be
+/// Returns the full path of this run's debug log, or an empty path when no log could be
 /// opened. Intended for startup code and user interface text; never call it from a crash
 /// handler, because it takes the logging lock.
 /// </summary>
-char const * Debug_Log_File_Name(void)
+std::filesystem::path Debug_Log_File_Path(void)
 {
-	Init_Once(false);
-	return(DebugFileName);
+	DebugPrint & dbg = DebugPrint::instance();
+	if (dbg.Destroyed) {
+		return "";
+	}
+	std::lock_guard<std::recursive_mutex> lock(dbg.Lock);
+
+	return (dbg.FilePath);
 }
 
 
 /// <summary>
-/// Returns the folder where per-run diagnostic files belong, or an empty string when it could
+/// Returns the folder where per-run diagnostic files belong, or an empty path when it could
 /// not be created. Shared by callers that write their own files beside the debug log.
 /// </summary>
-char const * Debug_Directory(void)
+std::filesystem::path Debug_Directory(void)
 {
-	Init_Once(false);
-	return(DebugDirectory);
+	DebugPrint & dbg = DebugPrint::instance();
+	if (dbg.Destroyed) {
+		return "";
+	}
+	std::lock_guard<std::recursive_mutex> lock(dbg.Lock);
+
+	return (dbg.Directory);
+}
+
+
+class PrintfBuffer
+{
+	public:
+		PrintfBuffer() : Destroyed(false) {}
+		~PrintfBuffer() { Destroyed = true; }
+
+		std::vector<char> Vec;
+		bool Destroyed;
+};
+
+/// <summary>
+/// Reports a formatted message to the debug log, the debugger, and the debug console.
+/// This is the internal function used by DebugString() and DebugStringNoPrefix(),
+/// it works best with messages shorter than DEBUG_MESSAGE_MAX, but it is able
+/// to handle longer messages too (with a performance cost).
+/// </summary>
+/// <param name="with_prefix">Whether or not to stamp the message.</param>
+/// <param name="fmt">The printf style format string to report.</param>
+/// <param name="va_in">Variable argument list to be used with vsnprintf().</param>
+static void DebugString_Perform(bool with_prefix, char const * fmt, va_list va_in)
+{
+	DebugPrint & dbg = DebugPrint::instance();
+	if (dbg.Destroyed) {
+		return;
+	}
+
+	static thread_local PrintfBuffer t_PrintfBuf;
+	int printf_bytes;
+
+	if (t_PrintfBuf.Destroyed) {
+		return;
+	}
+
+	if (t_PrintfBuf.Vec.size() < DEBUG_MESSAGE_MAX) {
+
+		// Take an initial performance hit on the first message to avoid reallocs and memsets on subsequent ones.
+		t_PrintfBuf.Vec.reserve(DEBUG_MESSAGE_MAX);
+		t_PrintfBuf.Vec.resize(DEBUG_MESSAGE_MAX);
+	}
+
+	va_list va;
+	va_copy(va, va_in);
+	printf_bytes = vsnprintf((t_PrintfBuf.Vec.size() != 0) ? t_PrintfBuf.Vec.data() : NULL, t_PrintfBuf.Vec.size(), fmt, va);
+	va_end(va);
+
+	if (printf_bytes < 0 && t_PrintfBuf.Vec.size() > 0) {
+		// Older versions of Windows don't report the required buffer size on truncation
+		va_copy(va, va_in);
+		printf_bytes = vsnprintf(NULL, 0, fmt, va);
+		va_end(va);
+	}
+
+	if (printf_bytes > 0 && (size_t)(printf_bytes + 1) > t_PrintfBuf.Vec.size()) {
+		// Text data in buffer truncated
+		t_PrintfBuf.Vec.resize(printf_bytes + 1);
+
+		va_copy(va, va_in);
+		printf_bytes = vsnprintf(t_PrintfBuf.Vec.data(), t_PrintfBuf.Vec.size(), fmt, va);
+		va_end(va);
+	}
+
+	if (printf_bytes > 0 && t_PrintfBuf.Vec.size() > 0) {
+		std::vector<char>::size_type printf_bytes_u = printf_bytes;
+		std::vector<char>::size_type text_bytes = std::min(printf_bytes_u, t_PrintfBuf.Vec.size() - 1);
+		t_PrintfBuf.Vec[text_bytes] = '\0';
+
+		dbg.Emit(t_PrintfBuf.Vec.data(), text_bytes, with_prefix);
+	}
+
+	// Prevent uncontrolled ballooning of the buffer's size.
+	if (t_PrintfBuf.Vec.size() > DEBUG_MESSAGE_MAX * 2) {
+		t_PrintfBuf.Vec.resize(DEBUG_MESSAGE_MAX);
+		t_PrintfBuf.Vec.shrink_to_fit();
+	}
 }
 
 
 /// <summary>
-/// Reports a formatted message to the debug log, the debugger, and the debug console. A
-/// message that starts a line is stamped with the time it was reported.
+/// Reports a formatted message to the debug log, the debugger, and the debug console.
+/// A message that starts a line is stamped with the time it was reported.
+/// Can be called before Debug_Init(), but the messages will only be logged after Debug_Init() is called.
 /// </summary>
-/// <param name="string">The printf style format string to report.</param>
-void __cdecl DebugString(char const * string, ...)
+/// <param name="fmt">The printf style format string to report.</param>
+void __cdecl DebugString(char const * fmt, ...)
 {
-	// Callers report an error and then branch on it, so logging must not disturb it.
+#ifdef _WIN32
 	DWORD const last_error = GetLastError();
+#endif
 	int const last_errno = errno;
 
-	char buffer[DEBUG_MESSAGE_MAX];
-
 	va_list va;
-	va_start(va, string);
-	vsnprintf(buffer, sizeof(buffer), string, va);
+	va_start(va, fmt);
+	DebugString_Perform(true, fmt, va);
 	va_end(va);
 
-	Emit(buffer, true);
-
 	errno = last_errno;
+#ifdef _WIN32
 	SetLastError(last_error);
+#endif
 }
 
 
@@ -595,26 +1455,29 @@ void __cdecl DebugString(char const * string, ...)
 /// Reports a formatted message with no identifying prefix, so the text appears exactly as
 /// given. Callers use it to continue a line another call began, and for text such as the
 /// startup banner that reads better unstamped. It reaches the same places DebugString does.
+/// Can be called before Debug_Init(), but the messages will only be logged after Debug_Init() is called.
 /// </summary>
-/// <param name="string">The printf style format string to report.</param>
-void __cdecl DebugStringNoPrefix(char const * string, ...)
+/// <param name="fmt">The printf style format string to report.</param>
+void __cdecl DebugStringNoPrefix(char const * fmt, ...)
 {
+#ifdef _WIN32
 	DWORD const last_error = GetLastError();
+#endif
 	int const last_errno = errno;
 
-	char buffer[DEBUG_MESSAGE_MAX];
-
 	va_list va;
-	va_start(va, string);
-	vsnprintf(buffer, sizeof(buffer), string, va);
+	va_start(va, fmt);
+	DebugString_Perform(false, fmt, va);
 	va_end(va);
 
-	Emit(buffer, false);
-
 	errno = last_errno;
+#ifdef _WIN32
 	SetLastError(last_error);
+#endif
 }
 
+
+#ifdef _WIN32
 
 /// <summary>
 /// Returns the system message text for a Win32 error code, in a buffer owned by the calling
@@ -625,11 +1488,11 @@ char const * Last_Error_Text(unsigned long error)
 {
 	static thread_local char message_buffer[256];
 
-	if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, error,
-							MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-							message_buffer, sizeof(message_buffer), NULL) == 0) {
+	if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), message_buffer, sizeof(message_buffer), NULL) == 0) {
 		message_buffer[0] = '\0';
 	}
 
-	return(message_buffer);
+	return (message_buffer);
 }
+
+#endif

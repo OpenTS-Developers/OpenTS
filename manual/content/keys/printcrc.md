@@ -7,7 +7,7 @@ when_omitted:
   value: "2147483647"
 ---
 
-`PrintCRC` is meant to stop recording playback at a chosen frame, but no launch lets it do that. When the value does take effect, the game writes an [out-of-sync report](/using/out-of-sync-reports/) into the `Debug` folder beside the executable and exits.
+`PrintCRC` is meant to stop recording playback at a chosen frame, but no launch lets it do that. When the value does take effect, the game writes an [out-of-sync report](/using/out-of-sync-reports/) into the `Debug` folder beside the debug log and exits.
 
 Only a Debug build started with [`-XY`](/using/command-line/#playback) plays a recording back, so a Release build never reads the value. In a Debug build started with `-XY`, the result depends on whether `RECORD.BIN` can be read:
 

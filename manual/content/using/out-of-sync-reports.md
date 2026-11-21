@@ -1,6 +1,6 @@
 ---
 title: Out-of-sync reports
-summary: A network game that goes out of sync writes a checksum report beside the executable, so two players' reports can be compared to find where they diverged.
+summary: A network game that goes out of sync writes a checksum report into the `Debug` folder, so two players' reports can be compared to find where they diverged.
 category: troubleshooting
 source_files:
   - code/syncreport.cpp
@@ -28,7 +28,7 @@ A network game writes the report without any setup. Recording playback can also 
 
 ## Where it is written
 
-The report goes into the `Debug` folder beside the executable, the folder that also holds the debug log. The file name gives the local player's house number, the local date and time in day-month-year order, and the frame the report was written on:
+The report goes into the `Debug` folder that holds the [debug log](/using/debug-logging/#where-the-log-is-written): in the user directory with `-USERDIR`, and beside the executable otherwise. The file name gives the local player's house number, the local date and time in day-month-year order, and the frame the report was written on:
 
 ```
 Debug/SYNC_H0_02-09-2026_18-42-07_F1530.LOG
@@ -42,7 +42,7 @@ Each machine limits how many reports it writes:
 
 Before it writes a report, the game deletes reports in the folder that are more than thirty days old.
 
-Keep the folder beside the executable writable. If the report file cannot be created there, no report is written.
+Keep that folder writable. If the report file cannot be created there, no report is written.
 
 ## What it holds
 

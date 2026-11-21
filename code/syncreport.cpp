@@ -194,13 +194,13 @@ void Print_CRCs(EventClass const * events, int count, unsigned const * crc_ring,
 	unsigned int GameCRC = 0;
 
 	char filename[512];
-	char const * debug_dir = Debug_Directory();
-	if (debug_dir != NULL && debug_dir[0] != '\0') {
+	std::filesystem::path debug_dir = Debug_Directory();
+	if (!debug_dir.empty()) {
 		SYSTEMTIME now;
 		GetLocalTime(&now);
-		Delete_Files_Older_Than(debug_dir, "SYNC_*.LOG", SYNC_REPORT_MAX_AGE_DAYS);
+		Delete_Files_Older_Than(debug_dir, "SYNC_.*\\.LOG", SYNC_REPORT_MAX_AGE_DAYS);
 		snprintf(filename, sizeof(filename), "%s\\SYNC_H%d_%02u-%02u-%04u_%02u-%02u-%02u_F%d.LOG",
-			debug_dir, PlayerPtr->HeapID,
+			(const char *)debug_dir.u8string().c_str(), PlayerPtr->HeapID,
 			now.wDay, now.wMonth, now.wYear, now.wHour, now.wMinute, now.wSecond, Frame);
 	} else {
 		snprintf(filename, sizeof(filename), "SYNC%01d.TXT", PlayerPtr->HeapID);
