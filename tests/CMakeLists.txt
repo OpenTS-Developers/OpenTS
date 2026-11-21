@@ -28,15 +28,18 @@ opents_test_compile_options(OpenTSDoctestMain)
 
 # Registers each test case of a doctest harness as its own CTest test named <name>.<case>.
 # The build writes the case list once per configuration, so a build directory holding Debug
-# and Release runs the executable that `ctest -C` selects.
+# and Release runs the executable that `ctest -C` selects. Extra arguments are CTest
+# properties set on every case.
 function(opents_discover_doctest target name)
     set(list_base "${CMAKE_CURRENT_BINARY_DIR}/${target}_tests")
+    list(JOIN ARGN "$<SEMICOLON>" properties)
     add_custom_command(TARGET ${target} POST_BUILD
         COMMAND "${CMAKE_COMMAND}"
             -D "TEST_EXECUTABLE=$<TARGET_FILE:${target}>"
             -D "TEST_WORKING_DIR=${CMAKE_CURRENT_BINARY_DIR}"
             -D "TEST_PREFIX=${name}."
             -D "TEST_LIST=${target}_TESTS"
+            -D "TEST_PROPERTIES=${properties}"
             -D "CTEST_FILE=${list_base}-$<CONFIG>.cmake"
             -P "${CMAKE_SOURCE_DIR}/thirdparty/doctest/scripts/cmake/doctestAddTests.cmake"
         VERBATIM
@@ -60,9 +63,10 @@ endfunction()
 # FLOAT adds the float semantics the engine builds with, so a harness measuring numeric
 # results matches it. UTF8 is for a harness whose own source holds non-ASCII text. STAMP is
 # for a harness that reaches the generated version headers. DOCTEST is for a harness written
-# with doctest; CTest then lists each of its test cases separately.
+# with doctest; CTest then lists each of its test cases separately. SERIAL is for a harness
+# that measures timing, so CTest never runs it beside another test.
 function(opents_add_test target)
-    cmake_parse_arguments(TEST "FLOAT;UTF8;STAMP;DOCTEST" "NAME"
+    cmake_parse_arguments(TEST "FLOAT;UTF8;STAMP;DOCTEST;SERIAL" "NAME"
         "SOURCES;ENGINE;INCLUDES;DEFINITIONS;LIBRARIES" ${ARGN})
 
     set(sources "")
@@ -113,9 +117,16 @@ function(opents_add_test target)
         # uishell carries past the default section limit of an x64 object file.
         target_compile_options(${target} PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/bigobj>)
         target_link_libraries(${target} PRIVATE OpenTSDoctestMain)
-        opents_discover_doctest(${target} ${TEST_NAME})
+        set(properties "")
+        if(TEST_SERIAL)
+            set(properties RUN_SERIAL TRUE)
+        endif()
+        opents_discover_doctest(${target} ${TEST_NAME} ${properties})
     else()
         add_test(NAME ${TEST_NAME} COMMAND ${target})
+        if(TEST_SERIAL)
+            set_tests_properties(${TEST_NAME} PROPERTIES RUN_SERIAL TRUE)
+        endif()
     endif()
 endfunction()
 
