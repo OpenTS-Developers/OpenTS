@@ -324,13 +324,13 @@ struct Judgement {
 	std::string Verdict;   // complete, cut short, malformed, not a CNCR file, or not verified
 	std::string Reason;
 	std::optional<Digest> S0;
-	RecordingInfo Info;
-	Launch Start;
-	std::vector<std::pair<std::uint32_t, Frame>> Records;
-	std::map<std::uint32_t, std::vector<Seal>> Closed;   // the computed seals each record should have
-	std::vector<Seal> Chain;                             // every computed seal, the final seal last
+	Message::RecordingInfo Info;
+	Message::Launch Start;
+	std::vector<std::pair<std::uint32_t, Message::Frame>> Records;
+	std::map<std::uint32_t, std::vector<Message::Seal>> Closed;   // the computed seals each record should have
+	std::vector<Message::Seal> Chain;                             // every computed seal, the final seal last
 	bool HasSummary = false;
-	RecordingSummary Summary;
+	Message::RecordingSummary Summary;
 	Bytes StatBody;
 	std::vector<Bytes> CheckpointBodies;
 };
@@ -407,7 +407,7 @@ Judgement Judge(ByteVector const & file)
 
 	FrameReader frames(reader);
 	std::uint32_t frame = 0;
-	Frame record;
+	Message::Frame record;
 	FrameStep step;
 	while ((step = frames.Next(frame, record)) == FrameStep::RECORD) {
 		// A record with fewer seals than the intervals that end before it is malformed, and a
@@ -416,7 +416,7 @@ Judgement Judge(ByteVector const & file)
 			chain.reset();
 		}
 		if (chain) {
-			std::vector<Seal> closed;
+			std::vector<Message::Seal> closed;
 			chain->Add(frame, record, closed);
 			verdict.Chain.insert(verdict.Chain.end(), closed.begin(), closed.end());
 			verdict.Closed[frame] = closed;
@@ -467,10 +467,10 @@ std::string Expected_Verdict(std::int64_t verify_exit)
 }
 
 
-std::string Seal_List(std::vector<Seal> const & seals)
+std::string Seal_List(std::vector<Message::Seal> const & seals)
 {
 	std::string text;
-	for (Seal const & seal : seals) {
+	for (Message::Seal const & seal : seals) {
 		text += std::to_string(seal.Through) + ":" + Hex(seal.Hash) + " ";
 	}
 	return(text);
@@ -487,17 +487,17 @@ std::string Seal_List(Json const & seals)
 }
 
 
-std::vector<std::uint32_t> Throughs(std::vector<Seal> const & seals)
+std::vector<std::uint32_t> Throughs(std::vector<Message::Seal> const & seals)
 {
 	std::vector<std::uint32_t> throughs;
-	for (Seal const & seal : seals) {
+	for (Message::Seal const & seal : seals) {
 		throughs.push_back(seal.Through);
 	}
 	return(throughs);
 }
 
 
-Frame const * Record_At(Judgement const & verdict, std::uint32_t frame)
+Message::Frame const * Record_At(Judgement const & verdict, std::uint32_t frame)
 {
 	for (auto const & entry : verdict.Records) {
 		if (entry.first == frame) {
@@ -609,7 +609,7 @@ std::vector<std::pair<std::uint32_t, Bytes>> Stored_Records(ByteVector const & f
 			return(records);
 		}
 		Bytes body(stream.begin() + offset, stream.begin() + offset + std::size_t(length));
-		Frame record;
+		Message::Frame record;
 		if (!Decode(body, record)) {
 			return(records);
 		}
@@ -671,7 +671,7 @@ void Check_File(Json const & entry)
 			for (Json const & through : member.second.Items) {
 				expected.push_back(std::uint32_t(through.Number));
 			}
-			Frame const * record = Record_At(verdict, frame);
+			Message::Frame const * record = Record_At(verdict, frame);
 			CHECK_OR_STOP(record != nullptr);
 			CHECK(Throughs(record->Seals) == expected);
 			auto const closed = verdict.Closed.find(frame);
@@ -690,7 +690,7 @@ void Check_File(Json const & entry)
 			CAPTURE(frame);
 			auto const found = std::find_if(stored.begin(), stored.end(), [&](auto const & item) { return(item.first == frame); });
 			CHECK_OR_STOP(found != stored.end());
-			Frame record;
+			Message::Frame record;
 			CHECK_OR_STOP(Decode(found->second, record));
 			Bytes bytes;
 			Canonical_Frame_Bytes(frame, record, bytes);
@@ -712,15 +712,15 @@ void Check_File(Json const & entry)
 
 	if (entry.Has("stat_body")) {
 		CHECK(Hex(verdict.StatBody) == entry["stat_body"].Text);
-		Statistics statistics;
+		Message::Statistics statistics;
 		CHECK_OR_STOP(Decode(verdict.StatBody, statistics));
 		CHECK_MESSAGE(Hex(Encoded(statistics)) == entry["stat_body"].Text, "the statistics encoded again");
 	}
 
 	if (entry.Has("event_payload")) {
-		Event const * found = nullptr;
+		Message::Event const * found = nullptr;
 		for (auto const & item : verdict.Records) {
-			for (Event const & event : item.second.Events) {
+			for (Message::Event const & event : item.second.Events) {
 				if (event.SealedPayload && found == nullptr) {
 					found = &event;
 				}

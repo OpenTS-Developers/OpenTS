@@ -13,28 +13,42 @@ are in the specification.
 | --- | --- |
 | `replay.hh` | Section tags, codecs, the seal version and interval, the flush cadence, the section 10 limits as `LimitsType`, and the enumerations of `replay.proto` |
 | `replayfields.hh` | The field number of every field of `replay.proto` |
-| `replayrecords.h`, `.cpp` | One struct per message, with `Encode`, `Decode`, `Check_Limits`, `Check_Order`, `Check_Income_Kinds`, `IncomeKindSet`, and `Clean_Text` |
+| `replaymessages.h`, `.cpp` | One struct per message, with `Encode`, `Decode`, `Check_Limits`, `Check_Order`, `Check_Income_Kinds`, `IncomeKindSet`, and `Clean_Text` |
 | `replayseal.h`, `.cpp` | `S0`, the canonical bytes of a frame, the seal chain, and the seal verifier |
 | `replaywriter.h`, `.cpp` | The container writer |
 | `replayreader.h`, `.cpp` | The container reader, the frame stream reader, `Verify_Seals`, and `Verify_File` |
 
-The Protocol Buffers wire encoding and raw deflate streams live in `code/`
-because they are not specific to replays. `code/protowire.h` declares the
-varint, zigzag, and fixed-value functions, the field writer, and a bounded
-field reader in namespace `ProtoWire`. `code/deflate.h` declares
-`DeflaterClass` and `InflaterClass`.
-`replayrecords.h` declares the `ProtoWire` names in `Replay`, so replay code
+The layer builds on two files outside `code/replay/`:
+
+| File | Content |
+| --- | --- |
+| `code/proto/message.h` | What the message structs share: the fields a decoder keeps without reading, `LimitsType`, and `RuleError` |
+| `code/proto/messagecodec.h` | The encoder and decoder helpers that the files defining message structs share; nothing else includes it |
+
+The Protocol Buffers wire encoding lives in `code/proto/` and raw deflate
+streams in `code/`, because they are not specific to replays.
+`code/proto/wire.h` declares the varint, zigzag, and fixed-value functions,
+the field writer, and a bounded field reader in namespace `ProtoWire`.
+`code/deflate.h` declares `DeflaterClass` and `InflaterClass`.
+`replaymessages.h` declares the `ProtoWire` names in `Replay`, so replay code
 uses them without a prefix.
 
 The layer uses no engine types. Besides the standard library it uses
-`code/protowire.cpp`, `code/deflate.cpp`, `code/sha256.cpp`, `CRC::Memory`
+`code/proto/wire.cpp`, `code/deflate.cpp`, `code/sha256.cpp`, `CRC::Memory`
 from `code/crc.cpp`, the UTF-8 checks of `code/utf8.cpp`, the `FileClass`
 interface of `code/wwfile.h`, and, through `code/deflate.cpp`, the miniz copy
 described in [Building OpenTS](../BUILDING.md). `tests/layers/layers.toml`
-places the `replay` directory and the `protowire` and `deflate` files in the
+places the `replay` and `proto` directories and the `deflate` file in the
 `core` layer.
 
-## Records
+## Messages
+
+Each message of `replay.proto` is a struct in namespace `Replay::Message`,
+named exactly as the schema names the message, such as
+`Replay::Message::Frame` and `Replay::Message::PlayerMessage`. The codec
+functions are declared in the same namespace, where argument-dependent lookup
+finds them, and namespace `Replay` also declares the public ones, so
+`Replay::Decode` names them too.
 
 `Encode` writes the canonical bytes of section 1 of the specification: fields
 in ascending number, zeros left out except in `optional` fields and `oneof`
@@ -46,7 +60,7 @@ message field the last one replaces the earlier one whole; it is not merged
 with it as a protobuf library would. Repeated numbers are read packed or
 unpacked. Wire types 3, 4, 6, and 7, a field number of 0 or past 2^29 - 1, a
 length past the end of the input, a varint longer than ten bytes, and a string
-field that is not valid UTF-8 make the whole record malformed.
+field that is not valid UTF-8 make the whole message malformed.
 
 Every struct keeps the fields its decoder did not know in `Unknown`, with
 their tags, and `Encode` writes them back among the known fields in ascending
@@ -56,11 +70,11 @@ written and read through `Unknown`. This layer defines none; the recorder
 adds the ones the specification's OpenTS notes name.
 
 `Encode` writes strings as given and does not check them. `Clean_Text` is for
-callers that fill a record from engine text: it replaces each maximal invalid
+callers that fill a message from engine text: it replaces each maximal invalid
 UTF-8 sequence with U+FFFD, as Python's and .NET's decoders do, and cuts the
 result on a character boundary at a byte limit.
 
-`Check_Limits` applies the section 10 limits to a decoded or prepared record:
+`Check_Limits` applies the section 10 limits to a decoded or prepared message:
 string lengths, the player, house, and income kind counts, the events in a
 record, and each payload and sealed payload. `Check_Order` applies the orders
 the format sets: players by house, options by key in byte order, allies and
@@ -250,7 +264,7 @@ that fails decides the result; otherwise the seal report decides it:
 ## Checks
 
 `tests/replay` is a doctest harness that compiles the layer with
-`protowire.cpp`, `deflate.cpp`, `sha256.cpp`, `crc.cpp`, `utf8.cpp`,
+`proto/wire.cpp`, `deflate.cpp`, `sha256.cpp`, `crc.cpp`, `utf8.cpp`,
 `rawfile.cpp`, `ramfile.cpp`, `bfiofile.cpp`, `file.cpp`, `file_posix.cpp`,
 and `file_win.cpp`, and links bimg for miniz. It reads no game data. It
 covers:

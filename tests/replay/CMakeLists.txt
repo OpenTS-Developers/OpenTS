@@ -9,7 +9,7 @@ opents_add_test(ReplayTest
         filetest.cpp
         wiretest.cpp
         fieldstest.cpp
-        recordstest.cpp
+        messagestest.cpp
         deflatetest.cpp
         sealtest.cpp
         writertest.cpp
@@ -19,7 +19,7 @@ opents_add_test(ReplayTest
     ENGINE
         crc.cpp
         sha256.cpp
-        protowire.cpp
+        proto/wire.cpp
         deflate.cpp
         rawfile.cpp
         ramfile.cpp
@@ -29,7 +29,7 @@ opents_add_test(ReplayTest
         file_posix.cpp
         file_win.cpp
         replay/replayreader.cpp
-        replay/replayrecords.cpp
+        replay/replaymessages.cpp
         replay/replayseal.cpp
         replay/replaywriter.cpp
     INCLUDES

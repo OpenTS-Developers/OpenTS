@@ -9,6 +9,8 @@
 
 #pragma once
 
+#include "proto/message.h"
+
 #include <cstddef>
 #include <cstdint>
 
@@ -52,17 +54,13 @@ namespace Replay
 		DEFLATE = 1,
 	};
 
-	// The format's size limits. Each reader has a separate copy.
-	struct LimitsType {
+	// The format's size limits: those of a message, and those of a section. Each reader has a
+	// separate copy.
+	struct LimitsType : ProtoMessage::LimitsType {
 		std::uint64_t SmallSection = 1u << 20;       // INFO, LNCH, END
 		std::uint64_t LargeSection = 32u << 20;      // MAP, INIT, STAT
 		std::uint64_t Checkpoint = 64u << 20;
 		std::uint64_t FrameRecord = 1u << 20;
-		std::size_t EventsPerRecord = 16384;
-		std::size_t EventPayload = 4096;
-		std::size_t String = 1024;
-		std::size_t Players = 64;
-		std::size_t IncomeKinds = 4096;
 	};
 
 	// Open enumerations: a value outside the list is kept as it was read.

@@ -10,9 +10,8 @@
 #pragma once
 
 #include "ramfile.h"
-#include "replay/replayrecords.h"
+#include "replay/replaymessages.h"
 #include "replay/replaywriter.h"
-
 #include "replaytest.h"
 
 #include <algorithm>
@@ -24,33 +23,33 @@
 
 
 // A recording's first sections, with values in every kind of field a launcher fills.
-inline Replay::RecordingInfo Sample_Info(void)
+inline Replay::Message::RecordingInfo Sample_Info(void)
 {
-	Replay::RecordingInfo info;
+	Replay::Message::RecordingInfo info;
 	info.Engine = "opents";
 	info.EngineVersion = "0.1.0 (test)";
 	info.DataVersion = 1;
 	info.Package = "Tiberian Sun";
 	info.PackageVersion = "2.03";
-	info.Files.push_back(Replay::FileHash{ "RULES.INI", "sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", {} });
+	info.Files.push_back(Replay::Message::FileHash{ "RULES.INI", "sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", {} });
 	info.RecordedAt = 1794800000;
 	info.Recorder = 0;
 	info.MapName = "Synthetic Map";
 	info.GameMode = "Battle";
 	info.MapPath = "maps/synthetic.map";
-	info.Colors.push_back(Replay::PlayerColor{ 0, 0x00FFD700, {} });
-	info.Colors.push_back(Replay::PlayerColor{ 3, 0x00C00000, {} });
+	info.Colors.push_back(Replay::Message::PlayerColor{ 0, 0x00FFD700, {} });
+	info.Colors.push_back(Replay::Message::PlayerColor{ 3, 0x00C00000, {} });
 	return(info);
 }
 
 
-inline Replay::Launch Sample_Launch(void)
+inline Replay::Message::Launch Sample_Launch(void)
 {
-	Replay::Launch launch;
+	Replay::Message::Launch launch;
 	launch.Kind = Replay::GameKind::GAME_KIND_SKIRMISH;
 	launch.Seed = 12345;
 
-	Replay::Player human;
+	Replay::Message::Player human;
 	human.House = 0;
 	human.Name = "Player";
 	human.Human = true;
@@ -64,25 +63,25 @@ inline Replay::Launch Sample_Launch(void)
 	human.ResolvedStart = 2;
 	launch.Players.push_back(human);
 
-	Replay::Player computer;
+	Replay::Message::Player computer;
 	computer.House = 1;
 	computer.Country = -1;
 	computer.CountryName = "Nod";
 	computer.Color = 3;
 	computer.Start = 0;
-	computer.AiLevel = 1;
+	computer.AILevel = 1;
 	computer.ResolvedCountry = 1;
 	computer.ResolvedColor = 3;
 	computer.ResolvedStart = 0;
 	launch.Players.push_back(computer);
 
-	Replay::GameOption credits;
+	Replay::Message::GameOption credits;
 	credits.Key = "Credits";
 	credits.Value = std::int64_t(10000);
-	Replay::GameOption crates;
+	Replay::Message::GameOption crates;
 	crates.Key = "Crates";
 	crates.Value = true;
-	Replay::GameOption speed;
+	Replay::Message::GameOption speed;
 	speed.Key = "GameSpeed";
 	speed.Value = std::int64_t(0);
 	launch.Options = { crates, credits, speed };

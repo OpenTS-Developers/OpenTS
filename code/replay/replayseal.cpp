@@ -30,7 +30,7 @@ void Hash_U32(SHA256Class & hash, std::uint32_t value)
 // Returns the through of the first seal that differs between carried and the expected
 // throughs, which outnumber carried.
 template<typename Expected>
-std::uint32_t First_Missing(std::vector<Seal> const & carried, Expected expected)
+std::uint32_t First_Missing(std::vector<Message::Seal> const & carried, Expected expected)
 {
 	for (std::size_t i = 0; i < carried.size(); i++) {
 		std::uint32_t const through = expected(i);
@@ -61,10 +61,10 @@ Digest Seal_Start(std::uint32_t seal_version, std::string_view engine, std::uint
 }
 
 
-bool Canonical_Frame_Bytes(std::uint32_t frame, Frame const & record, Bytes & out)
+bool Canonical_Frame_Bytes(std::uint32_t frame, Message::Frame const & record, Bytes & out)
 {
 	std::uint32_t shared = 0;
-	for (Event const & event : record.Events) {
+	for (Message::Event const & event : record.Events) {
 		if (!event.Local) {
 			shared++;
 		}
@@ -80,7 +80,7 @@ bool Canonical_Frame_Bytes(std::uint32_t frame, Frame const & record, Bytes & ou
 	}
 
 	Put_Fixed32(out, shared);
-	for (Event const & event : record.Events) {
+	for (Message::Event const & event : record.Events) {
 		if (event.Local) {
 			continue;
 		}
@@ -109,10 +109,10 @@ SealChain::SealChain(Digest const & start) :
 }
 
 
-void SealChain::Close_Interval(std::vector<Seal> & seals)
+void SealChain::Close_Interval(std::vector<Message::Seal> & seals)
 {
 	Digest const digest = Hash.Result();
-	Seal seal;
+	Message::Seal seal;
 	seal.Through = std::uint32_t(IntervalEnd);
 	seal.Hash.assign(digest.begin(), digest.end());
 	seals.push_back(seal);
@@ -123,7 +123,7 @@ void SealChain::Close_Interval(std::vector<Seal> & seals)
 }
 
 
-void SealChain::Add(std::uint32_t frame, Frame const & record, std::vector<Seal> & closed)
+void SealChain::Add(std::uint32_t frame, Message::Frame const & record, std::vector<Message::Seal> & closed)
 {
 	while (frame > IntervalEnd) {
 		Close_Interval(closed);
@@ -136,14 +136,14 @@ void SealChain::Add(std::uint32_t frame, Frame const & record, std::vector<Seal>
 }
 
 
-void SealChain::Finish(std::uint32_t last_frame, std::vector<Seal> & seals)
+void SealChain::Finish(std::uint32_t last_frame, std::vector<Message::Seal> & seals)
 {
 	while (IntervalEnd < last_frame) {
 		Close_Interval(seals);
 	}
 
 	Digest const digest = Hash.Result();
-	Seal seal;
+	Message::Seal seal;
 	seal.Through = last_frame;
 	seal.Hash.assign(digest.begin(), digest.end());
 	seals.push_back(seal);
@@ -171,7 +171,7 @@ SealVerifier::SealVerifier(Digest const & start) :
 }
 
 
-void SealVerifier::Compare(Seal const & seal)
+void SealVerifier::Compare(Message::Seal const & seal)
 {
 	auto computed = Computed.find(seal.Through);
 	if (computed == Computed.end() || computed->second != seal.Hash) {
@@ -184,7 +184,7 @@ void SealVerifier::Compare(Seal const & seal)
 }
 
 
-void SealVerifier::Add(std::uint32_t frame, Frame const & record)
+void SealVerifier::Add(std::uint32_t frame, Message::Frame const & record)
 {
 	if (Stopped) {
 		return;
@@ -203,9 +203,9 @@ void SealVerifier::Add(std::uint32_t frame, Frame const & record)
 		return;
 	}
 
-	std::vector<Seal> closed;
+	std::vector<Message::Seal> closed;
 	Chain.Add(frame, record, closed);
-	for (Seal const & seal : closed) {
+	for (Message::Seal const & seal : closed) {
 		Computed[seal.Through] = seal.Hash;
 	}
 
@@ -224,14 +224,14 @@ void SealVerifier::Add(std::uint32_t frame, Frame const & record)
 		}
 	}
 
-	for (Seal const & seal : record.Seals) {
+	for (Message::Seal const & seal : record.Seals) {
 		Compare(seal);
 	}
 	LastFrame = frame;
 }
 
 
-void SealVerifier::Finish(RecordingSummary const & summary)
+void SealVerifier::Finish(Message::RecordingSummary const & summary)
 {
 	if (Stopped) {
 		return;
@@ -273,9 +273,9 @@ void SealVerifier::Finish(RecordingSummary const & summary)
 		return;
 	}
 
-	std::vector<Seal> seals;
+	std::vector<Message::Seal> seals;
 	Chain.Finish(last_frame, seals);
-	for (Seal const & seal : seals) {
+	for (Message::Seal const & seal : seals) {
 		Computed[seal.Through] = seal.Hash;
 		expected.push_back(seal.Through);
 	}

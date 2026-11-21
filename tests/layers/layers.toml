@@ -8,6 +8,7 @@ exclude = ["language", "vqalib"]
 # Sources under these directories take the layer named here unless a files list says otherwise.
 [directories]
 audio = "audio"
+proto = "core"
 replay = "core"
 sdl = "platform"
 ui = "ui"
@@ -23,7 +24,7 @@ files = [
     "file_win", "gamedirs", "gametext", "gametime", "ini", "int", "jshell", "lcw", "lcwpipe",
     "lcwstraw", "link", "load", "lzopipe", "lzostraw", "matrix3d", "milsectmr", "mixfile",
     "mono", "mpmath", "mpu", "mstimer", "obscure", "pipe", "pk", "pkpipe", "pkstraw",
-    "protowire", "quat", "ramfile", "random", "rawfile", "rndstraw", "savefile", "savestream",
+    "quat", "ramfile", "random", "rawfile", "rndstraw", "savefile", "savestream",
     "savever", "sha", "sha256", "shapipe", "shastraw", "stbuffer", "stimer", "straw", "swizzle",
     "trim", "utf8", "version", "wstring", "xpipe", "xstraw",
 ]

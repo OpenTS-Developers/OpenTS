@@ -25,8 +25,8 @@ namespace {
 
 void Begin(Writer & writer, std::optional<ByteVector> const & map = std::nullopt)
 {
-	RecordingInfo info = Sample_Info();
-	IncomeKind kind;
+	Message::RecordingInfo info = Sample_Info();
+	Message::IncomeKind kind;
 	kind.Number = 1;
 	kind.Id = "Starting/Multiplier";
 	info.IncomeKinds.push_back(kind);
@@ -41,36 +41,36 @@ void Begin(Writer & writer, std::optional<ByteVector> const & map = std::nullopt
 }
 
 
-Frame Game_Frame(std::uint32_t frame)
+Message::Frame Game_Frame(std::uint32_t frame)
 {
-	Frame record;
+	Message::Frame record;
 	record.Hash = frame * 2654435761u;
 	if (frame == 0) {
 		record.FrameMicros = 16666;
-		record.View.Camera = Point{ 1200, -340, {} };
+		record.View.Camera = Message::Point{ 1200, -340, {} };
 		for (std::uint32_t house = 0; house < 2; house++) {
-			HouseSample sample;
+			Message::HouseSample sample;
 			sample.House = house;
 			sample.Credits = 10000;
 			sample.Spent = 0;
 			sample.Buildings = 1;
 			record.Samples.push_back(sample);
 		}
-		Income income;
+		Message::Income income;
 		income.House = 0;
 		income.Kind = 1;
 		income.Amount = 10000;
 		record.Income.push_back(income);
 	}
 	if (frame % 50 == 7) {
-		Event order;
+		Message::Event order;
 		order.Type = 3;
 		order.House = frame % 2;
 		order.Due = 2;
 		order.Payload = { 0x01, std::uint8_t(frame), std::uint8_t(frame >> 8), 0x40 };
 		record.Events.push_back(order);
 
-		Event heartbeat;
+		Message::Event heartbeat;
 		heartbeat.Type = 40;
 		heartbeat.House = 0;
 		heartbeat.Payload = { 0xAA, 0xBB };
@@ -89,9 +89,9 @@ void Record_Frames(Writer & writer, std::uint32_t first, std::uint32_t last)
 }
 
 
-void Close(Writer & writer, std::uint32_t last_frame, Statistics const * statistics = nullptr)
+void Close(Writer & writer, std::uint32_t last_frame, Message::Statistics const * statistics = nullptr)
 {
-	RecordingSummary summary;
+	Message::RecordingSummary summary;
 	summary.LastFrame = last_frame;
 	summary.EndedAt = 1794800600;
 	summary.Completed = true;
@@ -100,10 +100,10 @@ void Close(Writer & writer, std::uint32_t last_frame, Statistics const * statist
 }
 
 
-Statistics Sample_Statistics(void)
+Message::Statistics Sample_Statistics(void)
 {
-	Statistics statistics;
-	ObjectType yard;
+	Message::Statistics statistics;
+	Message::ObjectType yard;
 	yard.Category = ObjectCategory::OBJECT_CATEGORY_BUILDING;
 	yard.Index = 0;
 	yard.Id = "GACNST";
@@ -112,7 +112,7 @@ Statistics Sample_Statistics(void)
 	statistics.Types.push_back(yard);
 
 	for (std::uint32_t house = 0; house < 2; house++) {
-		HouseStatistics entry;
+		Message::HouseStatistics entry;
 		entry.House = house;
 		entry.Name = (house == 0) ? "Player" : "Computer";
 		entry.CountryName = (house == 0) ? "GDI" : "Nod";
@@ -121,7 +121,7 @@ Statistics Sample_Statistics(void)
 		entry.Outcome = (house == 0) ? Outcome::OUTCOME_WON : Outcome::OUTCOME_LOST;
 		entry.Final.House = house;
 		entry.Final.Credits = 5000;
-		TypeCount built;
+		Message::TypeCount built;
 		built.Kind = CountKind::COUNT_KIND_BUILT;
 		built.Category = ObjectCategory::OBJECT_CATEGORY_BUILDING;
 		built.Count = 1;
@@ -183,13 +183,13 @@ ByteVector Checkpoint_At_Zero(void)
 	Begin(writer);
 	Record_Frames(writer, 0, 999);
 	for (std::uint32_t frame : { 0u, 900u }) {
-		Checkpoint checkpoint;
+		Message::Checkpoint checkpoint;
 		checkpoint.Frame = frame;
 		checkpoint.State = Bytes_Of("synthetic save data at frame " + std::to_string(frame));
 		checkpoint.Crc32 = CRC::Memory(checkpoint.State.data(), unsigned(checkpoint.State.size()));
 		REQUIRE(writer.Add_Checkpoint(checkpoint) == WriteResult::OK);
 	}
-	Statistics const statistics = Sample_Statistics();
+	Message::Statistics const statistics = Sample_Statistics();
 	Close(writer, 999, &statistics);
 	return(sink.Written());
 }
@@ -201,8 +201,8 @@ ByteVector Sealed_Payload(void)
 	Writer writer(sink);
 	Begin(writer);
 	Record_Frames(writer, 0, 9);
-	Frame record = Game_Frame(10);
-	Event group;
+	Message::Frame record = Game_Frame(10);
+	Message::Event group;
 	group.Type = 3;
 	group.House = 1;
 	group.Payload = From_Hex("01020304aabbccdd");

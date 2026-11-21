@@ -7,11 +7,9 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-#include "protowire.h"
-
-#include "replaytest.h"
-
 #include "doctest/doctest.h"
+#include "proto/wire.h"
+#include "replaytest.h"
 
 #include <bit>
 #include <climits>

@@ -10,7 +10,7 @@
 #pragma once
 
 #include "deflate.h"
-#include "replay/replayrecords.h"
+#include "replay/replaymessages.h"
 #include "replay/replayseal.h"
 #include "wwfile.h"
 
@@ -35,20 +35,20 @@ namespace Replay
 			explicit Writer(FileClass & file);
 
 			// Holds the first sections; map is the MAP body, or absent to leave the map out.
-			WriteResult Begin(RecordingInfo const & info, Launch const & launch, ByteSpan init,
+			WriteResult Begin(Message::RecordingInfo const & info, Message::Launch const & launch, ByteSpan init,
 				std::optional<ByteSpan> map);
 
 			// Writes the record for frame, which must follow the last record's frame.
-			WriteResult Add_Frame(std::uint32_t frame, Frame record);
+			WriteResult Add_Frame(std::uint32_t frame, Message::Frame record);
 
 			// Holds a checkpoint until Close. Frames must ascend.
-			WriteResult Add_Checkpoint(Checkpoint const & checkpoint);
+			WriteResult Add_Checkpoint(Message::Checkpoint const & checkpoint);
 
 			// Sync-flushes the frame stream and flushes the file.
 			WriteResult Flush(void);
 
 			// Ends the frame stream and writes the checkpoints, statistics if given, and summary.
-			WriteResult Close(RecordingSummary summary, Statistics const * statistics);
+			WriteResult Close(Message::RecordingSummary summary, Message::Statistics const * statistics);
 
 			bool Failed(void) const { return(State == StateType::FAILED); }
 
@@ -67,11 +67,11 @@ namespace Replay
 				Bytes Body;
 			};
 
-			WriteResult Begin_Body(RecordingInfo const & info, Launch const & launch, ByteSpan init,
+			WriteResult Begin_Body(Message::RecordingInfo const & info, Message::Launch const & launch, ByteSpan init,
 				std::optional<ByteSpan> map);
-			WriteResult Add_Frame_Body(std::uint32_t frame, Frame & record);
-			WriteResult Add_Checkpoint_Body(Checkpoint const & checkpoint);
-			WriteResult Close_Body(RecordingSummary & summary, Statistics const * statistics);
+			WriteResult Add_Frame_Body(std::uint32_t frame, Message::Frame & record);
+			WriteResult Add_Checkpoint_Body(Message::Checkpoint const & checkpoint);
+			WriteResult Close_Body(Message::RecordingSummary & summary, Message::Statistics const * statistics);
 
 			WriteResult Fail(void);
 			bool Put(ByteSpan data);
@@ -94,7 +94,7 @@ namespace Replay
 			std::optional<Bytes> MapBody;
 
 			std::optional<SealChain> Chain;
-			std::vector<Seal> Seals;
+			std::vector<Message::Seal> Seals;
 			std::optional<std::uint32_t> LastRecord;
 			IncomeKindSet Kinds;
 

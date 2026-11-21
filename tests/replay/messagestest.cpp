@@ -7,11 +7,9 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-#include "replay/replayrecords.h"
-
-#include "replaytest.h"
-
 #include "doctest/doctest.h"
+#include "replay/replaymessages.h"
+#include "replaytest.h"
 
 #include <random>
 
@@ -21,9 +19,9 @@ using namespace Replay;
 namespace {
 
 template<typename T>
-std::string Encoded_Hex(T const & record)
+std::string Encoded_Hex(T const & message)
 {
-	return(Hex(Encoded(record)));
+	return(Hex(Encoded(message)));
 }
 
 
@@ -31,10 +29,10 @@ std::string Encoded_Hex(T const & record)
 template<typename T>
 T Round_Trip(ByteVector const & bytes)
 {
-	T record;
-	REQUIRE(Decode(bytes, record));
-	CHECK(Hex(Encoded(record)) == Hex(bytes));
-	return(record);
+	T message;
+	REQUIRE(Decode(bytes, message));
+	CHECK(Hex(Encoded(message)) == Hex(bytes));
+	return(message);
 }
 
 
@@ -47,9 +45,9 @@ UnknownField Unknown_Field(std::uint32_t number, char const * hex)
 }
 
 
-Player Sample_Player(void)
+Message::Player Sample_Player(void)
 {
-	Player player;
+	Message::Player player;
 	player.House = 1;
 	player.Name = "A";
 	player.Human = true;
@@ -70,47 +68,47 @@ char const * const SAMPLE_PLAYER_HEX =
 }
 
 
-TEST_CASE("a record whose fields are all zero encodes to no bytes")
+TEST_CASE("a message whose fields are all zero encodes to no bytes")
 {
-	CHECK(Encoded(RecordingInfo()).empty());
-	CHECK(Encoded(Launch()).empty());
-	CHECK(Encoded(Player()).empty());
-	CHECK(Encoded(Frame()).empty());
-	CHECK(Encoded(Event()).empty());
-	CHECK(Encoded(ViewState()).empty());
-	CHECK(Encoded(HouseSample()).empty());
-	CHECK(Encoded(Checkpoint()).empty());
-	CHECK(Encoded(Statistics()).empty());
-	CHECK(Encoded(HouseStatistics()).empty());
-	CHECK(Encoded(RecordingSummary()).empty());
+	CHECK(Encoded(Message::RecordingInfo()).empty());
+	CHECK(Encoded(Message::Launch()).empty());
+	CHECK(Encoded(Message::Player()).empty());
+	CHECK(Encoded(Message::Frame()).empty());
+	CHECK(Encoded(Message::Event()).empty());
+	CHECK(Encoded(Message::ViewState()).empty());
+	CHECK(Encoded(Message::HouseSample()).empty());
+	CHECK(Encoded(Message::Checkpoint()).empty());
+	CHECK(Encoded(Message::Statistics()).empty());
+	CHECK(Encoded(Message::HouseStatistics()).empty());
+	CHECK(Encoded(Message::RecordingSummary()).empty());
 }
 
 
 TEST_CASE("a player encodes in field order with optional zeros and packed allies")
 {
 	CHECK(Encoded_Hex(Sample_Player()) == Hex(From_Hex(SAMPLE_PLAYER_HEX)));
-	Player const back = Round_Trip<Player>(From_Hex(SAMPLE_PLAYER_HEX));
+	Message::Player const back = Round_Trip<Message::Player>(From_Hex(SAMPLE_PLAYER_HEX));
 	CHECK(back.Country == -1);
 	CHECK(back.Allies == std::vector<std::uint32_t>{ 2, 3 });
 	CHECK(back.ResolvedCountry == 0);
-	CHECK(!back.AiLevel.has_value());
+	CHECK(!back.AILevel.has_value());
 }
 
 
 TEST_CASE("the launch bytes are pinned, oneof zeros and unknown fields included")
 {
-	Launch launch;
+	Message::Launch launch;
 	launch.Kind = GameKind::GAME_KIND_SKIRMISH;
 	launch.Seed = 0;
 	launch.Players.push_back(Sample_Player());
 
-	GameOption crates;
+	Message::GameOption crates;
 	crates.Key = "Crates";
 	crates.Value = false;
-	GameOption credits;
+	Message::GameOption credits;
 	credits.Key = "Credits";
 	credits.Value = std::int64_t(0);
-	GameOption mode;
+	Message::GameOption mode;
 	mode.Key = "Mode";
 	mode.Value = std::string();
 	launch.Options = { crates, credits, mode };
@@ -133,7 +131,7 @@ TEST_CASE("the launch bytes are pinned, oneof zeros and unknown fields included"
 	CHECK(Encoded_Hex(launch) == expected);
 	CHECK(Check_Order(launch) == RuleError::NONE);
 
-	Launch const back = Round_Trip<Launch>(From_Hex(expected));
+	Message::Launch const back = Round_Trip<Message::Launch>(From_Hex(expected));
 	CHECK(back.Seed == 0u);
 	REQUIRE(back.Options.size() == 3);
 	CHECK(std::get<bool>(back.Options[0].Value) == false);
@@ -147,7 +145,7 @@ TEST_CASE("the launch bytes are pinned, oneof zeros and unknown fields included"
 
 TEST_CASE("a frame encodes events, view, samples, and defeats canonically")
 {
-	Event event;
+	Message::Event event;
 	event.Type = 5;
 	event.House = 1;
 	event.Due = -2;
@@ -155,13 +153,13 @@ TEST_CASE("a frame encodes events, view, samples, and defeats canonically")
 	event.Role = EventRole::EVENT_ROLE_CHAT_PROOF;
 	event.SealedPayload = Replay::Bytes();
 
-	HouseSample sample;
+	Message::HouseSample sample;
 	sample.Credits = 0;
 
-	Frame frame;
+	Message::Frame frame;
 	frame.Hash = 0;
 	frame.Events.push_back(event);
-	frame.View.Camera = Point();
+	frame.View.Camera = Message::Point();
 	frame.FrameMicros = 16666;
 	frame.Samples.push_back(sample);
 	frame.Defeated = { 2, 5 };
@@ -175,7 +173,7 @@ TEST_CASE("a frame encodes events, view, samples, and defeats canonically")
 		"52020205"));
 	CHECK(Encoded_Hex(frame) == expected);
 
-	Frame const back = Round_Trip<Frame>(From_Hex(expected));
+	Message::Frame const back = Round_Trip<Message::Frame>(From_Hex(expected));
 	REQUIRE(back.Events.size() == 1);
 	CHECK(back.Events[0].Due == -2);
 	CHECK(back.Events[0].SealedPayload.has_value());
@@ -187,31 +185,31 @@ TEST_CASE("a frame encodes events, view, samples, and defeats canonically")
 
 TEST_CASE("income kinds and income encode canonically, an income entry's private fields included")
 {
-	IncomeKind kind;
+	Message::IncomeKind kind;
 	kind.Number = 2;
 	kind.Id = "Crate";
-	RecordingInfo info;
+	Message::RecordingInfo info;
 	info.IncomeKinds.push_back(kind);
 
 	std::string const info_hex = Hex(From_Hex("7a09" "0802" "1205" "4372617465"));
 	CHECK(Encoded_Hex(info) == info_hex);
-	RecordingInfo const info_back = Round_Trip<RecordingInfo>(From_Hex(info_hex));
+	Message::RecordingInfo const info_back = Round_Trip<Message::RecordingInfo>(From_Hex(info_hex));
 	REQUIRE(info_back.IncomeKinds.size() == 1);
 	CHECK(info_back.IncomeKinds[0].Number == 2);
 	CHECK(info_back.IncomeKinds[0].Id == "Crate");
 
-	Income income;
+	Message::Income income;
 	income.House = 1;
 	income.Kind = 2;
 	income.Amount = 25;
 	income.Unknown.push_back(Unknown_Field(150, "b0092a"));
 
-	Frame frame;
+	Message::Frame frame;
 	frame.Income.push_back(income);
 
 	std::string const frame_hex = Hex(From_Hex("4209" "0801" "1002" "1832" "b0092a"));
 	CHECK(Encoded_Hex(frame) == frame_hex);
-	Frame const frame_back = Round_Trip<Frame>(From_Hex(frame_hex));
+	Message::Frame const frame_back = Round_Trip<Message::Frame>(From_Hex(frame_hex));
 	REQUIRE(frame_back.Income.size() == 1);
 	CHECK(frame_back.Income[0].Kind == 2);
 	CHECK(frame_back.Income[0].Amount == 25);
@@ -222,16 +220,16 @@ TEST_CASE("income kinds and income encode canonically, an income entry's private
 
 TEST_CASE("a set optional message field with an empty encoding is written with length zero")
 {
-	ViewState view;
-	view.Selection = Selection();
+	Message::ViewState view;
+	view.Selection = Message::Selection();
 	CHECK(Encoded_Hex(view) == "1200");
 
-	Frame frame;
+	Message::Frame frame;
 	frame.View = view;
 	CHECK(Encoded_Hex(frame) == "22021200");
 
-	HouseStatistics house;
-	house.Final = HouseSample();
+	Message::HouseStatistics house;
+	house.Final = Message::HouseSample();
 	CHECK_MESSAGE(Encoded(house).empty(), "a plain message field with an empty encoding is left out");
 	house.Final.Credits = 0;
 	CHECK(Encoded_Hex(house) == "4a021000");
@@ -240,21 +238,21 @@ TEST_CASE("a set optional message field with an empty encoding is written with l
 
 TEST_CASE("a house's crate counts encode after its kills")
 {
-	HouseKills kills;
+	Message::HouseKills kills;
 	kills.House = 2;
 	kills.Units = 3;
-	CrateCount crate;
+	Message::CrateCount crate;
 	crate.Id = "Money";
 	crate.Count = 4;
 
-	HouseStatistics house;
+	Message::HouseStatistics house;
 	house.House = 1;
 	house.Kills.push_back(kills);
 	house.Crates.push_back(crate);
 
 	std::string const expected = Hex(From_Hex("0801" "5a04" "0802" "1003" "6209" "0a05" "4d6f6e6579" "1004"));
 	CHECK(Encoded_Hex(house) == expected);
-	HouseStatistics const back = Round_Trip<HouseStatistics>(From_Hex(expected));
+	Message::HouseStatistics const back = Round_Trip<Message::HouseStatistics>(From_Hex(expected));
 	REQUIRE(back.Crates.size() == 1);
 	CHECK(back.Crates[0].Id == "Money");
 	CHECK(back.Crates[0].Count == 4);
@@ -263,7 +261,7 @@ TEST_CASE("a house's crate counts encode after its kills")
 
 TEST_CASE("a checkpoint at frame 0 has no frame field")
 {
-	Checkpoint checkpoint;
+	Message::Checkpoint checkpoint;
 	checkpoint.Crc32 = 0x12345678;
 	checkpoint.State = { 0xAA };
 	CHECK(Encoded_Hex(checkpoint) == "1578563412" "1a01aa");
@@ -275,11 +273,11 @@ TEST_CASE("a checkpoint at frame 0 has no frame field")
 
 TEST_CASE("a summary keeps a last frame of zero and lists its seals")
 {
-	Seal seal;
+	Message::Seal seal;
 	seal.Through = 899;
 	seal.Hash.assign(32, 0x11);
 
-	RecordingSummary summary;
+	Message::RecordingSummary summary;
 	summary.LastFrame = 0;
 	summary.Completed = true;
 	summary.Seals.push_back(seal);
@@ -287,7 +285,7 @@ TEST_CASE("a summary keeps a last frame of zero and lists its seals")
 
 	std::string const expected = "0800" "2001" "2a25" "088307" "1220" + std::string(64, '1') + "3800";
 	CHECK(Encoded_Hex(summary) == expected);
-	RecordingSummary const back = Round_Trip<RecordingSummary>(From_Hex(expected));
+	Message::RecordingSummary const back = Round_Trip<Message::RecordingSummary>(From_Hex(expected));
 	CHECK(back.LastFrame == 0u);
 	CHECK(!back.ElapsedMicros.has_value());
 	CHECK(back.GameMicros == 0u);
@@ -296,17 +294,17 @@ TEST_CASE("a summary keeps a last frame of zero and lists its seals")
 
 TEST_CASE("a non-repeated field that appears twice takes its last value")
 {
-	Player player;
+	Message::Player player;
 	REQUIRE(Decode(From_Hex("0801" "0802"), player));
 	CHECK(player.House == 2);
 
 	// The second view replaces the first whole.
-	Frame frame;
+	Message::Frame frame;
 	REQUIRE(Decode(From_Hex("22040a020802" "22021200"), frame));
 	CHECK(!frame.View.Camera.has_value());
 	CHECK(frame.View.Selection.has_value());
 
-	GameOption option;
+	Message::GameOption option;
 	REQUIRE(Decode(From_Hex("1002" "1801"), option));
 	CHECK_MESSAGE(std::get<bool>(option.Value) == true, "the last oneof member counts");
 }
@@ -314,7 +312,7 @@ TEST_CASE("a non-repeated field that appears twice takes its last value")
 
 TEST_CASE("repeated numeric fields decode packed and unpacked")
 {
-	Player player;
+	Message::Player player;
 	REQUIRE(Decode(From_Hex("5003" "52020405" "5006"), player));
 	CHECK(player.Allies == std::vector<std::uint32_t>{ 3, 4, 5, 6 });
 	CHECK_MESSAGE(Encoded_Hex(player) == "520403040506", "the writer packs them");
@@ -324,7 +322,7 @@ TEST_CASE("repeated numeric fields decode packed and unpacked")
 TEST_CASE("unknown fields and known fields of another wire type are kept byte for byte")
 {
 	ByteVector const bytes = From_Hex("0d01000000" "1801" "a2060568656c6c6f" "e8070a");
-	Player player;
+	Message::Player player;
 	REQUIRE(Decode(bytes, player));
 	CHECK(player.House == 0);
 	CHECK(player.Human);
@@ -336,9 +334,9 @@ TEST_CASE("unknown fields and known fields of another wire type are kept byte fo
 }
 
 
-TEST_CASE("malformed records are refused")
+TEST_CASE("malformed messages are refused")
 {
-	Frame frame;
+	Message::Frame frame;
 	CHECK_MESSAGE(!Decode(From_Hex("0b"), frame), "a group start");
 	CHECK_MESSAGE(!Decode(From_Hex("0801" "0c"), frame), "a group end");
 	CHECK_MESSAGE(!Decode(From_Hex("1a05" "0801"), frame), "a length past the end");
@@ -346,13 +344,13 @@ TEST_CASE("malformed records are refused")
 	CHECK_MESSAGE(!Decode(From_Hex("5202" "0280"), frame), "a packed list that ends inside a varint");
 	CHECK_MESSAGE(!Decode(From_Hex("0001"), frame), "field number zero");
 
-	Launch launch;
+	Message::Launch launch;
 	CHECK_MESSAGE(!Decode(From_Hex("1a03" "520502"), launch), "a malformed player");
 }
 
-TEST_CASE("a string that is not valid UTF-8 makes its record malformed")
+TEST_CASE("a string that is not valid UTF-8 makes its message malformed")
 {
-	RecordingInfo info;
+	Message::RecordingInfo info;
 	REQUIRE(Decode(From_Hex("4a03" "e298ba"), info));
 	CHECK(info.MapName == "\xE2\x98\xBA");
 	CHECK_MESSAGE(!Decode(From_Hex("4a01" "ff"), info), "a byte that never starts a character");
@@ -361,10 +359,10 @@ TEST_CASE("a string that is not valid UTF-8 makes its record malformed")
 	CHECK_MESSAGE(!Decode(From_Hex("4a04" "f4908080"), info), "a code point past U+10FFFF");
 	CHECK_MESSAGE(!Decode(From_Hex("4a02" "e298"), info), "a character cut short");
 
-	Launch launch;
+	Message::Launch launch;
 	CHECK_MESSAGE(!Decode(From_Hex("1a04" "1202" "c328"), launch), "a player name");
 
-	Frame frame;
+	Message::Frame frame;
 	CHECK_MESSAGE(Decode(From_Hex("1a03" "2201" "ff"), frame), "bytes fields are not text");
 }
 
@@ -411,15 +409,15 @@ class Randomizer
 };
 
 
-Frame Random_Frame(Randomizer & random)
+Message::Frame Random_Frame(Randomizer & random)
 {
-	Frame frame;
+	Message::Frame frame;
 	frame.Skipped = random.Coin() ? 0 : random.Number(2000);
 	if (random.Coin()) {
 		frame.Hash = random.Number(0xFFFFFFFF);
 	}
 	for (std::uint32_t i = random.Number(4); i > 0; i--) {
-		Event event;
+		Message::Event event;
 		event.Type = random.Number(60);
 		event.House = random.Number(8);
 		event.Due = std::int32_t(random.Signed());
@@ -432,20 +430,20 @@ Frame Random_Frame(Randomizer & random)
 		frame.Events.push_back(event);
 	}
 	if (random.Coin()) {
-		Point point;
+		Message::Point point;
 		point.X = std::int32_t(random.Signed());
 		point.Y = std::int32_t(random.Signed());
 		frame.View.Camera = point;
 	}
 	if (random.Number(3) == 0) {
-		Selection selection;
+		Message::Selection selection;
 		for (std::uint32_t i = random.Number(5); i > 0; i--) {
 			selection.Ids.push_back(random.Number(0xFFFFFFFF));
 		}
 		frame.View.Selection = selection;
 	}
 	if (random.Number(5) == 0) {
-		PlayerMessage message;
+		Message::PlayerMessage message;
 		message.House = random.Number(8);
 		message.Sender = "Sender";
 		message.Text = "text";
@@ -459,7 +457,7 @@ Frame Random_Frame(Randomizer & random)
 		frame.FrameMicros = random.Number(100000);
 	}
 	if (random.Number(4) == 0) {
-		HouseSample sample;
+		Message::HouseSample sample;
 		sample.House = random.Number(8);
 		sample.Credits = random.Signed();
 		if (random.Coin()) {
@@ -470,7 +468,7 @@ Frame Random_Frame(Randomizer & random)
 		frame.Samples.push_back(sample);
 	}
 	if (random.Number(4) == 0) {
-		Income income;
+		Message::Income income;
 		income.House = random.Number(8);
 		income.Kind = random.Number(0xFFFFFFFF);
 		income.Amount = random.Signed();
@@ -495,9 +493,9 @@ TEST_CASE("random frames survive an encode and decode unchanged")
 {
 	Randomizer random(20261116);
 	for (int i = 0; i < 2000; i++) {
-		Frame const frame = Random_Frame(random);
+		Message::Frame const frame = Random_Frame(random);
 		Replay::Bytes const bytes = Encoded(frame);
-		Frame back;
+		Message::Frame back;
 		REQUIRE(Decode(bytes, back));
 		CHECK_MESSAGE(Encoded(back) == bytes, "iteration ", i);
 		CHECK(back.Events.size() == frame.Events.size());
@@ -515,7 +513,7 @@ TEST_CASE("the limits of section 10 hold at their values and refuse one more")
 	limits.EventsPerRecord = 2;
 	limits.EventPayload = 3;
 
-	Launch launch;
+	Message::Launch launch;
 	launch.Players.resize(2);
 	launch.Players[0].Name = "abcd";
 	CHECK(Check_Limits(launch, limits) == RuleError::NONE);
@@ -525,7 +523,7 @@ TEST_CASE("the limits of section 10 hold at their values and refuse one more")
 	launch.Players[0].Name = "abcde";
 	CHECK(Check_Limits(launch, limits) == RuleError::STRING_TOO_LONG);
 
-	Frame frame;
+	Message::Frame frame;
 	frame.Events.resize(2);
 	frame.Events[0].Payload.assign(3, 0);
 	CHECK(Check_Limits(frame, limits) == RuleError::NONE);
@@ -535,7 +533,7 @@ TEST_CASE("the limits of section 10 hold at their values and refuse one more")
 	CHECK(Check_Limits(frame, limits) == RuleError::TOO_MANY_EVENTS);
 
 	limits.IncomeKinds = 2;
-	RecordingInfo kinds;
+	Message::RecordingInfo kinds;
 	kinds.IncomeKinds.resize(2);
 	kinds.IncomeKinds[0].Id = "abcd";
 	CHECK(Check_Limits(kinds, limits) == RuleError::NONE);
@@ -544,17 +542,17 @@ TEST_CASE("the limits of section 10 hold at their values and refuse one more")
 	kinds.IncomeKinds.resize(3);
 	CHECK(Check_Limits(kinds, limits) == RuleError::TOO_MANY_INCOME_KINDS);
 
-	Statistics statistics;
+	Message::Statistics statistics;
 	statistics.Houses.resize(3);
 	CHECK(Check_Limits(statistics, limits) == RuleError::TOO_MANY_HOUSES);
 	statistics.Houses.resize(2);
-	statistics.Houses[1].Crates.push_back(CrateCount{ "abcd", 1, {} });
+	statistics.Houses[1].Crates.push_back(Message::CrateCount{ "abcd", 1, {} });
 	CHECK(Check_Limits(statistics, limits) == RuleError::NONE);
-	statistics.Houses[1].Crates.push_back(CrateCount{ "abcde", 1, {} });
+	statistics.Houses[1].Crates.push_back(Message::CrateCount{ "abcde", 1, {} });
 	CHECK(Check_Limits(statistics, limits) == RuleError::STRING_TOO_LONG);
 
-	RecordingInfo info;
-	info.Files.push_back(FileHash{ "abcde", "", {} });
+	Message::RecordingInfo info;
+	info.Files.push_back(Message::FileHash{ "abcde", "", {} });
 	CHECK(Check_Limits(info, limits) == RuleError::STRING_TOO_LONG);
 
 	LimitsType const standard;
@@ -598,7 +596,7 @@ TEST_CASE("a limited decode refuses each occurrence past a limit, a replaced one
 	info_bytes.insert(info_bytes.end(), replacement.begin(), replacement.end());
 	ByteVector const engine = Bytes_Of("opents");
 	info_bytes.insert(info_bytes.end(), engine.begin(), engine.end());
-	RecordingInfo info;
+	Message::RecordingInfo info;
 	REQUIRE(Decode(info_bytes, info));
 	CHECK(info.Engine == "opents");
 	CHECK(Check_Limits(info, limits) == RuleError::NONE);
@@ -613,16 +611,16 @@ TEST_CASE("a limited decode refuses each occurrence past a limit, a replaced one
 	ByteVector frame_bytes = From_Hex("1a");
 	Put_Varint(frame_bytes, event.size());
 	frame_bytes.insert(frame_bytes.end(), event.begin(), event.end());
-	Frame frame;
+	Message::Frame frame;
 	REQUIRE(Decode(frame_bytes, frame));
 	CHECK(Check_Limits(frame, limits) == RuleError::NONE);
 	CHECK(!Decode(frame_bytes, frame, limits, broken));
 	CHECK(broken == RuleError::PAYLOAD_TOO_LARGE);
 
-	Frame within;
+	Message::Frame within;
 	CHECK(Decode(Encoded(frame), within, limits, broken));
 	CHECK(broken == RuleError::NONE);
-	CHECK_MESSAGE(!Decode(From_Hex("0a05"), within, limits, broken), "a malformed record");
+	CHECK_MESSAGE(!Decode(From_Hex("0a05"), within, limits, broken), "a malformed message");
 	CHECK(broken == RuleError::NONE);
 }
 
@@ -633,25 +631,25 @@ TEST_CASE("a limited decode stops a count at its limit before storing more")
 	RuleError broken = RuleError::NONE;
 
 	// Far more empty players than the limit.
-	Launch launch;
+	Message::Launch launch;
 	CHECK(!Decode(Repeat("1a00", 1 << 19), launch, limits, broken));
 	CHECK(broken == RuleError::TOO_MANY_PLAYERS);
 	CHECK(launch.Players.size() == limits.Players);
 	CHECK(Decode(Repeat("1a00", limits.Players), launch, limits, broken));
 
 	// Far more empty houses than the limit.
-	Statistics statistics;
+	Message::Statistics statistics;
 	CHECK(!Decode(Repeat("1200", 1 << 24), statistics, limits, broken));
 	CHECK(broken == RuleError::TOO_MANY_HOUSES);
 	CHECK(statistics.Houses.size() == limits.Players);
 
-	Frame frame;
+	Message::Frame frame;
 	CHECK(!Decode(Repeat("1a00", limits.EventsPerRecord + 1), frame, limits, broken));
 	CHECK(broken == RuleError::TOO_MANY_EVENTS);
 	CHECK(frame.Events.size() == limits.EventsPerRecord);
 	CHECK(Decode(Repeat("1a00", limits.EventsPerRecord), frame, limits, broken));
 
-	RecordingInfo info;
+	Message::RecordingInfo info;
 	CHECK(!Decode(Repeat("7a00", limits.IncomeKinds + 1), info, limits, broken));
 	CHECK(broken == RuleError::TOO_MANY_INCOME_KINDS);
 	CHECK(info.IncomeKinds.size() == limits.IncomeKinds);
@@ -667,7 +665,7 @@ TEST_CASE("a limited decode stops a count at its limit before storing more")
 
 TEST_CASE("the writer's ordering rules catch lists out of order")
 {
-	Launch launch;
+	Message::Launch launch;
 	launch.Players.resize(2);
 	launch.Players[0].House = 3;
 	launch.Players[1].House = 1;
@@ -688,11 +686,11 @@ TEST_CASE("the writer's ordering rules catch lists out of order")
 	launch.Options[1].Key = "\xC3\xA9";
 	CHECK_MESSAGE(Check_Order(launch) == RuleError::NONE, "keys compare as unsigned bytes");
 
-	Frame frame;
+	Message::Frame frame;
 	frame.Defeated = { 1, 1 };
 	CHECK(Check_Order(frame) == RuleError::NOT_ASCENDING);
 
-	RecordingInfo info;
+	Message::RecordingInfo info;
 	info.Colors.resize(2);
 	CHECK(Check_Order(info) == RuleError::NOT_ASCENDING);
 }
@@ -700,11 +698,11 @@ TEST_CASE("the writer's ordering rules catch lists out of order")
 
 namespace {
 
-RecordingInfo With_Kinds(std::vector<std::pair<std::uint32_t, std::string>> const & kinds)
+Message::RecordingInfo With_Kinds(std::vector<std::pair<std::uint32_t, std::string>> const & kinds)
 {
-	RecordingInfo info;
+	Message::RecordingInfo info;
 	for (auto const & kind : kinds) {
-		IncomeKind entry;
+		Message::IncomeKind entry;
 		entry.Number = kind.first;
 		entry.Id = kind.second;
 		info.IncomeKinds.push_back(entry);
@@ -713,11 +711,11 @@ RecordingInfo With_Kinds(std::vector<std::pair<std::uint32_t, std::string>> cons
 }
 
 
-Frame Paying(std::vector<std::uint32_t> const & used)
+Message::Frame Paying(std::vector<std::uint32_t> const & used)
 {
-	Frame frame;
+	Message::Frame frame;
 	for (std::uint32_t number : used) {
-		Income income;
+		Message::Income income;
 		income.Kind = number;
 		income.Amount = 1;
 		frame.Income.push_back(income);

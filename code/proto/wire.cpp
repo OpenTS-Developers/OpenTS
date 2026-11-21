@@ -7,7 +7,7 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-#include "protowire.h"
+#include "proto/wire.h"
 
 #include <bit>
 
