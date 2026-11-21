@@ -93,9 +93,11 @@
 
 #include "aircraft.h"
 
+#include "_convert.h"
 #include "_map.h"
 #include "_rtti.h"
 #include "_rules.h"
+#include "_surface.h"
 #include "_tactica.h"
 #include "airctype.h"
 #include "anim.h"
@@ -107,7 +109,9 @@
 #include "ccrand.h"
 #include "cell.h"
 #include "dbgprint.h"
+#include "draw.h"
 #include "findmake.h"
+#include "globals.h"
 #include "house.h"
 #include "houstype.h"
 #include "incdec.h"
@@ -115,6 +119,7 @@
 #include "infatype.h"
 #include "inline.h"
 #include "ion.h"
+#include "lightcon.h"
 #include "map.h"
 #include "mono.h"
 #include "partsys.h"
@@ -122,7 +127,9 @@
 #include "rules.h"
 #include "savestream.h"
 #include "scenario.h"
+#include "scheme.h"
 #include "session.h"
+#include "shapeset.h"
 #include "stimer.h"
 #include "sun.h"
 #include "swizzle.h"
@@ -435,6 +442,11 @@ void AircraftClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) const
 		key = -1;
 		matrix = Locomotion->Draw_Matrix(&key);
 		Draw_Voxel(Class->Voxel, 0, key, &Class->VoxelIndex, cliprect, point, Get_Isometric_View_Matrix() * matrix, newbrightness, SHAPE_NORMAL);
+
+		// Draw rotor blades, if equipped (and not crashing).
+		if (Class->IsRotorEquipped && Strength > 0) {
+			Draw_Rotors(point, cliprect, matrix);
+		}
 	}
 
 	/*
@@ -459,47 +471,164 @@ void AircraftClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) const
  * HISTORY:                                                                                    *
  *   07/26/1996 JLB : Created.                                                                 *
  *=============================================================================================*/
-void AircraftClass::Draw_Rotors(Point2D const & xy, Rect const & cliprect) const
+void AircraftClass::Draw_Rotors(Point2D const& xy, Rect const& cliprect, Matrix3D const& matrix) const
 {
-	ShapeFlags_Type flags = ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL);
+	/*
+	** Don't draw rotors if the aircraft is hidden from the viewing player.
+	*/
+	VisualType visual = Visual_Character();
+
+	if (visual == VISUAL_HIDDEN) {
+		return;
+	}
+
+	ShapeFlags_Type flags = ShapeFlags_Type(SHAPE_CENTER | SHAPE_WIN_REL);
 	int shapenum;
 
 	/*
-	**	The rotor shape number depends on whether the helicopter is idling
-	**	or not. A landed helicopter uses slow moving "idling" blades.
+	** The rotor shape number depends on whether the helicopter is idling
+	** or not. A landed helicopter uses idling blades.
 	*/
 	if (HeightAGL == 0) {
-		shapenum = (Fetch_Stage()%8)+4;
-		flags = flags;
-	} else {
-		shapenum = Fetch_Stage()%4;
-		flags = ShapeFlags_Type(flags|SHAPE_PREDATOR);
+		shapenum = (Fetch_Stage() % 8) + 4;
+
+		// cloaked, idling
+		if (visual == VISUAL_SHADOWY) {
+			flags = ShapeFlags_Type(flags | SHAPE_TRANSLUCENT50);
+		}
+		// uncloaked, idling
+		else {
+			flags = ShapeFlags_Type(flags | SHAPE_TRANSLUCENT25);
+		}
+	}
+	else {
+		shapenum = Fetch_Stage() % 4;
+
+		// cloaked
+		if (visual == VISUAL_SHADOWY) {
+			flags = ShapeFlags_Type(flags | SHAPE_TRANSLUCENT75);
+		}
+		// uncloaked
+		else {
+			flags = ShapeFlags_Type(flags | SHAPE_TRANSLUCENT50);
+		}
 	}
 
-	#if 0
-	if (*this == AIRCRAFT_TRANSPORT) {
-		int _stretch[FACING_COUNT] = {8, 9, 10, 9, 8, 9, 10, 9};
+	char const* rotorFiles[4] = {
+		Class->Rotor1File,
+		Class->Rotor2File,
+		Class->Rotor3File,
+		Class->Rotor4File
+	};
 
-		/*
-		**	Dual rotors offset along flight axis.
-		*/
-		short xx = x;
-		short yy = y-LEPTON_TO_PIXEL(Height);
-		FacingType face = Dir_Facing(SecondaryFacing);
-		Move_Point(xx, yy, SecondaryFacing.Current(), _stretch[face]);
-		Draw_Shape(AircraftTypeClass::RRotorData, shapenum, xx, yy-2, window, flags, NULL, DisplayClass::UnitShadow);
+	void const* const* rotorData[4] = {
+		&Class->Rotor1Data,
+		&Class->Rotor2Data,
+		&Class->Rotor3Data,
+		&Class->Rotor4Data
+	};
 
-		Move_Point(xx, yy, SecondaryFacing.Current()+DIR_S, _stretch[face]*2);
-		Draw_Shape(AircraftTypeClass::LRotorData, shapenum, xx, yy-2, window, flags, NULL, DisplayClass::UnitShadow);
+	void const* const* tiltedData[4] = {
+		Class->Rotor1TiltedData,
+		Class->Rotor2TiltedData,
+		Class->Rotor3TiltedData,
+		Class->Rotor4TiltedData
+	};
 
-	} else {
+	TPoint3D<int> const* rotorFLH[4] = {
+		&Class->Rotor1FLH,
+		&Class->Rotor2FLH,
+		&Class->Rotor3FLH,
+		&Class->Rotor4FLH
+	};
 
-		/*
-		**	Single rotor centered about shape.
-		*/
-		Draw_Shape(AircraftTypeClass::RRotorData, shapenum, x, ((y-LEPTON_TO_PIXEL(Height))-2), window, flags, NULL, DisplayClass::UnitShadow);
+	/*
+	** Count the rotor artwork sets.
+	*/
+	int artworkCount = 0;
+
+	for (int i = 0; i < 4; ++i) {
+		if (rotorFiles[i][0] == '\0') {
+			break;
+		}
+
+		artworkCount++;
 	}
-	#endif
+
+	/*
+	** Draw each rotor at its configured FLH.
+	*/
+	for (int rotor = 0; rotor < Class->RotorCount && rotor < 4; ++rotor) {
+		ShapeSet const* rotordata = NULL;
+
+		if (artworkCount > 0) {
+			/*
+			** Resolve the repeating custom artwork pattern.
+			*/
+			int artIndex = rotor % artworkCount;
+
+			if (Locomotion->Is_Moving_Now()) {
+				int direction = SecondaryFacing.Current().As_Dir8();
+
+				rotordata = static_cast<ShapeSet const*>(
+					tiltedData[artIndex][direction]
+					);
+			}
+
+			/*
+			** Fall back to the ordinary custom rotor if stationary
+			** or if the directional rotor could not be loaded.
+			*/
+			if (rotordata == NULL) {
+				rotordata = static_cast<ShapeSet const*>(
+					*rotorData[artIndex]
+					);
+			}
+		}
+
+		/*
+		** Fall back to the built-in rotor if no custom artwork is
+		** configured or the selected custom artwork could not be loaded.
+		*/
+		if (rotordata == NULL) {
+			rotordata = static_cast<ShapeSet const*>(
+				(rotor % 2 == 0)
+				? AircraftTypeClass::LRotorData
+				: AircraftTypeClass::RRotorData
+				);
+		}
+
+		if (rotordata == NULL) {
+			continue;
+		}
+
+		Vector3 localOffset(
+			rotorFLH[rotor]->X / 8.0f,
+			rotorFLH[rotor]->Y / 8.0f,
+			rotorFLH[rotor]->Z / 8.0f
+		);
+
+		Matrix3D rotorMatrix = Get_Isometric_View_Matrix() * matrix;
+		Vector3 projectedOffset = rotorMatrix.Rotate_Vector(localOffset);
+
+		Point2D rotorPoint = xy;
+		rotorPoint.X += (int)(projectedOffset.X + 0.5f);
+		rotorPoint.Y -= (int)(projectedOffset.Y + 0.5f);
+
+		Draw_Shape(
+			*LogicalSurface,
+			*ColorSchemes[House->Scheme]->Converter,
+			rotordata,
+			shapenum,
+			rotorPoint,
+			cliprect,
+			flags,
+			NULL,
+			0,
+			ZGRAD_90DEG,
+			NORMAL_LIGHT
+		);
+	}
 }
 
 

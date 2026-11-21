@@ -1,11 +1,9 @@
 ---
 key: Rotors
-summary: Parsed rotor flag that the engine never uses.
-no_effect: true
-see_also: ["CustomRotor"]
+summary: Controls whether OpenTS draws rotor effects on an aircraft.
 when_omitted:
   kind: value
   value: "no"
 ---
 
-OpenTS draws no separate rotor blades over an aircraft at any setting. A helicopter shows only the frames its own artwork supplies, so spinning blades must be part of that artwork.
+Set `Rotors=yes` in the aircraft's `art.ini` image section to draw separate rotor artwork. [Aircraft rotors](/systems/aircraft-rotors/) explains how the engine selects and positions the shapes.

@@ -251,3 +251,9 @@
     - "-MESSAGES"
     - Disable network protection
   summary: Let in-game chat from outside the match through. Removed when a line began to be accepted only from a seat of the match.
+- type: key
+  id: CustomRotor
+  route: /keys/customrotor/
+  search_aliases:
+    - CustomRotor
+  summary: Was read as a rotor flag but had no effect. Removed when OpenTS added aircraft rotor drawing.

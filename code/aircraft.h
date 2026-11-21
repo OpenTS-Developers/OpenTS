@@ -130,7 +130,7 @@ class AircraftClass : public FootClass, public IFlyControl
 		**	object interacts with the map and thus indirectly controls rendering.
 		*/
 		virtual void Look(bool incremental=false, bool=false) override;
-		void Draw_Rotors(Point2D const & xy, Rect const & cliprect) const;
+		void Draw_Rotors(Point2D const & xy, Rect const & cliprect, Matrix3D const& matrix) const;
 		virtual int Exit_Object(TechnoClass *) override;
 		virtual void Draw_It(Point2D const & point, Rect const & cliprect) const override;
 

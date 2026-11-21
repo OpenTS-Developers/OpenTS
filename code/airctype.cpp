@@ -52,6 +52,7 @@
 #include "_mixfile.h"
 #include "_rules.h"
 #include "aircraft.h"
+#include "animtype.h"
 #include "findmake.h"
 #include "globals.h"
 #include "incdec.h"
@@ -80,21 +81,60 @@ void const * AircraftTypeClass::RRotorData = NULL;
  * HISTORY:                                                                                    *
  *   07/26/1994 JLB : Created.                                                                 *
  *=============================================================================================*/
-AircraftTypeClass::AircraftTypeClass(char const * ininame) :
+AircraftTypeClass::AircraftTypeClass(char const* ininame) :
 	BASECLASS(ininame, SPEED_WINGED),
 	IsLandable(false),
 	IsRotorEquipped(false),
-	IsRotorCustom(false),
+	RotorCount(1),
+	Rotor1Data(NULL),
+	Rotor2Data(NULL),
+	Rotor3Data(NULL),
+	Rotor4Data(NULL),
+	Rotor1TiltedData(NULL),
+	Rotor2TiltedData(NULL),
+	Rotor3TiltedData(NULL),
+	Rotor4TiltedData(NULL),
 	IsCarryall(false),
 	HeapID(AIRCRAFT_NONE)
 {
 	Create_ID();
+
+	Rotor1FLH = Point3D(0, 0, 0);
+	Rotor2FLH = Point3D(0, 0, 0);
+	Rotor3FLH = Point3D(0, 0, 0);
+	Rotor4FLH = Point3D(0, 0, 0);
 
 	AircraftTypes.Add(this);
 	HeapID = AircraftType(AircraftTypes.ID(this));
 
 	IsMoveToShroud = false;
 	Rotation = 32;
+
+	Rotor1File[0] = '\0';
+	Rotor2File[0] = '\0';
+	Rotor3File[0] = '\0';
+	Rotor4File[0] = '\0';
+
+	char(*tiltedFiles[4])[15 + 1] = {
+		Rotor1TiltedFiles,
+		Rotor2TiltedFiles,
+		Rotor3TiltedFiles,
+		Rotor4TiltedFiles
+	};
+
+	void const** tiltedData[4] = {
+		Rotor1TiltedData,
+		Rotor2TiltedData,
+		Rotor3TiltedData,
+		Rotor4TiltedData
+	};
+
+	for (int rotor = 0; rotor < 4; ++rotor) {
+		for (int direction = 0; direction < 8; ++direction) {
+			tiltedFiles[rotor][direction][0] = '\0';
+			tiltedData[rotor][direction] = NULL;
+		}
+	}
 }
 
 
@@ -264,14 +304,94 @@ Point3D AircraftTypeClass::Lepton_Dimensions(void) const
  * HISTORY:                                                                                    *
  *   07/19/1996 JLB : Created.                                                                 *
  *=============================================================================================*/
-bool AircraftTypeClass::Read_INI(CCINIClass const & ini)
+bool AircraftTypeClass::Read_INI(CCINIClass const& ini)
 {
 	if (BASECLASS::Read_INI(ini)) {
 
 		IsLandable = ini.Get_Bool(Name(), "Landable", IsLandable);
 		IsCarryall = ini.Get_Bool(Name(), "Carryall", IsCarryall);
 		IsRotorEquipped = ArtINI.Get_Bool(Graphic_Name(), "Rotors", IsRotorEquipped);
-		IsRotorCustom = ArtINI.Get_Bool(Graphic_Name(), "CustomRotor", IsRotorCustom);
+		RotorCount = ArtINI.Get_Int(Graphic_Name(), "RotorCount", RotorCount);
+		Rotor1FLH = ArtINI.Get_Point(Graphic_Name(), "Rotor1FLH", Rotor1FLH);
+		Rotor2FLH = ArtINI.Get_Point(Graphic_Name(), "Rotor2FLH", Rotor2FLH);
+		Rotor3FLH = ArtINI.Get_Point(Graphic_Name(), "Rotor3FLH", Rotor3FLH);
+		Rotor4FLH = ArtINI.Get_Point(Graphic_Name(), "Rotor4FLH", Rotor4FLH);
+		ArtINI.Get_String(Graphic_Name(), "Rotor1Anim", "", Rotor1File, sizeof(Rotor1File));
+		ArtINI.Get_String(Graphic_Name(), "Rotor2Anim", "", Rotor2File, sizeof(Rotor2File));
+		ArtINI.Get_String(Graphic_Name(), "Rotor3Anim", "", Rotor3File, sizeof(Rotor3File));
+		ArtINI.Get_String(Graphic_Name(), "Rotor4Anim", "", Rotor4File, sizeof(Rotor4File));
+
+		/*
+		** Read the directional rotor filenames for each rotor.
+		*/
+		{
+			const int ROTOR_COUNT = 4;				// Max number of rotors
+			const int ROTOR_DIRECTION_COUNT = 8;	// Number of directions expected in list
+			const int ROTOR_FILENAME_LENGTH = 15;
+
+			char(*tiltedFiles[ROTOR_COUNT])[ROTOR_FILENAME_LENGTH + 1] = {
+				Rotor1TiltedFiles,
+				Rotor2TiltedFiles,
+				Rotor3TiltedFiles,
+				Rotor4TiltedFiles
+			};
+
+			char tiltednames[
+				ROTOR_DIRECTION_COUNT * ROTOR_FILENAME_LENGTH + (ROTOR_DIRECTION_COUNT - 1) + 1
+			];
+
+			for (int rotor = 0; rotor < ROTOR_COUNT; ++rotor) {
+				for (int direction = 0; direction < ROTOR_DIRECTION_COUNT; ++direction) {
+					tiltedFiles[rotor][direction][0] = '\0';
+				}
+				tiltednames[0] = '\0';
+
+				int direction = 0;
+				switch (rotor) {
+					case 0:
+						ArtINI.Get_String(
+							Graphic_Name(), "Rotor1TiltedAnims", "", tiltednames, sizeof(tiltednames));
+						break;
+					case 1:
+						ArtINI.Get_String(
+							Graphic_Name(), "Rotor2TiltedAnims", "", tiltednames, sizeof(tiltednames));
+						break;
+					case 2:
+						ArtINI.Get_String(
+							Graphic_Name(), "Rotor3TiltedAnims", "", tiltednames, sizeof(tiltednames));
+						break;
+					case 3:
+						ArtINI.Get_String(
+							Graphic_Name(), "Rotor4TiltedAnims", "", tiltednames, sizeof(tiltednames));
+						break;
+				}
+
+				char* filename = tiltednames;
+
+				while (*filename != '\0' && direction < ROTOR_DIRECTION_COUNT) {
+					char* comma = strchr(filename, ',');
+
+					if (comma != NULL) {
+						*comma = '\0';
+					}
+
+					size_t length = strlen(filename);
+
+					if (length > 0 && length <= ROTOR_FILENAME_LENGTH) {
+						strcpy(tiltedFiles[rotor][direction], filename);
+					}
+
+					direction++;
+
+					if (comma == NULL) {
+						break;
+					}
+
+					filename = comma + 1;
+				}
+			}
+		}
+		Load_Rotor_Assets();
 		return(true);
 	}
 	return(false);
@@ -290,7 +410,7 @@ void AircraftTypeClass::Compute_CRC(CRCEngine & crc) const
 	BASECLASS::Compute_CRC(crc);
 
 	crc(IsRotorEquipped);
-	crc(IsRotorCustom);
+	crc(RotorCount);
 	crc(IsLandable);
 	crc(HeapID);
 }
@@ -307,6 +427,7 @@ void AircraftTypeClass::Post_Load(void)
 
 	Fetch_Voxel_Image();
 	Fetch_Normal_Image();
+	Load_Rotor_Assets();
 }
 
 
@@ -321,7 +442,19 @@ void AircraftTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(HeapID);
 	stream.Serialize(IsCarryall);
 	stream.Serialize(IsRotorEquipped);
-	stream.Serialize(IsRotorCustom);
+	stream.Serialize(RotorCount);
+	stream.Serialize(Rotor1FLH);
+	stream.Serialize(Rotor2FLH);
+	stream.Serialize(Rotor3FLH);
+	stream.Serialize(Rotor4FLH);
+	stream.Serialize(Rotor1File);
+	stream.Serialize(Rotor2File);
+	stream.Serialize(Rotor3File);
+	stream.Serialize(Rotor4File);
+	stream.Serialize(Rotor1TiltedFiles);
+	stream.Serialize(Rotor2TiltedFiles);
+	stream.Serialize(Rotor3TiltedFiles);
+	stream.Serialize(Rotor4TiltedFiles);
 	stream.Serialize(IsLandable);
 }
 
@@ -343,4 +476,78 @@ ClassID AircraftTypeClass::Class_ID(void) const
 AircraftTypeClass * AircraftTypeClass::Find_Or_Make(char const * name)
 {
 	return(TFind_Or_Make<AircraftTypeClass>(name, AircraftTypes));
+}
+
+
+/// <summary>
+/// Gets the SHP data for each of the rotor filenames specified by the Rotor#Anim and
+/// Rotor#TiltedAnims keys. These files aren't initialized through anims so need to be
+/// loaded specially. Because they aren't anims, they also need to be restored on game load,
+/// so this function is used both when reading the INI and when reloading a savegame.
+/// </summary>
+void AircraftTypeClass::Load_Rotor_Assets(void)
+{
+	/*
+	** Load the ordinary custom rotor SHPs.
+	*/
+	char const* rotorFiles[] = {
+		Rotor1File,
+		Rotor2File,
+		Rotor3File,
+		Rotor4File
+	};
+
+	void const** rotorData[] = {
+		&Rotor1Data,
+		&Rotor2Data,
+		&Rotor3Data,
+		&Rotor4Data
+	};
+
+	for (int i = 0; i < 4; ++i) {
+		*rotorData[i] = NULL;
+
+		if (rotorFiles[i][0] != '\0') {
+			char fullname[MAX_PATH];
+			_makepath(fullname, NULL, NULL, rotorFiles[i], ".SHP");
+			*rotorData[i] = MFCD::Retrieve(fullname);
+		}
+	}
+
+	/*
+	** Load the directional rotor SHPs from the stored filenames.
+	*/
+	char(*tiltedFiles[4])[15 + 1] = {
+		Rotor1TiltedFiles,
+		Rotor2TiltedFiles,
+		Rotor3TiltedFiles,
+		Rotor4TiltedFiles
+	};
+
+	void const** tiltedData[4] = {
+		Rotor1TiltedData,
+		Rotor2TiltedData,
+		Rotor3TiltedData,
+		Rotor4TiltedData
+	};
+
+	for (int rotor = 0; rotor < 4; ++rotor) {
+		for (int direction = 0; direction < 8; ++direction) {
+			tiltedData[rotor][direction] = NULL;
+
+			if (tiltedFiles[rotor][direction][0] != '\0') {
+				char fullname[MAX_PATH];
+
+				_makepath(
+					fullname,
+					NULL,
+					NULL,
+					tiltedFiles[rotor][direction],
+					".SHP"
+				);
+
+				tiltedData[rotor][direction] = MFCD::Retrieve(fullname);
+			}
+		}
+	}
 }
