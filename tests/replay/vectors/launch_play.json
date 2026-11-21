@@ -1,7 +1,7 @@
 {
   "version": 1,
   "play": {
-    "launch": {
+    "game": {
       "kind": "GAME_KIND_MULTIPLAYER",
       "seed": 0,
       "players": [

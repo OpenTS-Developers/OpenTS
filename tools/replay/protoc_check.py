@@ -33,7 +33,7 @@ sys.path.insert(0, HERE)
 import cncreplay as c  # noqa: E402
 
 REPO = os.path.abspath(os.path.join(HERE, '..', '..'))
-PROTO_DIR = os.path.join(REPO, 'docs', 'replay')
+PROTO_PATHS = ['--proto_path=' + os.path.join(REPO, 'docs', name) for name in ('replay', 'launch')]
 
 
 def _read(path):
@@ -101,7 +101,7 @@ class Protoc:
     def run(self, mode, name, data):
         self.calls += 1
         proc = subprocess.run(
-            [self.path, '--proto_path=' + PROTO_DIR, '--%s=%s' % (mode, name), proto_file(name)],
+            [self.path] + PROTO_PATHS + ['--%s=%s' % (mode, name), proto_file(name)],
             input=data, capture_output=True)
         return proc.returncode, proc.stdout, proc.stderr.decode('utf-8', 'replace')
 
@@ -148,7 +148,7 @@ def check_vectors(protoc, vectors, failures):
     for fname in sorted(os.listdir(vectors)):
         path = os.path.join(vectors, fname)
         if fname.endswith('.bin'):
-            name = 'cnclaunch.LaunchResult' if 'result' in fname else 'cnclaunch.LaunchRequest'
+            name = 'cnclaunch.Result' if 'result' in fname else 'cnclaunch.Request'
             check_body(protoc, name, _read(path), fname, failures)
             count += 1
             continue
@@ -174,12 +174,12 @@ def check_refusals(protoc, vectors, failures, notes):
     """Malformed inputs: say what protoc does with them."""
     r = c.read_replay(_read(os.path.join(vectors, 'malformed_invalid_utf8.cncr')), check=False)
     body = [s for s in r.sections if s.tag == b'LNCH'][0].body
-    code, _, err = protoc.run('decode', 'cncreplay.Launch', body)
+    code, _, err = protoc.run('decode', 'cnclaunch.Game', body)
     notes.append('invalid UTF-8 in Player.name: protoc --decode exit %d (%s)'
                  % (code, (err.strip().splitlines() or ['no message'])[-1]))
     r = c.read_replay(_read(os.path.join(vectors, 'malformed_group_wire_type.cncr')), check=False)
     body = [s for s in r.sections if s.tag == b'LNCH'][0].body
-    code, out, err = protoc.run('decode', 'cncreplay.Launch', body)
+    code, out, err = protoc.run('decode', 'cnclaunch.Game', body)
     notes.append('start/end group pair for unknown field 50 in LNCH: protoc --decode exit %d%s'
                  % (code, ', parsed as an unknown group field' if code == 0 else ''))
     code, out, err = protoc.run('decode', 'cncreplay.Frame', bytes.fromhex('1500000000') + b'\x0a\x00')
@@ -198,13 +198,13 @@ def check_refusals(protoc, vectors, failures, notes):
 
 
 NARROWING = (
-    ('cncreplay.Player', 'house (uint32) = 2^32', 1, 1 << 32),
-    ('cncreplay.Player', 'house (uint32) = 2^32 + 5', 1, (1 << 32) + 5),
-    ('cncreplay.Player', 'country (sint32) = 2^32 + 3', 5, (1 << 32) + 3),
-    ('cncreplay.Player', 'human (bool) = 2', 3, 2),
-    ('cncreplay.Player', 'human (bool) = 2^40', 3, 1 << 40),
-    ('cncreplay.Launch', 'kind (enum) = 2^31', 1, 1 << 31),
-    ('cncreplay.Launch', 'kind (enum) = 2^32 + 1', 1, (1 << 32) + 1),
+    ('cnclaunch.Player', 'house (uint32) = 2^32', 1, 1 << 32),
+    ('cnclaunch.Player', 'house (uint32) = 2^32 + 5', 1, (1 << 32) + 5),
+    ('cnclaunch.Player', 'country (sint32) = 2^32 + 3', 5, (1 << 32) + 3),
+    ('cnclaunch.Player', 'human (bool) = 2', 3, 2),
+    ('cnclaunch.Player', 'human (bool) = 2^40', 3, 1 << 40),
+    ('cnclaunch.Game', 'kind (enum) = 2^31', 1, 1 << 31),
+    ('cnclaunch.Game', 'kind (enum) = 2^32 + 1', 1, (1 << 32) + 1),
     ('cncreplay.Seal', 'through (uint32) = 2^64 - 1', 1, c.U64),
 )
 
@@ -250,8 +250,8 @@ def check_json(protoc_path, samples, seed, failures, notes):
         return 0
     with tempfile.TemporaryDirectory() as tmp:
         out = os.path.join(tmp, 'set.pb')
-        subprocess.run([protoc_path, '--proto_path=' + PROTO_DIR, '--include_imports',
-                        '--descriptor_set_out=' + out, 'launch.proto'], check=True)
+        subprocess.run([protoc_path] + PROTO_PATHS + ['--include_imports',
+                        '--descriptor_set_out=' + out, 'replay.proto'], check=True)
         fds = descriptor_pb2.FileDescriptorSet.FromString(_read(out))
     pool = descriptor_pool.DescriptorPool()
     for f in fds.file:

@@ -16,8 +16,8 @@
 #include <string_view>
 #include <vector>
 
-// What message structs share: the fields a decoder keeps without reading, the limits both
-// schemas set, and the rule a message broke.
+// What the message structs of launch.proto and replay.proto share: the fields a decoder keeps
+// without reading, the limits both schemas set, and the rule a message broke.
 
 namespace ProtoMessage
 {

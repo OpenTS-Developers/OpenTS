@@ -120,11 +120,11 @@ class ManifestTest(unittest.TestCase):
     def test_launch_vectors(self):
         data = read('launch_play.bin')
         obj = json.loads(read('launch_play.json'))
-        msg = c.from_proto_json('cnclaunch.LaunchRequest', obj)
-        self.assertEqual(c.encode_message('cnclaunch.LaunchRequest', msg), data)
-        self.assertEqual(c.to_proto_json('cnclaunch.LaunchRequest',
-                                         c.decode_message('cnclaunch.LaunchRequest', data)), obj)
-        result = c.decode_message('cnclaunch.LaunchResult', read('launch_result.bin'))
+        msg = c.from_proto_json('cnclaunch.Request', obj)
+        self.assertEqual(c.encode_message('cnclaunch.Request', msg), data)
+        self.assertEqual(c.to_proto_json('cnclaunch.Request',
+                                         c.decode_message('cnclaunch.Request', data)), obj)
+        result = c.decode_message('cnclaunch.Result', read('launch_result.bin'))
         self.assertEqual(result['scenarios'][0]['last_frame'], 0)
 
 

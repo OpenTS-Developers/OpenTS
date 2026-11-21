@@ -25,6 +25,7 @@
 #include <stdexcept>
 #include <string>
 #include <utility>
+#include <variant>
 #include <vector>
 
 using namespace Replay;
@@ -513,7 +514,7 @@ TEST_CASE("the Python vector computations match the layer")
 {
 	// Computations of parts of the format this layer does not implement.
 	std::set<std::string> const not_computed = {
-		"chat_fingerprint", "launch_request", "launch_result",
+		"chat_fingerprint",
 		"compare_desync", "compare_sealed_payload", "compare_other_game",
 	};
 
@@ -539,11 +540,26 @@ TEST_CASE("the Python vector computations match the layer")
 			std::string const cleaned = Clean_Text(std::string_view(reinterpret_cast<char const *>(input.data()), input.size()), 1024);
 			CHECK(Hex_Text(cleaned) == entry["output"].Text);
 			computed++;
+		} else if (name == "launch_request") {
+			ByteVector const bytes = Load(Vectors_Dir() / entry["binary_file"].Text);
+			CHECK(Hex(bytes) == entry["binary"].Text);
+			Launch::Message::Request request;
+			REQUIRE(Launch::Decode_Request(bytes, request) == Launch::RequestFault::NONE);
+			CHECK(std::holds_alternative<Launch::Message::Play>(request.Verb));
+			CHECK_MESSAGE(Hex(Encoded(request)) == entry["binary"].Text, "the request encoded again");
+			computed++;
+		} else if (name == "launch_result") {
+			ByteVector const bytes = Load(Vectors_Dir() / entry["binary_file"].Text);
+			CHECK(Hex(bytes) == entry["binary"].Text);
+			Launch::Message::Result result;
+			REQUIRE(Decode(bytes, result));
+			CHECK_MESSAGE(Hex(Encoded(result)) == entry["binary"].Text, "the result encoded again");
+			computed++;
 		} else {
 			CHECK_MESSAGE(not_computed.count(name) == 1, "a computation this test does not know");
 		}
 	}
-	CHECK(computed == 3);
+	CHECK(computed == 5);
 }
 
 

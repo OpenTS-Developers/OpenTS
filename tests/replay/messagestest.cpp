@@ -529,7 +529,7 @@ TEST_CASE("the limits of section 10 hold at their values and refuse one more")
 	launch.Players[0].Name = "abcd";
 	CHECK(Check_Limits(launch, limits) == RuleError::NONE);
 	launch.Players.resize(3);
-	CHECK(Check_Limits(launch, limits) == Broke(RuleError::TOO_MANY, "Launch", L::Game::PLAYERS));
+	CHECK(Check_Limits(launch, limits) == Broke(RuleError::TOO_MANY, "Game", L::Game::PLAYERS));
 	launch.Players.resize(2);
 	launch.Players[0].Name = "abcde";
 	CHECK(Check_Limits(launch, limits) == Broke(RuleError::TOO_LONG, "Player", L::Player::NAME));
@@ -644,7 +644,7 @@ TEST_CASE("a limited decode stops a count at its limit before storing more")
 	// Far more empty players than the limit.
 	Launch::Message::Game launch;
 	CHECK(!Decode(Repeat("1a00", 1 << 19), launch, limits, broken));
-	CHECK(broken == Broke(RuleError::TOO_MANY, "Launch", L::Game::PLAYERS));
+	CHECK(broken == Broke(RuleError::TOO_MANY, "Game", L::Game::PLAYERS));
 	CHECK(launch.Players.size() == limits.Players);
 	CHECK(Decode(Repeat("1a00", limits.Players), launch, limits, broken));
 
@@ -680,7 +680,7 @@ TEST_CASE("the writer's ordering rules catch lists out of order")
 	launch.Players.resize(2);
 	launch.Players[0].House = 3;
 	launch.Players[1].House = 1;
-	CHECK(Check_Order(launch) == Broke(RuleError::NOT_ASCENDING, "Launch", L::Game::PLAYERS));
+	CHECK(Check_Order(launch) == Broke(RuleError::NOT_ASCENDING, "Game", L::Game::PLAYERS));
 	launch.Players[1].House = 4;
 	CHECK(Check_Order(launch) == RuleError::NONE);
 	launch.Players[1].Allies = { 4 };
@@ -690,9 +690,9 @@ TEST_CASE("the writer's ordering rules catch lists out of order")
 	launch.Options.resize(2);
 	launch.Options[0].Key = "b";
 	launch.Options[1].Key = "a";
-	CHECK(Check_Order(launch) == Broke(RuleError::NOT_ASCENDING, "Launch", L::Game::OPTIONS));
+	CHECK(Check_Order(launch) == Broke(RuleError::NOT_ASCENDING, "Game", L::Game::OPTIONS));
 	launch.Options[1].Key = "b";
-	CHECK_MESSAGE(Check_Order(launch) == Broke(RuleError::NOT_ASCENDING, "Launch", L::Game::OPTIONS), "each key once");
+	CHECK_MESSAGE(Check_Order(launch) == Broke(RuleError::NOT_ASCENDING, "Game", L::Game::OPTIONS), "each key once");
 	launch.Options[0].Key = "Z";
 	launch.Options[1].Key = "\xC3\xA9";
 	CHECK_MESSAGE(Check_Order(launch) == RuleError::NONE, "keys compare as unsigned bytes");

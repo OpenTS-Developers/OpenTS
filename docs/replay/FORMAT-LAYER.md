@@ -18,14 +18,15 @@ are in the specification.
 | `replaywriter.h`, `.cpp` | The container writer |
 | `replayreader.h`, `.cpp` | The container reader, the frame stream reader, `Verify_Seals`, and `Verify_File` |
 
-The layer builds on files outside `code/replay/`:
+The layer builds on files outside `code/replay/`, which the launch interface
+also uses:
 
 | File | Content |
 | --- | --- |
-| `code/proto/message.h` | What the message structs share: the fields a decoder keeps without reading, the string and player limits as `LimitsType`, and `RuleError` and `RuleBreak` |
+| `code/proto/message.h` | What the message structs of both schemas share: the fields a decoder keeps without reading, the string and player limits as `LimitsType`, and `RuleError` and `RuleBreak` |
 | `code/proto/messagecodec.h` | The encoder and decoder helpers that the files defining message structs share; nothing else includes it |
-| `code/launch/launchfields.hh` | The field numbers of the `Launch`, `Player`, `GameOption`, and `FileHash` messages |
-| `code/launch/launchmessages.h`, `.cpp` | Those messages as the structs `Game`, `Player`, `Option`, and `FileHash` of namespace `Launch::Message`, with `Encode`, `Decode`, `Check_Limits`, and `Check_Order` |
+| `code/launch/launchfields.hh` | The field number of every field of `launch.proto` |
+| `code/launch/launchmessages.h`, `.cpp` | One struct per message of `launch.proto`, the `Game` message of `LNCH` among them, with `Encode`, `Decode_Request`, and `Decode` for a game or a result |
 
 The Protocol Buffers wire encoding lives in `code/proto/` and raw deflate
 streams in `code/`, because they are not specific to replays.
@@ -45,15 +46,15 @@ places the `replay` and `proto` directories and the `deflate` file in the
 
 ## Messages
 
-Each message of `replay.proto` is a struct in the `Message` namespace of its
-module. The `Launch`, `Player`, `GameOption`, and `FileHash` messages, which
-describe a game, are the structs `Game`, `Player`, `Option`, and `FileHash` of
-`Launch::Message`. Every other message is a struct of `Replay::Message` named
-exactly as the schema names it, such as `Replay::Message::Frame` and
-`Replay::Message::PlayerMessage`. The codec functions are declared in the
-namespace of their struct, where argument-dependent lookup finds them, and the
-module namespace also declares the public ones, so `Replay::Decode` and
-`Launch::Encode` name them too.
+Each message of `replay.proto` and `launch.proto` is a struct in the
+`Message` namespace of its module, named exactly as the schema names the
+message, such as `Replay::Message::Frame`, `Replay::Message::PlayerMessage`,
+and `Launch::Message::Game`. The codec functions are declared in the same
+namespace, where argument-dependent lookup finds them, and the module
+namespace also declares the public ones, so `Replay::Decode` and
+`Launch::Encode` name them too. Other names in a module namespace are not
+messages: `Launch::Game` is a launch's game after its rules are checked, and
+`Launch::Message::Game` is the message it is read from.
 
 `Encode` writes the canonical bytes of section 1 of the specification: fields
 in ascending number, zeros left out except in `optional` fields and `oneof`
@@ -106,8 +107,38 @@ errors:
 | `NOT_ASCENDING` | A list is out of the order the format sets, or repeats a value |
 | `INVALID` | An income kind entry or an `Income` entry fails `Check_Income_Kinds` or `IncomeKindSet::Check` |
 
+## Launch requests
+
+`launchmessages.h` defines the messages of `launch.proto` as structs in
+namespace `Launch::Message` that encode, decode, and keep unknown fields as
+the replay messages do. `Encode` leaves out a present `Network`, `Tunnel`, or
+`Fixture` whose encoding is empty, as it leaves out any empty message field,
+and writes a verb even when its encoding is empty.
+
+`Decode_Request` decodes a request file and checks only its encoding. It
+returns the first of these that applies:
+
+| Result | When |
+| --- | --- |
+| `MALFORMED` | The top-level fields are not a valid encoding, or the file is larger than 1 MiB |
+| `VERSION` | `version` is not 1; a request without it is version 0 |
+| `TEXT` | A string is not valid UTF-8 |
+| `MALFORMED` | A message inside the request is not a valid encoding, or lists more than 64 players or peers |
+| `NO_VERB` | No verb that version 1 defines is set |
+| `NONE` | The request can be handed to the code that runs its verb |
+
+Whatever the result, `Decode_Request` fills `Version`, `ResultPath`, and
+`RequestId` from the top-level fields it could read, so that a refusal can be
+reported to the launcher. A result path or request id that is not valid UTF-8
+stays empty. When a request sets two verbs, the last one in the file counts,
+as for any non-repeated field that appears twice. The rules for the content of
+each verb are checked by the code that runs it.
+
+`Decode` for a `Result` returns false on malformed input, as the replay
+message decoders do.
+
 `Decode` with a `LimitsType` applies the same limits while it reads
-`RecordingInfo`, `Launch`, `Frame`, or `Statistics`. It checks every
+`RecordingInfo`, `Game`, `Frame`, or `Statistics`. It checks every
 occurrence of a string or payload, including one a later occurrence replaces,
 and it refuses a player, house, event, or income kind past its count limit
 before decoding it, so a forged count allocates nothing past the limit. It
@@ -295,7 +326,10 @@ covers:
   the file fails, and `RAMFileClass` over a fixed buffer, growing, and
   appending its own bytes;
 - the wire encoding at its edge values and every malformed form it refuses;
-- the field numbers and enumerations against `docs/replay/replay.proto`;
+- the field numbers and enumerations against `docs/replay/replay.proto` and
+  `docs/launch/launch.proto`;
+- each refusal of `Decode_Request`, the filled fields of a refused request,
+  and every verb and a launch result through an encode and a decode;
 - canonical bytes against hand-assembled hex for each kind of field, and
   2,000 random frames through an encode and decode;
 - deflate round trips, sync flushes, and a stream cut at every byte;
@@ -312,7 +346,8 @@ covers:
   call, and 3,000 mutated files;
 - the test vectors in `tests/replay/vectors/`: each file's `S0`, seals, and
   canonical bytes, and the result `Verify_File` gives it, against the
-  manifest.
+  manifest, and `launch_play.bin` and `launch_result.bin` decoded and encoded
+  again to the same bytes.
 
 The case `replay.synthetic replay files are written for other readers` writes
 seven recordings to `tests/replay/out/` under the build directory, for readers

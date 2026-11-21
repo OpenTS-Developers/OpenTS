@@ -16,6 +16,7 @@ opents_add_test(ReplayTest
         synthtest.cpp
         readertest.cpp
         vectorstest.cpp
+        launchtest.cpp
     ENGINE
         crc.cpp
         sha256.cpp
@@ -38,6 +39,7 @@ opents_add_test(ReplayTest
     LIBRARIES bimg
     DEFINITIONS WIN32 _WINDOWS _MBCS NOMINMAX
         REPLAY_PROTO_FILE="${CMAKE_SOURCE_DIR}/docs/replay/replay.proto"
+        LAUNCH_PROTO_FILE="${CMAKE_SOURCE_DIR}/docs/launch/launch.proto"
         REPLAY_OUT_DIR="${CMAKE_CURRENT_BINARY_DIR}/out"
         REPLAY_VECTORS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/vectors"
     DOCTEST

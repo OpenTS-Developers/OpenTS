@@ -41,6 +41,7 @@ using ProtoWire::Read_Repeated_Uint32;
 struct DecodeContext {
 	LimitsType const & Limits;
 	RuleBreak Broken;
+	bool BadText = false;   // a string was not valid UTF-8
 };
 
 
@@ -90,6 +91,7 @@ class Emitter
 		void Present_Blob(std::uint32_t field, ByteSpan value) { At(field).Present_Blob(field, value); }
 		void Present_String(std::uint32_t field, std::string_view value) { At(field).Present_String(field, value); }
 		void Packed_Uint32(std::uint32_t field, std::span<std::uint32_t const> value) { At(field).Packed_Uint32(field, value); }
+		void Present_Message(std::uint32_t field, ByteSpan value) { At(field).Present_Message(field, value); }
 
 		template<typename T>
 		void Message(std::uint32_t field, T const & child)
@@ -324,6 +326,9 @@ class Fields
 			}
 			std::string_view const text(reinterpret_cast<char const *>(Field.Body.data()), Field.Body.size());
 			if (!UTF8::Is_Valid(text)) {
+				if (Context != nullptr) {
+					Context->BadText = true;
+				}
 				Bad = true;
 				return(false);
 			}

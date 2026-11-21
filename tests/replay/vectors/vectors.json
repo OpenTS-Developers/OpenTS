@@ -42,7 +42,7 @@
     },
     {
       "name": "launch_request",
-      "description": "launch_play.json in the proto3 JSON mapping encodes to launch_play.bin. Launch.seed and Session.local_player are optional and set to 0, so both are written; the oneof member Crates.flag = false is written.",
+      "description": "launch_play.json in the proto3 JSON mapping encodes to launch_play.bin. Game.seed and Session.local_player are optional and set to 0, so both are written; the oneof member Crates.flag = false is written.",
       "json_file": "launch_play.json",
       "binary_file": "launch_play.bin",
       "binary": "080112a3010a43080315000000001a0b1205416c706861180140011a121205427261766f1801280138064002520100220d0a074372656469747310a09c01220a0a064372617465731800120f6d6170732f766563746f722e6d61701a1508001001520543617274655a0842617461696c6c65221808a413120f0801120831302e302e302e3218a61338b0ea012a1a08012a140a0972756c65732e696e691207736861313a303030003a116c61756e63682d726573756c742e62696e4a08766563746f722d31"
@@ -88,7 +88,7 @@
       "size": 208,
       "sha256": "d6dd87e7bc2c98adbb42716b17b21e39cec934eb933665b96c124275c1864924",
       "verify_exit": 0,
-      "description": "Smallest complete file: one record on frame 0 with a zero hash, every section stored. Launch.seed is set to 0 and RecordingSummary.last_frame to 0, so both are written.",
+      "description": "Smallest complete file: one record on frame 0 with a zero hash, every section stored. Game.seed is set to 0 and RecordingSummary.last_frame to 0, so both are written.",
       "records": 1,
       "last_recorded_frame": 0,
       "s0": "3b85c4a4634708e1279dd562be968d5dcc0dc25700fee0181a06e78d3cb0244e",
