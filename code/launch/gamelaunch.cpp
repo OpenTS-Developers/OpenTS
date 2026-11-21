@@ -475,14 +475,16 @@ Launch::Message::Game Launch::Game::To_Message(void) const
 
 /// <summary>
 /// Returns whether this version runs a request, before anything is applied. Refuses a request
-/// that did not decode, a verb or a part of one this version cannot run, and a capture request
-/// with the wrong combination of paths. The rules of a play request's game are checked later,
-/// by Game::From_Message, and those of a load request by Machine::From_Load.
+/// that did not decode, one given with a conflicting switch, a verb or a part of one this
+/// version cannot run, and a capture request with the wrong combination of paths. The rules of
+/// a play request's game are checked later, by Game::From_Message, and those of a load request
+/// by Machine::From_Load.
 /// </summary>
 /// <param name="fault">What Decode_Request reported.</param>
+/// <param name="conflict">The command-line switch given with -LAUNCH=, or null for none.</param>
 /// <param name="refusal">Where to leave the sentence describing why the request is refused.</param>
 /// <returns>bool; Does this version run the request?</returns>
-bool Launch::Judge_Request(Launch::RequestFault fault, Launch::Message::Request const & request, std::string & refusal)
+bool Launch::Judge_Request(Launch::RequestFault fault, Launch::Message::Request const & request, char const * conflict, std::string & refusal)
 {
 	switch (fault) {
 		case Launch::RequestFault::NONE:
@@ -496,6 +498,10 @@ bool Launch::Judge_Request(Launch::RequestFault fault, Launch::Message::Request 
 			return(Fault(refusal, "The launch request has text that is not UTF-8."));
 		default:
 			return(Fault(refusal, "The launch request is not a file this version can read."));
+	}
+
+	if (conflict != nullptr) {
+		return(Fault(refusal, "-LAUNCH= cannot be combined with %s.", conflict));
 	}
 
 	if (std::holds_alternative<Launch::Message::Replay>(request.Verb)) {

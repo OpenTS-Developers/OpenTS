@@ -202,7 +202,7 @@ namespace Launch
 	bool Is_Address(std::string const & text);
 	bool Is_Tunnel_Number(int value);
 
-	bool Judge_Request(RequestFault fault, Message::Request const & request, std::string & refusal);
+	bool Judge_Request(RequestFault fault, Message::Request const & request, char const * conflict, std::string & refusal);
 
 	// Why a scenario of a launched game ended, as the engine knows it.
 	enum class ScenarioEnd {

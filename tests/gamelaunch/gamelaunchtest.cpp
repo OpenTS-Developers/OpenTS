@@ -556,10 +556,10 @@ Launch::Message::Request Request_Of(Launch::Verb verb)
 }
 
 
-std::string Request_Refusal(Launch::RequestFault fault, Launch::Message::Request const & request)
+std::string Request_Refusal(Launch::RequestFault fault, Launch::Message::Request const & request, char const * conflict = nullptr)
 {
 	std::string refusal;
-	CHECK_MESSAGE(!Launch::Judge_Request(fault, request, refusal), "the request was accepted");
+	CHECK_MESSAGE(!Launch::Judge_Request(fault, request, conflict, refusal), "the request was accepted");
 	return(refusal);
 }
 
@@ -569,21 +569,21 @@ std::string Request_Refusal(Launch::RequestFault fault, Launch::Message::Request
 TEST_CASE("a play request, a load request and a capture request are run")
 {
 	std::string refusal = "untouched";
-	CHECK_MESSAGE(Launch::Judge_Request(Launch::RequestFault::NONE, Request_Of(Play_Request(Skirmish())), refusal), refusal);
+	CHECK_MESSAGE(Launch::Judge_Request(Launch::RequestFault::NONE, Request_Of(Play_Request(Skirmish())), nullptr, refusal), refusal);
 	CHECK(refusal.empty());
 
 	Launch::Message::Load load;
 	load.Save = "SAVEGAME.001";
-	CHECK_MESSAGE(Launch::Judge_Request(Launch::RequestFault::NONE, Request_Of(load), refusal), refusal);
+	CHECK_MESSAGE(Launch::Judge_Request(Launch::RequestFault::NONE, Request_Of(load), nullptr, refusal), refusal);
 
 	Launch::Message::Capture shorthand;
 	shorthand.MapPath = "maps/two.map";
 	shorthand.OutPath = "two.png";
-	CHECK_MESSAGE(Launch::Judge_Request(Launch::RequestFault::NONE, Request_Of(shorthand), refusal), refusal);
+	CHECK_MESSAGE(Launch::Judge_Request(Launch::RequestFault::NONE, Request_Of(shorthand), nullptr, refusal), refusal);
 
 	Launch::Message::Capture described;
 	described.DescriptionPath = "capture.ini";
-	CHECK_MESSAGE(Launch::Judge_Request(Launch::RequestFault::NONE, Request_Of(described), refusal), refusal);
+	CHECK_MESSAGE(Launch::Judge_Request(Launch::RequestFault::NONE, Request_Of(described), nullptr, refusal), refusal);
 }
 
 
@@ -596,6 +596,15 @@ TEST_CASE("a request that did not decode is refused for its fault")
 
 	request.Version = 2;
 	CHECK(Request_Refusal(Launch::RequestFault::VERSION, request) == "The launch request has version 2; this version runs version 1.");
+}
+
+
+TEST_CASE("a request given with another switch that starts or changes a game is refused")
+{
+	Launch::Message::Request const request = Request_Of(Play_Request(Skirmish()));
+	for (char const * name : { "-SPAWN", "-CAPTUREMAP=", "-CAPTUREOUT=", "-CAPTURE=", "-TIME=", "-SEED" }) {
+		CHECK(Request_Refusal(Launch::RequestFault::NONE, request, name) == std::string("-LAUNCH= cannot be combined with ") + name + ".");
+	}
 }
 
 

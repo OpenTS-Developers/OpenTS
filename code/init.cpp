@@ -1263,6 +1263,8 @@ restart:
 			}
 		}
 
+		Launch::Scenario_Started();
+
 		if (Special.IsFromInstall == true) {
 			Show_Mouse();
 		}
@@ -1509,17 +1511,26 @@ bool Parse_Command_Line(int argc, char * argv[])
 			continue;
 		}
 
+		// Launch::Read_Request reads the file once every switch is parsed.
+		if (strnicmp(string, "-LAUNCH=", strlen("-LAUNCH=")) == 0) {
+			Launch::Request_File(&original[strlen("-LAUNCH=")]);
+			continue;
+		}
+
 		if (strnicmp(string, "-CAPTUREMAP=", strlen("-CAPTUREMAP=")) == 0) {
+			Launch::Note_Switch("-CAPTUREMAP=");
 			MapCapture::Request_Map(&original[strlen("-CAPTUREMAP=")]);
 			continue;
 		}
 
 		if (strnicmp(string, "-CAPTUREOUT=", strlen("-CAPTUREOUT=")) == 0) {
+			Launch::Note_Switch("-CAPTUREOUT=");
 			MapCapture::Request_Output(&original[strlen("-CAPTUREOUT=")]);
 			continue;
 		}
 
 		if (strnicmp(string, "-CAPTURE=", strlen("-CAPTURE=")) == 0) {
+			Launch::Note_Switch("-CAPTURE=");
 			MapCapture::Request_Description(&original[strlen("-CAPTURE=")]);
 			continue;
 		}
@@ -1531,6 +1542,7 @@ bool Parse_Command_Line(int argc, char * argv[])
 		}
 
 		if (memcmp(string, "-TIME=", 6) == 0) {
+			Launch::Note_Switch("-TIME=");
 			sscanf(&string[6], "%d", &TournamentTime);
 		}
 
@@ -1576,6 +1588,11 @@ bool Parse_Command_Line(int argc, char * argv[])
 		if (strnicmp(string, "-DESYNCTEST=", strlen("-DESYNCTEST=")) == 0) {
 			Session.ForceDesyncFrame = atoi(string + strlen("-DESYNCTEST="));
 			continue;
+		}
+
+		// Seen in every build so that -LAUNCH= can refuse it; only a Debug build takes the seed.
+		if (strstr(string, "-SEED")) {
+			Launch::Note_Switch("-SEED");
 		}
 #ifdef _DEBUG
 		/*
@@ -1659,7 +1676,7 @@ bool Parse_Command_Line(int argc, char * argv[])
 			continue;
 		}
 	}
-	return(true);
+	return(Launch::Read_Request());
 }
 
 

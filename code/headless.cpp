@@ -31,6 +31,7 @@ namespace Headless
 		char const * ConflictingTask = nullptr;
 		bool IsConsoleAttached = false;
 		int ExitCode = EXIT_FAILURE;
+		char FailureText[_MAX_PATH + 256] = "";
 
 
 		/// <summary>
@@ -116,6 +117,7 @@ namespace Headless
 		va_end(args);
 
 		ExitCode = EXIT_FAILURE;
+		std::snprintf(FailureText, sizeof(FailureText), "%s", text);
 		DebugString("%s: %s\n", Requested.Name != nullptr ? Requested.Name : "Headless", text);
 
 		if (IsConsoleAttached) {
@@ -131,5 +133,14 @@ namespace Headless
 	int Exit_Code(void)
 	{
 		return(ExitCode);
+	}
+
+
+	/// <summary>
+	/// The reason the last Fail gave, or an empty string when nothing failed.
+	/// </summary>
+	char const * Failure(void)
+	{
+		return(FailureText);
 	}
 }

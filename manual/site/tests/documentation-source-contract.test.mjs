@@ -652,6 +652,24 @@ test('An out-of-sync frame is reported before the players are asked to decide', 
 	], 'the report describes the frame before any decision changes the session');
 });
 
+test('A launched network game records why it ended before the game stops', () => {
+	assertOrdered(definitionFrom(source('code/queue.cpp'), 'static void Queue_AI_Multiplayer(void)'), [
+		'Launch::Scenario_Ended(Wait_Failure_End(rc));',
+		'Stop_Game(!is_error);',
+		'Launch::Scenario_Joined();',
+		'Launch::Scenario_Ended(Wait_Failure_End(rc));',
+		'Stop_Game(!is_error);',
+		'Launch::Scenario_Ended(Launch::ScenarioEnd::DESYNC);',
+		'Stop_Game();',
+	], 'each failed wait and a failed frame record the end before the game stops, and a passed start wait is recorded');
+
+	assertOrdered(functionBody(source('code/conquer.cpp'), 'void Main_Game(int argc, char * argv[])'), [
+		'Main_Loop()',
+		'GameLoopActive = false;',
+		'Launch::Scenario_Ended(Launch::ScenarioEnd::LEFT);',
+	], 'a scenario still open when the game loop ends is recorded as left');
+});
+
 test('A multiplayer load replaces the match around the seats it keeps', () => {
 	assertOrdered(functionBody(source('code/savemgr.cpp'), 'bool SaveManagerClass::Perform_Multiplayer_Load(char const * file_name)'), [
 		'PacketTransport->Discard_In_Buffers();',

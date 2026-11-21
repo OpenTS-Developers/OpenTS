@@ -527,4 +527,14 @@ namespace MapCapture
 		DescriptionPath = path;
 		Headless::Request(Task);
 	}
+
+
+	/// <summary>
+	/// Returns the path of the PNG the capture writes. For a capture description, the path is set
+	/// only once the run has checked its options.
+	/// </summary>
+	std::string Output_Path(void)
+	{
+		return(Capture.Output);
+	}
 }

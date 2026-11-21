@@ -40,6 +40,8 @@
 #include "goptions.h"
 #include "ipxmgr.h"
 #include "language/language.h"
+#include "launch/gamelaunch.h"
+#include "launcher.h"
 #include "logic.h"
 #include "misc.h"
 #include "mpscore.h"
@@ -206,10 +208,17 @@ static void Finish_Decided_Game(void)
 	PlayerLoses = false;
 	PlayerRestarts = false;
 	PlayerAborts = false;
+	bool const local_win = Launch::Local_Win(Session.Type == GAME_NORMAL, won, PlayerPtr != NULL && PlayerPtr->IsDefeated);
+	Launch::Scenario_Ended(local_win ? Launch::ScenarioEnd::WON : Launch::ScenarioEnd::LOST);
 	if (won) {
 		Do_Win();
 	} else {
 		Do_Lose();
+	}
+
+	// A campaign goes on to its next mission, or restarts the lost one, inside the call.
+	if (GameActive) {
+		Launch::Scenario_Started();
 	}
 }
 
@@ -388,13 +397,16 @@ bool Main_Loop(void)
 			PlayerLoses = false;
 			PlayerRestarts = false;
 			PlayerAborts = false;
+			Launch::Scenario_Ended(Launch::ScenarioEnd::LEFT);
 			Do_Restart();
+			Launch::Scenario_Started();
 			done = true;
 		} else if (PlayerAborts) {
 			PlayerWins = false;
 			PlayerLoses = false;
 			PlayerRestarts = false;
 			PlayerAborts = false;
+			Launch::Scenario_Ended(Launch::ScenarioEnd::LEFT);
 			Do_Abort();
 			done = true;
 		}

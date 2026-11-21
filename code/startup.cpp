@@ -690,13 +690,18 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 		 */
 		if (*Game_Directory_Error() != '\0') {
 			Main_Window_Error_Box(Fetch_String(TXT_SHORT_TITLE), Game_Directory_Error());
+		} else if (Launch::Refusal() != NULL) {
+			Main_Window_Error_Box(Fetch_String(TXT_SHORT_TITLE), Launch::Refusal());
 		}
 
 		// The help and the invalid option message are of no use if the console closes with
-		// the process a moment later.
-		Debug_Console_Hold();
+		// the process a moment later. A launch with a result file does not wait for a key press.
+		if (!Launch::Has_Result_File()) {
+			Debug_Console_Hold();
+		}
 	}
 
+	Launch::Write_Result();
 
 	return(error_code);
 }

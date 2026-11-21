@@ -524,6 +524,14 @@ launch_options:
     availability: *all
     sites:
       - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-SPAWN' }
+  - id: launch:launch
+    title: Launch request
+    syntax: -LAUNCH=<file>
+    description: Plays the game or makes the map capture that the launch request file describes, in place of the startup movies and the menu, and exits when it ends.
+    group: startup
+    availability: *all
+    sites:
+      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-LAUNCH=' }
   - id: launch:capture-map
     title: Map capture
     syntax: -CAPTUREMAP=<map>
@@ -674,3 +682,5 @@ launch_exclusions:
     reason: Supplies the comparison length for the -X branch and is not itself accepted.
   - site: { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-X' }
     reason: Container for the individually documented compact -X controls; it has no behavior without a following code.
+  - site: { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-SEED' }
+    reason: Noted in every build only so that -LAUNCH= can refuse the combination; the documented -SEED option is the Debug-only site.
