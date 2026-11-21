@@ -47,6 +47,7 @@
 #include "incdec.h"
 #include "infantry.h"
 #include "infatype.h"
+#include "launcher.h"
 #include "light.h"
 #include "mono.h"
 #include "opents_build.h"
@@ -65,7 +66,6 @@
 #include "side.h"
 #include "smudge.h"
 #include "smudtype.h"
-#include "spawner.h"
 #include "syncrechook.h"
 #include "taction.h"
 #include "tag.h"
@@ -224,7 +224,7 @@ void Print_CRCs(EventClass const * events, int count, unsigned const * crc_ring,
 	fprintf(fp, "Release Build: %s - %s\r\n", OPENTS_BUILD_DESCRIPTION, OPENTS_COMMIT_DATE);
 
 	fprintf(fp, "Local house: H%d %s\n", PlayerPtr->HeapID, PlayerPtr->IniName.c_str());
-	int identity = Spawner_Session_Identity();
+	int identity = Launch::Session_Identity();
 	if (identity != 0) {
 		fprintf(fp, "Session identity: %08x\n", identity);
 	} else {

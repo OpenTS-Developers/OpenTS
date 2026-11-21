@@ -22,6 +22,7 @@
 #include "globals.h"
 #include "ipxmgr.h"
 #include "language/language.h"
+#include "launcher.h"
 #include "loaddlg.h"
 #include "msgbox.h"
 #include "netdlg.h"
@@ -32,7 +33,6 @@
 #include "savever.h"
 #include "scenario.h"
 #include "session.h"
-#include "spawner.h"
 #include "stimer.h"
 #include "ui/screens/waitbox/uiwaitbox.h"
 #include "ui/uienginehost.h"
@@ -289,7 +289,7 @@ void SaveManagerClass::Autosave_Service(void)
 	}
 
 	// Timed multiplayer saves require a shared launch-file interval.
-	if ((single || Spawner_Is_Active()) && Autosave.Is_Due(Frame)) {
+	if ((single || Launch::Is_Active()) && Autosave.Is_Due(Frame)) {
 		Autosave.Arm();
 		Add_Save_Message(SAVE_ANNOUNCEMENT_ID, TXT_AUTOSAVING);
 	}
@@ -377,7 +377,7 @@ void SaveManagerClass::Multiplayer_Saves_Begin_Match(bool resumed)
 		DebugString("Removed the launch-file copy of a previous match\n");
 	}
 
-	SpawnCopyPending = Spawner_Is_Active();
+	SpawnCopyPending = Launch::Is_From_Spawn_File();
 }
 
 
@@ -569,7 +569,7 @@ bool SaveManagerClass::Perform_Multiplayer_Load(char const * file_name)
 		return(false);
 	}
 	Ipx.Set_Timing(std::max<unsigned>(TIMER_SECOND, Ipx.Global_Response_Time() + 2), (unsigned int)-1, 10 * TIMER_SECOND);
-	Spawner_Announce_Master();
+	Launch::Announce_Master();
 
 	Reset_Multiplayer_Save_State();
 	Map.Flag_To_Redraw(GS_REDRAW_ALL);

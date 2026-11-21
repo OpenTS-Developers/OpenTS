@@ -150,12 +150,12 @@ site_exclusions:
     reason: Each is a setting of the deployment's own file, documented as that format rather than as game data.
 
   - path: code/spawnerconfig.cpp
-    function: SpawnerConfigClass::Read_Slots
+    function: Spawner::Config::Read_Slots
     keys: [Color, Side, Port]
     classification: excluded
     reason: Each names one seat of a match inside a section the CnCNet client numbers per seat, not an authored game-data setting.
   - path: code/spawnerconfig.cpp
-    function: SpawnerConfigClass::Read_INI
+    function: Spawner::Config::Read_INI
     keys: [AIDifficulty, AIPlayers, AlliesAllowed, AttackNeutralUnits, AutoDeployMCV, AutoSaveGame, AutoSurrender, Bases, BridgeDestroy, BuildOffAlly, CampaignID, CoachMode, ConnTimeout, Crates, Credits, DifficultyBasedAINames, DifficultyModeComputer, DifficultyModeHuman, Firestorm, FogOfWar, GameID, GameSpeed, HarvesterTruce, Host, IsSinglePlayer, LoadSaveGame, MCVRedeploy, MultiEngineer, NextSPAutoSaveId, NextSkirmishAutoSaveId, PlayMoviesInMultiplayer, Port, QuickMatch, ReconnectTimeout, ScrapMetal, Seed, SharedControl, ShortGame, SkipScoreScreen, TechLevel, UnitCount, WriteStatistics]
     classification: excluded
     reason: The CnCNet client writes these per launch to describe one match, so they are not part of the authored game-data key catalog.

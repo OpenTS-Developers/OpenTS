@@ -62,6 +62,7 @@
 #include "globals.h"
 #include "ipxmgr.h"
 #include "language/language.h"
+#include "launcher.h"
 #include "msgloop.h"
 #include "netglobal.h"
 #include "progress.h"
@@ -71,7 +72,6 @@
 #include "savestream.h"
 #include "scenario.h"
 #include "scheme.h"
-#include "spawner.h"
 #include "spawnhouse.h"
 #include "special.h"
 #include "stats.h"
@@ -296,7 +296,7 @@ void SessionClass::One_Time(void)
 	//Read_MultiPlayer_Settings();
 
 	// A client-launched game names its scenario outright and never shows the map list.
-	if (!Spawner_Is_Requested()) {
+	if (!Launch::Is_Game_Requested()) {
 		Read_Scenario_Descriptions();
 	}
 
@@ -1049,7 +1049,7 @@ static int const ColorChoiceEntries[MAX_MPLAYER_COLORS] = { 1, 10, 23, 36, 13, 2
 /// </summary>
 int SessionClass::Color_Count(void) const
 {
-	if (Spawner_Is_Active()) {
+	if (Launch::Is_Active()) {
 		return(ColorSchemes.Count() / 2);
 	}
 	return(MAX_MPLAYER_COLORS);
@@ -1063,7 +1063,7 @@ int SessionClass::Color_Count(void) const
 /// <param name="choice">One of the eight menu colors, 0 through 7.</param>
 int SessionClass::Color_Choice(int choice) const
 {
-	if (Spawner_Is_Active()) {
+	if (Launch::Is_Active()) {
 		return(ColorChoiceEntries[choice]);
 	}
 	return(choice);
@@ -1079,7 +1079,7 @@ int SessionClass::Color_Choice(int choice) const
 int SessionClass::Color_Index_To_Scheme(int id) const
 {
 	// The rules build each [Colors] entry twice, and the second copy is the lighting-aware one.
-	if (Spawner_Is_Active()) {
+	if (Launch::Is_Active()) {
 		return((2 * id) + 1);
 	}
 

@@ -85,6 +85,7 @@
 #include "init.h"
 #include "ion.h"
 #include "language/language.h"
+#include "launcher.h"
 #include "loaddlg.h"
 #include "light.h"
 #include "logic.h"
@@ -109,7 +110,6 @@
 #include "side.h"
 #include "sidebar.h"
 #include "smudtype.h"
-#include "spawner.h"
 #include "statehash.h"
 #include "stats.h"
 #include "stimer.h"
@@ -1139,7 +1139,7 @@ bool Load_Game(const char *file_name)
 	Swizzler.Discard();
 
 	// Read before the save replaces the session options.
-	int const solo_speed = Spawner_Is_Active() ? Session.Pending_Game_Speed() : Options.GameSpeed;
+	int const solo_speed = Launch::Is_Active() ? Session.Pending_Game_Speed() : Options.GameSpeed;
 
 	SaveStreamClass stream(file.Content, SaveStreamClass::MODE_LOAD);
 	bool res = false;

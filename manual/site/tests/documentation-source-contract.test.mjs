@@ -227,8 +227,13 @@ test('Every field the launch file reader carries is used', () => {
 	const config = source('code/spawnerconfig.cpp');
 	const users = [
 		source('code/spawner.cpp'),
-		functionBody(config, 'SpawnerConfigClass::LaunchType SpawnerConfigClass::Launch_Type(void) const'),
-		functionBody(config, 'bool SpawnerConfigClass::Is_Playable(int countries, int colors, std::string & fault) const'),
+		functionBody(config, 'Spawner::Config::LaunchType Spawner::Config::Launch_Type(void) const'),
+		functionBody(config, 'bool Spawner::Config::Is_Launchable(std::string & fault) const'),
+		functionBody(config, 'std::string Spawner::Config::Describe_Fault(Launch::FaultSite const & site, std::string const & text) const'),
+		functionBody(config, 'std::string Spawner::Config::Computer_Name(SlotType const & slot) const'),
+		functionBody(config, 'void Spawner::Config::To_Request(Launch::Message::Request & request) const'),
+		functionBody(config, 'void Spawner::Config::To_Session(Launch::Message::Session & session) const'),
+		functionBody(config, 'void Spawner::Config::To_Network(Launch::Message::Network & network) const'),
 	].join('\n');
 
 	const fields = [];
@@ -498,34 +503,52 @@ test('The campaign handicap pair lives on the session, and the mission reader ne
 });
 
 test('A campaign spawn writes the game its own state and nothing more', () => {
-	const spawner = source('code/spawner.cpp');
+	const apply = source('code/launcherapply.cpp');
 
-	assertOrdered(functionBody(spawner, 'static bool Spawner_Setup_Campaign(void)'), [
+	assertOrdered(functionBody(apply, 'void Apply_Campaign(Launch::Game const & game, Launch::Machine const & machine)'), [
 		'Session.Type = GAME_NORMAL;',
-		'Session.CampaignDifficulty = (DiffType)SpawnConfig.CampaignDifficulty;',
-		'Session.CampaignCDifficulty = (DiffType)SpawnConfig.CampaignCDifficulty;',
-		'Scen->Campaign = (CampaignType)SpawnConfig.CampaignID;',
+		'Session.CampaignDifficulty = (DiffType)options.CampaignPlayerDifficulty;',
+		'Session.CampaignCDifficulty = (DiffType)options.CampaignComputerDifficulty;',
+		'Scen->Campaign = (CampaignType)options.Campaign;',
 		'new (&Environment) EnvironmentClass;',
-		'Environment.Globals[index] = SpawnConfig.GlobalFlags[index];',
+		'Environment.Globals[flag] = true;',
 	], 'a campaign launch lands in the game’s own state');
 
 	assertOrdered(functionBody(source('code/init.cpp'), 'bool Select_Game(bool )'), [
-		'Spawner_Is_Active() ? Scen->Campaign : CAMPAIGN_NONE',
+		'Launch::Is_Active() ? Scen->Campaign : CAMPAIGN_NONE',
 		'Scen->Set_Global_To(index, Environment.Globals[index]);',
 	], 'a spawned mission is named by the file and starts with the flags it carried');
 });
 
 test('A resume is judged before it is loaded, and the save answers for the rest', () => {
-	assertOrdered(functionBody(source('code/spawner.cpp'), 'static bool Spawner_Resume(bool & gameloaded)'), [
-		'SpawnConfig.SaveGameName.empty()',
-		'Get_Savefile_Info(SpawnConfig.SaveGameName.c_str(), &info)',
+	const apply = source('code/launcherapply.cpp');
+
+	assertOrdered(functionBody(source('code/launch/gamelaunch.cpp'), 'bool Launch::Machine::From_Load(Launch::Message::Load const & request, bool network, std::string & fault, Launch::FaultSite * site)'), [
+		'request.Save.empty()',
+		'request.GameSpeed &&',
+	], 'a resume without a save is refused before the save is looked for');
+
+	assertOrdered(functionBody(source('code/launcher.cpp'), 'bool Launch::Prepare(bool & gameloaded)'), [
+		'Spawner::Read_Request(Request, spawn_file, fault)',
+		'spawn_file->Describe_Fault(site, fault)',
+		'Launch::Judge_Load(*load, fault, &site)',
+		'Launch::Apply_Load(*load, gameloaded, fault)',
+	], 'a resume is judged, and refused in the terms of the file that asked, before the load');
+
+	assertOrdered(functionBody(apply, 'bool Take_Load(Launch::Message::Load const & request, Launch::Machine & machine, GameType & type, std::string & fault, Launch::FaultSite * site)'), [
+		'taken.From_Load(request, false, fault, site)',
+		'Get_Savefile_Info(name, &info)',
 		'info.Get_Internal_Version() != ExpectedGameVersion',
 		'type == GAME_IPX',
-		'SpawnConfig.Is_Playable(HouseTypes.Count(), Session.Color_Count(), fault)',
-		'Spawner_Seat_Humans();',
-		'Spawner_Wire_Network()',
+		'taken.From_Load(request, true, fault, site)',
+	], 'a load is judged before anything in the game changes');
+
+	assertOrdered(functionBody(apply, 'bool Launch::Apply_Load(Launch::Message::Load const & request, bool & gameloaded, std::string & fault)'), [
+		'Take_Load(request, machine, type, fault, nullptr)',
+		'Add_Human_Players(humans, machine);',
+		'Launch::Wire_Network(machine, fault)',
 		'Session.LoadGame = true;',
-		'LoadOptionsClass().Load_File(SpawnConfig.SaveGameName.c_str())',
+		'LoadOptionsClass().Load_File(name)',
 		'Reconcile_Players()',
 		'gameloaded = true;',
 	], 'a network resume seats the players and opens the network before the save is read');
@@ -638,7 +661,7 @@ test('A multiplayer load replaces the match around the seats it keeps', () => {
 		'LoadOptionsClass().Load_File(file_name)',
 		'Reconcile_Players()',
 		'Session.Create_Connections()',
-		'Spawner_Announce_Master();',
+		'Launch::Announce_Master();',
 		'Reset_Multiplayer_Save_State();',
 	], 'the old traffic is discarded, the save read, the seats matched, and the connections rebuilt in that order');
 
@@ -675,15 +698,23 @@ test('A multiplayer load replaces the match around the seats it keeps', () => {
 
 test('A match against other machines is assembled whole and wired to its network last', () => {
 	const spawner = source('code/spawner.cpp');
+	const apply = source('code/launcherapply.cpp');
 
-	assertOrdered(functionBody(spawner, 'bool Spawner_Prepare(bool & gameloaded)'), [
-		'SpawnConfig.Is_Playable(HouseTypes.Count(), Session.Color_Count(), fault)',
-		'Spawner_Setup_Session();',
-		'SpawnConfig.Session_Identity_CRC()',
-		'Session.Type == GAME_INTERNET && !Spawner_Wire_Network()',
-	], 'the match is judged, assembled and named before its network is opened');
+	assertOrdered(functionBody(spawner, 'bool Spawner::Read_Request(Launch::Message::Request & request, std::optional<Config> & file, std::string & fault)'), [
+		'config.Read_INI(ini);',
+		'config.Is_Launchable(fault)',
+		'config.To_Request(request);',
+	], 'the file is read, checked for what a request cannot show, and turned into a request');
 
-	assertOrdered(functionBody(spawner, 'static bool Spawner_Wire_Network(void)'), [
+	assertOrdered(functionBody(source('code/launcher.cpp'), 'bool Launch::Prepare(bool & gameloaded)'), [
+		'Spawner::Read_Request(Request, spawn_file, fault)',
+		'game.From_Message(play.Game, Launch::Limits(), fault, &site)',
+		'machine.From_Request(play, game, fault, &site)',
+		'Launch::Apply(game, machine, fault)',
+		'Session.Type == GAME_INTERNET && !Launch::Wire_Network(machine, fault)',
+	], 'the match is judged and assembled before its network is opened');
+
+	assertOrdered(functionBody(apply, 'bool Launch::Wire_Network(Launch::Machine const & machine, std::string & fault)'), [
 		'Ipx.Configure_Tunnel(',
 		'Ipx.Configure_Direct_Peers(',
 		'Ipx.Add_Peer(Session.Players[index]->Address);',
@@ -697,43 +728,29 @@ test('A match against other machines is assembled whole and wired to its network
 
 
 	assert.match(
-		functionBody(spawner, 'static void Spawner_Setup_Session(void)'),
-		/LaunchType::Multiplayer\s*\n?\s*\?\s*GAME_INTERNET : GAME_SKIRMISH;/,
+		functionBody(apply, 'void Apply_Match(Launch::Game const & game, Launch::Machine const & machine)'),
+		/GameKind::GAME_KIND_MULTIPLAYER \? GAME_INTERNET : GAME_SKIRMISH;/,
 		'one assembly serves both kinds of match',
 	);
 
-	assertOrdered(functionBody(spawner, 'static void Spawner_Seat_Human(int index)'), [
-		'if (SpawnConfig.TunnelPort != 0) {',
-		'node->Address.Set_Address(0, htons((unsigned short)seat.Port));',
-		'inet_addr(seat.Address.c_str())',
-	], 'a tunnelled machine is named by its tunnel number before an address is read');
-
-	assertOrdered(functionBody(spawner, 'static void Spawner_Seat_Humans(void)'), [
-		'Spawner_Seat_Human(SpawnConfig.LocalSlot);',
-		'if (index != SpawnConfig.LocalSlot) {',
+	assertOrdered(functionBody(apply, 'void Add_Human_Players(Launch::Game const & game, Launch::Machine const & machine)'), [
+		'add_human(machine.LocalPlayer);',
+		'index != machine.LocalPlayer',
 	], 'the local seat leads the player list the rest of the game reads');
 
-	assertOrdered(functionBody(spawner, 'static void Spawner_Setup_Session(void)'), [
+	assertOrdered(functionBody(apply, 'void Apply_Match(Launch::Game const & game, Launch::Machine const & machine)'), [
 		'GAME_INTERNET : GAME_SKIRMISH;',
-		'Seed = SpawnConfig.Seed;',
-	], 'one seed is taken as written, since no lobby hands one around');
+		'Apply_Match_Options(game, machine);',
+		'Seed = int(*game.Seed);',
+		'CustomSeed = game.Seed;',
+		'Add_Human_Players(game, machine);',
+	], 'the seed is set with the match options, before any player is added');
 
-	assertOrdered(
-		functionBody(
-			source('code/spawnerconfig.cpp'),
-			'bool SpawnerConfigClass::Is_Playable(int countries, int colors, std::string & fault) const',
-		),
-		[
-			'kind == LaunchType::Multiplayer ||',
-			'(kind == LaunchType::Resume && HumanCount > 1)',
-			'if (human && multiplayer) {',
-			'slot.Name.empty()',
-			'_stricmp(Slots[other].Name.c_str(), slot.Name.c_str()) == 0',
-			'Slots[other].Color == slot.Color',
-			'slot.Port < 1 || slot.Port > 65535',
-		],
-		'the seat order the machines share is what the name and color rules are held for',
-	);
+	assertOrdered(functionBody(source('code/launch/gamelaunch.cpp'), 'bool Launch::Game::From_Message(Launch::Message::Game const & request, LimitsType const & limits, std::string & fault, Launch::FaultSite * site)'), [
+		'player.Human && !before.Human',
+		'player.Human && player.Color <= before.Color',
+		'Same_Name(game.Players[other].Name, game.Players[index].Name)',
+	], 'the player order the machines share is what the order, color and name rules are checked for');
 });
 
 test('The scenario file is kept from its first read and carried in the save', () => {

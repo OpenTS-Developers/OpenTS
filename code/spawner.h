@@ -10,10 +10,18 @@
 
 #pragma once
 
+#include "spawnerconfig.h"
 
-void Spawner_Request(void);
-bool Spawner_Is_Requested(void);
-bool Spawner_Is_Active(void);
-bool Spawner_Prepare(bool & gameloaded);
-int Spawner_Session_Identity(void);
-void Spawner_Announce_Master(void);
+#include <optional>
+#include <string>
+
+namespace Launch::Message {
+	struct Request;
+}
+
+
+namespace Spawner
+{
+	// file's Describe_Fault names a later fault in the request by its SPAWN.INI section and key.
+	bool Read_Request(Launch::Message::Request & request, std::optional<Config> & file, std::string & fault);
+}

@@ -118,6 +118,6 @@ files = [
 uses = ["core", "platform", "gfx", "audio", "net", "sim", "ui", "view"]
 files = [
     "_deploymentconfig", "_savemgr", "autosave", "conquer", "debug", "deploymentconfig", "headless",
-    "init", "mainloop", "mplayer", "mpload", "saveload", "savemgr", "session", "skirmish",
+    "init", "launcher", "launcherapply", "mainloop", "mplayer", "mpload", "saveload", "savemgr", "session", "skirmish",
     "spawner", "spawnerconfig", "spawnhouse", "startup", "stats",
 ]

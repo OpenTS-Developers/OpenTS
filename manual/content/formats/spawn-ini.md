@@ -7,6 +7,9 @@ source_files:
 - code/spawnerconfig.cpp
 - code/spawnerconfig.h
 - code/spawner.cpp
+- code/launcher.cpp
+- code/launcherapply.cpp
+- code/launcherapply.h
 filenames:
 - SPAWN.INI
 related:
@@ -273,7 +276,7 @@ The keys under [What a player is shown](#what-a-player-is-shown) and [The match 
 
 Before play begins, the machines compare the games they loaded, and the match stops with the message `Scenarios don't match.` if they differ. [Out-of-sync recovery](/systems/out-of-sync-recovery/#games-that-differ-at-the-start) lists what is compared.
 
-The `Session identity:` line in an [out-of-sync report](/using/out-of-sync-reports/) differs between machines whose files disagree on anything in the list above, except `Name`, `AutoSaveGame` and the `[Tunnel]` section. Scenario files that differ under the same name give the same identity. `Host`, the `Ip` and `Port` entries, the waits and the keys under [What a player is shown](#what-a-player-is-shown) and [The match results file](#the-match-results-file) do not change it.
+The `Session identity:` line in an [out-of-sync report](/using/out-of-sync-reports/) is a checksum of the game the file describes. It differs between machines whose files disagree on anything in the list above except `Scenario`, `AutoSaveGame` and the `[Tunnel]` section, or on `QuickMatch` or `DifficultyBasedAINames`. `Host`, the `Ip` and `Port` entries, the waits, and the other keys under [What a player is shown](#what-a-player-is-shown) and [The match results file](#the-match-results-file) do not change it. A resumed saved game has no session identity; its report gives the scenario, seed and number of players on that line instead.
 
 Without a tunnel, each `[OtherN]` section also gives `Ip`, the address that machine answers on, and `Port`, the port it listens on. `[Settings] Port` is the port this machine listens on, `1234` by default. Write each address as a dotted IPv4 address such as `203.0.113.7`; a host name is refused.
 
@@ -291,7 +294,7 @@ Each machine applies its own waits, so files that differ do not put the match ou
 
 ## When something is wrong
 
-The game refuses a launch it cannot play. It shows the reason, writes it to the log, and exits instead of falling back to its menu.
+The game refuses a launch it cannot play. It shows the reason, writes it to the log, and exits instead of falling back to its menu. The reason starts with the section and key at fault, such as `SPAWN.INI [Other1] Side:`, and a player it numbers is counted from `0` in house order.
 
 Any launch is refused when `SPAWN.INI` is missing or `GameSpeed` is outside `0` to `6`.
 
@@ -310,7 +313,7 @@ A new skirmish, and any game against other machines, new or resumed, is also ref
 
 A game against other machines, new or resumed, is also refused when:
 
-- a person has no `Name`, or two people have the same name, ignoring case, or the same `Color`;
+- a person has no `Name`, or two people have the same name, ignoring case, or give the same `Color`;
 - without a tunnel, `[Settings] Port` or another person's `Port` is outside `1` to `65535`, or another person's `Ip` is not a dotted IPv4 address other than `0.0.0.0`;
 - through a tunnel, `[Tunnel] Port` is negative or above `65535`, or `[Tunnel] Ip` is not a dotted IPv4 address other than `0.0.0.0`;
 - through a tunnel, `[Settings] Port` or another person's `Port` is `0` or outside `-65535` to `65535`;

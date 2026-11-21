@@ -130,6 +130,7 @@
 #include "keyboard.h"
 #include "language/language.h"
 #include "laser.h"
+#include "launcher.h"
 #include "light.h"
 #include "lightcon.h"
 #include "loaddlg.h"
@@ -169,7 +170,6 @@
 #include "side.h"
 #include "skirmish.h"
 #include "smudtype.h"
-#include "spawner.h"
 #include "stimer.h"
 #include "tactical.h"
 #include "tag.h"
@@ -421,7 +421,7 @@ int Init_Game(int , char * [])
 	/*
 	**	Play the startup animation.
 	*/
-	if (!Spawner_Is_Requested() && !Headless::Is_Active()) {
+	if (!Launch::Replaces_Menu()) {
 		if (Special.IsFromInstall == true) {
 			DebugString("Playing first time intro sequence.\n");
 			Play_Movie("EVA.VQA", THEME_NONE, false);
@@ -953,8 +953,8 @@ restart:
 		 * A launch replaces the menu once. An ended match or a refusal answers false, so the
 		 * process exits and the client sees it go.
 		 */
-		if (Spawner_Is_Requested()) {
-			if (!Spawner_Prepare(gameloaded)) {
+		if (Launch::Is_Game_Requested()) {
+			if (!Launch::Prepare(gameloaded)) {
 				return(false);
 			}
 			process = false;
@@ -1227,19 +1227,19 @@ restart:
 		}
 
 		// The menu sets the difficulty pair on every path but a client launch, which chose it.
-		if (!Spawner_Is_Active()) {
+		if (!Launch::Is_Active()) {
 			Session.CampaignDifficulty = (DiffType)Options.Difficulty;
 			Session.CampaignCDifficulty = (DiffType)(DIFF_COUNT - 1 - Options.Difficulty);
 		}
 
 		// A campaign from the menu plays at the player's speed setting; every other game was
 		// given its speed when it was set up.
-		if (Session.Type == GAME_NORMAL && !Spawner_Is_Active()) {
+		if (Session.Type == GAME_NORMAL && !Launch::Is_Active()) {
 			Session.Options.GameSpeed = Options.GameSpeed;
 		}
 
-		if (Session.Type != GAME_NORMAL || Debug_ForceScenario || Spawner_Is_Active()) {
-			if (!Start_Scenario(Scen->ScenarioName, true, Spawner_Is_Active() ? Scen->Campaign : CAMPAIGN_NONE)) {
+		if (Session.Type != GAME_NORMAL || Debug_ForceScenario || Launch::Is_Active()) {
+			if (!Start_Scenario(Scen->ScenarioName, true, Launch::Is_Active() ? Scen->Campaign : CAMPAIGN_NONE)) {
 				if (Debug_Map) {
 					return(false);
 				} else {
@@ -1257,7 +1257,7 @@ restart:
 		}
 
 		// The mission read clears these, so a launch file's carried-over flags are set after it.
-		if (Spawner_Is_Active() && Session.Type == GAME_NORMAL) {
+		if (Launch::Is_Active() && Session.Type == GAME_NORMAL) {
 			for (int index = 0; index < ARRAY_SIZE(Environment.Globals); index++) {
 				Scen->Set_Global_To(index, Environment.Globals[index]);
 			}
@@ -1275,7 +1275,7 @@ restart:
 
 	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
 		Session.Create_Connections();
-		Spawner_Announce_Master();
+		Launch::Announce_Master();
 		SaveManager.Multiplayer_Saves_Begin_Match(gameloaded || Session.LoadGame);
 
 		if (Session.Type == GAME_IPX) {
@@ -1526,7 +1526,7 @@ bool Parse_Command_Line(int argc, char * argv[])
 
 		// A client asking the game to launch what SPAWN.INI describes.
 		if (stricmp(string, "-SPAWN") == 0) {
-			Spawner_Request();
+			Launch::Request_Spawn_File();
 			continue;
 		}
 

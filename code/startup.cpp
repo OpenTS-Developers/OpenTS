@@ -92,6 +92,7 @@
 #include "isotype.h"
 #include "jumpjet.h"
 #include "language/language.h"
+#include "launcher.h"
 #include "levitate.h"
 #include "light.h"
 #include "lightcon.h"
@@ -119,7 +120,6 @@
 #include "sidebar.h"
 #include "smudge.h"
 #include "smudtype.h"
-#include "spawner.h"
 #include "sun.h"
 #include "super.h"
 #include "suprtype.h"
@@ -648,7 +648,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 		**	Check for forced intro movie run disabling. If the conquer
 		**	configuration file says "no", then don't run the intro.
 		*/
-		if (!Special.IsFromInstall && !Spawner_Is_Requested() && !Headless::Is_Active()) {
+		if (!Special.IsFromInstall && !Launch::Replaces_Menu()) {
 			Special.IsFromInstall = ConfigINI.Get_Bool("Intro", "PlayIntro", true);
 		}
 
@@ -656,7 +656,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 		**	Regardless of whether we should run it or not, here we're
 		**	gonna change it to say "no" in the future.
 		*/
-		if (Special.IsFromInstall == true && !Spawner_Is_Requested() && !Headless::Is_Active()) {
+		if (Special.IsFromInstall == true && !Launch::Replaces_Menu()) {
 			ConfigINI.Put_Bool("Intro", "PlayIntro", false);
 
 			// Left closed, so that saving opens it for writing itself.
