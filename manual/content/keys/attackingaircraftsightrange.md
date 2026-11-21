@@ -15,7 +15,7 @@ When a human player's aircraft fires, it reveals the ground within this many cel
 
 The reveal uncovers the ground for the aircraft's owner and for the houses that [share its view](/systems/map-visibility/#whose-looks-count). It is made in addition to the aircraft's regular looks with its [`Sight=`](/keys/sight/). In a campaign, an aircraft of any player-controlled house qualifies, and the test reads the player's own shroud.
 
-The value counts cells, like `Sight=`, and a value above `10` reveals further than ten cells. At `0` the aircraft reveals nothing when it fires.
+The value counts cells, like `Sight=`. At `0` the aircraft reveals nothing when it fires.
 
 ```ini title="rules.ini"
 [General]
