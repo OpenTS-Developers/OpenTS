@@ -31,7 +31,7 @@ inline Replay::Message::RecordingInfo Sample_Info(void)
 	info.DataVersion = 1;
 	info.Package = "Tiberian Sun";
 	info.PackageVersion = "2.03";
-	info.Files.push_back(Replay::Message::FileHash{ "RULES.INI", "sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", {} });
+	info.Files.push_back(Launch::Message::FileHash{ "RULES.INI", "sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", {} });
 	info.RecordedAt = 1794800000;
 	info.Recorder = 0;
 	info.MapName = "Synthetic Map";
@@ -43,13 +43,13 @@ inline Replay::Message::RecordingInfo Sample_Info(void)
 }
 
 
-inline Replay::Message::Launch Sample_Launch(void)
+inline Launch::Message::Game Sample_Launch(void)
 {
-	Replay::Message::Launch launch;
-	launch.Kind = Replay::GameKind::GAME_KIND_SKIRMISH;
+	Launch::Message::Game launch;
+	launch.Kind = Launch::GameKind::GAME_KIND_SKIRMISH;
 	launch.Seed = 12345;
 
-	Replay::Message::Player human;
+	Launch::Message::Player human;
 	human.House = 0;
 	human.Name = "Player";
 	human.Human = true;
@@ -63,7 +63,7 @@ inline Replay::Message::Launch Sample_Launch(void)
 	human.ResolvedStart = 2;
 	launch.Players.push_back(human);
 
-	Replay::Message::Player computer;
+	Launch::Message::Player computer;
 	computer.House = 1;
 	computer.Country = -1;
 	computer.CountryName = "Nod";
@@ -75,13 +75,13 @@ inline Replay::Message::Launch Sample_Launch(void)
 	computer.ResolvedStart = 0;
 	launch.Players.push_back(computer);
 
-	Replay::Message::GameOption credits;
+	Launch::Message::Option credits;
 	credits.Key = "Credits";
 	credits.Value = std::int64_t(10000);
-	Replay::Message::GameOption crates;
+	Launch::Message::Option crates;
 	crates.Key = "Crates";
 	crates.Value = true;
-	Replay::Message::GameOption speed;
+	Launch::Message::Option speed;
 	speed.Key = "GameSpeed";
 	speed.Value = std::int64_t(0);
 	launch.Options = { crates, credits, speed };

@@ -8,6 +8,7 @@ exclude = ["language", "vqalib"]
 # Sources under these directories take the layer named here unless a files list says otherwise.
 [directories]
 audio = "audio"
+launch = "core"
 proto = "core"
 replay = "core"
 sdl = "platform"

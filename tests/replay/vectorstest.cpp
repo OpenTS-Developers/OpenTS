@@ -7,14 +7,13 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
+#include "doctest/doctest.h"
+#include "fixtures.h"
+#include "launch/launchmessages.h"
 #include "replay/replayreader.h"
 #include "replay/replayseal.h"
-
-#include "fixtures.h"
 #include "replaytest.h"
 #include "sha256.h"
-
-#include "doctest/doctest.h"
 
 #include <algorithm>
 #include <filesystem>
@@ -325,7 +324,7 @@ struct Judgement {
 	std::string Reason;
 	std::optional<Digest> S0;
 	Message::RecordingInfo Info;
-	Message::Launch Start;
+	Launch::Message::Game Start;
 	std::vector<std::pair<std::uint32_t, Message::Frame>> Records;
 	std::map<std::uint32_t, std::vector<Message::Seal>> Closed;   // the computed seals each record should have
 	std::vector<Message::Seal> Chain;                             // every computed seal, the final seal last

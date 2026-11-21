@@ -65,7 +65,7 @@ namespace Replay
 			bool Unknown_Codec(void) const;
 
 			ReadResult Read_Info(Message::RecordingInfo & info);
-			ReadResult Read_Launch(Message::Launch & launch);
+			ReadResult Read_Launch(Launch::Message::Game & launch);
 			ReadResult Read_Statistics(Message::Statistics & statistics);
 			ReadResult Read_Summary(Message::RecordingSummary & summary);
 

@@ -18,12 +18,14 @@ are in the specification.
 | `replaywriter.h`, `.cpp` | The container writer |
 | `replayreader.h`, `.cpp` | The container reader, the frame stream reader, `Verify_Seals`, and `Verify_File` |
 
-The layer builds on two files outside `code/replay/`:
+The layer builds on files outside `code/replay/`:
 
 | File | Content |
 | --- | --- |
 | `code/proto/message.h` | What the message structs share: the fields a decoder keeps without reading, the string and player limits as `LimitsType`, and `RuleError` and `RuleBreak` |
 | `code/proto/messagecodec.h` | The encoder and decoder helpers that the files defining message structs share; nothing else includes it |
+| `code/launch/launchfields.hh` | The field numbers of the `Launch`, `Player`, `GameOption`, and `FileHash` messages |
+| `code/launch/launchmessages.h`, `.cpp` | Those messages as the structs `Game`, `Player`, `Option`, and `FileHash` of namespace `Launch::Message`, with `Encode`, `Decode`, `Check_Limits`, and `Check_Order` |
 
 The Protocol Buffers wire encoding lives in `code/proto/` and raw deflate
 streams in `code/`, because they are not specific to replays.
@@ -43,12 +45,15 @@ places the `replay` and `proto` directories and the `deflate` file in the
 
 ## Messages
 
-Each message of `replay.proto` is a struct in namespace `Replay::Message`,
-named exactly as the schema names the message, such as
-`Replay::Message::Frame` and `Replay::Message::PlayerMessage`. The codec
-functions are declared in the same namespace, where argument-dependent lookup
-finds them, and namespace `Replay` also declares the public ones, so
-`Replay::Decode` names them too.
+Each message of `replay.proto` is a struct in the `Message` namespace of its
+module. The `Launch`, `Player`, `GameOption`, and `FileHash` messages, which
+describe a game, are the structs `Game`, `Player`, `Option`, and `FileHash` of
+`Launch::Message`. Every other message is a struct of `Replay::Message` named
+exactly as the schema names it, such as `Replay::Message::Frame` and
+`Replay::Message::PlayerMessage`. The codec functions are declared in the
+namespace of their struct, where argument-dependent lookup finds them, and the
+module namespace also declares the public ones, so `Replay::Decode` and
+`Launch::Encode` name them too.
 
 `Encode` writes the canonical bytes of section 1 of the specification: fields
 in ascending number, zeros left out except in `optional` fields and `oneof`

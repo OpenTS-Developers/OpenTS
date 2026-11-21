@@ -248,7 +248,7 @@ TEST_CASE("the reader reads back everything the writer wrote")
 	expected_info.SealVersion = SEAL_VERSION;
 	CHECK(Encoded(info) == Encoded(expected_info));
 
-	Message::Launch launch;
+	Launch::Message::Game launch;
 	REQUIRE(reader.Read_Launch(launch) == ReadResult::OK);
 	CHECK(Encoded(launch) == Encoded(Sample_Launch()));
 
@@ -463,7 +463,7 @@ TEST_CASE("each limit holds at its value and refuses one more")
 	limits.Players = 1;
 	Reader few_players(source, limits);
 	REQUIRE(few_players.Open() == ReadResult::OK);
-	Message::Launch launch;
+	Launch::Message::Game launch;
 	CHECK(few_players.Read_Launch(launch) == ReadResult::LIMIT);
 
 	limits = LimitsType();
@@ -951,7 +951,7 @@ TEST_CASE("Verify_File applies the rules of the records that Verify_Seals does n
 	for (auto const & [text, expected] : cases) {
 		CAPTURE(text.size());
 
-		Message::Launch launch = Sample_Launch();
+		Launch::Message::Game launch = Sample_Launch();
 		launch.Players[1].CountryName = text;
 		auto sections = Minimal_Sections();
 		sections[1].Body = Encoded(launch);
@@ -1245,7 +1245,7 @@ TEST_CASE("the reader applies limits while it decodes")
 	InputFile source(file);
 	Reader reader(source);
 	REQUIRE(reader.Open() == ReadResult::OK);
-	Message::Launch launch;
+	Launch::Message::Game launch;
 	CHECK(reader.Read_Launch(launch) == ReadResult::LIMIT);
 	CHECK(launch.Players.size() == 64);
 
@@ -1308,7 +1308,7 @@ TEST_CASE("no call lets an allocation failure escape")
 	source.Fail = true;
 
 	Message::RecordingInfo info;
-	Message::Launch launch;
+	Launch::Message::Game launch;
 	Message::Statistics statistics;
 	Message::RecordingSummary summary;
 	Replay::Bytes body;
@@ -1363,7 +1363,7 @@ TEST_CASE("mutated files never crash the reader")
 		}
 		opened++;
 		Message::RecordingInfo info;
-		Message::Launch launch;
+		Launch::Message::Game launch;
 		Message::RecordingSummary summary;
 		Message::Statistics statistics;
 		reader.Read_Info(info);

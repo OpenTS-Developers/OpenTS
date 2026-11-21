@@ -154,7 +154,7 @@ bool Writer::Sync(void)
 /// Holds the first sections until the first frame record or Close writes them. The writer sets
 /// the file's SealVersion to the version of the seals it computes and ignores the value in info.
 /// </summary>
-WriteResult Writer::Begin(Message::RecordingInfo const & info, Message::Launch const & launch, ByteSpan init,
+WriteResult Writer::Begin(Message::RecordingInfo const & info, Launch::Message::Game const & launch, ByteSpan init,
 	std::optional<ByteSpan> map)
 {
 	if (State == StateType::FAILED) {
@@ -171,7 +171,7 @@ WriteResult Writer::Begin(Message::RecordingInfo const & info, Message::Launch c
 }
 
 
-WriteResult Writer::Begin_Body(Message::RecordingInfo const & info, Message::Launch const & launch, ByteSpan init,
+WriteResult Writer::Begin_Body(Message::RecordingInfo const & info, Launch::Message::Game const & launch, ByteSpan init,
 	std::optional<ByteSpan> map)
 {
 	Message::RecordingInfo sealed_info = info;

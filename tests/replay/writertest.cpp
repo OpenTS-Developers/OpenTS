@@ -220,7 +220,7 @@ TEST_CASE("the writer refuses input that breaks the format and keeps recording")
 	Writer writer(sink);
 	ByteVector const init = Sample_Init();
 
-	Message::Launch unordered = Sample_Launch();
+	Launch::Message::Game unordered = Sample_Launch();
 	std::swap(unordered.Options[0], unordered.Options[1]);
 	CHECK(writer.Begin(Sample_Info(), unordered, init, std::nullopt) == WriteResult::REFUSED);
 	CHECK(writer.Add_Frame(0, Hash_Frame(1)) == WriteResult::STATE);

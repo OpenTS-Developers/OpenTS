@@ -67,13 +67,6 @@ namespace Replay
 	};
 
 	// Open enumerations: a value outside the list is kept as it was read.
-	enum class GameKind : std::int32_t {
-		GAME_KIND_UNKNOWN = 0,
-		GAME_KIND_CAMPAIGN = 1,
-		GAME_KIND_SKIRMISH = 2,
-		GAME_KIND_MULTIPLAYER = 3,
-	};
-
 	enum class EventRole : std::int32_t {
 		EVENT_ROLE_NONE = 0,
 		EVENT_ROLE_CHAT_PROOF = 1,

@@ -35,6 +35,8 @@ namespace ProtoMessage
 		std::size_t Players = 64;
 	};
 
+	struct DecodeContext;
+
 	enum class RuleError : std::uint8_t {
 		NONE,
 		TOO_LONG,          // a string or bytes value is longer than its limit

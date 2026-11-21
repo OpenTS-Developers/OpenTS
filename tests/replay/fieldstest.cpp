@@ -7,10 +7,12 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
+#include "doctest/doctest.h"
+#include "launch/launchmessages.h"
+
+#include "launch/launchfields.hh"
 #include "replay/replay.hh"
 #include "replay/replayfields.hh"
-
-#include "doctest/doctest.h"
 
 #include <cctype>
 #include <fstream>
@@ -21,6 +23,7 @@
 #include <vector>
 
 namespace F = Replay::Field;
+namespace L = Launch::Field;
 
 
 namespace {
@@ -63,34 +66,34 @@ FieldEntry const FIELDS[] = {
 	{ "RecordingInfo", "seal_version", F::RecordingInfo::SEAL_VERSION, "uint32", Label::PLAIN },
 	{ "RecordingInfo", "colors", F::RecordingInfo::COLORS, "PlayerColor", Label::REPEATED },
 	{ "RecordingInfo", "income_kinds", F::RecordingInfo::INCOME_KINDS, "IncomeKind", Label::REPEATED },
-	{ "FileHash", "path", F::FileHash::PATH, "string", Label::PLAIN },
-	{ "FileHash", "hash", F::FileHash::HASH, "string", Label::PLAIN },
+	{ "FileHash", "path", L::FileHash::PATH, "string", Label::PLAIN },
+	{ "FileHash", "hash", L::FileHash::HASH, "string", Label::PLAIN },
 	{ "PlayerColor", "number", F::PlayerColor::NUMBER, "uint32", Label::PLAIN },
 	{ "PlayerColor", "rgb", F::PlayerColor::RGB, "fixed32", Label::PLAIN },
 	{ "IncomeKind", "number", F::IncomeKind::NUMBER, "uint32", Label::PLAIN },
 	{ "IncomeKind", "id", F::IncomeKind::ID, "string", Label::PLAIN },
-	{ "Launch", "kind", F::Launch::KIND, "GameKind", Label::PLAIN },
-	{ "Launch", "seed", F::Launch::SEED, "fixed32", Label::PRESENCE },
-	{ "Launch", "players", F::Launch::PLAYERS, "Player", Label::REPEATED },
-	{ "Launch", "options", F::Launch::OPTIONS, "GameOption", Label::REPEATED },
-	{ "Launch", "anonymous", F::Launch::ANONYMOUS, "bool", Label::PLAIN },
-	{ "Player", "house", F::Player::HOUSE, "uint32", Label::PLAIN },
-	{ "Player", "name", F::Player::NAME, "string", Label::PLAIN },
-	{ "Player", "human", F::Player::HUMAN, "bool", Label::PLAIN },
-	{ "Player", "observer", F::Player::OBSERVER, "bool", Label::PLAIN },
-	{ "Player", "country", F::Player::COUNTRY, "sint32", Label::PLAIN },
-	{ "Player", "country_name", F::Player::COUNTRY_NAME, "string", Label::PLAIN },
-	{ "Player", "color", F::Player::COLOR, "sint32", Label::PLAIN },
-	{ "Player", "start", F::Player::START, "sint32", Label::PLAIN },
-	{ "Player", "ai_level", F::Player::AI_LEVEL, "sint32", Label::PRESENCE },
-	{ "Player", "allies", F::Player::ALLIES, "uint32", Label::REPEATED },
-	{ "Player", "resolved_country", F::Player::RESOLVED_COUNTRY, "sint32", Label::PRESENCE },
-	{ "Player", "resolved_color", F::Player::RESOLVED_COLOR, "sint32", Label::PRESENCE },
-	{ "Player", "resolved_start", F::Player::RESOLVED_START, "sint32", Label::PRESENCE },
-	{ "GameOption", "key", F::GameOption::KEY, "string", Label::PLAIN },
-	{ "GameOption", "number", F::GameOption::NUMBER, "sint64", Label::ONEOF },
-	{ "GameOption", "flag", F::GameOption::FLAG, "bool", Label::ONEOF },
-	{ "GameOption", "text", F::GameOption::TEXT, "string", Label::ONEOF },
+	{ "Launch", "kind", L::Game::KIND, "GameKind", Label::PLAIN },
+	{ "Launch", "seed", L::Game::SEED, "fixed32", Label::PRESENCE },
+	{ "Launch", "players", L::Game::PLAYERS, "Player", Label::REPEATED },
+	{ "Launch", "options", L::Game::OPTIONS, "GameOption", Label::REPEATED },
+	{ "Launch", "anonymous", L::Game::ANONYMOUS, "bool", Label::PLAIN },
+	{ "Player", "house", L::Player::HOUSE, "uint32", Label::PLAIN },
+	{ "Player", "name", L::Player::NAME, "string", Label::PLAIN },
+	{ "Player", "human", L::Player::HUMAN, "bool", Label::PLAIN },
+	{ "Player", "observer", L::Player::OBSERVER, "bool", Label::PLAIN },
+	{ "Player", "country", L::Player::COUNTRY, "sint32", Label::PLAIN },
+	{ "Player", "country_name", L::Player::COUNTRY_NAME, "string", Label::PLAIN },
+	{ "Player", "color", L::Player::COLOR, "sint32", Label::PLAIN },
+	{ "Player", "start", L::Player::START, "sint32", Label::PLAIN },
+	{ "Player", "ai_level", L::Player::AI_LEVEL, "sint32", Label::PRESENCE },
+	{ "Player", "allies", L::Player::ALLIES, "uint32", Label::REPEATED },
+	{ "Player", "resolved_country", L::Player::RESOLVED_COUNTRY, "sint32", Label::PRESENCE },
+	{ "Player", "resolved_color", L::Player::RESOLVED_COLOR, "sint32", Label::PRESENCE },
+	{ "Player", "resolved_start", L::Player::RESOLVED_START, "sint32", Label::PRESENCE },
+	{ "GameOption", "key", L::Option::KEY, "string", Label::PLAIN },
+	{ "GameOption", "number", L::Option::NUMBER, "sint64", Label::ONEOF },
+	{ "GameOption", "flag", L::Option::FLAG, "bool", Label::ONEOF },
+	{ "GameOption", "text", L::Option::TEXT, "string", Label::ONEOF },
 	{ "Frame", "skipped", F::Frame::SKIPPED, "uint32", Label::PLAIN },
 	{ "Frame", "hash", F::Frame::HASH, "fixed32", Label::PRESENCE },
 	{ "Frame", "events", F::Frame::EVENTS, "Event", Label::REPEATED },
@@ -191,10 +194,10 @@ FieldEntry const FIELDS[] = {
 };
 
 EnumEntry const ENUMS[] = {
-	{ "GameKind", "GAME_KIND_UNKNOWN", int(Replay::GameKind::GAME_KIND_UNKNOWN) },
-	{ "GameKind", "GAME_KIND_CAMPAIGN", int(Replay::GameKind::GAME_KIND_CAMPAIGN) },
-	{ "GameKind", "GAME_KIND_SKIRMISH", int(Replay::GameKind::GAME_KIND_SKIRMISH) },
-	{ "GameKind", "GAME_KIND_MULTIPLAYER", int(Replay::GameKind::GAME_KIND_MULTIPLAYER) },
+	{ "GameKind", "GAME_KIND_UNKNOWN", int(Launch::GameKind::GAME_KIND_UNKNOWN) },
+	{ "GameKind", "GAME_KIND_CAMPAIGN", int(Launch::GameKind::GAME_KIND_CAMPAIGN) },
+	{ "GameKind", "GAME_KIND_SKIRMISH", int(Launch::GameKind::GAME_KIND_SKIRMISH) },
+	{ "GameKind", "GAME_KIND_MULTIPLAYER", int(Launch::GameKind::GAME_KIND_MULTIPLAYER) },
 	{ "EventRole", "EVENT_ROLE_NONE", int(Replay::EventRole::EVENT_ROLE_NONE) },
 	{ "EventRole", "EVENT_ROLE_CHAT_PROOF", int(Replay::EventRole::EVENT_ROLE_CHAT_PROOF) },
 	{ "MessageScope", "MESSAGE_SCOPE_UNKNOWN", int(Replay::MessageScope::MESSAGE_SCOPE_UNKNOWN) },

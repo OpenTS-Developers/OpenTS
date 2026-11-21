@@ -28,6 +28,7 @@ opents_add_test(ReplayTest
         file.cpp
         file_posix.cpp
         file_win.cpp
+        launch/launchmessages.cpp
         replay/replayreader.cpp
         replay/replaymessages.cpp
         replay/replayseal.cpp

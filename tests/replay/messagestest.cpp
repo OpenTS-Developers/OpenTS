@@ -11,6 +11,7 @@
 #include "replay/replaymessages.h"
 #include "replaytest.h"
 
+#include "launch/launchfields.hh"
 #include "replay/replayfields.hh"
 
 #include <random>
@@ -19,6 +20,9 @@ using namespace Replay;
 
 
 namespace {
+
+namespace L = Launch::Field;
+
 
 RuleBreak Broke(RuleError error, std::string_view message, std::uint32_t field)
 {
@@ -52,9 +56,9 @@ UnknownField Unknown_Field(std::uint32_t number, char const * hex)
 }
 
 
-Message::Player Sample_Player(void)
+Launch::Message::Player Sample_Player(void)
 {
-	Message::Player player;
+	Launch::Message::Player player;
 	player.House = 1;
 	player.Name = "A";
 	player.Human = true;
@@ -78,8 +82,8 @@ char const * const SAMPLE_PLAYER_HEX =
 TEST_CASE("a message whose fields are all zero encodes to no bytes")
 {
 	CHECK(Encoded(Message::RecordingInfo()).empty());
-	CHECK(Encoded(Message::Launch()).empty());
-	CHECK(Encoded(Message::Player()).empty());
+	CHECK(Encoded(Launch::Message::Game()).empty());
+	CHECK(Encoded(Launch::Message::Player()).empty());
 	CHECK(Encoded(Message::Frame()).empty());
 	CHECK(Encoded(Message::Event()).empty());
 	CHECK(Encoded(Message::ViewState()).empty());
@@ -94,7 +98,7 @@ TEST_CASE("a message whose fields are all zero encodes to no bytes")
 TEST_CASE("a player encodes in field order with optional zeros and packed allies")
 {
 	CHECK(Encoded_Hex(Sample_Player()) == Hex(From_Hex(SAMPLE_PLAYER_HEX)));
-	Message::Player const back = Round_Trip<Message::Player>(From_Hex(SAMPLE_PLAYER_HEX));
+	Launch::Message::Player const back = Round_Trip<Launch::Message::Player>(From_Hex(SAMPLE_PLAYER_HEX));
 	CHECK(back.Country == -1);
 	CHECK(back.Allies == std::vector<std::uint32_t>{ 2, 3 });
 	CHECK(back.ResolvedCountry == 0);
@@ -104,18 +108,18 @@ TEST_CASE("a player encodes in field order with optional zeros and packed allies
 
 TEST_CASE("the launch bytes are pinned, oneof zeros and unknown fields included")
 {
-	Message::Launch launch;
-	launch.Kind = GameKind::GAME_KIND_SKIRMISH;
+	Launch::Message::Game launch;
+	launch.Kind = Launch::GameKind::GAME_KIND_SKIRMISH;
 	launch.Seed = 0;
 	launch.Players.push_back(Sample_Player());
 
-	Message::GameOption crates;
+	Launch::Message::Option crates;
 	crates.Key = "Crates";
 	crates.Value = false;
-	Message::GameOption credits;
+	Launch::Message::Option credits;
 	credits.Key = "Credits";
 	credits.Value = std::int64_t(0);
-	Message::GameOption mode;
+	Launch::Message::Option mode;
 	mode.Key = "Mode";
 	mode.Value = std::string();
 	launch.Options = { crates, credits, mode };
@@ -138,7 +142,7 @@ TEST_CASE("the launch bytes are pinned, oneof zeros and unknown fields included"
 	CHECK(Encoded_Hex(launch) == expected);
 	CHECK(Check_Order(launch) == RuleError::NONE);
 
-	Message::Launch const back = Round_Trip<Message::Launch>(From_Hex(expected));
+	Launch::Message::Game const back = Round_Trip<Launch::Message::Game>(From_Hex(expected));
 	CHECK(back.Seed == 0u);
 	REQUIRE(back.Options.size() == 3);
 	CHECK(std::get<bool>(back.Options[0].Value) == false);
@@ -301,7 +305,7 @@ TEST_CASE("a summary keeps a last frame of zero and lists its seals")
 
 TEST_CASE("a non-repeated field that appears twice takes its last value")
 {
-	Message::Player player;
+	Launch::Message::Player player;
 	REQUIRE(Decode(From_Hex("0801" "0802"), player));
 	CHECK(player.House == 2);
 
@@ -311,7 +315,7 @@ TEST_CASE("a non-repeated field that appears twice takes its last value")
 	CHECK(!frame.View.Camera.has_value());
 	CHECK(frame.View.Selection.has_value());
 
-	Message::GameOption option;
+	Launch::Message::Option option;
 	REQUIRE(Decode(From_Hex("1002" "1801"), option));
 	CHECK_MESSAGE(std::get<bool>(option.Value) == true, "the last oneof member counts");
 }
@@ -319,7 +323,7 @@ TEST_CASE("a non-repeated field that appears twice takes its last value")
 
 TEST_CASE("repeated numeric fields decode packed and unpacked")
 {
-	Message::Player player;
+	Launch::Message::Player player;
 	REQUIRE(Decode(From_Hex("5003" "52020405" "5006"), player));
 	CHECK(player.Allies == std::vector<std::uint32_t>{ 3, 4, 5, 6 });
 	CHECK_MESSAGE(Encoded_Hex(player) == "520403040506", "the writer packs them");
@@ -329,7 +333,7 @@ TEST_CASE("repeated numeric fields decode packed and unpacked")
 TEST_CASE("unknown fields and known fields of another wire type are kept byte for byte")
 {
 	ByteVector const bytes = From_Hex("0d01000000" "1801" "a2060568656c6c6f" "e8070a");
-	Message::Player player;
+	Launch::Message::Player player;
 	REQUIRE(Decode(bytes, player));
 	CHECK(player.House == 0);
 	CHECK(player.Human);
@@ -351,7 +355,7 @@ TEST_CASE("malformed messages are refused")
 	CHECK_MESSAGE(!Decode(From_Hex("5202" "0280"), frame), "a packed list that ends inside a varint");
 	CHECK_MESSAGE(!Decode(From_Hex("0001"), frame), "field number zero");
 
-	Message::Launch launch;
+	Launch::Message::Game launch;
 	CHECK_MESSAGE(!Decode(From_Hex("1a03" "520502"), launch), "a malformed player");
 }
 
@@ -366,7 +370,7 @@ TEST_CASE("a string that is not valid UTF-8 makes its message malformed")
 	CHECK_MESSAGE(!Decode(From_Hex("4a04" "f4908080"), info), "a code point past U+10FFFF");
 	CHECK_MESSAGE(!Decode(From_Hex("4a02" "e298"), info), "a character cut short");
 
-	Message::Launch launch;
+	Launch::Message::Game launch;
 	CHECK_MESSAGE(!Decode(From_Hex("1a04" "1202" "c328"), launch), "a player name");
 
 	Message::Frame frame;
@@ -520,15 +524,15 @@ TEST_CASE("the limits of section 10 hold at their values and refuse one more")
 	limits.EventsPerFrame = 2;
 	limits.EventPayload = 3;
 
-	Message::Launch launch;
+	Launch::Message::Game launch;
 	launch.Players.resize(2);
 	launch.Players[0].Name = "abcd";
 	CHECK(Check_Limits(launch, limits) == RuleError::NONE);
 	launch.Players.resize(3);
-	CHECK(Check_Limits(launch, limits) == Broke(RuleError::TOO_MANY, "Launch", Field::Launch::PLAYERS));
+	CHECK(Check_Limits(launch, limits) == Broke(RuleError::TOO_MANY, "Launch", L::Game::PLAYERS));
 	launch.Players.resize(2);
 	launch.Players[0].Name = "abcde";
-	CHECK(Check_Limits(launch, limits) == Broke(RuleError::TOO_LONG, "Player", Field::Player::NAME));
+	CHECK(Check_Limits(launch, limits) == Broke(RuleError::TOO_LONG, "Player", L::Player::NAME));
 
 	Message::Frame frame;
 	frame.Events.resize(2);
@@ -559,8 +563,8 @@ TEST_CASE("the limits of section 10 hold at their values and refuse one more")
 	CHECK(Check_Limits(statistics, limits) == Broke(RuleError::TOO_LONG, "CrateCount", Field::CrateCount::ID));
 
 	Message::RecordingInfo info;
-	info.Files.push_back(Message::FileHash{ "abcde", "", {} });
-	CHECK(Check_Limits(info, limits) == Broke(RuleError::TOO_LONG, "FileHash", Field::FileHash::PATH));
+	info.Files.push_back(Launch::Message::FileHash{ "abcde", "", {} });
+	CHECK(Check_Limits(info, limits) == Broke(RuleError::TOO_LONG, "FileHash", L::FileHash::PATH));
 
 	LimitsType const standard;
 	CHECK(standard.SmallSection == 1024 * 1024);
@@ -638,9 +642,9 @@ TEST_CASE("a limited decode stops a count at its limit before storing more")
 	RuleBreak broken;
 
 	// Far more empty players than the limit.
-	Message::Launch launch;
+	Launch::Message::Game launch;
 	CHECK(!Decode(Repeat("1a00", 1 << 19), launch, limits, broken));
-	CHECK(broken == Broke(RuleError::TOO_MANY, "Launch", Field::Launch::PLAYERS));
+	CHECK(broken == Broke(RuleError::TOO_MANY, "Launch", L::Game::PLAYERS));
 	CHECK(launch.Players.size() == limits.Players);
 	CHECK(Decode(Repeat("1a00", limits.Players), launch, limits, broken));
 
@@ -672,23 +676,23 @@ TEST_CASE("a limited decode stops a count at its limit before storing more")
 
 TEST_CASE("the writer's ordering rules catch lists out of order")
 {
-	Message::Launch launch;
+	Launch::Message::Game launch;
 	launch.Players.resize(2);
 	launch.Players[0].House = 3;
 	launch.Players[1].House = 1;
-	CHECK(Check_Order(launch) == Broke(RuleError::NOT_ASCENDING, "Launch", Field::Launch::PLAYERS));
+	CHECK(Check_Order(launch) == Broke(RuleError::NOT_ASCENDING, "Launch", L::Game::PLAYERS));
 	launch.Players[1].House = 4;
 	CHECK(Check_Order(launch) == RuleError::NONE);
 	launch.Players[1].Allies = { 4 };
-	CHECK_MESSAGE(Check_Order(launch) == Broke(RuleError::NOT_ASCENDING, "Player", Field::Player::ALLIES), "a house never lists itself");
+	CHECK_MESSAGE(Check_Order(launch) == Broke(RuleError::NOT_ASCENDING, "Player", L::Player::ALLIES), "a house never lists itself");
 	launch.Players[1].Allies = { 3 };
 
 	launch.Options.resize(2);
 	launch.Options[0].Key = "b";
 	launch.Options[1].Key = "a";
-	CHECK(Check_Order(launch) == Broke(RuleError::NOT_ASCENDING, "Launch", Field::Launch::OPTIONS));
+	CHECK(Check_Order(launch) == Broke(RuleError::NOT_ASCENDING, "Launch", L::Game::OPTIONS));
 	launch.Options[1].Key = "b";
-	CHECK_MESSAGE(Check_Order(launch) == Broke(RuleError::NOT_ASCENDING, "Launch", Field::Launch::OPTIONS), "each key once");
+	CHECK_MESSAGE(Check_Order(launch) == Broke(RuleError::NOT_ASCENDING, "Launch", L::Game::OPTIONS), "each key once");
 	launch.Options[0].Key = "Z";
 	launch.Options[1].Key = "\xC3\xA9";
 	CHECK_MESSAGE(Check_Order(launch) == RuleError::NONE, "keys compare as unsigned bytes");

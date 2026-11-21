@@ -35,7 +35,7 @@ namespace Replay
 			explicit Writer(FileClass & file);
 
 			// Holds the first sections; map is the MAP body, or absent to leave the map out.
-			WriteResult Begin(Message::RecordingInfo const & info, Message::Launch const & launch, ByteSpan init,
+			WriteResult Begin(Message::RecordingInfo const & info, Launch::Message::Game const & launch, ByteSpan init,
 				std::optional<ByteSpan> map);
 
 			// Writes the record for frame, which must follow the last record's frame.
@@ -67,7 +67,7 @@ namespace Replay
 				Bytes Body;
 			};
 
-			WriteResult Begin_Body(Message::RecordingInfo const & info, Message::Launch const & launch, ByteSpan init,
+			WriteResult Begin_Body(Message::RecordingInfo const & info, Launch::Message::Game const & launch, ByteSpan init,
 				std::optional<ByteSpan> map);
 			WriteResult Add_Frame_Body(std::uint32_t frame, Message::Frame & record);
 			WriteResult Add_Checkpoint_Body(Message::Checkpoint const & checkpoint);

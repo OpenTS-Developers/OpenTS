@@ -169,6 +169,30 @@ inline std::optional<std::uint64_t> Widen(std::optional<std::uint32_t> value)
 }
 
 
+inline bool Fits(std::string const & text, LimitsType const & limits)
+{
+	return(text.size() <= limits.String);
+}
+
+
+inline bool Ascending(std::vector<std::uint32_t> const & values)
+{
+	for (std::size_t i = 1; i < values.size(); i++) {
+		if (values[i] <= values[i - 1]) {
+			return(false);
+		}
+	}
+	return(true);
+}
+
+
+// An ally list is in order when it ascends and leaves out the house it belongs to.
+inline bool Allies_In_Order(std::vector<std::uint32_t> const & allies, std::uint32_t house)
+{
+	return(Ascending(allies) && std::find(allies.begin(), allies.end(), house) == allies.end());
+}
+
+
 // Reads the fields of one message, which the schema names message. A getter keeps a field of
 // another wire type as unknown, and a malformed nested body makes the whole message malformed.
 class Fields

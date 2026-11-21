@@ -12,6 +12,7 @@
 #include "proto/messagecodec.h"
 #include "utf8.h"
 
+#include "launch/launchfields.hh"
 #include "replay/replayfields.hh"
 
 #include <algorithm>
@@ -25,13 +26,12 @@ using ProtoMessage::DecodeContext;
 using ProtoMessage::Emitter;
 using ProtoMessage::Fields;
 using ProtoMessage::Widen;
+using ProtoMessage::Fits;
+using ProtoMessage::Ascending;
+using ProtoMessage::Allies_In_Order;
 
-bool Read_Message(ByteSpan data, FileHash & message, DecodeContext * context);
 bool Read_Message(ByteSpan data, PlayerColor & message, DecodeContext * context);
 bool Read_Message(ByteSpan data, RecordingInfo & message, DecodeContext * context);
-bool Read_Message(ByteSpan data, Player & message, DecodeContext * context);
-bool Read_Message(ByteSpan data, GameOption & message, DecodeContext * context);
-bool Read_Message(ByteSpan data, Launch & message, DecodeContext * context);
 bool Read_Message(ByteSpan data, Event & message, DecodeContext * context);
 bool Read_Message(ByteSpan data, Point & message, DecodeContext * context);
 bool Read_Message(ByteSpan data, Selection & message, DecodeContext * context);
@@ -52,41 +52,6 @@ bool Read_Message(ByteSpan data, Statistics & message, DecodeContext * context);
 bool Read_Message(ByteSpan data, RecordingSummary & message, DecodeContext * context);
 
 namespace F = Field;
-
-namespace
-{
-
-bool Fits(std::string const & text, LimitsType const & limits)
-{
-	return(text.size() <= limits.String);
-}
-
-
-bool Ascending(std::vector<std::uint32_t> const & values)
-{
-	for (std::size_t i = 1; i < values.size(); i++) {
-		if (values[i] <= values[i - 1]) {
-			return(false);
-		}
-	}
-	return(true);
-}
-
-
-bool Allies_In_Order(std::vector<std::uint32_t> const & allies, std::uint32_t house)
-{
-	return(Ascending(allies) && std::find(allies.begin(), allies.end(), house) == allies.end());
-}
-
-}
-
-
-void Encode(FileHash const & message, Bytes & out)
-{
-	Emitter emit(out, message.Unknown);
-	emit.String(F::FileHash::PATH, message.Path);
-	emit.String(F::FileHash::HASH, message.Hash);
-}
 
 
 // Every decode context of this file holds a Replay::LimitsType, because only the Decode
@@ -123,50 +88,6 @@ void Encode(RecordingInfo const & message, Bytes & out)
 	emit.Uint(F::RecordingInfo::SEAL_VERSION, message.SealVersion);
 	emit.Repeated(F::RecordingInfo::COLORS, message.Colors);
 	emit.Repeated(F::RecordingInfo::INCOME_KINDS, message.IncomeKinds);
-}
-
-
-void Encode(Player const & message, Bytes & out)
-{
-	Emitter emit(out, message.Unknown);
-	emit.Uint(F::Player::HOUSE, message.House);
-	emit.String(F::Player::NAME, message.Name);
-	emit.Bool(F::Player::HUMAN, message.Human);
-	emit.Bool(F::Player::OBSERVER, message.Observer);
-	emit.Sint32(F::Player::COUNTRY, message.Country);
-	emit.String(F::Player::COUNTRY_NAME, message.CountryName);
-	emit.Sint32(F::Player::COLOR, message.Color);
-	emit.Sint32(F::Player::START, message.Start);
-	emit.Optional_Sint32(F::Player::AI_LEVEL, message.AILevel);
-	emit.Packed_Uint32(F::Player::ALLIES, message.Allies);
-	emit.Optional_Sint32(F::Player::RESOLVED_COUNTRY, message.ResolvedCountry);
-	emit.Optional_Sint32(F::Player::RESOLVED_COLOR, message.ResolvedColor);
-	emit.Optional_Sint32(F::Player::RESOLVED_START, message.ResolvedStart);
-}
-
-
-void Encode(GameOption const & message, Bytes & out)
-{
-	Emitter emit(out, message.Unknown);
-	emit.String(F::GameOption::KEY, message.Key);
-	if (auto number = std::get_if<std::int64_t>(&message.Value)) {
-		emit.Present_Sint64(F::GameOption::NUMBER, *number);
-	} else if (auto flag = std::get_if<bool>(&message.Value)) {
-		emit.Present_Bool(F::GameOption::FLAG, *flag);
-	} else if (auto text = std::get_if<std::string>(&message.Value)) {
-		emit.Present_String(F::GameOption::TEXT, *text);
-	}
-}
-
-
-void Encode(Launch const & message, Bytes & out)
-{
-	Emitter emit(out, message.Unknown);
-	emit.Int32(F::Launch::KIND, std::int32_t(message.Kind));
-	emit.Optional_Fixed32(F::Launch::SEED, message.Seed);
-	emit.Repeated(F::Launch::PLAYERS, message.Players);
-	emit.Repeated(F::Launch::OPTIONS, message.Options);
-	emit.Bool(F::Launch::ANONYMOUS, message.Anonymous);
 }
 
 
@@ -382,21 +303,6 @@ void Encode(RecordingSummary const & message, Bytes & out)
 }
 
 
-bool Read_Message(ByteSpan data, FileHash & message, DecodeContext * context)
-{
-	message = FileHash();
-	Fields fields("FileHash", data, message.Unknown, context);
-	while (fields.Next()) {
-		switch (fields.Number()) {
-			case F::FileHash::PATH: fields.Text(message.Path); break;
-			case F::FileHash::HASH: fields.Text(message.Hash); break;
-			default: fields.Keep(); break;
-		}
-	}
-	return(fields.Good());
-}
-
-
 bool Read_Message(ByteSpan data, PlayerColor & message, DecodeContext * context)
 {
 	message = PlayerColor();
@@ -434,97 +340,6 @@ bool Read_Message(ByteSpan data, RecordingInfo & message, DecodeContext * contex
 			case I::SEAL_VERSION: fields.Uint32(message.SealVersion); break;
 			case I::COLORS: fields.Repeated(message.Colors); break;
 			case I::INCOME_KINDS: fields.Repeated(message.IncomeKinds, Limit(context, &LimitsType::IncomeKinds)); break;
-			default: fields.Keep(); break;
-		}
-	}
-	return(fields.Good());
-}
-
-
-bool Read_Message(ByteSpan data, Player & message, DecodeContext * context)
-{
-	namespace P = F::Player;
-	message = Player();
-	Fields fields("Player", data, message.Unknown, context);
-	while (fields.Next()) {
-		switch (fields.Number()) {
-			case P::HOUSE: fields.Uint32(message.House); break;
-			case P::NAME: fields.Text(message.Name); break;
-			case P::HUMAN: fields.Bool(message.Human); break;
-			case P::OBSERVER: fields.Bool(message.Observer); break;
-			case P::COUNTRY: fields.Sint32(message.Country); break;
-			case P::COUNTRY_NAME: fields.Text(message.CountryName); break;
-			case P::COLOR: fields.Sint32(message.Color); break;
-			case P::START: fields.Sint32(message.Start); break;
-			case P::AI_LEVEL: fields.Optional(message.AILevel, &Fields::Sint32); break;
-			case P::ALLIES: fields.Packed(message.Allies); break;
-			case P::RESOLVED_COUNTRY: fields.Optional(message.ResolvedCountry, &Fields::Sint32); break;
-			case P::RESOLVED_COLOR: fields.Optional(message.ResolvedColor, &Fields::Sint32); break;
-			case P::RESOLVED_START: fields.Optional(message.ResolvedStart, &Fields::Sint32); break;
-			default: fields.Keep(); break;
-		}
-	}
-	return(fields.Good());
-}
-
-
-bool Read_Message(ByteSpan data, GameOption & message, DecodeContext * context)
-{
-	message = GameOption();
-	Fields fields("GameOption", data, message.Unknown, context);
-	while (fields.Next()) {
-		switch (fields.Number()) {
-			case F::GameOption::KEY:
-				fields.Text(message.Key);
-				break;
-
-			case F::GameOption::NUMBER:
-			{
-				std::int64_t number = 0;
-				if (fields.Sint64(number)) {
-					message.Value = number;
-				}
-				break;
-			}
-
-			case F::GameOption::FLAG:
-			{
-				bool flag = false;
-				if (fields.Bool(flag)) {
-					message.Value = flag;
-				}
-				break;
-			}
-
-			case F::GameOption::TEXT:
-			{
-				std::string text;
-				if (fields.Text(text)) {
-					message.Value = std::move(text);
-				}
-				break;
-			}
-
-			default:
-				fields.Keep();
-				break;
-		}
-	}
-	return(fields.Good());
-}
-
-
-bool Read_Message(ByteSpan data, Launch & message, DecodeContext * context)
-{
-	message = Launch();
-	Fields fields("Launch", data, message.Unknown, context);
-	while (fields.Next()) {
-		switch (fields.Number()) {
-			case F::Launch::KIND: fields.Enum(message.Kind); break;
-			case F::Launch::SEED: fields.Optional(message.Seed, &Fields::Fixed32); break;
-			case F::Launch::PLAYERS: fields.Repeated(message.Players, Limit(context, &LimitsType::Players)); break;
-			case F::Launch::OPTIONS: fields.Repeated(message.Options); break;
-			case F::Launch::ANONYMOUS: fields.Bool(message.Anonymous); break;
 			default: fields.Keep(); break;
 		}
 	}
@@ -870,12 +685,6 @@ bool Read_Message(ByteSpan data, RecordingSummary & message, DecodeContext * con
 }
 
 
-bool Decode(ByteSpan data, FileHash & message)
-{
-	return(Read_Message(data, message, nullptr));
-}
-
-
 bool Decode(ByteSpan data, PlayerColor & message)
 {
 	return(Read_Message(data, message, nullptr));
@@ -883,24 +692,6 @@ bool Decode(ByteSpan data, PlayerColor & message)
 
 
 bool Decode(ByteSpan data, RecordingInfo & message)
-{
-	return(Read_Message(data, message, nullptr));
-}
-
-
-bool Decode(ByteSpan data, Player & message)
-{
-	return(Read_Message(data, message, nullptr));
-}
-
-
-bool Decode(ByteSpan data, GameOption & message)
-{
-	return(Read_Message(data, message, nullptr));
-}
-
-
-bool Decode(ByteSpan data, Launch & message)
 {
 	return(Read_Message(data, message, nullptr));
 }
@@ -1023,15 +814,6 @@ bool Decode(ByteSpan data, RecordingInfo & message, LimitsType const & limits, R
 }
 
 
-bool Decode(ByteSpan data, Launch & message, LimitsType const & limits, RuleBreak & broken)
-{
-	DecodeContext context{ limits };
-	bool const good = Read_Message(data, message, &context);
-	broken = context.Broken;
-	return(good);
-}
-
-
 bool Decode(ByteSpan data, Frame & message, LimitsType const & limits, RuleBreak & broken)
 {
 	DecodeContext context{ limits };
@@ -1062,12 +844,12 @@ RuleBreak Check_Limits(RecordingInfo const & message, LimitsType const & limits)
 			return(RuleBreak{ RuleError::TOO_LONG, "RecordingInfo", field });
 		}
 	}
-	for (FileHash const & file : message.Files) {
+	for (Launch::Message::FileHash const & file : message.Files) {
 		if (!Fits(file.Path, limits)) {
-			return(RuleBreak{ RuleError::TOO_LONG, "FileHash", F::FileHash::PATH });
+			return(RuleBreak{ RuleError::TOO_LONG, "FileHash", Launch::Field::FileHash::PATH });
 		}
 		if (!Fits(file.Hash, limits)) {
-			return(RuleBreak{ RuleError::TOO_LONG, "FileHash", F::FileHash::HASH });
+			return(RuleBreak{ RuleError::TOO_LONG, "FileHash", Launch::Field::FileHash::HASH });
 		}
 	}
 	if (message.IncomeKinds.size() > limits.IncomeKinds) {
@@ -1076,32 +858,6 @@ RuleBreak Check_Limits(RecordingInfo const & message, LimitsType const & limits)
 	for (IncomeKind const & kind : message.IncomeKinds) {
 		if (!Fits(kind.Id, limits)) {
 			return(RuleBreak{ RuleError::TOO_LONG, "IncomeKind", F::IncomeKind::ID });
-		}
-	}
-	return(RuleBreak());
-}
-
-
-RuleBreak Check_Limits(Launch const & message, LimitsType const & limits)
-{
-	if (message.Players.size() > limits.Players) {
-		return(RuleBreak{ RuleError::TOO_MANY, "Launch", F::Launch::PLAYERS });
-	}
-	for (Player const & player : message.Players) {
-		if (!Fits(player.Name, limits)) {
-			return(RuleBreak{ RuleError::TOO_LONG, "Player", F::Player::NAME });
-		}
-		if (!Fits(player.CountryName, limits)) {
-			return(RuleBreak{ RuleError::TOO_LONG, "Player", F::Player::COUNTRY_NAME });
-		}
-	}
-	for (GameOption const & option : message.Options) {
-		if (!Fits(option.Key, limits)) {
-			return(RuleBreak{ RuleError::TOO_LONG, "GameOption", F::GameOption::KEY });
-		}
-		auto text = std::get_if<std::string>(&option.Value);
-		if (text != nullptr && !Fits(*text, limits)) {
-			return(RuleBreak{ RuleError::TOO_LONG, "GameOption", F::GameOption::TEXT });
 		}
 	}
 	return(RuleBreak());
@@ -1169,25 +925,6 @@ RuleBreak Check_Order(RecordingInfo const & message)
 	for (std::size_t i = 1; i < message.Colors.size(); i++) {
 		if (message.Colors[i].Number <= message.Colors[i - 1].Number) {
 			return(RuleBreak{ RuleError::NOT_ASCENDING, "RecordingInfo", F::RecordingInfo::COLORS });
-		}
-	}
-	return(RuleBreak());
-}
-
-
-RuleBreak Check_Order(Launch const & message)
-{
-	for (std::size_t i = 0; i < message.Players.size(); i++) {
-		if (i > 0 && message.Players[i].House <= message.Players[i - 1].House) {
-			return(RuleBreak{ RuleError::NOT_ASCENDING, "Launch", F::Launch::PLAYERS });
-		}
-		if (!Allies_In_Order(message.Players[i].Allies, message.Players[i].House)) {
-			return(RuleBreak{ RuleError::NOT_ASCENDING, "Player", F::Player::ALLIES });
-		}
-	}
-	for (std::size_t i = 1; i < message.Options.size(); i++) {
-		if (!(message.Options[i - 1].Key < message.Options[i].Key)) {
-			return(RuleBreak{ RuleError::NOT_ASCENDING, "Launch", F::Launch::OPTIONS });
 		}
 	}
 	return(RuleBreak());

@@ -405,7 +405,7 @@ ReadResult Reader::Read_Info(Message::RecordingInfo & info)
 }
 
 
-ReadResult Reader::Read_Launch(Message::Launch & launch)
+ReadResult Reader::Read_Launch(Launch::Message::Game & launch)
 {
 	return(Guarded([&] { return(Read_Record(TAG_LNCH, launch)); }));
 }
@@ -872,7 +872,7 @@ FileReport Check_File(Reader & reader)
 
 	// Verify_Seals reads LNCH only as bytes and skips MAP and STAT, so their records are decoded here.
 	Message::RecordingInfo info;
-	Message::Launch launch;
+	Launch::Message::Game launch;
 	Bytes map;
 	Message::Statistics statistics;
 	SectionInfo const * map_section = reader.Find(TAG_MAP);

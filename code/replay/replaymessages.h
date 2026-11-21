@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "launch/launchmessages.h"
 #include "proto/wire.h"
 
 #include "replay/replay.hh"
@@ -57,12 +58,6 @@ namespace Replay
 // so that argument-dependent lookup finds them.
 namespace Replay::Message
 {
-	struct FileHash {
-		std::string Path;
-		std::string Hash;
-		UnknownFields Unknown;
-	};
-
 	struct PlayerColor {
 		std::uint32_t Number = 0;
 		std::uint32_t Rgb = 0;
@@ -81,7 +76,7 @@ namespace Replay::Message
 		std::uint32_t DataVersion = 0;
 		std::string Package;
 		std::string PackageVersion;
-		std::vector<FileHash> Files;
+		std::vector<Launch::Message::FileHash> Files;
 		std::uint64_t RecordedAt = 0;
 		std::optional<std::uint32_t> Recorder;
 		std::string MapName;
@@ -91,38 +86,6 @@ namespace Replay::Message
 		std::uint32_t SealVersion = 0;
 		std::vector<PlayerColor> Colors;
 		std::vector<IncomeKind> IncomeKinds;
-		UnknownFields Unknown;
-	};
-
-	struct Player {
-		std::uint32_t House = 0;
-		std::string Name;
-		bool Human = false;
-		bool Observer = false;
-		std::int32_t Country = 0;
-		std::string CountryName;
-		std::int32_t Color = 0;
-		std::int32_t Start = 0;
-		std::optional<std::int32_t> AILevel;
-		std::vector<std::uint32_t> Allies;
-		std::optional<std::int32_t> ResolvedCountry;
-		std::optional<std::int32_t> ResolvedColor;
-		std::optional<std::int32_t> ResolvedStart;
-		UnknownFields Unknown;
-	};
-
-	struct GameOption {
-		std::string Key;
-		std::variant<std::monostate, std::int64_t, bool, std::string> Value;
-		UnknownFields Unknown;
-	};
-
-	struct Launch {
-		GameKind Kind = GameKind::GAME_KIND_UNKNOWN;
-		std::optional<std::uint32_t> Seed;
-		std::vector<Player> Players;
-		std::vector<GameOption> Options;
-		bool Anonymous = false;
 		UnknownFields Unknown;
 	};
 
@@ -293,16 +256,12 @@ namespace Replay::Message
 
 	// Appends the canonical encoding of a message to out.
 	void Encode(RecordingInfo const & message, Bytes & out);
-	void Encode(Launch const & message, Bytes & out);
 	void Encode(Frame const & message, Bytes & out);
 	void Encode(Checkpoint const & message, Bytes & out);
 	void Encode(Statistics const & message, Bytes & out);
 	void Encode(RecordingSummary const & message, Bytes & out);
-	void Encode(FileHash const & message, Bytes & out);
 	void Encode(PlayerColor const & message, Bytes & out);
 	void Encode(IncomeKind const & message, Bytes & out);
-	void Encode(Player const & message, Bytes & out);
-	void Encode(GameOption const & message, Bytes & out);
 	void Encode(Event const & message, Bytes & out);
 	void Encode(ViewState const & message, Bytes & out);
 	void Encode(Point const & message, Bytes & out);
@@ -319,16 +278,12 @@ namespace Replay::Message
 
 	// Replaces message with the decoded bytes; false on malformed input, message partly filled.
 	bool Decode(ByteSpan data, RecordingInfo & message);
-	bool Decode(ByteSpan data, Launch & message);
 	bool Decode(ByteSpan data, Frame & message);
 	bool Decode(ByteSpan data, Checkpoint & message);
 	bool Decode(ByteSpan data, Statistics & message);
 	bool Decode(ByteSpan data, RecordingSummary & message);
-	bool Decode(ByteSpan data, FileHash & message);
 	bool Decode(ByteSpan data, PlayerColor & message);
 	bool Decode(ByteSpan data, IncomeKind & message);
-	bool Decode(ByteSpan data, Player & message);
-	bool Decode(ByteSpan data, GameOption & message);
 	bool Decode(ByteSpan data, Event & message);
 	bool Decode(ByteSpan data, ViewState & message);
 	bool Decode(ByteSpan data, Point & message);
@@ -345,19 +300,16 @@ namespace Replay::Message
 
 	// As Decode, but false also on a broken limit, which broken names (NONE when malformed).
 	bool Decode(ByteSpan data, RecordingInfo & message, LimitsType const & limits, RuleBreak & broken);
-	bool Decode(ByteSpan data, Launch & message, LimitsType const & limits, RuleBreak & broken);
 	bool Decode(ByteSpan data, Frame & message, LimitsType const & limits, RuleBreak & broken);
 	bool Decode(ByteSpan data, Statistics & message, LimitsType const & limits, RuleBreak & broken);
 
 	// Returns the first of the format's limits that message breaks, or NONE.
 	RuleBreak Check_Limits(RecordingInfo const & message, LimitsType const & limits);
-	RuleBreak Check_Limits(Launch const & message, LimitsType const & limits);
 	RuleBreak Check_Limits(Frame const & message, LimitsType const & limits);
 	RuleBreak Check_Limits(Statistics const & message, LimitsType const & limits);
 
 	// Returns NOT_ASCENDING when a list in message breaks the order the format sets, or NONE.
 	RuleBreak Check_Order(RecordingInfo const & message);
-	RuleBreak Check_Order(Launch const & message);
 	RuleBreak Check_Order(Frame const & message);
 	RuleBreak Check_Order(Statistics const & message);
 
