@@ -621,6 +621,21 @@ bool Launch::Local_Win(bool campaign, bool player_wins, bool local_defeated)
 }
 
 
+/// <summary>
+/// Returns result as a crash: the scenarios so far, the open one without an outcome, and no
+/// output_path or crash_path. The crash handler adds crash_path.
+/// </summary>
+Launch::Message::Result Launch::Crash_Result(Launch::Message::Result const & result)
+{
+	Launch::Message::Result crashed = result;
+	crashed.Code = Launch::ResultCode::RESULT_CODE_CRASHED;
+	crashed.Message = "The game crashed.";
+	crashed.OutputPath.clear();
+	crashed.CrashPath.clear();
+	return(crashed);
+}
+
+
 int Launch::Game::Human_Count(void) const
 {
 	return(int(std::count_if(Players.begin(), Players.end(), [](PlayerType const & player) { return(player.Human); })));

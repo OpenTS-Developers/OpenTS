@@ -59,6 +59,40 @@ void Put_Varint(Bytes & out, std::uint64_t value)
 }
 
 
+/// <summary>
+/// Writes a text field, tag and length included, into buffer at offset and moves offset past it,
+/// without allocating. Empty text is written too. A field that does not fit, or a field number
+/// outside 1 to MAX_FIELD_NUMBER, writes nothing and returns false.
+/// </summary>
+bool Put_Text_Field(std::span<std::uint8_t> buffer, std::size_t & offset, std::uint32_t field, std::string_view text)
+{
+	if (field == 0 || field > MAX_FIELD_NUMBER || offset > buffer.size()) {
+		return(false);
+	}
+
+	std::uint64_t const tag = (std::uint64_t(field) << 3) | std::uint64_t(WireType::LENGTH);
+	std::size_t const size = Varint_Size(tag) + Varint_Size(text.size()) + text.size();
+	if (size > buffer.size() - offset) {
+		return(false);
+	}
+
+	std::size_t at = offset;
+	for (std::uint64_t value : { tag, std::uint64_t(text.size()) }) {
+		while (value >= 0x80) {
+			buffer[at++] = std::uint8_t(value | 0x80);
+			value >>= 7;
+		}
+		buffer[at++] = std::uint8_t(value);
+	}
+	for (char c : text) {
+		buffer[at++] = std::uint8_t(c);
+	}
+
+	offset = at;
+	return(true);
+}
+
+
 void Put_Fixed32(Bytes & out, std::uint32_t value)
 {
 	for (int i = 0; i < 4; i++) {

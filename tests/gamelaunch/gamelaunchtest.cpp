@@ -822,3 +822,36 @@ TEST_CASE("a load request keeps the rules of launch.proto")
 	CHECK(!machine.From_Load(offline, true, fault));
 	CHECK(machine.MapPath == "SVGM_000.NET");
 }
+
+
+// A crash handler adds the report folder to bytes encoded before the crash, and the launcher
+// reads them as one result.
+TEST_CASE("a crash result is the result so far with the report folder added")
+{
+	Launch::Message::Result result;
+	result.RequestId = "match-18";
+	Launch::Message::ScenarioResult first = Launch::Scenario_Result("TSGM01EA.MAP");
+	Launch::Close_Scenario(first, Launch::ScenarioEnd::WON, true, false, 9000);
+	result.Scenarios.push_back(first);
+	result.Scenarios.push_back(Launch::Scenario_Result("TSGM02EA.MAP"));
+
+	Launch::Bytes bytes;
+	Launch::Encode(Launch::Crash_Result(result), bytes);
+
+	std::string const folder = "C:\\Games\\OpenTS\\Exceptions\\exception-20261121-101500-42";
+	std::size_t length = bytes.size();
+	bytes.resize(length + 256);
+	REQUIRE(ProtoWire::Put_Text_Field(bytes, length, Launch::RESULT_CRASH_PATH_FIELD, folder));
+	bytes.resize(length);
+
+	Launch::Message::Result back;
+	REQUIRE(Launch::Decode(bytes, back));
+	CHECK(back.RequestId == "match-18");
+	CHECK(back.Code == Launch::ResultCode::RESULT_CODE_CRASHED);
+	CHECK(back.Message == "The game crashed.");
+	CHECK(back.CrashPath == folder);
+	REQUIRE(back.Scenarios.size() == 2);
+	CHECK(back.Scenarios[0].Outcome == Launch::GameOutcome::GAME_OUTCOME_WON);
+	CHECK_MESSAGE(back.Scenarios[1].Outcome == Launch::GameOutcome::GAME_OUTCOME_UNKNOWN, "the scenario that crashed has no outcome");
+	CHECK_MESSAGE(!back.Scenarios[1].LastFrame.has_value(), "the scenario that crashed gives no last frame");
+}

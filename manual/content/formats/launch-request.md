@@ -9,6 +9,7 @@ source_files:
 - code/queue.cpp
 - code/launch/gamelaunch.cpp
 - code/gamedirs.cpp
+- code/except.cpp
 - code/launch/launchmessages.cpp
 filenames:
 - '*'
@@ -185,17 +186,18 @@ A refused request starts nothing. With a result file, the game reports the refus
 
 ## The result file
 
-`result_path` is the result file's path. A relative path goes into the [`-USERDIR=`](/using/command-line/#user-directory) folder, or beside the game without one, as `stats.dmp` does; an absolute path is used as given. Once the game has read the request it deletes any file at that path. It writes the result when it exits, to a temporary file that it then renames over the path, so a launcher never reads part of one. No file after the game exits means it could not read the request or write the file, or that it stopped without exiting normally.
+`result_path` is the result file's path. A relative path goes into the [`-USERDIR=`](/using/command-line/#user-directory) folder, or beside the game without one, as `stats.dmp` does; an absolute path is used as given. Once the game has read the request it deletes any file at that path. It writes the result when it exits, or when it crashes after accepting the request, to a temporary file that it then renames over the path, so a launcher never reads part of one. No file after the game exits means it could not read the request or write the file, or that it was stopped before its [crash handler](/using/crash-reports/) wrote the report.
 
 The result is a `Result` message in the same encoding:
 
 | Field | Meaning |
 | --- | --- |
 | `request_id` | The request's `request_id`. |
-| `code` | `1` when the game or capture ran, `2` when the request was refused, `3` when it was accepted and could not be done, such as a capture that failed, a network that did not open, a save that did not load or whose houses do not match `players`, or a scenario that never started, and `7` when a game against other machines ended at its start because the machines had not loaded the same game, as [Games that differ at the start](/systems/out-of-sync-recovery/#games-that-differ-at-the-start) describes. |
+| `code` | `1` when the game or capture ran, `2` when the request was refused, `3` when it was accepted and could not be done, such as a capture that failed, a network that did not open, a save that did not load or whose houses do not match `players`, or a scenario that never started, `4` when the game crashed, and `7` when a game against other machines ended at its start because the machines had not loaded the same game, as [Games that differ at the start](/systems/out-of-sync-recovery/#games-that-differ-at-the-start) describes. |
 | `message` | Why, in English, when `code` is not `1`. |
 | `scenarios` | One entry for each scenario a play or load request started, in order. A resumed save is the first entry. A campaign can start several missions, and a restart starts the same one again. |
 | `output_path` | The picture a capture wrote, as an absolute path. |
+| `crash_path` | After a crash, the crash report's folder. |
 
 Each scenario entry gives:
 
@@ -204,12 +206,12 @@ Each scenario entry gives:
 | `map_path` | The scenario's file name, in upper case. |
 | `outcome` | How the scenario ended, from the table below. |
 | `completed` | Set when the game decided the scenario as a win or a loss. |
-| `last_frame` | The game's frame counter when the scenario ended. Absent for outcome `7`. |
+| `last_frame` | The game's frame counter when the scenario ended. Absent for the scenario a crash ended, and for outcome `7`. |
 | `not_recorded` | Always `1`, since this version records no replays; `replay_path` is always empty. |
 
 | `outcome` | When |
 | --- | --- |
-| `0` | The local player is an observer, and the scenario ended in a way that gives a player `1`, `2` or `4`. |
+| `0` | The local player is an observer, and the scenario ended in a way that gives a player `1`, `2` or `4`. Also the scenario a crash ended. |
 | `1` | The local player won. |
 | `2` | The local player lost. |
 | `3` | Not reported by this version. |

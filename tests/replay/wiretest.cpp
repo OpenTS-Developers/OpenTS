@@ -591,3 +591,31 @@ TEST_CASE("typed accessors convert a field value as protobuf parsers do")
 	CHECK(Scalar_Field(WireType::FIXED64, 0x7FF0000000000000ull).As_Double() == std::numeric_limits<double>::infinity());
 	CHECK(Scalar_Field(WireType::FIXED64, 0xFFF0000000000000ull).As_Double() == -std::numeric_limits<double>::infinity());
 }
+
+
+// A crash handler appends a field to bytes it encoded earlier, into storage it set aside then.
+TEST_CASE("a text field written without allocating matches the writer and fits or writes nothing")
+{
+	std::string const text(200, 'x');
+	Bytes expected;
+	WireWriter(expected).String(10, text);
+
+	std::uint8_t buffer[256] = {};
+	std::size_t offset = 3;
+	REQUIRE(Put_Text_Field(buffer, offset, 10, text));
+	CHECK(offset == 3 + expected.size());
+	CHECK(Bytes(buffer + 3, buffer + offset) == expected);
+
+	std::size_t full = 256 - expected.size() + 1;
+	CHECK_FALSE(Put_Text_Field(buffer, full, 10, text));
+	CHECK_MESSAGE(full == 256 - expected.size() + 1, "a field that does not fit leaves the offset alone");
+
+	std::size_t empty = 0;
+	REQUIRE(Put_Text_Field(buffer, empty, 3, ""));
+	CHECK_MESSAGE(Hex(Bytes(buffer, buffer + empty)) == "1a00", "empty text is written with its tag");
+
+	std::size_t bad = 0;
+	CHECK_FALSE(Put_Text_Field(buffer, bad, 0, "a"));
+	CHECK_FALSE(Put_Text_Field(buffer, bad, MAX_FIELD_NUMBER + 1, "a"));
+	CHECK(bad == 0);
+}

@@ -62,6 +62,9 @@ bool Describe_Code_Address(void const * address, char * buffer, unsigned size);
 // An unattended run writes the crash report and exits without showing the crash dialog.
 void Exception_Set_Unattended(bool unattended);
 
+bool Exception_Register_Result(char const * path, void const * prefix, unsigned length, unsigned folder_field);
+bool Replace_File(char const * path, char const * temporary, void const * data, unsigned length);
+
 void Exception_Set_Test_Mode(char const * mode);
 void Exception_Run_Immediate_Test(void);
 void Exception_Run_Post_Window_Test(void);

@@ -219,4 +219,8 @@ namespace Launch
 	void Close_Scenario(Message::ScenarioResult & entry, ScenarioEnd end, bool joined, bool observer, std::uint32_t frame);
 	ResultCode Scenario_End_Code(ScenarioEnd end, bool joined);
 	bool Local_Win(bool campaign, bool player_wins, bool local_defeated);
+	Message::Result Crash_Result(Message::Result const & result);
+
+	// The field number of Result's crash_path, which a crash handler adds to Crash_Result's encoding.
+	constexpr std::uint32_t RESULT_CRASH_PATH_FIELD = 10;
 }

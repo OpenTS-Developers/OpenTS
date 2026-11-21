@@ -14,6 +14,7 @@
 
 #include "crc.h"
 #include "dbgprint.h"
+#include "except.h"
 #include "gamedirs.h"
 #include "globals.h"
 #include "headless.h"
@@ -96,22 +97,7 @@ bool Write_File_Whole(std::string const & path, Launch::Bytes const & bytes)
 	}
 
 	std::string const temporary = path + ".tmp";
-	HANDLE const file = CreateFileA(temporary.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS,
-		FILE_ATTRIBUTE_NORMAL, nullptr);
-	if (file == INVALID_HANDLE_VALUE) {
-		return(false);
-	}
-
-	DWORD written = 0;
-	bool ok = bytes.empty() || (WriteFile(file, bytes.data(), DWORD(bytes.size()), &written, nullptr) && written == bytes.size());
-	if (ok) ok = (FlushFileBuffers(file) != FALSE);
-	if (!CloseHandle(file)) ok = false;
-	if (ok) ok = (MoveFileExA(temporary.c_str(), path.c_str(), MOVEFILE_REPLACE_EXISTING) != FALSE);
-
-	if (!ok) {
-		DeleteFileA(temporary.c_str());
-	}
-	return(ok);
+	return(Replace_File(path.c_str(), temporary.c_str(), bytes.data(), unsigned(bytes.size())));
 }
 
 
@@ -139,6 +125,25 @@ int Identity_Of(Launch::Game const & game)
 
 
 /// <summary>
+/// Registers what a crash writes to the result file: the result so far, as a crash. A crash
+/// writes nothing when there is no result file or the result already has a code.
+/// </summary>
+void Register_Crash_Result(void)
+{
+	if (ResultFile.empty() || Result.Code != Launch::ResultCode::RESULT_CODE_UNKNOWN) {
+		Exception_Register_Result(nullptr, nullptr, 0, 0);
+		return;
+	}
+
+	Launch::Bytes bytes;
+	Launch::Encode(Launch::Crash_Result(Result), bytes);
+	if (!Exception_Register_Result(ResultFile.c_str(), bytes.data(), unsigned(bytes.size()), Launch::RESULT_CRASH_PATH_FIELD)) {
+		DebugString("[Launch] A crash now writes no result file; the result or its path is too long.\n");
+	}
+}
+
+
+/// <summary>
 /// Records a refusal in the result, and for Launch::Refusal when there is no result file.
 /// </summary>
 /// <returns>false, so a caller can refuse and return in one statement.</returns>
@@ -150,6 +155,7 @@ bool Record_Refusal(Launch::ResultCode code, std::string const & text)
 	if (ResultFile.empty()) {
 		RefusalText = text;
 	}
+	Register_Crash_Result();
 	return(false);
 }
 
@@ -296,6 +302,8 @@ bool Launch::Read_Request(void)
 		Start_Capture(*capture);
 	}
 
+	Register_Crash_Result();
+
 	DebugString("[Launch] Read the launch request %s.\n", RequestFile.c_str());
 	return(true);
 }
@@ -397,6 +405,7 @@ void Launch::Scenario_Started(void)
 	Result.Scenarios.push_back(Launch::Scenario_Result(Scen->ScenarioName));
 	IsScenarioOpen = true;
 	IsScenarioJoined = false;
+	Register_Crash_Result();
 }
 
 
@@ -425,6 +434,7 @@ void Launch::Scenario_Ended(Launch::ScenarioEnd end)
 		EndCode = Launch::Scenario_End_Code(end, IsScenarioJoined);
 	}
 	IsScenarioOpen = false;
+	Register_Crash_Result();
 }
 
 
@@ -483,4 +493,5 @@ void Launch::Write_Result(void)
 		DebugString("[Launch] The result file %s could not be written.\n", ResultFile.c_str());
 	}
 	ResultFile.clear();
+	Register_Crash_Result();
 }
