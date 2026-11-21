@@ -129,7 +129,7 @@ class AircraftClass : public FootClass, public IFlyControl
 		**	Display and rendering support functionality. Supports imagery and how
 		**	object interacts with the map and thus indirectly controls rendering.
 		*/
-		virtual void Look(bool incremental=false, bool=false) override;
+		virtual void Look(bool dont_map=false) override;
 		void Draw_Rotors(Point2D const & xy, Rect const & cliprect) const;
 		virtual int Exit_Object(TechnoClass *) override;
 		virtual void Draw_It(Point2D const & point, Rect const & cliprect) const override;

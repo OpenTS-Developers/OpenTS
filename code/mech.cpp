@@ -292,14 +292,6 @@ void MechLocomotionClass::Movement_AI(bool continue_moving)
 
 			CellClass * what_cell = &Map[what];
 
-			/*
-			 * If the bridge status of the cell being moved into differs from this
-			 * unit's bridge status, force a fresh look scan next time.
-			 */
-			if (LinkedTo->IsOnBridge ^ what_cell->IsUnderBridge) {
-				LinkedTo->IsPlanningToLook = true;
-			}
-
 			MoveType can_enter = LinkedTo->Can_Enter_Cell(&Map[what], dir, LinkedTo->Get_Cell_Height(), 0, true);
 
 			/*

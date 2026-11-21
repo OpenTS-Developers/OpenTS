@@ -3692,8 +3692,6 @@ LayerType AircraftClass::In_Which_Layer(void) const
  *    on the ground, then it will look a distance of one cell regardless of what its           *
  *    specified sight range is.                                                                *
  *                                                                                             *
- * INPUT:   incremental -- Is this an incremental look?                                        *
- *                                                                                             *
  * OUTPUT:  none                                                                               *
  *                                                                                             *
  * WARNINGS:   none                                                                            *
@@ -3701,7 +3699,7 @@ LayerType AircraftClass::In_Which_Layer(void) const
  * HISTORY:                                                                                    *
  *   10/23/1996 JLB : Created.                                                                 *
  *=============================================================================================*/
-void AircraftClass::Look(bool incremental, bool dont_map)
+void AircraftClass::Look(bool dont_map)
 {
 	if (IsInLimbo) {
 		return;
@@ -3713,11 +3711,11 @@ void AircraftClass::Look(bool incremental, bool dont_map)
 	}
 
 	if (sight_range) {
-		Map.Sight_From(PositionCoord, sight_range, House, incremental, dont_map);
+		Map.Sight_From(PositionCoord, sight_range, House, dont_map);
 	} else {
 		if (Scen->Special.IsFogOfWar) {
 			sight_range = Rule->AircraftFogReveal;
-			Map.Sight_From(PositionCoord, sight_range, House, false, false, true, HeightAGL < (Rule->FlightLevel / 2));
+			Map.Sight_From(PositionCoord, sight_range, House, false, true, HeightAGL < (Rule->FlightLevel / 2));
 		}
 	}
 }

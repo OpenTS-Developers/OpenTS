@@ -1295,7 +1295,7 @@ bool TActionClass::TAction_REVEAL_SOME(HouseClass * , ObjectClass * , TriggerCla
 	for (int index = 0; index < Houses.Count(); index++) {
 		HouseClass * house = Houses[index];
 		if (house->Is_Player_View() && !house->IsVisionary) {
-			Map.Sight_From(Coord(waypoint - Cell(height/2, height/2)) + Coord(0, 0, height * LEVEL_LEPTON_H), Rule->RevealTriggerRadius, house, false ,false, false, true);
+			Map.Sight_From(Coord(waypoint - Cell(height/2, height/2)) + Coord(0, 0, height * LEVEL_LEPTON_H), Rule->RevealTriggerRadius, house, false, false, true);
 		}
 	}
 	return(true);
@@ -1333,7 +1333,7 @@ bool TActionClass::TAction_REVEAL_ZONE(HouseClass * , ObjectClass * , TriggerCla
 		while (cellptr) {
 			if (Map.Get_Cell_Zone(cellptr->CellID, MZONE_CRUSHER) == zone) {
 				int height = cellptr->Height/2;
-				Map.Sight_From(Coord(cellptr->CellID - Cell(height/2, height/2)) + Coord(0, 0, height * LEVEL_LEPTON_H), 2, house, false, false, false, true);
+				Map.Sight_From(Coord(cellptr->CellID - Cell(height/2, height/2)) + Coord(0, 0, height * LEVEL_LEPTON_H), 2, house, false, false, true);
 			}
 			cellptr = Map.Local_Iterate();
 		}

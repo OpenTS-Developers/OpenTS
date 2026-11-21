@@ -283,13 +283,6 @@ class FootClass : public TechnoClass
 		bool IsNewNavCom;
 
 		/*
-		**	There are certain cases where a unit should perform a full scan rather than
-		**	the more efficient "ring scan". This situation occurs when a unit first
-		**	appears on the map or when it finishes a multiple cell movement track.
-		*/
-		bool IsPlanningToLook;
-
-		/*
 		**	Certain units have the ability to metamorphize into a building. When this
 		**	operation begins, certain processes must occur. During these operations, this
 		**	flag will be true. This ensures that any necessary special case code gets

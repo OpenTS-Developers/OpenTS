@@ -395,7 +395,7 @@ class TechnoClass :	public RadioClass,
 		 * This is the bonus added to this object's sight range, expressed as a percentage of
 		 * the range its type normally has. An object standing high up can see further, so the
 		 * bonus is derived from its height each time it looks, and a bonus that has grown since
-		 * the last look forces a full reveal rather than an incremental one.
+		 * the last look forces a full reveal.
 		 */
 		char SightIncrease;
 
@@ -684,7 +684,7 @@ class TechnoClass :	public RadioClass,
 		virtual void Assign_Destination(AbstractClass * target, bool = true);
 		virtual void Per_Cell_Process(PCPType why) override;
 		virtual bool Enter_Idle_Mode(bool initial=false, bool = true);
-		virtual void Look(bool incremental=false, bool dontmap=false) override;
+		virtual void Look(bool dontmap=false) override;
 		virtual void Radar_Track(void);
 		virtual void Radar_Untrack(void);
 		virtual void Plot_On_Radar(void) const;

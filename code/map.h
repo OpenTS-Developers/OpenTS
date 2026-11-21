@@ -37,6 +37,7 @@
 #include "gscreen.h"
 #include "rect.h"
 #include "vector.h"
+#include <vector>
 
 #include "house.hh"
 #include "isotype.hh"
@@ -103,7 +104,8 @@ class MapClass: public GScreenClass
 		**	as it relates to the map - not what the cell contains.
 		*/
 		void Fresh_Map(void);
-		void Sight_From(Coord const & coord, int sightrange, HouseClass * house, bool incremental=false, bool=false, bool=false, bool=true);
+		void Sight_From(Coord const & coord, int sightrange, HouseClass * house, bool dont_map=false, bool unfog=false, bool byheight=true);
+		void Calculate_Sight_Radius_If_Needed(int sight_range);
 		bool In_Radar(Cell const & cell) const;
 		bool In_Radar(Coord const & coord) const;
 		void Place_Down(Cell const & cell, ObjectClass * object);
@@ -512,16 +514,12 @@ class MapClass: public GScreenClass
 		VectorClass<CellClass *> Array;
 
 	protected:
-		/*
-		 * These are the tables that drive a scan of the cells around a point, laid out as
-		 * rings of increasing distance: RadiusOffset holds the cell offsets in scan order,
-		 * RadiusCount the running total through each radius (0 - 10) so that an incremental
-		 * scan can start at an outer ring, and OcclusionOffset the neighbor of each offset
-		 * whose height decides whether that cell lies hidden behind higher ground.
-		 */
-		static int const RadiusCount[11];
-		static Cell const RadiusOffset[];
-		static Cell const OcclusionOffset[];
+		// Cumulative cell counts for each radius
+		static std::vector<int> RadiusCountTable;
+		// Ordered list of all relative cell coordinates
+		static std::vector<Cell> RadiusOffsets;
+		// Vectors pointing toward the parent cell for occlusion logic
+		static std::vector<Cell> OcclusionOffsets;
 
 		/*
 		**	These are the size dimensions of the underlying array of cell objects.
