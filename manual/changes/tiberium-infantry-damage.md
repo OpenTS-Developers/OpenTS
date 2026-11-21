@@ -5,7 +5,6 @@ release: 0.3.0
 targets:
 - type: key
   id: DamageToInfantry
-  scope: tiberium
   effect: added
 credit: 
 - JoyfulShush
