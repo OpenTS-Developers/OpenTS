@@ -4537,6 +4537,24 @@ CellAnim:
       source: code/overtype.cpp
       guard: null
     level: OverlayTypeClass
+CellTagsIgnoreStealth:
+  key: CellTagsIgnoreStealth
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: RulesClass
+      member: IsCellTagsIgnoreStealth
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 ChainReaction:
   key: ChainReaction
   scopes:

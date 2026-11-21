@@ -611,7 +611,8 @@ RulesClass::RulesClass(void) :
 	VoxUnitPromoted(VOX_NONE),
 	VeteranFlashTimer(0),
 	EliteFlashTimer(0),
-	ComesNearWaypointDistance(CELL_LEPTON_W * 5)
+	ComesNearWaypointDistance(CELL_LEPTON_W * 5),
+	IsCellTagsIgnoreStealth(true)
 {
 	/// nothing
 }
@@ -1334,6 +1335,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		EngineerDamage = (float)ini.Get_Float(GENERAL, "EngineerDamage", EngineerDamage);
 		TalkBubbleTime = int(TIMER_SECOND * ini.Get_Float(GENERAL, "TalkBubbleTime", TalkBubbleTime * (1.0f/TIMER_SECOND)));
 		ComesNearWaypointDistance = ini.Get_Int(GENERAL, "ComesNearWaypointDistance", ComesNearWaypointDistance);
+		IsCellTagsIgnoreStealth = ini.Get_Bool(GENERAL, "CellTagsIgnoreStealth", IsCellTagsIgnoreStealth);
 		return(true);
 	}
 	return(false);
@@ -2653,6 +2655,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(VeteranFlashTimer);
 	stream.Serialize(EliteFlashTimer);
 	stream.Serialize(ComesNearWaypointDistance);
+	stream.Serialize(IsCellTagsIgnoreStealth);
 }
 
 

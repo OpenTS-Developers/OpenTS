@@ -2,7 +2,8 @@
 title: Trigger springing
 summary: "When a trigger fires on an occurrence offered to its tag, which occurrences can satisfy its events, and whether the tag survives firing."
 category: maps-scenarios
-keys: []
+keys:
+  - CellTagsIgnoreStealth
 related:
   - type: system
     id: campaign-progression
@@ -104,7 +105,7 @@ Four parts of the game make offers, each on a different schedule:
 | --- | --- | --- |
 | The general list | Once at the start of every logic frame, before teams, objects and houses are processed | Elapsed time and random delay, every frame. Crate collection, a global or local variable change, an ambient light change and mission timer expiry, only when one has happened since the previous pass |
 | A house's list | Once per house every frame, after teams and objects have been processed | Nothing in particular. [Damage to a base](/systems/base-attacked/) also offers the attacked event to this list when it happens |
-| Cells, and the zone list | Each time an uncloaked infantry or vehicle finishes moving into a cell | Cell entry, to that cell's tag. The two line crossings, to every cell along the row or column whose tag watches for that crossing, when the cell entered is on a crossing line. Zone entry, to each zone tag whose cell shares a [movement zone](/glossary/#movement-zone) with the destination of the infantry or vehicle |
+| Cells, and the zone list | Each time an infantry or vehicle finishes moving into a cell, unless it is fully cloaked if the rules exclude cloaked units | Cell entry, to that cell's tag. The two line crossings, to every cell along the row or column whose tag watches for that crossing, when the cell entered is on a crossing line. Zone entry, to each zone tag whose cell shares a [movement zone](/glossary/#movement-zone) with the destination of the infantry or vehicle |
 | An object's tag | At the moment the occurrence happens to that object | The one event that has just happened |
 
 Team processing also offers the team-left-map event to every tag on the general list when it disposes of an empty team that was leaving the map. [Leaves map (team)...](/mapping/events/tevent-leaves-map/) says when that happens.
@@ -115,7 +116,9 @@ The extra offers for variables, ambient light and the mission timer change nothi
 
 Flying aircraft never make cell or zone offers. Infantry or a vehicle passing under a bridge does not trigger cell entry for the cells beneath it. Infantry or a vehicle on the bridge does.
 
-A cell where a horizontal and a vertical line cross always offers the horizontal crossing. It offers the vertical crossing only if a vertical line also passes through the last cell of that row.
+A fully cloaked infantryman or vehicle makes the cell and zone offers when [`CellTagsIgnoreStealth`](/keys/celltagsignorestealth/) is `no`. An object that is still cloaking or uncloaking makes them whether the key is `yes` or `no`.
+
+A cell where a horizontal and a vertical line cross offers both crossings.
 
 Only tags whose triggers include zone entry receive offers from the zone list, so in practice the zone list is the list of zone tags.
 

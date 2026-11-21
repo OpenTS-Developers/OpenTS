@@ -539,6 +539,8 @@ class FootClass : public TechnoClass
 		bool Goto_Weed(int rad);
 		Cell Search_For_Weed(int rad);
 
+		void TriggerCellTagEvents();
+
 	private:
 		PathStruct * Find_Path(Cell const & dest, FacingType * final_moves, int maxlen, MoveType threshhold, int path_offset, int avoidance);
 };
