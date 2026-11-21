@@ -31,6 +31,7 @@
 #include "vox.hh"
 
 #include <cstdint>
+#include <optional>
 #include <deque>
 
 /*
@@ -242,7 +243,7 @@ extern bool VisceroidsAsSnoBees;
 extern bool Just4Fun;
 
 extern int							Seed;
-extern int							CustomSeed;
+extern std::optional<unsigned>	CustomSeed;
 extern bool							IgnoreInput;
 extern bool							drag_select_aborted;
 

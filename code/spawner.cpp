@@ -245,7 +245,7 @@ static void Spawner_Bind_Options(void)
 	Session.ReconnectTimeout = SpawnConfig.ReconnectTimeout;
 
 	// Init_Random uses this for a game played alone, and draws its own seed when it is zero.
-	CustomSeed = SpawnConfig.Seed;
+	CustomSeed = SpawnConfig.Seed != 0 ? std::optional<unsigned>(SpawnConfig.Seed) : std::nullopt;
 }
 
 
@@ -462,7 +462,7 @@ static bool Spawner_Setup_Campaign(void)
 	Session.Options.GameSpeed = SpawnConfig.GameSpeed;
 	Session.CampaignDifficulty = (DiffType)SpawnConfig.CampaignDifficulty;
 	Session.CampaignCDifficulty = (DiffType)SpawnConfig.CampaignCDifficulty;
-	CustomSeed = SpawnConfig.Seed;
+	CustomSeed = SpawnConfig.Seed != 0 ? std::optional<unsigned>(SpawnConfig.Seed) : std::nullopt;
 	Scen->Campaign = (CampaignType)SpawnConfig.CampaignID;
 
 	// A fresh launch carries nothing over, so the file's flags replace an earlier mission's.
