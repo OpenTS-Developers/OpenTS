@@ -215,6 +215,7 @@ void TiberiumClass::Compute_CRC(CRCEngine & crc) const
 		}
 	}
 	crc((int)GrowthTimer);
+	crc(DamageToInfantry);
 }
 
 
