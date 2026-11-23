@@ -83,8 +83,10 @@ void const * AircraftTypeClass::RRotorData = NULL;
  *=============================================================================================*/
 AircraftTypeClass::AircraftTypeClass(char const* ininame) :
 	BASECLASS(ininame, SPEED_WINGED),
-	IsLandable(false),
+	HeapID(AIRCRAFT_NONE),
+	IsCarryall(false),
 	IsRotorEquipped(false),
+	VoxelRotors(false),
 	RotorCount(1),
 	Rotor1Data(NULL),
 	Rotor2Data(NULL),
@@ -94,8 +96,7 @@ AircraftTypeClass::AircraftTypeClass(char const* ininame) :
 	Rotor2TiltedData(NULL),
 	Rotor3TiltedData(NULL),
 	Rotor4TiltedData(NULL),
-	IsCarryall(false),
-	HeapID(AIRCRAFT_NONE)
+	IsLandable(false)
 {
 	Create_ID();
 
@@ -103,6 +104,11 @@ AircraftTypeClass::AircraftTypeClass(char const* ininame) :
 	Rotor2FLH = Point3D(0, 0, 0);
 	Rotor3FLH = Point3D(0, 0, 0);
 	Rotor4FLH = Point3D(0, 0, 0);
+
+	for (int rotor = 0; rotor < 4; ++rotor) {
+		RotorLandedVoxelFiles[rotor][0] = '\0';
+		RotorMovingVoxelFiles[rotor][0] = '\0';
+	}
 
 	AircraftTypes.Add(this);
 	HeapID = AircraftType(AircraftTypes.ID(this));
@@ -311,11 +317,23 @@ bool AircraftTypeClass::Read_INI(CCINIClass const& ini)
 		IsLandable = ini.Get_Bool(Name(), "Landable", IsLandable);
 		IsCarryall = ini.Get_Bool(Name(), "Carryall", IsCarryall);
 		IsRotorEquipped = ArtINI.Get_Bool(Graphic_Name(), "Rotors", IsRotorEquipped);
+		VoxelRotors = ArtINI.Get_Bool(Graphic_Name(), "VoxelRotors", VoxelRotors);
 		RotorCount = ArtINI.Get_Int(Graphic_Name(), "RotorCount", RotorCount);
 		Rotor1FLH = ArtINI.Get_Point(Graphic_Name(), "Rotor1FLH", Rotor1FLH);
 		Rotor2FLH = ArtINI.Get_Point(Graphic_Name(), "Rotor2FLH", Rotor2FLH);
 		Rotor3FLH = ArtINI.Get_Point(Graphic_Name(), "Rotor3FLH", Rotor3FLH);
 		Rotor4FLH = ArtINI.Get_Point(Graphic_Name(), "Rotor4FLH", Rotor4FLH);
+
+		for (int rotor = 0; rotor < 4; ++rotor) {
+			char key[32];
+			sprintf(key, "Rotor%dLandedVoxel", rotor + 1);
+			ArtINI.Get_String(
+				Graphic_Name(), key, "", RotorLandedVoxelFiles[rotor], sizeof(RotorLandedVoxelFiles[rotor]));
+			sprintf(key, "Rotor%dMovingVoxel", rotor + 1);
+			ArtINI.Get_String(
+				Graphic_Name(), key, "", RotorMovingVoxelFiles[rotor], sizeof(RotorMovingVoxelFiles[rotor]));
+		}
+
 		ArtINI.Get_String(Graphic_Name(), "Rotor1Anim", "", Rotor1File, sizeof(Rotor1File));
 		ArtINI.Get_String(Graphic_Name(), "Rotor2Anim", "", Rotor2File, sizeof(Rotor2File));
 		ArtINI.Get_String(Graphic_Name(), "Rotor3Anim", "", Rotor3File, sizeof(Rotor3File));
@@ -410,6 +428,7 @@ void AircraftTypeClass::Compute_CRC(CRCEngine & crc) const
 	BASECLASS::Compute_CRC(crc);
 
 	crc(IsRotorEquipped);
+	crc(VoxelRotors);
 	crc(RotorCount);
 	crc(IsLandable);
 	crc(HeapID);
@@ -456,6 +475,9 @@ void AircraftTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Rotor3TiltedFiles);
 	stream.Serialize(Rotor4TiltedFiles);
 	stream.Serialize(IsLandable);
+	stream.Serialize(VoxelRotors);
+	stream.Serialize(RotorLandedVoxelFiles);
+	stream.Serialize(RotorMovingVoxelFiles);
 }
 
 
@@ -480,10 +502,9 @@ AircraftTypeClass * AircraftTypeClass::Find_Or_Make(char const * name)
 
 
 /// <summary>
-/// Gets the SHP data for each of the rotor filenames specified by the Rotor#Anim and
-/// Rotor#TiltedAnims keys. These files aren't initialized through anims so need to be
-/// loaded specially. Because they aren't anims, they also need to be restored on game load,
-/// so this function is used both when reading the INI and when reloading a savegame.
+/// Loads SHP rotor art when VoxelRotors is disabled, or landed and moving VXLs when enabled.
+/// Rotor artwork is not initialized through anims, so this function also reloads it after
+/// a savegame is loaded.
 /// </summary>
 void AircraftTypeClass::Load_Rotor_Assets(void)
 {
@@ -507,7 +528,7 @@ void AircraftTypeClass::Load_Rotor_Assets(void)
 	for (int i = 0; i < 4; ++i) {
 		*rotorData[i] = NULL;
 
-		if (rotorFiles[i][0] != '\0') {
+		if (!VoxelRotors && rotorFiles[i][0] != '\0') {
 			char fullname[MAX_PATH];
 			_makepath(fullname, NULL, NULL, rotorFiles[i], ".SHP");
 			*rotorData[i] = MFCD::Retrieve(fullname);
@@ -535,7 +556,7 @@ void AircraftTypeClass::Load_Rotor_Assets(void)
 		for (int direction = 0; direction < 8; ++direction) {
 			tiltedData[rotor][direction] = NULL;
 
-			if (tiltedFiles[rotor][direction][0] != '\0') {
+			if (!VoxelRotors && tiltedFiles[rotor][direction][0] != '\0') {
 				char fullname[MAX_PATH];
 
 				_makepath(
@@ -547,6 +568,40 @@ void AircraftTypeClass::Load_Rotor_Assets(void)
 				);
 
 				tiltedData[rotor][direction] = MFCD::Retrieve(fullname);
+			}
+		}
+	}
+
+	for (int rotor = 0; rotor < 4; ++rotor) {
+		VoxelDataStruct * voxelData[2] = {
+			&RotorLandedVoxels[rotor],
+			&RotorMovingVoxels[rotor]
+		};
+		char const * voxelFiles[2] = {
+			RotorLandedVoxelFiles[rotor],
+			RotorMovingVoxelFiles[rotor]
+		};
+
+		for (int state = 0; state < 2; ++state) {
+			delete voxelData[state]->VoxLib;
+			voxelData[state]->VoxLib = NULL;
+			delete voxelData[state]->MotLib;
+			voxelData[state]->MotLib = NULL;
+
+			if (!VoxelRotors || voxelFiles[state][0] == '\0') {
+				continue;
+			}
+
+			char fullname[MAX_PATH];
+			_makepath(fullname, NULL, NULL, voxelFiles[state], ".VXL");
+			CCFileClass file(fullname);
+
+			if (file.Is_Available()) {
+				voxelData[state]->VoxLib = new VoxelLibrary(file, false);
+				if (voxelData[state]->VoxLib->Load_Failed()) {
+					delete voxelData[state]->VoxLib;
+					voxelData[state]->VoxLib = NULL;
+				}
 			}
 		}
 	}

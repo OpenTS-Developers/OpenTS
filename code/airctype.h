@@ -44,10 +44,17 @@ class AircraftTypeClass : public TechnoTypeClass
 		*/
 		bool IsRotorEquipped;	// Is a rotor attached?
 
+		bool VoxelRotors;
+
 		/*
 		**	How many rotors does the aircraft have?
 		*/
 		int RotorCount;
+
+		char RotorLandedVoxelFiles[4][15 + 1];
+		char RotorMovingVoxelFiles[4][15 + 1];
+		VoxelDataStruct RotorLandedVoxels[4];
+		VoxelDataStruct RotorMovingVoxels[4];
 
 		/*
 		**	This is the shape to display for the rotor anim if the aircraft is not tilted.
