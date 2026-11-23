@@ -53,6 +53,7 @@
 #include "_rules.h"
 #include "aircraft.h"
 #include "animtype.h"
+#include "ccfile.h"
 #include "findmake.h"
 #include "globals.h"
 #include "incdec.h"
