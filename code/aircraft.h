@@ -224,6 +224,8 @@ class AircraftClass : public FootClass, public IFlyControl
 
 		int Do_MISSION_MOVE_Carryall(void);
 		int Do_MISSION_MOVE_Normal(void);
+		void Draw_SHP_Rotors(Point2D const & xy, Rect const & cliprect, Matrix3D const& matrix, VisualType visual) const;
+		void Draw_Voxel_Rotors(Point2D const & xy, Rect const & cliprect, Matrix3D const& matrix, VisualType visual, int brightness) const;
 
 		/*
 		 * This is the name of the scenario INI section that lists the aircraft to be

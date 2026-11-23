@@ -482,6 +482,19 @@ void AircraftClass::Draw_Rotors(Point2D const& xy, Rect const& cliprect, Matrix3
 		return;
 	}
 
+	if (Class->VoxelRotors) {
+		Draw_Voxel_Rotors(xy, cliprect, matrix, visual, brightness);
+	} else {
+		Draw_SHP_Rotors(xy, cliprect, matrix, visual);
+	}
+}
+
+
+/// <summary>
+/// Draws SHP rotors using custom directional artwork when available and built-in SHPs as fallback.
+/// </summary>
+void AircraftClass::Draw_SHP_Rotors(Point2D const& xy, Rect const& cliprect, Matrix3D const& matrix, VisualType visual) const
+{
 	ShapeFlags_Type flags = ShapeFlags_Type(SHAPE_CENTER | SHAPE_WIN_REL);
 	int shapenum;
 	int const stage = Fetch_Stage();
@@ -543,40 +556,14 @@ void AircraftClass::Draw_Rotors(Point2D const& xy, Rect const& cliprect, Matrix3
 		&Class->Rotor4FLH
 	};
 
-	char const* landedVoxelFiles[4] = {
-		Class->RotorLandedVoxelFiles[0],
-		Class->RotorLandedVoxelFiles[1],
-		Class->RotorLandedVoxelFiles[2],
-		Class->RotorLandedVoxelFiles[3]
-	};
-
-	char const* movingVoxelFiles[4] = {
-		Class->RotorMovingVoxelFiles[0],
-		Class->RotorMovingVoxelFiles[1],
-		Class->RotorMovingVoxelFiles[2],
-		Class->RotorMovingVoxelFiles[3]
-	};
-
-	/*
-	** Count the rotor artwork sets.
-	*/
 	int artworkCount = 0;
-
 	for (int i = 0; i < 4; ++i) {
-		if (Class->VoxelRotors) {
-			if (landedVoxelFiles[i][0] == '\0' && movingVoxelFiles[i][0] == '\0') {
-				break;
-			}
-		} else if (rotorFiles[i][0] == '\0') {
+		if (rotorFiles[i][0] == '\0') {
 			break;
 		}
-
 		artworkCount++;
 	}
 
-	/*
-	** Draw each rotor at its configured FLH.
-	*/
 	for (int rotor = 0; rotor < Class->RotorCount && rotor < 4; ++rotor) {
 		Vector3 localOffset(
 			rotorFLH[rotor]->X / 8.0f,
@@ -591,59 +578,9 @@ void AircraftClass::Draw_Rotors(Point2D const& xy, Rect const& cliprect, Matrix3
 		rotorPoint.X += (int)(projectedOffset.X + 0.5f);
 		rotorPoint.Y -= (int)(projectedOffset.Y + 0.5f);
 
-		if (Class->VoxelRotors) {
-			VoxelDataStruct const* voxelData = NULL;
-			if (artworkCount > 0) {
-				int const artIndex = rotor % artworkCount;
-				voxelData = HeightAGL == 0
-					? &Class->RotorLandedVoxels[artIndex]
-					: &Class->RotorMovingVoxels[artIndex];
-			}
-
-			if (voxelData != NULL
-				&& voxelData->VoxLib != NULL
-				&& !voxelData->VoxLib->Load_Failed()
-				&& voxelData->VoxLib->Get_Layer_Count() > 0) {
-				int const phaseCount = HeightAGL == 0 ? 8 : 4;
-				
-				// TODO: A quarter turn completes one visual cycle for a four-blade rotor,
-				// using the same sort of arrangement as Red Alert. It would be preferable
-				// to just spin the voxel a full 360 degrees, but I just want to match what
-				// is already here for now. Spin rate and other controls can come after
-				// - Orac
-				
-				float const rotation = (stage % phaseCount) * (float)(RAD_90 / phaseCount);
-
-				Matrix3D modelMatrix = matrix;
-				modelMatrix.Rotate_Z(rotation);
-
-				ShapeFlags_Type voxelFlags = ShapeFlags_Type(SHAPE_ALPHA | SHAPE_ZGRAD);
-				if (HeightAGL == 0) {
-					voxelFlags = ShapeFlags_Type(voxelFlags | (
-						visual == VISUAL_SHADOWY ? SHAPE_TRANSLUCENT50 : SHAPE_TRANSLUCENT25
-					));
-				} else {
-					voxelFlags = ShapeFlags_Type(voxelFlags | (
-						visual == VISUAL_SHADOWY ? SHAPE_TRANSLUCENT75 : SHAPE_TRANSLUCENT50
-					));
-				}
-
-				Techno_Render_Voxel_Object(
-					*voxelData,
-					Get_Isometric_View_Matrix() * modelMatrix,
-					rotorPoint,
-					cliprect,
-					0,
-					voxelFlags,
-					Apparent_Brightness(brightness)
-				);
-				continue;
-			}
-		}
-
 		ShapeSet const* rotordata = NULL;
 
-		if (!Class->VoxelRotors && artworkCount > 0) {
+		if (artworkCount > 0) {
 			/*
 			** Resolve the repeating custom artwork pattern.
 			*/
@@ -680,6 +617,133 @@ void AircraftClass::Draw_Rotors(Point2D const& xy, Rect const& cliprect, Matrix3
 				);
 		}
 
+		if (rotordata == NULL) {
+			continue;
+		}
+
+		Draw_Shape(
+			*LogicalSurface,
+			*ColorSchemes[House->Scheme]->Converter,
+			rotordata,
+			shapenum,
+			rotorPoint,
+			cliprect,
+			flags,
+			NULL,
+			0,
+			ZGRAD_90DEG,
+			NORMAL_LIGHT
+		);
+	}
+}
+
+
+/// <summary>
+/// Draws the selected landed or moving voxel rotors and built-in SHPs as fallback.
+/// </summary>
+void AircraftClass::Draw_Voxel_Rotors(Point2D const& xy, Rect const& cliprect, Matrix3D const& matrix, VisualType visual, int brightness) const
+{
+	int const stage = Fetch_Stage();
+	char const* landedVoxelFiles[4] = {
+		Class->RotorLandedVoxelFiles[0],
+		Class->RotorLandedVoxelFiles[1],
+		Class->RotorLandedVoxelFiles[2],
+		Class->RotorLandedVoxelFiles[3]
+	};
+	char const* movingVoxelFiles[4] = {
+		Class->RotorMovingVoxelFiles[0],
+		Class->RotorMovingVoxelFiles[1],
+		Class->RotorMovingVoxelFiles[2],
+		Class->RotorMovingVoxelFiles[3]
+	};
+	TPoint3D<int> const* rotorFLH[4] = {
+		&Class->Rotor1FLH,
+		&Class->Rotor2FLH,
+		&Class->Rotor3FLH,
+		&Class->Rotor4FLH
+	};
+
+	int artworkCount = 0;
+	for (int i = 0; i < 4; ++i) {
+		if (landedVoxelFiles[i][0] == '\0' && movingVoxelFiles[i][0] == '\0') {
+			break;
+		}
+		artworkCount++;
+	}
+
+	ShapeFlags_Type flags = ShapeFlags_Type(SHAPE_CENTER | SHAPE_WIN_REL);
+	int const shapenum = HeightAGL == 0 ? (stage % 8) + 4 : stage % 4;
+	if (HeightAGL == 0) {
+		flags = ShapeFlags_Type(flags | (
+			visual == VISUAL_SHADOWY ? SHAPE_TRANSLUCENT50 : SHAPE_TRANSLUCENT25
+		));
+	} else {
+		flags = ShapeFlags_Type(flags | (
+			visual == VISUAL_SHADOWY ? SHAPE_TRANSLUCENT75 : SHAPE_TRANSLUCENT50
+		));
+	}
+
+	for (int rotor = 0; rotor < Class->RotorCount && rotor < 4; ++rotor) {
+		Vector3 localOffset(
+			rotorFLH[rotor]->X / 8.0f,
+			rotorFLH[rotor]->Y / 8.0f,
+			rotorFLH[rotor]->Z / 8.0f
+		);
+
+		Matrix3D rotorMatrix = Get_Isometric_View_Matrix() * matrix;
+		Vector3 projectedOffset = rotorMatrix.Rotate_Vector(localOffset);
+
+		Point2D rotorPoint = xy;
+		rotorPoint.X += (int)(projectedOffset.X + 0.5f);
+		rotorPoint.Y -= (int)(projectedOffset.Y + 0.5f);
+
+		VoxelDataStruct const* voxelData = NULL;
+		if (artworkCount > 0) {
+			int const artIndex = rotor % artworkCount;
+			voxelData = HeightAGL == 0
+				? &Class->RotorLandedVoxels[artIndex]
+				: &Class->RotorMovingVoxels[artIndex];
+		}
+
+		if (voxelData != NULL
+			&& voxelData->VoxLib != NULL
+			&& !voxelData->VoxLib->Load_Failed()
+			&& voxelData->VoxLib->Get_Layer_Count() > 0) {
+			int const phaseCount = HeightAGL == 0 ? 8 : 4;
+			int const rotationCount = phaseCount * 4;
+			float const rotation = (stage % rotationCount) * (float)(RAD_90 / phaseCount);
+
+			Matrix3D modelMatrix = matrix;
+			modelMatrix.Rotate_Z(rotation);
+
+			ShapeFlags_Type voxelFlags = ShapeFlags_Type(SHAPE_ALPHA | SHAPE_ZGRAD);
+			if (HeightAGL == 0) {
+				voxelFlags = ShapeFlags_Type(voxelFlags | (
+					visual == VISUAL_SHADOWY ? SHAPE_TRANSLUCENT50 : SHAPE_TRANSLUCENT25
+				));
+			} else {
+				voxelFlags = ShapeFlags_Type(voxelFlags | (
+					visual == VISUAL_SHADOWY ? SHAPE_TRANSLUCENT75 : SHAPE_TRANSLUCENT50
+				));
+			}
+
+			Techno_Render_Voxel_Object(
+				*voxelData,
+				Get_Isometric_View_Matrix() * modelMatrix,
+				rotorPoint,
+				cliprect,
+				0,
+				voxelFlags,
+				Apparent_Brightness(brightness)
+			);
+			continue;
+		}
+
+		ShapeSet const* rotordata = static_cast<ShapeSet const*>(
+			(rotor % 2 == 0)
+			? AircraftTypeClass::LRotorData
+			: AircraftTypeClass::RRotorData
+		);
 		if (rotordata == NULL) {
 			continue;
 		}
