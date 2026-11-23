@@ -324,15 +324,22 @@ bool AircraftTypeClass::Read_INI(CCINIClass const& ini)
 		Rotor3FLH = ArtINI.Get_Point(Graphic_Name(), "Rotor3FLH", Rotor3FLH);
 		Rotor4FLH = ArtINI.Get_Point(Graphic_Name(), "Rotor4FLH", Rotor4FLH);
 
-		for (int rotor = 0; rotor < 4; ++rotor) {
-			char key[32];
-			sprintf(key, "Rotor%dLandedVoxel", rotor + 1);
-			ArtINI.Get_String(
-				Graphic_Name(), key, "", RotorLandedVoxelFiles[rotor], sizeof(RotorLandedVoxelFiles[rotor]));
-			sprintf(key, "Rotor%dMovingVoxel", rotor + 1);
-			ArtINI.Get_String(
-				Graphic_Name(), key, "", RotorMovingVoxelFiles[rotor], sizeof(RotorMovingVoxelFiles[rotor]));
-		}
+		ArtINI.Get_String(
+			Graphic_Name(), "Rotor1LandedVoxel", "", RotorLandedVoxelFiles[0], sizeof(RotorLandedVoxelFiles[0]));
+		ArtINI.Get_String(
+			Graphic_Name(), "Rotor2LandedVoxel", "", RotorLandedVoxelFiles[1], sizeof(RotorLandedVoxelFiles[1]));
+		ArtINI.Get_String(
+			Graphic_Name(), "Rotor3LandedVoxel", "", RotorLandedVoxelFiles[2], sizeof(RotorLandedVoxelFiles[2]));
+		ArtINI.Get_String(
+			Graphic_Name(), "Rotor4LandedVoxel", "", RotorLandedVoxelFiles[3], sizeof(RotorLandedVoxelFiles[3]));
+		ArtINI.Get_String(
+			Graphic_Name(), "Rotor1MovingVoxel", "", RotorMovingVoxelFiles[0], sizeof(RotorMovingVoxelFiles[0]));
+		ArtINI.Get_String(
+			Graphic_Name(), "Rotor2MovingVoxel", "", RotorMovingVoxelFiles[1], sizeof(RotorMovingVoxelFiles[1]));
+		ArtINI.Get_String(
+			Graphic_Name(), "Rotor3MovingVoxel", "", RotorMovingVoxelFiles[2], sizeof(RotorMovingVoxelFiles[2]));
+		ArtINI.Get_String(
+			Graphic_Name(), "Rotor4MovingVoxel", "", RotorMovingVoxelFiles[3], sizeof(RotorMovingVoxelFiles[3]));
 
 		ArtINI.Get_String(Graphic_Name(), "Rotor1Anim", "", Rotor1File, sizeof(Rotor1File));
 		ArtINI.Get_String(Graphic_Name(), "Rotor2Anim", "", Rotor2File, sizeof(Rotor2File));
