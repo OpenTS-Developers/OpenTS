@@ -17,17 +17,47 @@ keys:
   - Rotor2TiltedAnims
   - Rotor3TiltedAnims
   - Rotor4TiltedAnims
+  - VoxelRotors
+  - Rotor1LandedVoxel
+  - Rotor1MovingVoxel
+  - Rotor2LandedVoxel
+  - Rotor2MovingVoxel
+  - Rotor3LandedVoxel
+  - Rotor3MovingVoxel
+  - Rotor4LandedVoxel
+  - Rotor4MovingVoxel
 ---
 
-OpenTS draws separate rotor shapes only when an aircraft's `art.ini` image section sets [`Rotors=yes`](/keys/rotors/). The aircraft must have positive strength and be visible to the current player; a hidden aircraft's rotors are not drawn.
+OpenTS draws separate rotor artwork for a voxel-bodied aircraft when its `art.ini` image section sets [`Rotors=yes`](/keys/rotors/). The aircraft must have positive strength and be visible to the current player; a hidden aircraft's rotors are not drawn. [`VoxelRotors=yes`](/keys/voxelrotors/) selects VXL models; otherwise the engine uses SHP artwork.
 
-Rotor shapes are 25% translucent when the aircraft is landed and 50% when it is airborne. A cloaked aircraft uses 50% and 75% translucency, respectively.
+Rotors are 25% translucent when the aircraft is landed and 50% when it is airborne. A cloaked aircraft uses 50% and 75% translucency, respectively.
 
 ## Rotor count and frame selection
 
-[`RotorCount`](/keys/rotorcount/) sets how many rotors the engine draws, up to four. A value of zero or less draws none. Each rotor uses a 12-frame SHP: frames 0–3 while airborne and frames 4–11 while landed.
+[`RotorCount`](/keys/rotorcount/) sets how many rotors the engine draws, up to four. A value of zero or less draws none. In SHP mode, each rotor uses a 12-frame SHP: frames 0–3 while airborne and frames 4–11 while landed.
 
 If custom artwork is unavailable, rotor 1 and rotor 3 use `LROTOR.SHP`, while rotor 2 and rotor 4 use `RROTOR.SHP`. A rotor is not drawn if neither its custom SHP nor its built-in SHP loads.
+
+## Voxel artwork
+
+With `VoxelRotors=yes`, [`Rotor1LandedVoxel`](/keys/rotor1landedvoxel/) through [`Rotor4LandedVoxel`](/keys/rotor4landedvoxel/) name the VXL models used at ground level. [`Rotor1MovingVoxel`](/keys/rotor1movingvoxel/) through [`Rotor4MovingVoxel`](/keys/rotor4movingvoxel/) name the models used above ground level, including while hovering. Each value is a base name of up to 15 characters; the engine adds `.VXL`.
+
+The engine counts consecutive rotor slots from rotor 1, stopping at the first slot where both voxel names are empty. It repeats that sequence for additional rotors. If the selected model is missing or fails to load, that rotor uses its built-in SHP. Voxel models do not use `Rotor#TiltedAnims`.
+
+The engine spins a voxel rotor around its local vertical axis without loading an HVA. It advances 11.25 degrees per stage while landed and 22.5 degrees per stage while airborne, completing a full turn after 32 or 16 stages, respectively. This keeps the angular step in line with the SHP rotor sequence.
+
+```ini title="art.ini"
+[MYHELI]
+Rotors=yes
+VoxelRotors=yes
+RotorCount=2
+Rotor1LandedVoxel=MYROTORIDLE
+Rotor1MovingVoxel=MYROTORFLY
+Rotor1FLH=32,0,48
+Rotor2LandedVoxel=MYROTORIDLE
+Rotor2MovingVoxel=MYROTORFLY
+Rotor2FLH=-32,0,48
+```
 
 ## Custom artwork
 
@@ -51,6 +81,6 @@ In this example, both rotors use `MYROTOR`; `Rotor1TiltedAnims` supplies the eig
 
 ## Directional artwork
 
-Each of [`Rotor1TiltedAnims`](/keys/rotor1tiltedanims/), [`Rotor2TiltedAnims`](/keys/rotor2tiltedanims/), [`Rotor3TiltedAnims`](/keys/rotor3tiltedanims/), and [`Rotor4TiltedAnims`](/keys/rotor4tiltedanims/) must supply eight comma-separated SHP base names, ordered from north (facing towards the top right corner of the screen) clockwise. Each filename in the list may contain at most 15 characters; an empty position leaves that facing without a directional shape.
+Each of [`Rotor1TiltedAnims`](/keys/rotor1tiltedanims/), [`Rotor2TiltedAnims`](/keys/rotor2tiltedanims/), [`Rotor3TiltedAnims`](/keys/rotor3tiltedanims/), and [`Rotor4TiltedAnims`](/keys/rotor4tiltedanims/) must supply eight comma-separated SHP base names, ordered from north (facing towards the top right corner of the screen) clockwise. Each filename in the list may contain at most 15 characters; an empty position leaves that facing without a directional shape. These keys apply only in SHP mode.
 
 While the aircraft is moving, the engine selects the directional shape for its current facing. If that shape is missing, it uses the corresponding flat custom shape, then the built-in shape. Directional shapes are considered only for the consecutive custom-art sequence described above; setting a `Rotor#TiltedAnims` key without a matching `Rotor#Anim` does not enable custom rotor artwork.

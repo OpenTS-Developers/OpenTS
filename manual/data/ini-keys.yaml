@@ -19078,6 +19078,40 @@ Rotor1FLH:
       source: code/airctype.cpp
       guard: null
     level: AircraftTypeClass
+Rotor1LandedVoxel:
+  key: Rotor1LandedVoxel
+  scopes:
+  - applies_to: *id024
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: null
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+Rotor1MovingVoxel:
+  key: Rotor1MovingVoxel
+  scopes:
+  - applies_to: *id024
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: null
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
 Rotor1TiltedAnims:
   key: Rotor1TiltedAnims
   scopes:
@@ -19126,6 +19160,40 @@ Rotor2FLH:
       default_candidate: null
       declared_in: AircraftTypeClass
       member: Rotor2FLH
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+Rotor2LandedVoxel:
+  key: Rotor2LandedVoxel
+  scopes:
+  - applies_to: *id024
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: null
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+Rotor2MovingVoxel:
+  key: Rotor2MovingVoxel
+  scopes:
+  - applies_to: *id024
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: null
       source: code/airctype.cpp
       guard: null
     level: AircraftTypeClass
@@ -19180,6 +19248,40 @@ Rotor3FLH:
       source: code/airctype.cpp
       guard: null
     level: AircraftTypeClass
+Rotor3LandedVoxel:
+  key: Rotor3LandedVoxel
+  scopes:
+  - applies_to: *id024
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: null
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+Rotor3MovingVoxel:
+  key: Rotor3MovingVoxel
+  scopes:
+  - applies_to: *id024
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: null
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
 Rotor3TiltedAnims:
   key: Rotor3TiltedAnims
   scopes:
@@ -19228,6 +19330,40 @@ Rotor4FLH:
       default_candidate: null
       declared_in: AircraftTypeClass
       member: Rotor4FLH
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+Rotor4LandedVoxel:
+  key: Rotor4LandedVoxel
+  scopes:
+  - applies_to: *id024
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: null
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+Rotor4MovingVoxel:
+  key: Rotor4MovingVoxel
+  scopes:
+  - applies_to: *id024
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: null
       source: code/airctype.cpp
       guard: null
     level: AircraftTypeClass
@@ -26446,6 +26582,23 @@ VoxelIndex:
       source: code/vanimtype.cpp
       guard: null
     level: VoxelAnimTypeClass
+VoxelRotors:
+  key: VoxelRotors
+  scopes:
+  - applies_to: *id024
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: AircraftTypeClass
+      member: VoxelRotors
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
 Wake:
   key: Wake
   scopes:

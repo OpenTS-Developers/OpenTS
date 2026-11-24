@@ -46,6 +46,33 @@ targets:
   id: Rotor4FLH
   effect: added
 - type: key
+  id: VoxelRotors
+  effect: added
+- type: key
+  id: Rotor1LandedVoxel
+  effect: added
+- type: key
+  id: Rotor1MovingVoxel
+  effect: added
+- type: key
+  id: Rotor2LandedVoxel
+  effect: added
+- type: key
+  id: Rotor2MovingVoxel
+  effect: added
+- type: key
+  id: Rotor3LandedVoxel
+  effect: added
+- type: key
+  id: Rotor3MovingVoxel
+  effect: added
+- type: key
+  id: Rotor4LandedVoxel
+  effect: added
+- type: key
+  id: Rotor4MovingVoxel
+  effect: added
+- type: key
   id: CustomRotor
   effect: removed
 - type: system
@@ -55,10 +82,8 @@ targets:
 credit: [Orac]
 ---
 
-Set `Rotors=yes` in an aircraft's `art.ini` image section to draw separate rotor shapes. Each shape uses 12 frames: 0–3 while airborne and 4–11 while landed.
+Set `VoxelRotors=yes` to use VXL rotor models with separate landed and airborne files. The engine spins each model through a full turn in 32 landed stages or 16 airborne stages without an HVA; a missing or invalid model falls back to the built-in SHP rotor.
 
-`RotorCount` sets how many rotors are drawn, up to four. `Rotor#Anim` and `Rotor#FLH` select custom shapes and their positions; without a loaded custom shape, the engine uses `LROTOR.SHP` and `RROTOR.SHP` when available.
-
-`Rotor#TiltedAnims` selects facing-specific shapes while the aircraft moves.
+SHP mode remains the default and continues to support direction-specific artwork.
 
 The unused `CustomRotor` assignment is no longer read.
