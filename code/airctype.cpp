@@ -107,8 +107,10 @@ AircraftTypeClass::AircraftTypeClass(char const* ininame) :
 	Rotor4FLH = Point3D(0, 0, 0);
 
 	for (int rotor = 0; rotor < 4; ++rotor) {
-		RotorLandedVoxelFiles[rotor][0] = '\0';
+		RotorIdleVoxelFiles[rotor][0] = '\0';
 		RotorMovingVoxelFiles[rotor][0] = '\0';
+		RotorIdleRate[rotor] = 32;
+		RotorMovingRate[rotor] = 16;
 	}
 
 	AircraftTypes.Add(this);
@@ -326,13 +328,13 @@ bool AircraftTypeClass::Read_INI(CCINIClass const& ini)
 		Rotor4FLH = ArtINI.Get_Point(Graphic_Name(), "Rotor4FLH", Rotor4FLH);
 
 		ArtINI.Get_String(
-			Graphic_Name(), "Rotor1LandedVoxel", "", RotorLandedVoxelFiles[0], sizeof(RotorLandedVoxelFiles[0]));
+			Graphic_Name(), "Rotor1IdleVoxel", "", RotorIdleVoxelFiles[0], sizeof(RotorIdleVoxelFiles[0]));
 		ArtINI.Get_String(
-			Graphic_Name(), "Rotor2LandedVoxel", "", RotorLandedVoxelFiles[1], sizeof(RotorLandedVoxelFiles[1]));
+			Graphic_Name(), "Rotor2IdleVoxel", "", RotorIdleVoxelFiles[1], sizeof(RotorIdleVoxelFiles[1]));
 		ArtINI.Get_String(
-			Graphic_Name(), "Rotor3LandedVoxel", "", RotorLandedVoxelFiles[2], sizeof(RotorLandedVoxelFiles[2]));
+			Graphic_Name(), "Rotor3IdleVoxel", "", RotorIdleVoxelFiles[2], sizeof(RotorIdleVoxelFiles[2]));
 		ArtINI.Get_String(
-			Graphic_Name(), "Rotor4LandedVoxel", "", RotorLandedVoxelFiles[3], sizeof(RotorLandedVoxelFiles[3]));
+			Graphic_Name(), "Rotor4IdleVoxel", "", RotorIdleVoxelFiles[3], sizeof(RotorIdleVoxelFiles[3]));
 		ArtINI.Get_String(
 			Graphic_Name(), "Rotor1MovingVoxel", "", RotorMovingVoxelFiles[0], sizeof(RotorMovingVoxelFiles[0]));
 		ArtINI.Get_String(
@@ -341,6 +343,24 @@ bool AircraftTypeClass::Read_INI(CCINIClass const& ini)
 			Graphic_Name(), "Rotor3MovingVoxel", "", RotorMovingVoxelFiles[2], sizeof(RotorMovingVoxelFiles[2]));
 		ArtINI.Get_String(
 			Graphic_Name(), "Rotor4MovingVoxel", "", RotorMovingVoxelFiles[3], sizeof(RotorMovingVoxelFiles[3]));
+
+		RotorIdleRate[0] = ArtINI.Get_Int(Graphic_Name(), "Rotor1IdleRate", RotorIdleRate[0]);
+		RotorIdleRate[1] = ArtINI.Get_Int(Graphic_Name(), "Rotor2IdleRate", RotorIdleRate[1]);
+		RotorIdleRate[2] = ArtINI.Get_Int(Graphic_Name(), "Rotor3IdleRate", RotorIdleRate[2]);
+		RotorIdleRate[3] = ArtINI.Get_Int(Graphic_Name(), "Rotor4IdleRate", RotorIdleRate[3]);
+		RotorMovingRate[0] = ArtINI.Get_Int(Graphic_Name(), "Rotor1MovingRate", RotorMovingRate[0]);
+		RotorMovingRate[1] = ArtINI.Get_Int(Graphic_Name(), "Rotor2MovingRate", RotorMovingRate[1]);
+		RotorMovingRate[2] = ArtINI.Get_Int(Graphic_Name(), "Rotor3MovingRate", RotorMovingRate[2]);
+		RotorMovingRate[3] = ArtINI.Get_Int(Graphic_Name(), "Rotor4MovingRate", RotorMovingRate[3]);
+
+		for (int rotor = 0; rotor < 4; ++rotor) {
+			if (RotorIdleRate[rotor] < 0) {
+				RotorIdleRate[rotor] = 0;
+			}
+			if (RotorMovingRate[rotor] < 0) {
+				RotorMovingRate[rotor] = 0;
+			}
+		}
 
 		ArtINI.Get_String(Graphic_Name(), "Rotor1Anim", "", Rotor1File, sizeof(Rotor1File));
 		ArtINI.Get_String(Graphic_Name(), "Rotor2Anim", "", Rotor2File, sizeof(Rotor2File));
@@ -438,6 +458,10 @@ void AircraftTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsRotorEquipped);
 	crc(VoxelRotors);
 	crc(RotorCount);
+	for (int rotor = 0; rotor < 4; ++rotor) {
+		crc(RotorIdleRate[rotor]);
+		crc(RotorMovingRate[rotor]);
+	}
 	crc(IsLandable);
 	crc(HeapID);
 }
@@ -484,8 +508,10 @@ void AircraftTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Rotor4TiltedFiles);
 	stream.Serialize(IsLandable);
 	stream.Serialize(VoxelRotors);
-	stream.Serialize(RotorLandedVoxelFiles);
+	stream.Serialize(RotorIdleVoxelFiles);
 	stream.Serialize(RotorMovingVoxelFiles);
+	stream.Serialize(RotorIdleRate);
+	stream.Serialize(RotorMovingRate);
 }
 
 
@@ -582,11 +608,11 @@ void AircraftTypeClass::Load_Rotor_Assets(void)
 
 	for (int rotor = 0; rotor < 4; ++rotor) {
 		VoxelDataStruct * voxelData[2] = {
-			&RotorLandedVoxels[rotor],
+			&RotorIdleVoxels[rotor],
 			&RotorMovingVoxels[rotor]
 		};
 		char const * voxelFiles[2] = {
-			RotorLandedVoxelFiles[rotor],
+			RotorIdleVoxelFiles[rotor],
 			RotorMovingVoxelFiles[rotor]
 		};
 

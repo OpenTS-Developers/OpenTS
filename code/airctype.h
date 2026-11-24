@@ -51,9 +51,19 @@ class AircraftTypeClass : public TechnoTypeClass
 		*/
 		int RotorCount;
 
-		char RotorLandedVoxelFiles[4][15 + 1];
+
+		/*
+		**	These control the voxel to display for the rotor anim while on the ground.
+		*/
+		char RotorIdleVoxelFiles[4][15 + 1];
+		int RotorIdleRate[4];
+		VoxelDataStruct RotorIdleVoxels[4];
+
+		/*
+		**	These control the voxel to display for the rotor anim while flying.
+		*/
 		char RotorMovingVoxelFiles[4][15 + 1];
-		VoxelDataStruct RotorLandedVoxels[4];
+		int RotorMovingRate[4];
 		VoxelDataStruct RotorMovingVoxels[4];
 
 		/*

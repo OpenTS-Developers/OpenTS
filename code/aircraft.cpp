@@ -644,11 +644,11 @@ void AircraftClass::Draw_SHP_Rotors(Point2D const& xy, Rect const& cliprect, Mat
 void AircraftClass::Draw_Voxel_Rotors(Point2D const& xy, Rect const& cliprect, Matrix3D const& matrix, VisualType visual, int brightness) const
 {
 	int const stage = Fetch_Stage();
-	char const* landedVoxelFiles[4] = {
-		Class->RotorLandedVoxelFiles[0],
-		Class->RotorLandedVoxelFiles[1],
-		Class->RotorLandedVoxelFiles[2],
-		Class->RotorLandedVoxelFiles[3]
+	char const* idleVoxelFiles[4] = {
+		Class->RotorIdleVoxelFiles[0],
+		Class->RotorIdleVoxelFiles[1],
+		Class->RotorIdleVoxelFiles[2],
+		Class->RotorIdleVoxelFiles[3]
 	};
 	char const* movingVoxelFiles[4] = {
 		Class->RotorMovingVoxelFiles[0],
@@ -665,7 +665,7 @@ void AircraftClass::Draw_Voxel_Rotors(Point2D const& xy, Rect const& cliprect, M
 
 	int artworkCount = 0;
 	for (int i = 0; i < 4; ++i) {
-		if (landedVoxelFiles[i][0] == '\0' && movingVoxelFiles[i][0] == '\0') {
+		if (idleVoxelFiles[i][0] == '\0' && movingVoxelFiles[i][0] == '\0') {
 			break;
 		}
 		artworkCount++;
@@ -701,7 +701,7 @@ void AircraftClass::Draw_Voxel_Rotors(Point2D const& xy, Rect const& cliprect, M
 		if (artworkCount > 0) {
 			int const artIndex = rotor % artworkCount;
 			voxelData = HeightAGL == 0
-				? &Class->RotorLandedVoxels[artIndex]
+				? &Class->RotorIdleVoxels[artIndex]
 				: &Class->RotorMovingVoxels[artIndex];
 		}
 
@@ -709,12 +709,16 @@ void AircraftClass::Draw_Voxel_Rotors(Point2D const& xy, Rect const& cliprect, M
 			&& voxelData->VoxLib != NULL
 			&& !voxelData->VoxLib->Load_Failed()
 			&& voxelData->VoxLib->Get_Layer_Count() > 0) {
-			int const phaseCount = HeightAGL == 0 ? 8 : 4;
-			int const rotationCount = phaseCount * 4;
-			float const rotation = (stage % rotationCount) * (float)(RAD_90 / phaseCount);
+			int const artIndex = rotor % artworkCount;
+			int const rotationRate = HeightAGL == 0
+				? Class->RotorIdleRate[artIndex]
+				: Class->RotorMovingRate[artIndex];
 
 			Matrix3D modelMatrix = matrix;
-			modelMatrix.Rotate_Z(rotation);
+			if (rotationRate > 0) {
+				float const rotation = (stage % rotationRate) * (float)(RAD_90 * 4.0 / rotationRate);
+				modelMatrix.Rotate_Z(rotation);
+			}
 
 			ShapeFlags_Type voxelFlags = ShapeFlags_Type(SHAPE_ALPHA | SHAPE_ZGRAD);
 			if (HeightAGL == 0) {
