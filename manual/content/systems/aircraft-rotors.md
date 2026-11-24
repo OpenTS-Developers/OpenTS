@@ -18,14 +18,22 @@ keys:
   - Rotor3TiltedAnims
   - Rotor4TiltedAnims
   - VoxelRotors
-  - Rotor1LandedVoxel
+  - Rotor1IdleVoxel
   - Rotor1MovingVoxel
-  - Rotor2LandedVoxel
+  - Rotor2IdleVoxel
   - Rotor2MovingVoxel
-  - Rotor3LandedVoxel
+  - Rotor3IdleVoxel
   - Rotor3MovingVoxel
-  - Rotor4LandedVoxel
+  - Rotor4IdleVoxel
   - Rotor4MovingVoxel
+  - Rotor1IdleRate
+  - Rotor2IdleRate
+  - Rotor3IdleRate
+  - Rotor4IdleRate
+  - Rotor1MovingRate
+  - Rotor2MovingRate
+  - Rotor3MovingRate
+  - Rotor4MovingRate
 ---
 
 OpenTS draws separate rotor artwork for a voxel-bodied aircraft when its `art.ini` image section sets [`Rotors=yes`](/keys/rotors/). The aircraft must have positive strength and be visible to the current player; a hidden aircraft's rotors are not drawn. [`VoxelRotors=yes`](/keys/voxelrotors/) selects VXL models; otherwise the engine uses SHP artwork.
@@ -40,21 +48,25 @@ If custom artwork is unavailable, rotor 1 and rotor 3 use `LROTOR.SHP`, while ro
 
 ## Voxel artwork
 
-With `VoxelRotors=yes`, [`Rotor1LandedVoxel`](/keys/rotor1landedvoxel/) through [`Rotor4LandedVoxel`](/keys/rotor4landedvoxel/) name the VXL models used at ground level. [`Rotor1MovingVoxel`](/keys/rotor1movingvoxel/) through [`Rotor4MovingVoxel`](/keys/rotor4movingvoxel/) name the models used above ground level, including while hovering. Each value is a base name of up to 15 characters; the engine adds `.VXL`.
+With `VoxelRotors=yes`, [`Rotor1IdleVoxel`](/keys/rotor1idleveloxel/) through [`Rotor4IdleVoxel`](/keys/rotor4idleveloxel/) name the VXL models used while idle. [`Rotor1MovingVoxel`](/keys/rotor1movingvoxel/) through [`Rotor4MovingVoxel`](/keys/rotor4movingvoxel/) name the models used above ground level, including while hovering. Each value is a base name of up to 15 characters; the engine adds `.VXL`.
 
 The engine counts consecutive rotor slots from rotor 1, stopping at the first slot where both voxel names are empty. It repeats that sequence for additional rotors. If the selected model is missing or fails to load, that rotor uses its built-in SHP. Voxel models do not use `Rotor#TiltedAnims`.
 
-The engine spins a voxel rotor around its local vertical axis without loading an HVA. It advances 11.25 degrees per stage while landed and 22.5 degrees per stage while airborne, completing a full turn after 32 or 16 stages, respectively. This keeps the angular step in line with the SHP rotor sequence.
+The engine spins a voxel rotor around its local vertical axis without loading an HVA.
+
+[`Rotor1IdleRate`](/keys/rotor1idlerate/) through [`Rotor4IdleRate`](/keys/rotor4idlerate/) set the idle turn time in frames. Their default is 32 frames. [`Rotor1MovingRate`](/keys/rotor1movingrate/) through [`Rotor4MovingRate`](/keys/rotor4movingrate/) set the moving or hovering turn time. Their default is 16 frames. Set a rate to `0` to stop that rotor state from rotating. These rates apply to the consecutive artwork sequence by rotor slot.
 
 ```ini title="art.ini"
 [MYHELI]
 Rotors=yes
 VoxelRotors=yes
 RotorCount=2
-Rotor1LandedVoxel=MYROTORIDLE
+Rotor1IdleVoxel=MYROTORIDLE
 Rotor1MovingVoxel=MYROTORFLY
+Rotor1IdleRate=32
+Rotor1MovingRate=16
 Rotor1FLH=32,0,48
-Rotor2LandedVoxel=MYROTORIDLE
+Rotor2IdleVoxel=MYROTORIDLE
 Rotor2MovingVoxel=MYROTORFLY
 Rotor2FLH=-32,0,48
 ```

@@ -50,27 +50,63 @@ targets:
   effect: added
 - type: key
   id: Rotor1LandedVoxel
+  effect: removed
+- type: key
+  id: Rotor2LandedVoxel
+  effect: removed
+- type: key
+  id: Rotor3LandedVoxel
+  effect: removed
+- type: key
+  id: Rotor4LandedVoxel
+  effect: removed
+- type: key
+  id: Rotor1IdleVoxel
   effect: added
 - type: key
   id: Rotor1MovingVoxel
   effect: added
 - type: key
-  id: Rotor2LandedVoxel
+  id: Rotor2IdleVoxel
   effect: added
 - type: key
   id: Rotor2MovingVoxel
   effect: added
 - type: key
-  id: Rotor3LandedVoxel
+  id: Rotor3IdleVoxel
   effect: added
 - type: key
   id: Rotor3MovingVoxel
   effect: added
 - type: key
-  id: Rotor4LandedVoxel
+  id: Rotor4IdleVoxel
   effect: added
 - type: key
   id: Rotor4MovingVoxel
+  effect: added
+- type: key
+  id: Rotor1IdleRate
+  effect: added
+- type: key
+  id: Rotor2IdleRate
+  effect: added
+- type: key
+  id: Rotor3IdleRate
+  effect: added
+- type: key
+  id: Rotor4IdleRate
+  effect: added
+- type: key
+  id: Rotor1MovingRate
+  effect: added
+- type: key
+  id: Rotor2MovingRate
+  effect: added
+- type: key
+  id: Rotor3MovingRate
+  effect: added
+- type: key
+  id: Rotor4MovingRate
   effect: added
 - type: key
   id: CustomRotor
@@ -82,7 +118,7 @@ targets:
 credit: [Orac]
 ---
 
-Set `VoxelRotors=yes` to use VXL rotor models with separate landed and airborne files. The engine spins each model through a full turn in 32 landed stages or 16 airborne stages without an HVA; a missing or invalid model falls back to the built-in SHP rotor.
+Set `VoxelRotors=yes` to use VXL rotor models with separate idle and moving files. `Rotor#IdleRate` and `Rotor#MovingRate` set the full-turn frame counts. The defaults preserve 32 idle frames and 16 moving frames; `0` stops rotation. A missing or invalid model falls back to the built-in SHP rotor.
 
 SHP mode remains the default and continues to support direction-specific artwork.
 

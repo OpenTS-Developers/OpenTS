@@ -19078,8 +19078,25 @@ Rotor1FLH:
       source: code/airctype.cpp
       guard: null
     level: AircraftTypeClass
-Rotor1LandedVoxel:
-  key: Rotor1LandedVoxel
+Rotor1IdleRate:
+  key: Rotor1IdleRate
+  scopes:
+  - applies_to: *id024
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: RotorIdleRate
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+Rotor1IdleVoxel:
+  key: Rotor1IdleVoxel
   scopes:
   - applies_to: *id024
     file: art.ini
@@ -19092,6 +19109,23 @@ Rotor1LandedVoxel:
       default_candidate: null
       declared_in: AircraftTypeClass
       member: null
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+Rotor1MovingRate:
+  key: Rotor1MovingRate
+  scopes:
+  - applies_to: *id024
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: RotorMovingRate
       source: code/airctype.cpp
       guard: null
     level: AircraftTypeClass
@@ -19163,8 +19197,25 @@ Rotor2FLH:
       source: code/airctype.cpp
       guard: null
     level: AircraftTypeClass
-Rotor2LandedVoxel:
-  key: Rotor2LandedVoxel
+Rotor2IdleRate:
+  key: Rotor2IdleRate
+  scopes:
+  - applies_to: *id024
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: RotorIdleRate
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+Rotor2IdleVoxel:
+  key: Rotor2IdleVoxel
   scopes:
   - applies_to: *id024
     file: art.ini
@@ -19177,6 +19228,23 @@ Rotor2LandedVoxel:
       default_candidate: null
       declared_in: AircraftTypeClass
       member: null
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+Rotor2MovingRate:
+  key: Rotor2MovingRate
+  scopes:
+  - applies_to: *id024
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: RotorMovingRate
       source: code/airctype.cpp
       guard: null
     level: AircraftTypeClass
@@ -19248,8 +19316,25 @@ Rotor3FLH:
       source: code/airctype.cpp
       guard: null
     level: AircraftTypeClass
-Rotor3LandedVoxel:
-  key: Rotor3LandedVoxel
+Rotor3IdleRate:
+  key: Rotor3IdleRate
+  scopes:
+  - applies_to: *id024
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: RotorIdleRate
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+Rotor3IdleVoxel:
+  key: Rotor3IdleVoxel
   scopes:
   - applies_to: *id024
     file: art.ini
@@ -19262,6 +19347,23 @@ Rotor3LandedVoxel:
       default_candidate: null
       declared_in: AircraftTypeClass
       member: null
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+Rotor3MovingRate:
+  key: Rotor3MovingRate
+  scopes:
+  - applies_to: *id024
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: RotorMovingRate
       source: code/airctype.cpp
       guard: null
     level: AircraftTypeClass
@@ -19333,8 +19435,25 @@ Rotor4FLH:
       source: code/airctype.cpp
       guard: null
     level: AircraftTypeClass
-Rotor4LandedVoxel:
-  key: Rotor4LandedVoxel
+Rotor4IdleRate:
+  key: Rotor4IdleRate
+  scopes:
+  - applies_to: *id024
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: RotorIdleRate
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+Rotor4IdleVoxel:
+  key: Rotor4IdleVoxel
   scopes:
   - applies_to: *id024
     file: art.ini
@@ -19347,6 +19466,23 @@ Rotor4LandedVoxel:
       default_candidate: null
       declared_in: AircraftTypeClass
       member: null
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+Rotor4MovingRate:
+  key: Rotor4MovingRate
+  scopes:
+  - applies_to: *id024
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: RotorMovingRate
       source: code/airctype.cpp
       guard: null
     level: AircraftTypeClass

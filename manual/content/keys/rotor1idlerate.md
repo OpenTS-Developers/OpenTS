@@ -1,0 +1,9 @@
+---
+key: Rotor1IdleRate
+summary: Frames required for rotor 1 to complete one turn while idle.
+when_omitted:
+  kind: value
+  value: "32"
+---
+
+`Rotor1IdleRate` sets the frame count for rotor 1 to complete a 360-degree turn while idle. `0` stops its idle rotation. [Aircraft rotors](/systems/aircraft-rotors/#voxel-artwork) explains voxel rotor timing.
