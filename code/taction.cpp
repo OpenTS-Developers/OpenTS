@@ -75,6 +75,7 @@
 #include "rules.h"
 #include "savestream.h"
 #include "scenario.h"
+#include "scheme.h"
 #include "session.h"
 #include "sun.h"
 #include "super.h"
@@ -102,8 +103,10 @@
 #include "draw.hh"
 #include "need.hh"
 
+#include <chrono>
 #include <cstdio>
 #include <limits>
+#include <thread>
 
 DynamicVectorClass<TActionClass *> Actions;
 
@@ -1113,8 +1116,7 @@ bool TActionClass::TAction_CHANGE_HOUSE(HouseClass * , ObjectClass * , TriggerCl
 
 /// <summary>
 /// Assigns the triggering object to a numbered group.
-/// This routine handles the trigger action that drops an object into one of the player's
-/// team hotkey groups. Anything that is not a techno is quietly ignored.
+/// Anything that is not a techno is ignored.
 /// </summary>
 /// <param name="object">The object that sprung the trigger.</param>
 bool TActionClass::TAction_SET_GROUP_ID(HouseClass * , ObjectClass * object, TriggerClass *, Cell const & )
@@ -1155,15 +1157,24 @@ bool TActionClass::TAction_ALL_CHANGE_HOUSE(HouseClass * house, ObjectClass * , 
 
 /// <summary>
 /// Displays a line of tutorial text to the player.
-/// This routine handles the trigger action that posts a message onto the tactical map. The
-/// message expires after the message delay specified in the rules.
+/// TriggerRect.X picks the color by its position in [Colors], and an unknown position uses
+/// the local player's color. A positive TriggerRect.Y sets the display time in seconds;
+/// otherwise the message uses the rules' message delay.
 /// </summary>
 bool TActionClass::TAction_TEXT_TRIGGER(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	/*
-	**	Display a text message overlayed onto the tactical map.
-	*/
-	Session.Messages.Add_Message(NULL, 0, TutorialText.Fetch(Data.Value), 0, TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), Rule->MessageDelay * TICKS_PER_MINUTE);
+	int duration = Rule->MessageDelay * TICKS_PER_MINUTE;
+	if (TriggerRect.Y > 0) {
+		// The message list adds the timeout to TickCount as an int, so leave room for that sum.
+		duration = std::min(TriggerRect.Y, std::numeric_limits<int>::max() / 2 / TIMER_SECOND) * TIMER_SECOND;
+	}
+
+	int color = TriggerRect.X * 2;
+	if (color < 0 || color >= ColorSchemes.Count()) {
+		color = PlayerPtr->Scheme;
+	}
+
+	Session.Messages.Add_Message(NULL, 0, TutorialText.Fetch(Data.Value), color, TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), duration);
 	return(true);
 }
 
@@ -2058,7 +2069,7 @@ bool TActionClass::TAction_ZOOM_IN(HouseClass * , ObjectClass * , TriggerClass *
 	Map.Flag_To_Redraw();
 	Map.Render();
 
-	Sleep(1000);
+	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	return(true);
 }
 
@@ -2510,7 +2521,7 @@ bool TActionClass::TAction_GIVE_CREDITS(HouseClass * , ObjectClass * , TriggerCl
 	int amount = TriggerRect.X;
 	if (amount >= 0) {
 		if (hptr->Credits > std::numeric_limits<int>::max() - amount) return(false);
-		hptr->Refund_Money(amount);
+		hptr->Refund_Money(amount, INCOME_TRIGGER);
 	} else {
 		if (amount == std::numeric_limits<int>::min()) return(false);
 		hptr->Spend_Money(-amount);
@@ -3010,11 +3021,16 @@ void TActionClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
 
-	if (Next != NULL) crc(Next->Fetch_ID());
+	if (Next != NULL) crc(Next->HeapID);
 	crc(Action);
-	if (Team != NULL) crc(Team->Fetch_ID());
-	if (Tag != NULL) crc(Tag->Fetch_ID());
-	if (Trigger != NULL) crc(Trigger->Fetch_ID());
+	if (Team != NULL) crc(Team->HeapID);
+	crc(TriggerRect.X);
+	crc(TriggerRect.Y);
+	crc(TriggerRect.Width);
+	crc(TriggerRect.Height);
+	crc((int)EffectLocation);
+	if (Tag != NULL) crc(Tag->HeapID);
+	if (Trigger != NULL) crc(Trigger->HeapID);
 	crc((int)Data.Value);
 }
 

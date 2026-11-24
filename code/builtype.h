@@ -737,9 +737,6 @@ class BuildingTypeClass : public TechnoTypeClass
 		 */
 		bool IsTurretAnimExclusive;
 
-		/// Unused
-		bool UnusedBTypeBool1;
-
 		/*
 		 * If this building's door animation carries a second set of frames for when the
 		 * structure is damaged, then this flag will be true. The damaged frames follow the
@@ -803,25 +800,19 @@ class BuildingTypeClass : public TechnoTypeClass
 		char CloakRadiusInCells;
 
 		/*
-		 * If this building's shape data is to be loaded the first time it is asked for
-		 * rather than up front with the rest of the theater art, then this flag will be
-		 * true. It exists to keep seldom seen structures out of memory.
+		 * If this building's shape data is loaded through the file layer when a scenario
+		 * starts or a saved game is loaded, rather than fetched from a cached archive, then
+		 * this flag will be true. The file layer also finds loose files and archives that are
+		 * not cached.
 		 */
 		bool IsDemandLoad;
 
 		/*
-		 * If the construction animation is to be loaded only when a building of this type
-		 * is actually placed, then this flag will be true. It trades a load hitch at
-		 * placement time for a smaller memory footprint.
+		 * If the construction animation is loaded through the file layer when a scenario
+		 * starts or a saved game is loaded, then this flag will be true. Loading it sets the
+		 * construction animation's frame count and rate.
 		 */
 		bool IsDemandLoadBuildup;
-
-		/*
-		 * If the construction animation may be thrown away once the building is up, then
-		 * this flag will be true. It keeps rarely rebuilt structures from holding their
-		 * buildup shapes for the whole mission.
-		 */
-		bool IsFreeBuildup;
 
 		/*
 		 * If owning this building teaches the house to weigh its targets intelligently,
@@ -872,6 +863,7 @@ class BuildingTypeClass : public TechnoTypeClass
 		static StructType From_Name(char const * name);
 		static StructType From_Given_Name(char const * name);
 		static void Init(TheaterType theater);
+		static void Load_Uncached_Art(TheaterType theater);
 		static void Fetch_Z_Data(void);
 		static void Post_Load_Game(void);
 		static void One_Time(void);
@@ -895,11 +887,9 @@ class BuildingTypeClass : public TechnoTypeClass
 		virtual bool Create_And_Place(Cell const & cell, HouseClass * house = NULL) const override;
 		virtual ObjectClass * Create_One_Of(HouseClass * house) const override;
 		virtual Cell const * Occupy_List(bool placement=false) const override;
-		virtual void const * Get_Image_Data(void) const override;
 		void Fetch_Building_Normal_Image(TheaterType theater);
 		void Fetch_Building_Voxel_Image(void);
 		virtual void const * Get_Buildup_Data(void) const;
-		void Free_Buildup_Data(void);
 		virtual bool Legal_Placement(Cell const & pos, HouseClass * house = NULL) const override;
 
 		bool Is_Factory(void) const {return(ToBuild != RTTI_NONE);}
@@ -964,6 +954,9 @@ class BuildingTypeClass : public TechnoTypeClass
 		static Cell const ExitLists[BSIZE_COUNT][30];
 
 		void Init_Anim(BStateType state, int start, int count, int rate) const;
+		void Load_Uncached_Shapes(TheaterType theater);
+		void Buildup_Name(char * fullname, TheaterType theater) const;
+		void Init_Buildup_Anim(void);
 };
 
 inline BuildingTypeClass * AbstractClass::As_BuildingTypeClass(void) { return(dynamic_cast<BuildingTypeClass *>(this)); }

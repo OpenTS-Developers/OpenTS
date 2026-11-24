@@ -18,7 +18,7 @@ template<class T> class DynamicVectorClass;
 class LaserDrawClass : public StageClass
 {
 	public:
-		LaserDrawClass(Coord start, Coord end, int zadjust, bool,
+		LaserDrawClass(Coord start, Coord end, int zadjust,
 			RGBClass inner_color, RGBClass outer_color, RGBClass outer_spread,
 			int duration, bool blinks, bool fades, float start_intensity, float end_intensity);
 		~LaserDrawClass(void);
@@ -45,9 +45,6 @@ class LaserDrawClass : public StageClass
 		 * correctly against it.
 		 */
 		int ZAdjust;
-
-		/// Unused
-		bool UnusedBool1;
 
 		/*
 		 * This is the color of the beam's thin core, drawn as a single line from one end to

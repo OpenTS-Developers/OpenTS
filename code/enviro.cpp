@@ -90,7 +90,7 @@ void EnvironmentClass::Restore(void)
 		money = std::min<double>(money, cap);
 	}
 
-	PlayerPtr->Refund_Money((int)money);
+	PlayerPtr->Refund_Money((int)money, INCOME_STARTING_CARRY_OVER);
 	PlayerPtr->Control.InitialCredits += (int)money;
 
 	if (Scen->IsInheritTimer) {

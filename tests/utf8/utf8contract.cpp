@@ -156,6 +156,49 @@ TEST_CASE("validity respects the length given and not the bytes after it")
 }
 
 
+TEST_CASE("overlong forms, surrogates, values past U+10FFFF, and stray continuation bytes are not valid")
+{
+	CHECK_MESSAGE(!UTF8::Is_Valid("\xC0\xAF"), "an overlong two byte form");
+	CHECK_MESSAGE(!UTF8::Is_Valid("\xE0\x80\xAF"), "an overlong three byte form");
+	CHECK_MESSAGE(!UTF8::Is_Valid("\xF0\x80\x80\xAF"), "an overlong four byte form");
+	CHECK_MESSAGE(!UTF8::Is_Valid("\xED\xA0\x80"), "the first surrogate");
+	CHECK_MESSAGE(!UTF8::Is_Valid("\xED\xBF\xBF"), "the last surrogate");
+	CHECK_MESSAGE(!UTF8::Is_Valid("\xF4\x90\x80\x80"), "U+110000");
+	CHECK_MESSAGE(!UTF8::Is_Valid("\xF5\x80\x80\x80"), "a lead byte above F4");
+	CHECK_MESSAGE(!UTF8::Is_Valid("a\x80" "b"), "a stray continuation byte");
+	CHECK_MESSAGE(!UTF8::Is_Valid("\xE2\x82"), "a three byte sequence cut short");
+	CHECK_MESSAGE(!UTF8::Is_Valid("\xF0\x9F\x98"), "a four byte sequence cut short");
+	CHECK_MESSAGE(!UTF8::Is_Valid("\xE2\x82" "A"), "a sequence broken by an ASCII byte");
+
+	CHECK_MESSAGE(UTF8::Is_Valid("\xED\x9F\xBF"), "U+D7FF, just below the surrogates");
+	CHECK_MESSAGE(UTF8::Is_Valid("\xEE\x80\x80"), "U+E000, just above them");
+	CHECK_MESSAGE(UTF8::Is_Valid("\xF4\x8F\xBF\xBF"), "U+10FFFF");
+}
+
+
+TEST_CASE("a sequence reports its length, and a malformed one the maximal subpart one replacement stands for")
+{
+	auto check = [](std::string_view text, int length, int subpart) {
+		INFO("text of ", text.size(), " bytes starting ", (unsigned)(unsigned char)(text.empty() ? 0 : text[0]));
+		int got = -1;
+		CHECK(UTF8::Sequence_At(text, got) == length);
+		CHECK(got == subpart);
+	};
+
+	check("A", 1, 1);
+	check("\xE2\x82\xAC" "A", 3, 3);
+	check("\xF0\x9F\x98\x80", 4, 4);
+	check("\xE2\x82" "A", 0, 2);
+	check("\xE2\x82", 0, 2);
+	check("\xF0\x9F\x98" "A", 0, 3);
+	check("\xC0\xAF", 0, 1);
+	check("\xED\xA0\x80", 0, 1);
+	check("\xF4\x90\x80\x80", 0, 1);
+	check("\x80\x80", 0, 1);
+	check("", 0, 0);
+}
+
+
 TEST_CASE("stepping back lands on the lead of the previous character")
 {
 	char const * text = "a\xC3\xA9" "b";

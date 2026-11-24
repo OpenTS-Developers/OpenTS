@@ -14,7 +14,7 @@ on:
       - "CMakeLists.txt"
       - ".github/workflows/manual-pages.yml"
   push:
-    branches: [main]
+    branches: [main, "release/**"]
     paths:
       - "manual/**"
       - "README.md"
@@ -36,7 +36,7 @@ jobs:
     # A draft pull request validates nothing; the ready_for_review trigger above
     # starts the check when the pull request is marked ready.
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     concurrency:
       group: manual-validation-${{ github.event.pull_request.number || github.ref }}
       cancel-in-progress: true
@@ -89,19 +89,19 @@ jobs:
         run: python manual/tools/manage.py check --base-ref ${{ github.event.pull_request.base.sha }}
 
       # A branch creation has no pre-push revision, and a force-push names one
-      # that the rewritten history no longer contains.
+      # that the rewritten history no longer contains. Both compare against the
+      # point where the branch left main, which is HEAD itself on main.
       - name: Run complete manual check for a push
         if: github.event_name == 'push'
         shell: bash
         run: |
           base="${{ github.event.before }}"
-          if [ "$base" != "0000000000000000000000000000000000000000" ] \
-              && git cat-file -e "$base^{commit}" 2>/dev/null; then
-            python manual/tools/manage.py check --base-ref "$base"
-          else
-            echo "Pre-push revision unavailable; comparing against HEAD."
-            python manual/tools/manage.py check
+          if [ "$base" = "0000000000000000000000000000000000000000" ] \
+              || ! git cat-file -e "$base^{commit}" 2>/dev/null; then
+            base="$(git merge-base HEAD origin/main)"
+            echo "Pre-push revision unavailable; comparing against ${base}."
           fi
+          python manual/tools/manage.py check --base-ref "$base"
 
       - name: Run complete manual check
         if: github.event_name == 'workflow_dispatch'
@@ -137,7 +137,7 @@ jobs:
     name: Deploy manual to GitHub Pages
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: validate-and-build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       pages: write

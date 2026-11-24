@@ -14,7 +14,9 @@
 #include <windows.h>
 
 #include <cstring>
+#include <float.h>
 #include <intrin.h>
+#include <math.h>
 #include <string>
 
 #include "getcpu.h"
@@ -79,6 +81,34 @@ TEST_CASE("the processor detection reports the family and vendor CPUID does")
 	 * Get_CPU_Type copies out is the vendor followed by that separator.
 	 */
 	CHECK_MESSAGE(std::string(reported) == vendor + " ", "the vendor string is the vendor and a space");
+}
+
+
+TEST_CASE("resetting the floating-point state undoes a changed rounding, denormal and exception setting")
+{
+#if defined(_M_IX86)
+	unsigned int const mask = _MCW_EM | _MCW_RC | _MCW_PC | _MCW_DN;
+	unsigned int const changed = _RC_CHOP | _PC_24 | _DN_FLUSH | (_MCW_EM & ~_EM_ZERODIVIDE);
+#else
+	unsigned int const mask = _MCW_EM | _MCW_RC | _MCW_DN;
+	unsigned int const changed = _RC_CHOP | _DN_FLUSH | (_MCW_EM & ~_EM_ZERODIVIDE);
+#endif
+
+	// A pending status flag would trap once its exception is unmasked.
+	_clearfp();
+
+	unsigned int word = 0;
+	REQUIRE(_controlfp_s(&word, changed, mask) == 0);
+	CHECK((word & mask) == changed);
+
+	Reset_Float_State();
+
+	REQUIRE(_controlfp_s(&word, 0, 0) == 0);
+	CHECK((word & mask) == (_CW_DEFAULT & mask));
+
+#if defined(_M_X64)
+	CHECK(_get_FMA3_enable() == 0);
+#endif
 }
 
 

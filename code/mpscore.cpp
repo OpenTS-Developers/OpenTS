@@ -77,8 +77,6 @@ class MultiScore : public MSEngine
 		int YPos;
 		Surface * ScoreSurface;
 		MSFont * Font;
-		/// Unused
-		MSFont * UnusedFont;
 		MPlayerScoreType * Scores[MAX_PLAYERS];
 
 };
@@ -121,8 +119,7 @@ MultiScore::MultiScore(void) :
 	XPos(0),
 	YPos(0),
 	ScoreSurface(NULL),
-	Font(NULL),
-	UnusedFont(NULL)
+	Font(NULL)
 {
 
 }
@@ -263,10 +260,6 @@ void MultiScore::Deinit(void)
 	if (Font != NULL) {
 		delete Font;
 		Font = NULL;
-	}
-	if (UnusedFont != NULL) {
-		delete UnusedFont;
-		UnusedFont = NULL;
 	}
 	if (ScoreSurface != NULL) {
 		delete ScoreSurface;

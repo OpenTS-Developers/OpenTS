@@ -127,6 +127,7 @@
 #include "classids.h"
 #include "combat.h"
 #include "conquer.h"
+#include "ctrlgroup.h"
 #include "dbgprint.h"
 #include "draw.h"
 #include "drive.h"
@@ -255,7 +256,6 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 	LastRenderRect(RECT_NONE),
 	LastRenderCoord(COORD_NONE),
 	LastRenderOffset(Point2D(0,0)),
-	UnusedBuildingBool1(false),
 	IsDamagedAnims(false),
 	IsFogged(false),
 	HasBuildupData(false),
@@ -327,7 +327,6 @@ BuildingClass::~BuildingClass(void)
 	Limbo();
 	Buildings.Delete(this);
 	End_Anim(BANIM_ALL);
-	Class->Free_Buildup_Data();
 
 	if (GameActive && Class != NULL && Class->IsCloakGenerator) {
 		Disable_Cloak_Generator();
@@ -1090,10 +1089,10 @@ void BuildingClass::Draw_Extras(Point2D & xy, Rect & rect)
 			if (in_front) {
 				if (anim != NULL) {
 					if (_make_visible) {
-						anim->Make_Visible();
+						anim->Draw.IsInvisible = false;
 					}
 					anim->Render(TacticalRect, true, false);
-					anim->Make_Invisible();
+					anim->Draw.IsInvisible = true;
 				}
 			}
 
@@ -1102,10 +1101,10 @@ void BuildingClass::Draw_Extras(Point2D & xy, Rect & rect)
 			if (!in_front) {
 				if (anim != NULL) {
 					if (_make_visible) {
-						anim->Make_Visible();
+						anim->Draw.IsInvisible = false;
 					}
 					anim->Render(TacticalRect, true, false);
-					anim->Make_Invisible();
+					anim->Draw.IsInvisible = true;
 				}
 			}
 		}
@@ -1934,10 +1933,6 @@ bool BuildingClass::Unlimbo(Coord const & coord, Dir256 dir)
 	*/
 	if (BASECLASS::Unlimbo(coord, dir)) {
 
-		if (Class->IsCloakGenerator) {
-			House->HasCloakGenerator = true;
-		}
-
 		if (!IsActive) {
 			return(true);
 		}
@@ -2479,7 +2474,6 @@ void BuildingClass::Init(void)
 		if (Class->Get_Buildup_Data() == NULL) {
 			IsAllowedToSell = false;
 		} else {
-			Class->Free_Buildup_Data();
 			HasBuildupData  = true;
 		}
 	}
@@ -3615,7 +3609,7 @@ void BuildingClass::Place_Free_Unit(void)
 	if (type->Fetch_RTTI() == RTTI_AIRCRAFTTYPE) {
 		AircraftClass * air = Place_Free_Aircraft(static_cast<AircraftTypeClass const *>(type));
 		if (air == NULL) {
-			House->Refund_Money(type->Raw_Cost());
+			House->Refund_Money(type->Raw_Cost(), INCOME_REFUND_FREE_UNIT);
 			return;
 		}
 
@@ -3657,7 +3651,7 @@ void BuildingClass::Place_Free_Unit(void)
 				**	to the owner and then bail.
 				*/
 				if (newcell == CELL_NONE || !object->Unlimbo(newcell, DIR_SW)) {
-					House->Refund_Money(type->Raw_Cost());
+					House->Refund_Money(type->Raw_Cost(), INCOME_REFUND_FREE_UNIT);
 					delete object;
 				} else {
 					placed = true;
@@ -3683,7 +3677,7 @@ void BuildingClass::Place_Free_Unit(void)
 		**	If the object could not be created in the first place, then give
 		**	the full refund price to the owning player.
 		*/
-		House->Refund_Money(type->Cost_Of(House));
+		House->Refund_Money(type->Cost_Of(House), INCOME_REFUND_FREE_UNIT);
 	}
 }
 
@@ -4336,10 +4330,6 @@ bool BuildingClass::Captured(HouseClass * newowner)
 {
 	if (newowner != House) {
 
-		if (Class->IsCloakGenerator) {
-			newowner->HasCloakGenerator = true;
-		}
-
 		/*
 		**	Make sure the capturer isn't spying on his own building, and if
 		**	it was a radar facility, update the target house's RadarSpied field.
@@ -4368,9 +4358,7 @@ bool BuildingClass::Captured(HouseClass * newowner)
 		/*
 		**	Add this building to the list of buildings captured this game. For internet stats purposes.
 		*/
-		if (Session.Type == GAME_INTERNET) {
-			newowner->CapturedBuildings->Increment_Unit_Total (Class->HeapID);
-		}
+		newowner->CapturedBuildings->Increment_Unit_Total(Class->HeapID);
 
 		/*
 		**	If there is something loaded, then it gets captured as well.
@@ -4857,7 +4845,6 @@ int BuildingClass::Do_MISSION_CONSTRUCTION(void)
 				if (!Class->IsLaserFence) {
 					PrimaryFacing.Set(Class->StartFace);
 				}
-				Class->Free_Buildup_Data();
 			}
 			break;
 
@@ -4955,7 +4942,7 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 			if (UpgradeLevel) {
 				const BuildingTypeClass *upgrade = Upgrades[UpgradeLevel - 1];
 				BuildingClass *uptr = (BuildingClass *)upgrade->Create_One_Of(House);
-				House->Refund_Money(uptr->Refund_Amount());
+				House->Refund_Money(uptr->Refund_Amount(), INCOME_SOLD_UPGRADE);
 				delete uptr;
 				Remove_Upgrade();
 				House->RecalcPower = true;
@@ -5147,6 +5134,7 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 							unit->Strength = std::max(unit->Strength, 1);
 							unit->ActLike = ActLike;
 							unit->Group = Group;
+							ControlGroups.Transfer(this, unit);
 							unit->Veterancy.Set_Experience(Veterancy.Get_Experience(), false);
 							unit->LimpetType = LimpetType;
 							unit->LimpetSpeedFactor = LimpetSpeedFactor;
@@ -5184,11 +5172,11 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 							**	If, for some strange reason, the MCV could not be placed on the
 							**	map, then give the player some money to compensate.
 							*/
-							House->Refund_Money(money);
+							House->Refund_Money(money, INCOME_REFUND_UNDEPLOY);
 							delete unit;
 						}
 					} else {
-						House->Refund_Money(Refund_Amount());
+						House->Refund_Money(Refund_Amount(), INCOME_REFUND_UNDEPLOY);
 					}
 					Detach_All();
 					Delete_Me();
@@ -5220,7 +5208,7 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 					/*
 					**	The player gets part of the money back for the sell.
 					*/
-					House->Refund_Money(Refund_Amount());
+					House->Refund_Money(Refund_Amount(), INCOME_SOLD_BUILDING);
 					//House->Stole(-Refund_Amount());
 					Limbo();
 
@@ -5228,7 +5216,7 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 					int i = storage->First_Used_Slot();
 					while (i != -1) {
 						int amount = storage->Decrease_Amount(storage->Get_Amount(i), i);
-						House->Harvested(amount, TiberiumType(i));
+						House->Harvested(amount, TiberiumType(i), INCOME_NONE);
 						i = storage->First_Used_Slot();
 					}
 
@@ -7448,7 +7436,7 @@ void BuildingClass::Charging_AI(void)
 				if (IsCharging) {
 					BuildingStage.Graphic_Logic();
 //					if (stagechange) {
-						if (BuildingStage.Fetch_Stage() >= (Anims[BANIM_TURRET] != NULL ? Anims[BANIM_TURRET]->Class->LoopEnd : 12)) {
+						if (BuildingStage.Fetch_Stage() >= (Anims[BANIM_TURRET] != NULL ? Anims[BANIM_TURRET]->Class->Sequence().LoopEnd : 12)) {
 							IsCharged = true;
 							IsCharging = false;
 							Set_Rate(0);
@@ -7630,7 +7618,7 @@ void BuildingClass::Produce_Cash_AI(void)
 	}
 
 	if (amount > 0) {
-		House->Refund_Money(amount);
+		House->Refund_Money(amount, INCOME_BUILDING_CASH);
 	} else {
 		House->Spend_Money(-amount);
 	}
@@ -7657,7 +7645,7 @@ void BuildingClass::Produce_Cash_Startup(void)
 	}
 
 	IsProduceCashStartupPaid = true;
-	House->Refund_Money(Class->ProduceCashStartup);
+	House->Refund_Money(Class->ProduceCashStartup, INCOME_BUILDING_STARTUP);
 }
 
 
@@ -7959,12 +7947,12 @@ void BuildingClass::Create_Anim(char const * name, BAnimType anim, bool damaged,
 		Coord coord (Render_Coord() + TacticalMap->Pixel_To_Coord_Absolute(Class->AnimData[anim].Location));
 		AnimClass * animptr = new AnimClass(AnimTypes[animtype], coord, delay, 1, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ZREAD));
 
-		animptr->ZAdjust = Class->AnimData[anim].ZAdjust;
+		animptr->Draw.ZAdjust = Class->AnimData[anim].ZAdjust;
 		animptr->YSortAdjust = Class->AnimData[anim].YSort;
 		animptr->IsBuildingAnim = true;
 
 		if (IsFogged) {
-			animptr->IsFogged = true;
+			animptr->Draw.IsFogged = true;
 		}
 
 		Set_Anim_Translucency(TranslucencyLevel);
@@ -7980,12 +7968,12 @@ void BuildingClass::Create_Anim(char const * name, BAnimType anim, bool damaged,
 		Anims[anim] = animptr;
 
 		if (animptr->Class->IsShouldUseCellDrawer) {
-			animptr->AlternativeDrawer = ColorSchemes[House->Scheme]->Converter;
-			animptr->AlternativeBrightness = Apparent_Brightness();
+			animptr->Draw.AlternativeDrawer = ColorSchemes[House->Scheme]->Converter;
+			animptr->Draw.AlternativeBrightness = Apparent_Brightness();
 		}
 
 		if (anim == BANIM_TURRET && Class->IsBarrelAnimAVoxel) {
-			animptr->Make_Invisible();
+			animptr->Draw.IsInvisible = true;
 		}
 	}
 }
@@ -8074,8 +8062,8 @@ void BuildingClass::Set_Anim_Drawer(ConvertClass * drawer, int brightness)
 		AnimClass * anim = Anims[i];
 		if (anim != NULL) {
 			if (anim->Class->IsShouldUseCellDrawer) {
-				anim->AlternativeDrawer = drawer;
-				anim->AlternativeBrightness = brightness;
+				anim->Draw.AlternativeDrawer = drawer;
+				anim->Draw.AlternativeBrightness = brightness;
 			}
 			Set_Anim_Translucency(TranslucencyLevel);
 		}
@@ -8114,7 +8102,7 @@ void BuildingClass::Set_Anim_Translucency(int translucency)
 
 	for (int i = 0; i < BANIM_COUNT; i++) {
 		if (Anims[i] != NULL) {
-			Anims[i]->TranslucencyLevel = trans;
+			Anims[i]->Draw.TranslucencyLevel = trans;
 		}
 	}
 }
@@ -9035,7 +9023,6 @@ void BuildingClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsCharged);
 	stream.Serialize(IsCaptured);
 	stream.Serialize(HasOpened);
-	stream.Serialize(UnusedBuildingBool1);
 	stream.Serialize(IsDamagedAnims);
 	stream.Serialize(IsFogged);
 	stream.Serialize(IsRepairing);
@@ -9094,6 +9081,8 @@ bool BuildingClass::Ready_To_Commence(void)
 void BuildingClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
+	if (Class != NULL) crc(Class->Fetch_ID());
+	if (Factory != NULL) crc(Factory->Fetch_ID());
 	crc((int)CountDown);
 	crc(BState);
 	crc(QueueBState);
@@ -9106,16 +9095,26 @@ void BuildingClass::Compute_CRC(CRCEngine & crc) const
 		crc(AnimToTrack->Fetch_ID());
 	}
 	crc((int)PlacementDelay);
+	for (int i = 0; i < BANIM_COUNT; i++) {
+		if (Anims[i] != NULL) crc(Anims[i]->Fetch_ID());
+	}
+	for (int i = 0; i < BUILDING_UPGRADE_MAX; i++) {
+		if (Upgrades[i] != NULL) crc(Upgrades[i]->Fetch_ID());
+	}
+	crc(LastSuperWeaponIndex);
 	crc(TurretIndex);
+	crc(GateTimer.Time_Spent());
+	crc(GateTimer.Progress());
 	crc(LaserFenceFrame);
 	crc(FirestormWallFrame);
+	crc(BuildingStage.Fetch_Stage());
+	crc(BuildingStage.Fetch_Rate());
+	crc(BuildingStage.Fetch_Step());
 	crc(IsOn);
-	crc(IsPoweredOn);
 	crc(IsToRebuild);
 	crc(IsToRepair);
 	crc(IsAllowedToSell);
 	crc(IsReadyToCommence);
-	crc(IsRepairing);
 	crc(IsWrenchVisible);
 	crc(IsGoingToBlow);
 	crc(IsSurvivorless);
@@ -9123,9 +9122,18 @@ void BuildingClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsCharged);
 	crc(IsCaptured);
 	crc(HasOpened);
-	crc(UnusedBuildingBool1);
 	crc(IsDamagedAnims);
-	crc(Brightness);
+	crc(IsRepairing);
+	crc(HasBuildupData);
+	crc(IsPoweredOn);
+	crc((int)CloakGeneratorState);
+	crc(CurrentCloakRadius);
+	crc((int)CloakFieldCells.size());
+	for (std::uint8_t cell : CloakFieldCells) {
+		crc((int)cell);
+	}
+	crc(IsSensing);
+	crc(TranslucencyLevel);
 	crc(UpgradeLevel);
 	crc((int)ProduceCashTimer);
 	crc(ProduceCashRemaining);
@@ -9601,7 +9609,7 @@ void BuildingClass::Update_FS_Wall_State(void)
 		}
 	} else {
 		Anims[BANIM_SPECIAL_ONE] = new AnimClass(Rule->FirestormActiveAnim, PositionCoord - Coord(CELL_LEPTON_W / 2, CELL_LEPTON_H / 2, 0), 1, 0, ShapeFlags_Type(SHAPE_WIN_REL|SHAPE_CENTER), -10);
-		Anims[BANIM_SPECIAL_ONE]->IsFogged = IsFogged;
+		Anims[BANIM_SPECIAL_ONE]->Draw.IsFogged = IsFogged;
 	}
 
 	if (active) {
@@ -10180,7 +10188,7 @@ void BuildingClass::Sell_All_Upgrades(void)
 	char level = UpgradeLevel;
 	while (level > 0) {
 		int cost = Upgrades[level - 1]->Cost_Of(House);
-		House->Refund_Money(cost);
+		House->Refund_Money(cost, INCOME_SOLD_UPGRADE);
 		Remove_Upgrade();
 		House->RecalcPower = true;
 		House->RecalcRadar = true;

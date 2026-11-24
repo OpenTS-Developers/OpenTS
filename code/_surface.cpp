@@ -13,11 +13,8 @@
 
 Surface * TileSurface;
 Surface * SidebarSurface;
-Surface * Unk1Surface;
 Surface * VisibleSurface;
 Surface * HiddenSurface;
 Surface * AlternateSurface;
 Surface * LogicalSurface;
-Surface * Unk2Surface;
 Surface * CompositeSurface;
-Surface * PreviewSurface;

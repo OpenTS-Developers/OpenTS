@@ -688,8 +688,8 @@ void SuperClass::Place(Cell const & cell, bool player)
 
 		case SUPER_FIRESTORM:
 			House->Activate_Firestorm();
+			House->IsRecalcNeeded = true;
 			if (player) {
-				House->IsRecalcNeeded = true;
 				Map.Column[1].IsToRedraw = true;
 			}
 			break;
@@ -801,8 +801,8 @@ void SuperClass::Deactivate_Firestorm(int, bool player) const
 {
 	if (Class->Type == SUPER_FIRESTORM) {
 		House->Deactivate_Firestorm();
+		House->IsRecalcNeeded = true;
 		if (player) {
-			House->IsRecalcNeeded = true;
 			Map.Column[1].IsToRedraw = true;
 		}
 	}
@@ -877,12 +877,21 @@ void SuperClass::Detach(AbstractClass const * target, bool all)
 void SuperClass::Compute_CRC(CRCEngine &crc) const
 {
 	BASECLASS::Compute_CRC(crc);
+	if (Class != NULL) {
+		crc(Class->Fetch_ID());
+	}
+	if (House != NULL) {
+		crc(House->Fetch_ID());
+	}
+	crc((int)Control);
+	crc(Control.Is_Active());
+	crc(NeedsBuilding);
 	crc(IsPresent);
 	crc(IsOneTime);
 	crc(IsReady);
+	crc(IsSuspended);
 	crc(OldStage);
 	crc(ChargeDrainState);
-	crc(NeedsBuilding);
 }
 
 

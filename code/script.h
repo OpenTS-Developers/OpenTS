@@ -46,15 +46,14 @@ class ScriptClass : public AbstractClass
 		bool Next_Mission(void);
 		bool Has_Missions_Remaining(void);
 
+		ScriptTypeClass const * Class_Of(void) const {return(Class);}
+
 	private:
 		/*
 		 * Pointer to the script type that supplies the mission list this script is working
 		 * its way through. Any number of teams may be running scripts of the same type.
 		 */
 		ScriptTypeClass *Class;
-
-		/// Unused
-		int Unused1;
 
 		/*
 		 * This is the mission line that the script is presently sitting on. It advances as

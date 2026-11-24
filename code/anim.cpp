@@ -98,6 +98,17 @@
 #include <intrin.h>
 
 
+// A random rate range applies only when it is set and its minimum is not above its maximum.
+static int Pick_Anim_Rate(AnimSequence const & seq, int (*pick)(int, int))
+{
+	int delay = seq.Delay;
+	if ((seq.RandomRateMin != 0 || seq.RandomRateMax != 0) && seq.RandomRateMin <= seq.RandomRateMax) {
+		delay = pick(seq.RandomRateMin, seq.RandomRateMax);
+	}
+	return(seq.IsNormalized ? Options.Normalize_Delay(delay) : delay);
+}
+
+
 /***********************************************************************************************
  * AnimClass::AnimClass -- The constructor for animation objects.                              *
  *                                                                                             *
@@ -122,33 +133,24 @@
  *=============================================================================================*/
 AnimClass::AnimClass(AnimTypeClass const * type, Coord const & coord, int timedelay, int loop, ShapeFlags_Type flags, int zadjust) :
 	BASECLASS(),
-	StageClass(),
 	Class((AnimTypeClass *)type),
+	Stage(),
+	Draw{.ShapeFlags = flags, .ZAdjust = zadjust},
 	xObject(NULL),
 	OwnerHouse(HOUSE_NONE),
-	AlternativeDrawer(NULL),
-	AlternativeBrightness(NORMAL_LIGHT),
-	ZAdjust(zadjust),
 	YSortAdjust(0),
 	FlamingGuyCoords(COORD_NONE),
 	FlamingGuyRetries(0),
 	IsBuildingAnim(false),
 	Bounce(),
-	Loops(1),
+	Accum(1),
 	IsBouncing(false),
 	IsAttachedToCell(false),
 	IsToDeleteOnOverpass(false),
 	IsInert(false),
-	IsFogged(false),
 	IsFlamingGuyEnd(false),
 	IsToDelete(false),
-	IsBrandNew(true),
-	IsInvisible(false),
-	IsDisabled(false),
-	Delay(timedelay),
-	Accum(1),
-	TranslucencyLevel(0),
-	ShapeFlags(flags)
+	IsDisabled(false)
 {
 	Create_ID();
 	Sync_Record_Anim(*this, coord, (unsigned)(uintptr_t)_ReturnAddress());
@@ -157,35 +159,13 @@ AnimClass::AnimClass(AnimTypeClass const * type, Coord const & coord, int timede
 
 	YSortAdjust = Class->YSortAdjust;
 
-	if (Class->Stages == -1) {
-		Class->Stages = ((ShapeSet *)Class->Get_Image_Data())->Get_Count();
-	}
-	if (Class->LoopEnd == -1) {
-		Class->LoopEnd = Class->Stages;
-	}
-	int delay = Class->Delay;
-	if (Class->RandomRateMin != 0 || Class->RandomRateMax != 0) {
-		if (Class->RandomRateMin <= Class->RandomRateMax) {
-			delay = Random_Pick(Class->RandomRateMin, Class->RandomRateMax);
-		}
-	}
-	if (Class->IsNormalized) {
-		Set_Rate(Options.Normalize_Delay(delay));
-	} else {
-		Set_Rate(delay);
-	}
-
-	Set_Stage(0);
+	AnimSequence const seq = Class->Sequence();
+	Stage.Begin(seq, Pick_Anim_Rate(seq, Random_Pick<int>), std::max(loop, 1) * seq.Loops, timedelay);
 
 	if (!Class->IsGroundLayer) {
 		Height = Rule->FlightLevel;
 	} else {
 		HeightAGL = 0;
-	}
-
-	if (Class->IsReverse) {
-		Set_Stage(Class->LoopEnd);
-		Set_Step(-Fetch_Step());
 	}
 
 	if (!Class->IsBouncer && !Class->IsMeteor) {
@@ -232,14 +212,10 @@ AnimClass::AnimClass(AnimTypeClass const * type, Coord const & coord, int timede
 		}
 	}
 
-	loop = std::max(loop, 1) * Class->Loops;
-	Loops = loop;
-	Loops = std::max<int>(Loops, 1);
-
 	/*
 	**	If the animation starts immediately, then play the associated sound effect now.
 	*/
-	if (!Delay) {
+	if (!Stage.Delay) {
 		Start();
 	}
 }
@@ -254,18 +230,13 @@ AnimClass::AnimClass(AnimTypeClass const * type, Coord const & coord, int timede
 AnimClass::AnimClass(void) :
 	BASECLASS(),
 	Class(NULL),
+	Stage(),
+	Draw(),
 	xObject(NULL),
 	OwnerHouse(HOUSE_NONE),
-	Loops(1),
 	IsToDelete(false),
-	IsBrandNew(true),
-	IsInvisible(false),
 	IsDisabled(false),
-	Delay(0),
 	Accum(0),
-	AlternativeDrawer(NULL),
-	AlternativeBrightness(NORMAL_LIGHT),
-	ZAdjust(0),
 	YSortAdjust(0),
 	IsBuildingAnim(false),
 	IsBouncing(false),
@@ -330,16 +301,10 @@ AnimClass::~AnimClass(void)
 
 	AbstractTypePtrTracker.Delete(this);
 
-	Class->Free_Image();
-
 	xObject = NULL;
 	Class = 0;
 
-	if (Fetch_ID() == -2) {
-		MoveFlashes.Delete(this);
-	} else {
-		Anims.Delete(this);
-	}
+	Anims.Delete(this);
 }
 
 
@@ -400,7 +365,7 @@ void Shorten_Attached_Anims(ObjectClass * obj)
 			AnimClass * anim = Anims[index];
 
 			if (anim->xObject == obj) {
-				anim->Loops = 0;
+				anim->Stage.Loops = 0;
 			}
 		}
 	}
@@ -473,7 +438,7 @@ Coord AnimClass::Center_Coord(void) const
  *=============================================================================================*/
 bool AnimClass::Render(Rect & rect, bool forced, bool extras_only) const
 {
-	if (Delay) return(false);
+	if (Stage.Delay) return(false);
 	return(BASECLASS::Render(rect, forced, extras_only));
 }
 
@@ -498,35 +463,56 @@ bool AnimClass::Render(Rect & rect, bool forced, bool extras_only) const
  *=============================================================================================*/
 void AnimClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 {
-	if (!IsInvisible && Class->DetailLevel <= Options.DetailLevel && (!IsFogged || !Class->IsShouldFogRemove)) {
+	AnimDrawContext context;
+	context.Class = Class;
+	context.Stage = Fetch_Stage();
+	context.StageCount = Stage_Count();
+	context.RenderCoord = Render_Coord();
+	context.Height = Height;
+	context.HeightAGL = HeightAGL;
+	context.IsBouncing = IsBouncing;
+	context.IsAttachedToCell = IsAttachedToCell;
+	context.IsFalling = IsFalling;
+	Draw.Draw(context, point, cliprect);
+}
+
+
+/// <summary>
+/// Draws the animation frame the context describes at the pixel specified.
+/// </summary>
+void AnimDrawClass::Draw(AnimDrawContext const & context, Point2D const & point, Rect const & cliprect) const
+{
+	AnimTypeClass const * type = context.Class;
+
+	if (!IsInvisible && type->DetailLevel <= Options.DetailLevel && (!IsFogged || !type->IsShouldFogRemove)) {
 		BStart(BENCH_ANIMS);
-		ShapeSet const * shapefile = (ShapeSet const *)Get_Image_Data();
+		ShapeSet const * shapefile = (ShapeSet const *)type->Get_Image_Data();
 
 		if (shapefile != NULL) {
 			ShapeFlags_Type flags = ShapeFlags;
-			int shapenum = Class->Start + Fetch_Stage();
+			int shapenum = type->Start + context.Stage;
 
 			/*
 			**	If the translucent table hasn't been determined yet, then check to see if it
 			**	should use the white or normal translucent tables.
 			*/
-			if (Class->TranslucencyDetailLevel <= Options.DetailLevel) {
-				if (Class->IsTranslucent) {
+			if (type->TranslucencyDetailLevel <= Options.DetailLevel) {
+				if (type->IsTranslucent) {
 					if (TranslucencyLevel >= 15) return;
-					if (Fetch_Stage() > Class->Stages * 0.6) {
+					if (context.Stage > context.StageCount * 0.6) {
 						flags = ShapeFlags_Type(flags|SHAPE_TRANSLUCENT75);
-					} else if (Fetch_Stage() > Class->Stages * 0.4) {
+					} else if (context.Stage > context.StageCount * 0.4) {
 						flags = ShapeFlags_Type(flags|SHAPE_TRANSLUCENT50);
-					} else if (Fetch_Stage() > Class->Stages * 0.2) {
+					} else if (context.Stage > context.StageCount * 0.2) {
 						flags = ShapeFlags_Type(flags|SHAPE_TRANSLUCENT25);
 					}
-				} else if (Class->Translucency > 0) {
+				} else if (type->Translucency > 0) {
 					if (TranslucencyLevel >= 15) return;
-					if (Class->Translucency == 25) {
+					if (type->Translucency == 25) {
 						flags = ShapeFlags_Type(flags|SHAPE_TRANSLUCENT25);
-					} else if (Class->Translucency == 50) {
+					} else if (type->Translucency == 50) {
 						flags = ShapeFlags_Type(flags|SHAPE_TRANSLUCENT50);
-					} else if (Class->Translucency == 75) {
+					} else if (type->Translucency == 75) {
 						flags = ShapeFlags_Type(flags|SHAPE_TRANSLUCENT75);
 					}
 				} else if (TranslucencyLevel != 0) {
@@ -545,72 +531,79 @@ void AnimClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 				flags = ShapeFlags_Type(flags|SHAPE_ALPHA);
 			}
 
-			int height = HeightAGL;
+			int height = context.HeightAGL;
 			int brightness = NORMAL_LIGHT;
 			ConvertClass * convert;
 
-			if (Class->IsVeins) {
+			if (type->IsVeins) {
 				convert = ColorSchemes[PlayerPtr->Scheme]->Converter;
-				if (!Class->IsUseNormalLight) {
-					brightness = Map[Render_Coord()].TileBrightness;
+				if (!type->IsUseNormalLight) {
+					brightness = Map[context.RenderCoord].TileBrightness;
 				}
-			} else if (IsAttachedToCell) {
-				CellClass * cellptr = &Map[Render_Coord().As_Cell()];
+			} else if (context.IsAttachedToCell) {
+				CellClass * cellptr = &Map[context.RenderCoord.As_Cell()];
 				if (cellptr->Drawer == NULL) {
 					cellptr->Init_Drawer();
 				}
 				convert = cellptr->Drawer;
-				if (!Class->IsUseNormalLight) {
+				if (!type->IsUseNormalLight) {
 					brightness = cellptr->TileBrightness;
 				}
 			} else if (AlternativeDrawer != NULL) {
 				convert = AlternativeDrawer;
-				if (!Class->IsUseNormalLight) {
+				if (!type->IsUseNormalLight) {
 					brightness = AlternativeBrightness;
 				}
 			} else {
 				convert = AnimDrawer;
-				if (Class->IsAltPalette) {
+				if (type->IsAltPalette) {
 					convert = ColorSchemes[0]->Converter;
 				}
-				if (!Class->IsUseNormalLight) {
-					brightness = Map[Render_Coord().As_Cell()].Brightness;
+				if (!type->IsUseNormalLight) {
+					brightness = Map[context.RenderCoord.As_Cell()].Brightness;
 				}
 			}
 
 			/*
 			**	Draw the animation shape.
 			*/
-			if (IsBouncing) {
-				Point2D drawpoint(point.X, point.Y + Class->YDrawOffset + TacticalMap->Z_Lepton_To_Pixel(height));
-				Draw_Shape(*LogicalSurface, *convert, shapefile, shapenum, drawpoint, cliprect, ShapeFlags_Type(SHAPE_DARKEN|SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ZGRAD), NULL, Class->YDrawOffset - TacticalMap->Z_Lepton_To_Pixel(Height));
+			if (context.IsBouncing) {
+				Point2D drawpoint(point.X, point.Y + type->YDrawOffset + TacticalMap->Z_Lepton_To_Pixel(height));
+				Draw_Shape(*LogicalSurface, *convert, shapefile, shapenum, drawpoint, cliprect, ShapeFlags_Type(SHAPE_DARKEN|SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ZGRAD), NULL, type->YDrawOffset - TacticalMap->Z_Lepton_To_Pixel(context.Height));
 			}
 
-			if (Class->IsTiled) {
+			if (type->IsTiled) {
 				int frameheight = shapefile->Get_Rect(0).Height;
 				Point2D origin = point;
 				Point2D drawpoint = origin - Point2D(0, frameheight / 2);
 				bool done = false;
-				int height_offset = ZAdjust + Class->YDrawOffset - TacticalMap->Z_Lepton_To_Pixel(Height) - 2;
+				int height_offset = ZAdjust + type->YDrawOffset - TacticalMap->Z_Lepton_To_Pixel(context.Height) - 2;
 				while (!done) {
-					Draw_Shape(*LogicalSurface, *AnimDrawer, shapefile, shapenum, Point2D(origin.X, drawpoint.Y + Class->YDrawOffset), TacticalRect, flags, NULL, height_offset, ZGRAD_90DEG, brightness);
+					Draw_Shape(*LogicalSurface, *AnimDrawer, shapefile, shapenum, Point2D(origin.X, drawpoint.Y + type->YDrawOffset), TacticalRect, flags, NULL, height_offset, ZGRAD_90DEG, brightness);
 					if (drawpoint.Y < 0) done = true;
 					height_offset -= frameheight;
 					drawpoint.Y -= frameheight;
 				}
-			} else if (Class->IsFlat) {
-				Draw_Shape(*LogicalSurface, *convert, shapefile, shapenum, Point2D(point.X, point.Y + Class->YDrawOffset), cliprect, ShapeFlags_Type(flags|SHAPE_ZGRAD), NULL, ZAdjust + Class->YDrawOffset - TacticalMap->Z_Lepton_To_Pixel(Height) - 2, ZGRAD_GROUND, brightness);
+			} else if (type->IsFlat) {
+				Draw_Shape(*LogicalSurface, *convert, shapefile, shapenum, Point2D(point.X, point.Y + type->YDrawOffset), cliprect, ShapeFlags_Type(flags|SHAPE_ZGRAD), NULL, ZAdjust + type->YDrawOffset - TacticalMap->Z_Lepton_To_Pixel(context.Height) - 2, ZGRAD_GROUND, brightness);
 			} else {
-				Draw_Shape(*LogicalSurface, *convert, shapefile, shapenum, Point2D(point.X, point.Y + Class->YDrawOffset), cliprect, ShapeFlags_Type(flags|SHAPE_ZGRAD), NULL, ZAdjust + Class->YDrawOffset - TacticalMap->Z_Lepton_To_Pixel(Height) - 2, ZGRAD_90DEG, brightness);
+				Draw_Shape(*LogicalSurface, *convert, shapefile, shapenum, Point2D(point.X, point.Y + type->YDrawOffset), cliprect, ShapeFlags_Type(flags|SHAPE_ZGRAD), NULL, ZAdjust + type->YDrawOffset - TacticalMap->Z_Lepton_To_Pixel(context.Height) - 2, ZGRAD_90DEG, brightness);
 			}
 
-			if (Class->IsFlamingGuy && !IsFalling) {
+			if (type->IsFlamingGuy && !context.IsFalling) {
 				shapenum += shapefile->Get_Count() / 2;
-				Draw_Shape(*LogicalSurface, *convert, shapefile, shapenum, Point2D(point.X, point.Y + Class->YDrawOffset), cliprect, ShapeFlags_Type(SHAPE_DARKEN|SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ZGRAD), NULL, ZAdjust + Class->YDrawOffset - TacticalMap->Z_Lepton_To_Pixel(Height) - 3, ZGRAD_GROUND, brightness);
+				Draw_Shape(*LogicalSurface, *convert, shapefile, shapenum, Point2D(point.X, point.Y + type->YDrawOffset), cliprect, ShapeFlags_Type(SHAPE_DARKEN|SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ZGRAD), NULL, ZAdjust + type->YDrawOffset - TacticalMap->Z_Lepton_To_Pixel(context.Height) - 3, ZGRAD_GROUND, brightness);
 			}
 		}
 		BEnd(BENCH_ANIMS);
 	}
+}
+
+
+void AnimDrawClass::Compute_CRC(CRCEngine & crc) const
+{
+	crc(ShapeFlags);
+	crc(ZAdjust);
 }
 
 
@@ -832,14 +825,12 @@ void AnimClass::AI(void)
 	**	since it might end up skipping the first animation frame before it has had a
 	**	chance to draw it.
 	*/
-	if (IsBrandNew) {
-		IsBrandNew = false;
+	if (Stage.Skip_First_Pass()) {
 		return;
 	}
 
-	if (Delay) {
-		Delay--;
-		if (!Delay) {
+	if (Stage.Delay != 0) {
+		if (Stage.Wait()) {
 			Start();
 		}
 	} else if (IsActive) {
@@ -854,13 +845,6 @@ void AnimClass::AI(void)
 			}
 		}
 
-		if (Class->Stages == -1) {
-			Class->Stages = ((ShapeSet const *)Class->Get_Image_Data())->Get_Count();
-		}
-		if (Class->LoopEnd == -1) {
-			Class->LoopEnd = Class->Stages;
-		}
-
 		/*
 		**	This is necessary because there is no recording of animations on the map
 		**	and thus the animation cannot be intelligently flagged for redraw. Most
@@ -869,7 +853,7 @@ void AnimClass::AI(void)
 		*/
 		Mark(MARK_CHANGE);
 
-		if (!IsDisabled && StageClass::Graphic_Logic()) {
+		if (!IsDisabled && Stage.Advance()) {
 			int stage = Fetch_Stage();
 
 			/*
@@ -912,34 +896,15 @@ void AnimClass::AI(void)
 				Middle();
 			}
 
-			if (Class->IsPingPong) {
-				if ((Loops <= 1 && (stage >= Class->Stages || stage == 0)) || (Loops > 1 && (stage >= Class->LoopEnd-Class->Start || stage == Class->Start))) {
-					Set_Step(-Fetch_Step());
-					return;
-				}
-			}
-
-			/*
-			**	Check to see if the last frame has been displayed. If so, then the
-			**	animation either ends or loops.
-			*/
-			if ((Loops <= 1 && stage >= Class->Stages) || (Loops > 1 && stage >= Class->LoopEnd-Class->Start) || (Class->IsReverse && stage <= Class->Start)) {
-
-				/*
-				**	Determine if this animation should loop another time. If so, then start the loop
-				**	but if not, then proceed into the animation termination handler.
-				*/
-				if (Loops && Loops != UCHAR_MAX) Loops--;
-				if (Loops) {
-					if (Class->IsReverse) {
-						Set_Stage(Class->LoopEnd);
-					} else {
-						Set_Stage(Class->LoopStart-Class->Start);
+			AnimSequence const seq = Class->Sequence();
+			switch (Stage.Check_End(seq)) {
+				case AnimStageResult::LOOPED:
+					if (seq.RandomLoopDelayMin != 0 || seq.RandomLoopDelayMax != 0) {
+						Stage.Delay = Random_Pick(seq.RandomLoopDelayMin, seq.RandomLoopDelayMax);
 					}
-					if (Class->RandomLoopDelayMin != 0 || Class->RandomLoopDelayMax != 0) {
-						Delay = Random_Pick(Class->RandomLoopDelayMin, Class->RandomLoopDelayMax);
-					}
-				} else {
+					break;
+
+				case AnimStageResult::ENDED:
 
 					/*
 					**	The animation should end now, but first check to see if
@@ -951,31 +916,18 @@ void AnimClass::AI(void)
 
 						Class = (AnimTypeClass *)Class->ChainTo;
 
-						if (Class->Stages == -1) {
-							Class->Stages = ((ShapeSet const *)Class->Get_Image_Data())->Get_Count();
-						}
-						if (Class->LoopEnd == -1) {
-							Class->LoopEnd = Class->Stages;
-						}
-
 						IsToDelete = false;
-						Loops = Class->Loops;
 						Accum = 0;
-						int delay = Class->Delay;
-						if (Class->RandomRateMin != 0 || Class->RandomRateMax != 0) {
-							delay = Random_Pick(Class->RandomRateMin, Class->RandomRateMax);
-						}
-						if (Class->IsNormalized) {
-							Set_Rate(Options.Normalize_Delay(delay));
-						} else {
-							Set_Rate(delay);
-						}
-						Set_Stage(Class->Start);
+						AnimSequence const next = Class->Sequence();
+						Stage.Chain(next, Pick_Anim_Rate(next, Random_Pick<int>), next.Loops);
 						Start();
 					} else {
 						Delete_Me();
 					}
-				}
+					break;
+
+				default:
+					break;
 			}
 		}
 	}
@@ -1127,8 +1079,8 @@ void AnimClass::Start(void)
 
 			if (tiberium->Debris.Count() > 0 && (abs(Scen->RandomNumber) % 3) == 0) {
 				AnimClass * debris = new AnimClass(tiberium->Debris[Random_Pick(0, tiberium->Debris.Count()-1)], Center_Coord() + Coord(0, 0, 10));
-				debris->AlternativeDrawer = ColorSchemes[tiberium->Color]->Converter;
-				debris->AlternativeBrightness = cptr->Brightness;
+				debris->Draw.AlternativeDrawer = ColorSchemes[tiberium->Color]->Converter;
+				debris->Draw.AlternativeBrightness = cptr->Brightness;
 			}
 
 			Explosion_Damage(PositionCoord, Rule->TiberiumExplosionDamage, NULL, Rule->C4Warhead, false);
@@ -1324,33 +1276,24 @@ void AnimClass::Enable(void)
 void AnimClass::Serialize(SaveStreamClass & stream)
 {
 	BASECLASS::Serialize(stream);
-	StageClass::Serialize(stream);
 
 	stream.Serialize(Class);
+	stream.Serialize(Stage);
+	stream.Serialize(Draw);
 	stream.Serialize(xObject);
 	stream.Serialize(OwnerHouse);
-	// AlternativeDrawer -- a palette converter of the running session.
-	stream.Serialize(AlternativeBrightness);
-	stream.Serialize(ZAdjust);
 	stream.Serialize(YSortAdjust);
 	stream.Serialize(FlamingGuyCoords);
 	stream.Serialize(FlamingGuyRetries);
 	stream.Serialize(IsBuildingAnim);
 	stream.Serialize(Bounce);
-	stream.Serialize(TranslucencyLevel);
-	stream.Serialize(Delay);
 	stream.Serialize(Accum);
-	stream.Serialize(ShapeFlags);
 	stream.Serialize(IsBouncing);
-	stream.Serialize(Loops);
 	stream.Serialize(IsAttachedToCell);
 	stream.Serialize(IsToDeleteOnOverpass);
 	stream.Serialize(IsInert);
-	stream.Serialize(IsFogged);
 	stream.Serialize(IsFlamingGuyEnd);
 	stream.Serialize(IsToDelete);
-	stream.Serialize(IsBrandNew);
-	stream.Serialize(IsInvisible);
 	stream.Serialize(IsDisabled);
 }
 
@@ -1364,7 +1307,7 @@ void AnimClass::Post_Load(void)
 {
 	BASECLASS::Post_Load();
 
-	AlternativeDrawer = NULL;
+	Draw.AlternativeDrawer = NULL;
 }
 
 
@@ -1376,23 +1319,36 @@ void AnimClass::Post_Load(void)
 void AnimClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
+	if (Class != NULL) {
+		crc(Class->Fetch_ID());
+	}
+	Stage.Compute_CRC(crc);
+	Draw.Compute_CRC(crc);
 	if (xObject != NULL) {
 		crc(xObject->Fetch_ID());
 	}
 	crc(OwnerHouse);
-	crc((int)AlternativeBrightness);
-	crc(ZAdjust);
 	crc(YSortAdjust);
-	crc(Delay);
+	crc(FlamingGuyCoords.X);
+	crc(FlamingGuyCoords.Y);
+	crc(FlamingGuyCoords.Z);
+	crc(FlamingGuyRetries);
+	crc(Bounce.Elasticity);
+	crc(Bounce.Gravity);
+	crc(Bounce.MaxVelocity);
+	crc(Bounce.MyCoord.X);
+	crc(Bounce.MyCoord.Y);
+	crc(Bounce.MyCoord.Z);
+	crc(Bounce.Velocity.X);
+	crc(Bounce.Velocity.Y);
+	crc(Bounce.Velocity.Z);
 	crc(Accum);
-	crc(ShapeFlags);
 	crc(IsBouncing);
-	crc(Loops);
 	crc(IsAttachedToCell);
 	crc(IsToDeleteOnOverpass);
+	crc(IsInert);
+	crc(IsFlamingGuyEnd);
 	crc(IsToDelete);
-	crc(IsBrandNew);
-	crc(IsInvisible);
 	crc(IsDisabled);
 }
 
@@ -1400,10 +1356,10 @@ void AnimClass::Compute_CRC(CRCEngine & crc) const
 /// <summary>
 /// Fetches the number of stages this animation runs through.
 /// </summary>
-/// <returns>Returns with the stage count declared by the animation's type class.</returns>
+/// <returns>Returns with the stage count the animation's type plays with its current art.</returns>
 int AnimClass::Stage_Count(void) const
 {
-	return(Class->Stages);
+	return(Class->Sequence().Stages);
 }
 
 
@@ -1588,7 +1544,8 @@ void AnimClass::Flaming_Guy_AI(void)
 		Set_Stage(stage + Frame / _frame_divisor % Class->RunningFrames);
 		return;
 	} else {
-		int stage = ((ShapeSet const *)Get_Image_Data())->Get_Count() / 2 - 1;
+		ShapeSet const * shape = (ShapeSet const *)Get_Image_Data();
+		int stage = (shape != NULL ? shape->Get_Count() : 0) / 2 - 1;
 		if (Fetch_Stage() >= stage) {
 			Delete_Me();
 		}
@@ -1721,12 +1678,12 @@ void AnimClass::Post_Load_Game(void)
 			if (tib != TIBERIUM_NONE) {
 				TiberiumClass * tptr = Tiberiums[tib];
 				if (tptr != NULL) {
-					anim->AlternativeDrawer = ColorSchemes[tptr->Color]->Converter;
+					anim->Draw.AlternativeDrawer = ColorSchemes[tptr->Color]->Converter;
 				}
 			}
 		}
 		if (anim->Class->IsFlamingGuy) {
-			anim->AlternativeDrawer = ColorSchemes[PlayerPtr->Scheme]->Converter;
+			anim->Draw.AlternativeDrawer = ColorSchemes[PlayerPtr->Scheme]->Converter;
 		}
 	}
 }
@@ -1746,4 +1703,140 @@ ClassID AnimClass::Class_ID(void) const
 RTTIType AnimClass::Fetch_RTTI(void) const
 {
 	return(RTTI_ANIM);
+}
+
+
+std::vector<MoveFlashClass> MoveFlashClass::MoveFlashes;
+
+
+MoveFlashClass::MoveFlashClass(AnimTypeClass const * type, Coord const & coord) :
+	Class(type),
+	Position(coord),
+	Stage(),
+	Draw()
+{
+	AnimSequence const seq = Class->Sequence();
+	Stage.Begin(seq, Pick_Anim_Rate(seq, Sim_Random_Pick<int>), seq.Loops, 0);
+}
+
+
+/// <summary>
+/// Starts the MoveFlash animation on this machine's screen and plays its sound; does nothing
+/// when the rules set no MoveFlash. It plays the type's frames, loops and chained types, and
+/// none of its game effects, such as damage, scorch marks or spawned animations. Its random
+/// rates and loop delays come from the unsynchronized generator.
+/// </summary>
+/// <param name="coord">Where the animation plays.</param>
+void MoveFlashClass::Create(Coord const & coord)
+{
+	if (Rule->MoveFlash == NULL) {
+		return;
+	}
+
+	MoveFlashes.push_back(MoveFlashClass(Rule->MoveFlash, coord));
+	MoveFlashes.back().Start();
+}
+
+
+/// <summary>
+/// Advances every move flash by one game frame and removes those that have finished.
+/// </summary>
+/// <returns>Returns true when the tactical view needs redrawing: while any move flash exists,
+/// and on the frame the last one is removed.</returns>
+bool MoveFlashClass::AI_All(void)
+{
+	bool const redraw = !MoveFlashes.empty();
+
+	std::size_t index = 0;
+	while (index < MoveFlashes.size()) {
+		if (MoveFlashes[index].AI()) {
+			index++;
+		} else {
+			MoveFlashes.erase(MoveFlashes.begin() + index);
+		}
+	}
+	return(redraw);
+}
+
+
+void MoveFlashClass::Draw_It(Point2D const & point, Rect const & cliprect) const
+{
+	AnimDrawContext context;
+	context.Class = Class;
+	context.Stage = Stage.Playback.Fetch_Stage();
+	context.StageCount = Class->Sequence().Stages;
+	context.RenderCoord = Position;
+	context.Height = Position.Z;
+	Draw.Draw(context, point, cliprect);
+}
+
+
+/// <summary>
+/// Removes every move flash. Clearing a scenario calls it, so that a new or loaded game starts
+/// with none.
+/// </summary>
+void MoveFlashClass::Clear_All(void)
+{
+	MoveFlashes.clear();
+}
+
+
+/// <summary>
+/// Advances the animation by one game frame through its stages, loops and chained types.
+/// </summary>
+/// <returns>Returns false once the last type in the chain has finished.</returns>
+bool MoveFlashClass::AI(void)
+{
+	if (Stage.Skip_First_Pass()) {
+		return(true);
+	}
+
+	if (Stage.Delay != 0) {
+		if (Stage.Wait()) {
+			Start();
+		}
+		return(true);
+	}
+
+	if (!Stage.Advance()) {
+		return(true);
+	}
+
+	AnimSequence const seq = Class->Sequence();
+	switch (Stage.Check_End(seq)) {
+		case AnimStageResult::LOOPED:
+			if (seq.RandomLoopDelayMin != 0 || seq.RandomLoopDelayMax != 0) {
+				Stage.Delay = Sim_Random_Pick(seq.RandomLoopDelayMin, seq.RandomLoopDelayMax);
+			}
+			break;
+
+		case AnimStageResult::ENDED: {
+			if (Class->ChainTo == NULL) {
+				return(false);
+			}
+			Class = Class->ChainTo;
+			AnimSequence const next = Class->Sequence();
+			Stage.Chain(next, Pick_Anim_Rate(next, Sim_Random_Pick<int>), next.Loops);
+			Start();
+			break;
+		}
+
+		default:
+			break;
+	}
+	return(true);
+}
+
+
+void MoveFlashClass::Start(void) const
+{
+	if (Class->Sound != VOC_NONE) {
+		Sound_Effect(Class->Sound, Position);
+	}
+}
+
+
+LayerType MoveFlashClass::In_Which_Layer(void) const
+{
+	return(Class->IsGroundLayer ? LAYER_GROUND : LAYER_AIR);
 }

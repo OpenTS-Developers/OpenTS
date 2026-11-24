@@ -32,7 +32,7 @@
 class TeamMissionClass
 {
 	public:
-		TeamMissionClass(void) {}
+		TeamMissionClass(void) : Mission(TMISSION_NONE) { Data.Value = 0; }
 		TeamMissionClass(TeamMissionType mission, int data) : Mission(mission) { Data.Value = data; }
 
 		void Fill_In(char const * entry);

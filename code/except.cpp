@@ -60,6 +60,7 @@
 #include <tlhelp32.h>
 
 #include <atomic>
+#include <chrono>
 #include <cmath>
 #include <csignal>
 #include <cstdarg>
@@ -68,6 +69,7 @@
 #include <cstring>
 #include <eh.h>
 #include <exception>
+#include <thread>
 
 #define MS_VC_THREAD_NAME_EXCEPTION			0x406D1388
 #define MS_CPP_EXCEPTION					0xE06D7363
@@ -1679,7 +1681,7 @@ static void Save_Machine_State(EXCEPTION_POINTERS * e_info, DWORD self)
 	// The artifacts are safe, and the dumper owns the dialog and the exit from here.
 	for (;;) {
 		SuspendThread(GetCurrentThread());
-		Sleep(1000);
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	}
 }
 

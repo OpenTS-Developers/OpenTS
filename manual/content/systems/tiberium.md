@@ -291,4 +291,3 @@ The following settings have no effect:
 - [`TiberiumGrows` in `[MultiplayerDefaults]`](/keys/tiberiumgrows/#scope-global-rules). The scenario's `[SpecialFlags]` entry is the one that works.
 - [`TiberiumExplosive` in `[SpecialFlags]`](/keys/tiberiumexplosive/#scope-scenarios). Use the `[CombatDamage]` entry.
 - [`TiberiumStrength`](/keys/tiberiumstrength/) in `[CombatDamage]`.
-- [`TiberiumTransmogrify`](/keys/tiberiumtransmogrify/) in `[General]`.

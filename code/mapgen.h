@@ -279,9 +279,6 @@ public:
 		 */
 		bool HasConnections;
 
-		/// Unused
-		int SplitCount;
-
 		/*
 		 * If the region has been folded into a neighbor and is only waiting to be deleted,
 		 * then this flag will be true. The merge pass steps over it from then on.

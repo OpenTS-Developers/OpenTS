@@ -21,4 +21,4 @@ The countdown starts when the fate is decided, with these exceptions:
 - A house already flagged for a fate ignores a later flag to win or to blow up, and its first countdown continues.
 - A flag to lose cancels a pending win and starts a new countdown. It is ignored when the house is already flagged to lose or to blow up.
 
-In a multiplayer game other than skirmish, the countdown is lengthened so that every machine ends the game on the same frame. It is first raised to at least the number of frames each machine runs ahead of the others. It is then extended to end on a frame number divisible by ten.
+In a multiplayer game other than skirmish, the countdown is extended to end on a frame number divisible by ten.

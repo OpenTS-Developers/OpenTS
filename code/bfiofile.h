@@ -62,6 +62,7 @@ class BufferIOFileClass : public RawFileClass
 		virtual int Size(void) override;
 		virtual int Write(void const *buffer, int size) override;
 		virtual void Close(void) override;
+		virtual bool Flush(void) override;
 
 		enum {MINIMUM_BUFFER_SIZE=1024};
 

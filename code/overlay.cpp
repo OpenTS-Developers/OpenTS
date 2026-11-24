@@ -343,8 +343,8 @@ bool OverlayClass::Mark(MarkType mark)
 					if (tibtype != TIBERIUM_NONE) {
 						TiberiumClass *tiberium = Tiberiums[tibtype];
 						if (tiberium != NULL) {
-							aptr->AlternativeDrawer = ColorSchemes[tiberium->Color]->Converter;
-							aptr->AlternativeBrightness = cellptr->Brightness;
+							aptr->Draw.AlternativeDrawer = ColorSchemes[tiberium->Color]->Converter;
+							aptr->Draw.AlternativeBrightness = cellptr->Brightness;
 						}
 					}
 				}

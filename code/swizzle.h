@@ -75,7 +75,7 @@ class SwizzleManagerClass
 		void Swizzle(void ** pointer, SwizzleIDType id, char const * ownertype = nullptr, SwizzleIDType ownerid = 0, char const * slottype = nullptr, char const * file = nullptr, unsigned int line = 0);
 		void Here_I_Am(SwizzleIDType id, void * pointer);
 
-		void Resolve(void);
+		bool Resolve(void);
 		void Discard(void);
 
 		/*

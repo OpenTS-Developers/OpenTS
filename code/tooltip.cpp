@@ -31,6 +31,10 @@
 ToolTipManager::ToolTipManager(void) :
 	TimerRunning(false),
 	TimerDue(0),
+	WasShown(false),
+	HiddenAt(0),
+	IsDismissed(false),
+	DismissedID(0),
 	IsActive(false),
 	CurrentToolTip(NULL),
 	ToolTipDelay(TOOLTIP_DELAY),
@@ -74,6 +78,8 @@ void ToolTipManager::Activate(bool state)
 		if (!IsActive) {
 			TimerRunning = false;
 			Reset_Current();
+			WasShown = false;
+			IsDismissed = false;
 		}
 
 		DebugString("Tooltips are %s.\n", IsActive == true ? "on" : "off");
@@ -82,8 +88,11 @@ void ToolTipManager::Activate(bool state)
 
 
 /// <summary>
-/// Follows the mouse over the main window. Mouse movement restarts the hover countdown, and
-/// a button press or release takes down whatever is showing.
+/// Follows the mouse over the main window. A tooltip stays up while the mouse moves within
+/// its region, unless it tracks the pointer. Entering another region shows that region's
+/// tooltip at once when a tooltip is up or went away within TOOLTIP_RESHOW, and after the
+/// hover delay otherwise. A button press or release takes down whatever is showing, and that
+/// region's tooltip stays hidden until the mouse leaves it.
 /// </summary>
 void ToolTipManager::Handle_Window_Event(WindowEvent const & event)
 {
@@ -95,14 +104,20 @@ void ToolTipManager::Handle_Window_Event(WindowEvent const & event)
 		case WINDOW_EVENT_MOUSE_DOWN:
 		case WINDOW_EVENT_MOUSE_UP:
 			if (event.Button <= WINDOW_BUTTON_MIDDLE && event.Clicks == 1) {
+				Point2D point(event.X, event.Y);
+				Window_Point_To_Game(point);
+				ToolTip const * under = Find_From_Pos(point);
+				if (under != NULL && !under->TracksPointer) {
+					IsDismissed = true;
+					DismissedID = under->ID;
+				}
 				TimerRunning = false;
 				Reset_Current();
 			}
 			break;
 
 		case WINDOW_EVENT_MOUSE_MOVE:
-			Start_Timer(ToolTipDelay);
-			Reset_Current();
+			Follow_Pointer(event.X, event.Y);
 			break;
 
 		default:
@@ -111,9 +126,32 @@ void ToolTipManager::Handle_Window_Event(WindowEvent const & event)
 }
 
 
+void ToolTipManager::Follow_Pointer(int x, int y)
+{
+	Point2D point(x, y);
+	Window_Point_To_Game(point);
+	ToolTip const * under = Find_From_Pos(point);
+
+	if (IsDismissed && (under == NULL || under->ID != DismissedID)) {
+		IsDismissed = false;
+	}
+
+	if (under != NULL && under == CurrentToolTip && !under->TracksPointer) {
+		return;
+	}
+
+	bool const warm = CurrentToolTip != NULL || (WasShown && timeGetTime() - HiddenAt <= (unsigned long)TOOLTIP_RESHOW);
+	Reset_Current();
+
+	bool const now = warm && under != NULL && !under->TracksPointer && !IsDismissed;
+	Start_Timer(now ? 0 : ToolTipDelay);
+}
+
+
 /// <summary>
-/// Brings up the tooltip under the mouse once it has rested for the hover delay, and takes it
-/// down once its lifetime has passed. Tooltips change only when the message pump calls this.
+/// Brings up the tooltip under the mouse when its countdown ends, and takes it down once its
+/// lifetime has passed; that tooltip then stays hidden until the mouse leaves its region.
+/// Tooltips change only when the message pump calls this.
 /// </summary>
 void ToolTipManager::Service(void)
 {
@@ -123,6 +161,10 @@ void ToolTipManager::Service(void)
 
 	TimerRunning = false;
 	if (CurrentToolTip != NULL) {
+		if (!CurrentToolTip->TracksPointer) {
+			IsDismissed = true;
+			DismissedID = CurrentToolTip->ID;
+		}
 		Reset_Current();
 	} else {
 		int x = 0;
@@ -132,6 +174,9 @@ void ToolTipManager::Service(void)
 		LastMousePos.Y = y;
 		Window_Point_To_Game(LastMousePos);
 		CurrentToolTip = Find_From_Pos(LastMousePos);
+		if (CurrentToolTip != NULL && IsDismissed && CurrentToolTip->ID == DismissedID) {
+			CurrentToolTip = NULL;
+		}
 		if (Process() == true) {
 			Start_Timer(ToolTipLifetime);
 		}
@@ -330,7 +375,7 @@ bool ToolTipManager::Process(void)
 
 		if (str != NULL && strlen(str) > 0) {
 
-			strncpy(CurrentToolTipInfo.Text, str, sizeof(CurrentToolTipInfo.Text));
+			CurrentToolTipInfo.Text = str;
 
 			CurrentToolTipInfo.Pos.X = LastMousePos.X;
 			CurrentToolTipInfo.Pos.Y = LastMousePos.Y;
@@ -386,7 +431,7 @@ void ToolTipManager::Draw_Current(bool refresh)
 /// <param name="text">The tooltip text and placement to render.</param>
 void ToolTipManager::Draw(const ToolTipText *text)
 {
-	DebugString("ToolTip: %s\n", text->Text);
+	DebugString("ToolTip: %s\n", text->Text.c_str());
 }
 
 
@@ -411,6 +456,8 @@ const char *ToolTipManager::ToolTip_Text(int id)
 void ToolTipManager::Reset_Current(void)
 {
 	if (CurrentToolTip != NULL) {
+		WasShown = true;
+		HiddenAt = timeGetTime();
 		Reset(&CurrentToolTipInfo);
 	}
 }

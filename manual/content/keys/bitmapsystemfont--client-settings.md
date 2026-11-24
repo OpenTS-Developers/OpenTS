@@ -7,7 +7,7 @@ when_omitted:
   value: "yes"
 ---
 
-`BitmapSystemFont=yes` draws the lists, text boxes, tooltips, hotkey fields and group headings of the game's screens in the fixed-size bitmap face that Windows ships, the face the original dialogs used. `BitmapSystemFont=no` draws them in the scalable face of the same design. Captions and button text use the game's own font art and look the same at either setting.
+`BitmapSystemFont=yes` draws the lists, text boxes, control tooltips, hotkey fields and group headings of the game's screens in the fixed-size bitmap face that Windows ships, the face the original dialogs used. `BitmapSystemFont=no` draws them in the scalable face of the same design. Captions and button text use the game's own font art and look the same at either setting.
 
 The bitmap face is used only while each game pixel is drawn as one screen pixel, as in a window the size of the game's resolution. While the game is drawn larger or smaller, the scalable face is used at either setting, because a bitmap face loses its shape when it is resized.
 

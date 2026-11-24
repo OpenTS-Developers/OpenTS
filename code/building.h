@@ -271,9 +271,6 @@ class BuildingClass : public TechnoClass
 		*/
 		bool HasOpened;
 
-		/// Unused
-		bool UnusedBuildingBool1;
-
 		/*
 		 * If the animations this building is running are the damaged versions, then this flag
 		 * will be true. Taking damage then restarts them only if the form must actually change.

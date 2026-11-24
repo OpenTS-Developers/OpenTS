@@ -112,6 +112,8 @@ class EventClass
 			NETWORK_REPORT,
 			ABANDON_COUNT,
 			GRANT_CONTROL,		// Grant or withdraw shared control of the sender's units.
+			CHAT_PROOF,			// A chat line's fingerprint. Reserved: nothing sends it, and executing it changes nothing.
+			SELECTED,			// The owner selected the object, which springs its tag's "selected by player" event.
 
 			LAST_EVENT,			// one past the last event
 		};
@@ -253,10 +255,15 @@ class EventClass
 				std::uint16_t StallMilliseconds;
 			} NetworkReport;
 
+			struct {
+				unsigned char Digest[16];
+			} ChatProof;
+
 		} Data;
 
 		//-------------- Constructors ---------------------
-		EventClass(void) {Type = EMPTY;};
+		// Every byte starts at zero, so payload bytes and padding an event type leaves unused match on every machine.
+		EventClass(void) {std::memset(static_cast<void *>(this), 0, sizeof(*this)); Type = EMPTY;};
 		EventClass(int index, SpecialClass data);
 		EventClass(int index, unsigned char type, TargetClass target);
 		EventClass(int index, unsigned char type);
@@ -372,5 +379,6 @@ class EventClass
 		void Execute_PROCESS_TIME(void);
 		void Execute_NETWORK_REPORT(void);
 		void Execute_GRANT_CONTROL(void);
+		void Execute_SELECTED(void);
 };
 #pragma pack(pop)

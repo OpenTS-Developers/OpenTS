@@ -191,10 +191,10 @@ FoggedObjectClass::FoggedObjectClass(BuildingClass * object, bool fade) :
 
 	for (int i = 0; i < BANIM_COUNT; i++) {
 		if (object->Anims[i] != NULL) {
-			object->Anims[i]->IsFogged = true;
+			object->Anims[i]->Draw.IsFogged = true;
 			AnimTypeClass *atype = object->Anims[i]->Class;
 			BoundingRect = Union(BoundingRect, object->Anims[i]->Get_Visual_Rect());
-			Records.Add(DrawRecord(atype, atype->Start + object->Anims[i]->Fetch_Stage(), 0, object->Anims[i]->ZAdjust));
+			Records.Add(DrawRecord(atype, atype->Start + object->Anims[i]->Fetch_Stage(), 0, object->Anims[i]->Draw.ZAdjust));
 		}
 	}
 
@@ -257,7 +257,7 @@ FoggedObjectClass::~FoggedObjectClass(void)
 			bptr->IsFogged = false;
 			for (int i = 0; i < BANIM_COUNT; i++) {
 				if (bptr->Anims[i] != NULL) {
-					bptr->Anims[i]->IsFogged = false;
+					bptr->Anims[i]->Draw.IsFogged = false;
 				}
 			}
 		}
@@ -599,28 +599,13 @@ ClassID FoggedObjectClass::Class_ID(void) const
 
 
 /// <summary>
-/// Adds this fogged object's state to a CRC calculation.
-/// This routine is used by the multiplayer sync check to prove that every machine
-/// remembers the same things under the fog.
+/// Adds this fogged object's identity to a CRC calculation. The snapshot itself is left out,
+/// since it records what the local player last saw and differs between machines.
 /// </summary>
 /// <param name="crc">The CRC engine to submit this object's data to.</param>
 void FoggedObjectClass::Compute_CRC(CRCEngine &crc) const
 {
 	BASECLASS::Compute_CRC(crc);
-	crc(Overlay);
-	crc(OverlayData);
-	crc(RTTI);
-	crc(Position.X);
-	crc(Position.Y);
-	crc(Position.Z);
-	crc(BoundingRect.X);
-	crc(BoundingRect.Y);
-	crc(BoundingRect.Width);
-	crc(BoundingRect.Height);
-	crc(CellHeight);
-	crc(Smudge);
-	crc(SmudgeData);
-	crc(Records.Count());
 }
 
 

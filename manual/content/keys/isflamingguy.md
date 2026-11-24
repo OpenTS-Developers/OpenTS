@@ -36,7 +36,7 @@ A burning man that lands from a fall stops where he lands. If he lands in water,
 
 ## Artwork
 
-The shape file has two halves of equal length. The first half holds the eight run cycles, the unused frame, and the death sequence. The second half holds a matching shadow for every frame of the first, drawn darkened on the ground under the frame that is showing. No shadow is drawn while the animation falls.
+The shape file has two halves of equal length. The first half contains the eight run cycles, the unused frame, and the death sequence. The second half contains a matching shadow for every frame of the first, drawn darkened on the ground under the frame that is showing. No shadow is drawn while the animation falls. An animation whose shape cannot be found draws nothing and is removed as soon as its run ends.
 
 :::danger[Set RunningFrames on every IsFlamingGuy animation]
 An `IsFlamingGuy=yes` animation without [`RunningFrames=`](/keys/runningframes/) crashes the game on its first logic pass, as long as it has a cell to run to.

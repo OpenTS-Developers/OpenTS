@@ -95,6 +95,7 @@ class RawFileClass : public FileClass
 		virtual bool Set_Date_Time(unsigned int datetime);
 		virtual void Error(int error, int canretry = false, char const * filename=NULL) override;
 		void Bias(int start, int length=-1);
+		virtual bool Flush(void) override;
 		FILE *Get_File_Handle(void) { return(Handle); };
 
 		/*

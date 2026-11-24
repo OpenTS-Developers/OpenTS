@@ -371,7 +371,6 @@ void Movie_Update_Visible_Surface(void)
 /// </summary>
 VQHandle::VQHandle(void) :
 	VQA(NULL),
-	field_4(-1),
 	DrawSurface(NULL),
 	PlayMode(0),
 	StartFrame(0),
@@ -381,7 +380,6 @@ VQHandle::VQHandle(void) :
 	LoopID(0),
 	InitialRect(0,0,0,0),
 	StretchRect(0,0,0,0),
-	field_44(false),
 	IsInitialized(false)
 {
 }

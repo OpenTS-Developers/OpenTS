@@ -33,7 +33,6 @@
 /// </summary>
 /// <param name="type">Pointer to the script type that supplies the mission list.</param>
 ScriptClass::ScriptClass(ScriptTypeClass *type):
-	Unused1(0),
 	Class(type),
 	CurrentLineNumber(-1)
 {
@@ -62,6 +61,7 @@ ScriptClass::~ScriptClass(void)
 void ScriptClass::Compute_CRC(CRCEngine &crc) const
 {
 	BASECLASS::Compute_CRC(crc);
+	if (Class != NULL) crc(Class->HeapID);
 	crc(CurrentLineNumber);
 }
 
@@ -165,7 +165,6 @@ void ScriptClass::Serialize(SaveStreamClass & stream)
 	BASECLASS::Serialize(stream);
 
 	stream.Serialize(Class);
-	stream.Serialize(Unused1);
 	stream.Serialize(CurrentLineNumber);
 }
 
@@ -390,4 +389,9 @@ void ScriptTypeClass::Compute_CRC(CRCEngine & crc) const
 	BASECLASS::Compute_CRC(crc);
 
 	crc(MissionCount);
+
+	for (int index = 0; index < MissionCount; index++) {
+		crc((int)MissionList[index].Mission);
+		crc(MissionList[index].Data.Value);
+	}
 }

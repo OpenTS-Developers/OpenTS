@@ -112,9 +112,6 @@ class TeamClass : public AbstractClass
 		AbstractClass * MissionTarget;
 		AbstractClass * Target;
 
-		/// Unused
-		void * UnusedPtr1;
-
 		/*
 		**	This is the total number of members in this team.
 		*/
@@ -262,7 +259,7 @@ class TeamClass : public AbstractClass
 		/*
 		 * Constructors, destructors, and persistence.
 		 */
-		TeamClass(TeamTypeClass const * team=0, HouseClass * owner=0, void * = NULL);
+		TeamClass(TeamTypeClass const * team=0, HouseClass * owner=0);
 		virtual ~TeamClass(void) override;
 
 		virtual ClassID Class_ID(void) const override;

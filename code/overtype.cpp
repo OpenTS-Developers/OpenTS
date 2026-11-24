@@ -79,7 +79,7 @@
 /// <summary>
 /// Releases shape data that this type loaded through the file layer.
 /// </summary>
-static void Free_Demand_Loaded_Shape(void const *& data)
+static void Free_Uncached_Shape(void const *& data)
 {
 	delete [] (char *)data;
 	data = NULL;
@@ -143,7 +143,7 @@ OverlayTypeClass::OverlayTypeClass(char const * ininame) :
 OverlayTypeClass::~OverlayTypeClass(void)
 {
 	if (DemandLoad && ImageData != NULL) {
-		Free_Demand_Loaded_Shape(ImageData);
+		Free_Uncached_Shape(ImageData);
 	}
 	Detach_This_From_All(this, true);
 	OverlayTypes.Delete(this);
@@ -310,9 +310,49 @@ void OverlayTypeClass::Init(TheaterType theater)
 		} else {
 			if (overlay.IsTheater || overlay.IsNewTheater) {
 				if (overlay.ImageData != NULL) {
-					Free_Demand_Loaded_Shape(overlay.ImageData);
+					Free_Uncached_Shape(overlay.ImageData);
 				}
 			}
+		}
+	}
+
+	Load_Uncached_Art(theater);
+}
+
+
+/// <summary>
+/// Loads the shape of every overlay type that sets DemandLoad and has none loaded, through
+/// the file layer. A missing file leaves the shape NULL.
+/// </summary>
+/// <param name="theater">The theater the shapes are named for.</param>
+void OverlayTypeClass::Load_Uncached_Art(TheaterType theater)
+{
+	for (int index = 0; index < OverlayTypes.Count(); index++) {
+		OverlayTypes[index]->Load_Uncached_Image(theater);
+	}
+}
+
+
+void OverlayTypeClass::Load_Uncached_Image(TheaterType theater)
+{
+	if (DemandLoad && ImageData == NULL) {
+		char fullname[_MAX_FNAME+_MAX_EXT];
+		Uncached_Image_Name(fullname, theater);
+
+		CCFileClass file(fullname);
+		ImageData = Load_Alloc_Data(file);
+	}
+}
+
+
+void OverlayTypeClass::Uncached_Image_Name(char * fullname, TheaterType theater) const
+{
+	if (IsTheater) {
+		_makepath(fullname, NULL, NULL, GraphicName, TheaterClass::As_Reference(theater).Suffix);
+	} else {
+		_makepath(fullname, NULL, NULL, GraphicName, ".SHP");
+		if (IsNewTheater) {
+			Theater_Naming_Convention(fullname, theater);
 		}
 	}
 }
@@ -334,7 +374,7 @@ bool OverlayTypeClass::Read_INI(CCINIClass const & ini)
 	}
 
 	if (DemandLoad && ImageData != NULL) {
-		Free_Demand_Loaded_Shape(ImageData);
+		Free_Uncached_Shape(ImageData);
 	}
 
 	if (BASECLASS::Read_INI(ini)) {
@@ -415,6 +455,7 @@ void OverlayTypeClass::Compute_CRC(CRCEngine & crc) const
 
 	crc(HeapID);
 	crc(Land);
+	if (CellAnim != NULL) crc(CellAnim->Fetch_ID());
 	crc(DamageLevels);
 	crc(DamagePoints);
 	crc(IsWall);
@@ -422,15 +463,20 @@ void OverlayTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsTiberium);
 	crc(IsCrate);
 	crc(IsCrateTrigger);
+	crc(IsNoUseTileLandType);
+	crc(IsVeinholeMonster);
+	crc(IsVeins);
 	crc(IsExplosive);
+	crc(IsChainReaction);
+	crc(IsOverrides);
 }
 
 
 /// <summary>
 /// Re-attaches the artwork this overlay type names.
 /// The artwork is fetched again once the members have been read, since pointers into the
-/// mix files do not survive a save. An overlay left for demand loading is not fetched here;
-/// Get_Image_Data picks it up when something first asks to draw it.
+/// mix files do not survive a save. An overlay that sets DemandLoad loads its shape through
+/// the file layer.
 /// </summary>
 void OverlayTypeClass::Post_Load(void)
 {
@@ -438,7 +484,9 @@ void OverlayTypeClass::Post_Load(void)
 
 	Fetch_Voxel_Image();
 
-	if (!DemandLoad) {
+	if (DemandLoad) {
+		Load_Uncached_Image(Scen->Theater);
+	} else {
 		Fetch_Normal_Image();
 		char fullname[_MAX_FNAME+_MAX_EXT];
 		if (IsTheater) {
@@ -536,39 +584,4 @@ RGBClass OverlayTypeClass::Get_Radar_Color(int shape) const
 	}
 
 	return(RGBClass(0, 0, 0));
-}
-
-
-/// <summary>
-/// Fetches the shape data to draw this overlay type with.
-/// An overlay type marked for demand loading does without its artwork until something first
-/// asks to draw it. This routine fetches the shape file at that moment and holds on to it
-/// for every later request.
-/// </summary>
-/// <returns>Returns with a pointer to the shape data for this overlay type.</returns>
-void const * OverlayTypeClass::Get_Image_Data(void) const
-{
-	char fullname[_MAX_FNAME+_MAX_EXT];
-
-	if (ImageData != NULL || DemandLoad == false) {
-		return(ImageData);
-	}
-
-	OverlayTypeClass * _this = (OverlayTypeClass *)this;
-
-	DebugString("Demand loading image for %s\n", (char const *)GivenName);
-	if (IsTheater) {
-		_makepath(fullname, NULL, NULL, GraphicName, TheaterClass::As_Reference(Scen->Theater).Suffix);
-	} else {
-		_makepath(fullname, NULL, NULL, GraphicName, ".SHP");
-		if (IsNewTheater) {
-			_this->Theater_Naming_Convention( fullname, Scen->Theater);
-		}
-	}
-
-	CCFileClass file (fullname);
-
-	_this->ImageData = Load_Alloc_Data(file);
-
-	return(ImageData);
 }

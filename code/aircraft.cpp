@@ -217,8 +217,6 @@ AircraftClass::AircraftClass(AircraftTypeClass const * type, HouseClass * house)
 	IsToSpendAmmo(false),
 	Class((AircraftTypeClass *)type),
 	Passenger(false),
-	IsKamikaze(false),
-	field_35B(false),
 	IsLockedStraight(false),
 	SightTimer(0),
 	AttacksRemaining(1),
@@ -390,8 +388,12 @@ void AircraftClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) const
 		int key = 0;
 		int height = HeightAGL;
 
-		bool occupies_cell = Occupies_Cells();
-		((AircraftClass &)*this).IsOccupyingCell = false;
+		// The shadow is drawn with the aircraft at ground or bridge level. The height is written
+		// straight to the coordinate, since the HeightAGL setter takes the aircraft off the map
+		// and puts it back, and a draw must not change the map.
+		AircraftClass & self = const_cast<AircraftClass &>(*this);
+		int const flying_z = Position.Z;
+		int const ground_z = Map.Get_Height_GL(PositionCoord) + (IsOnBridge ? BRIDGE_LEPTON_HEIGHT : 0);
 
 		CellClass * cellptr = &Map[Get_Coord()];
 
@@ -403,7 +405,7 @@ void AircraftClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) const
 				(cellptr->IsBridgeEastWest && cellptr->Adjacent_Cell(FACING_N).IsUnderBridge ||
 				!cellptr->IsBridgeEastWest && cellptr->Adjacent_Cell(FACING_W).IsUnderBridge)) {
 
-				((AircraftClass &)*this).HeightAGL = BRIDGE_LEPTON_HEIGHT;
+				self.Position.Z = ground_z + BRIDGE_LEPTON_HEIGHT;
 				shadow.Y -= TacticalMap->Z_Lepton_To_Pixel(BRIDGE_LEPTON_HEIGHT);
 			} else {
 				draw_on_ground = true;
@@ -411,7 +413,7 @@ void AircraftClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) const
 		}
 
 		if (draw_on_ground) {
-			((AircraftClass &)*this).HeightAGL = 0;
+			self.Position.Z = ground_z;
 		}
 
 		/*
@@ -421,8 +423,7 @@ void AircraftClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) const
 		matrix = Locomotion->Shadow_Matrix(&key);
 		Draw_Voxel_Shadow(Class->Voxel, 0, key, &Class->ShadowVoxelIndex, cliprect, shadow, Get_Isometric_View_Matrix() * matrix, true);
 
-		((AircraftClass &)*this).HeightAGL = height;
-		((AircraftClass &)*this).IsOccupyingCell = occupies_cell;
+		self.Position.Z = flying_z;
 
 		TacticalMap->Add_To_Selectables((AircraftClass *)this, point);
 
@@ -1187,7 +1188,7 @@ int AircraftClass::Do_MISSION_RETREAT(void)
 		default:
 			break;
 	}
-	return(MissionControl[Mission].Normal_Delay() + Random_Pick(0, 2));
+	return(Rule->MissionControl[Mission].Normal_Delay() + Random_Pick(0, 2));
 #endif
 }
 
@@ -4177,8 +4178,6 @@ void AircraftClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Class);
 	stream.Serialize(IsToSpendAmmo);
 	stream.Serialize(Passenger);
-	stream.Serialize(IsKamikaze);
-	stream.Serialize(field_35B);
 	stream.Serialize(IsLockedStraight);
 	stream.Serialize(SightTimer);
 	stream.Serialize(AttacksRemaining);
@@ -4224,11 +4223,13 @@ bool AircraftClass::Ready_To_Commence(void)
 void AircraftClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
+	if (Class != NULL) crc(Class->Fetch_ID());
+	crc(IsToSpendAmmo);
 	crc(Passenger);
-	crc(IsKamikaze);
-	crc(field_35B);
+	crc(IsLockedStraight);
 	crc((int)SightTimer);
 	crc(AttacksRemaining);
+	crc(IsReadyToCommence);
 }
 
 

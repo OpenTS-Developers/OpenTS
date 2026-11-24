@@ -15,6 +15,7 @@
 #include "ccfile.h"
 #include "convert.h"
 #include "data.h"
+#include "gametext.h"
 #include "globals.h"
 #include "ini.h"
 #include "keyboard.h"
@@ -59,7 +60,6 @@ Selection::Selection(Campaign * campaign, bool vq_anim) :
 	LastHoverZone(-1),
 	WorldMap(campaign->Properties.Get_Map_ID()),
 	MapOrigin(0, 0),
-	RegionDrawer(NULL),
 	TerritoryDrawer(NULL),
 	LogoDrawer(NULL),
 	RegionAnim(NULL),
@@ -125,7 +125,6 @@ Selection::~Selection(void)
 		delete entry;
 	}
 
-	delete RegionDrawer;
 	delete TerritoryDrawer;
 	delete LogoDrawer;
 	delete ClickMapImage;
@@ -233,7 +232,6 @@ void Selection::Init_Regions(INIClass const & ini, const char * section, bool vq
 	Add_Animation(RegionAnim);
 
 	sprintf(buffer, "%s%s.pal", faction_name, region_name);
-	RegionDrawer = Create_Drawer(buffer);
 	TerritoryDrawer = Create_Drawer(buffer);
 
 	ini.Get_String(section, "ClickMap", 0, buffer, sizeof(buffer));
@@ -1014,6 +1012,8 @@ void Selection::Set_Text(char const * text, int start_delay)
 
 	if (text != NULL) {
 		strncpy(Text, text, sizeof(Text));
+		Text[sizeof(Text) - 1] = '\0';
+		Game_Text_Lines_In_Place(Text);
 		MSPrintAnim::Word_Wrap(Text, sizeof(Text), Font, TextRect.Width);
 		TextAnim = new MSPrintAnim(Text, TextRect.X, TextRect.Y, Font, TextRect, start_delay, 1, true, true);;
 		TextAnim->Set_Transient(true);

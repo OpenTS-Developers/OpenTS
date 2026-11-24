@@ -46,7 +46,29 @@
 
 #include "ramfile.h"
 
+#include <algorithm>
+#include <climits>
+#include <cstddef>
 #include <cstring>
+#include <exception>
+#include <functional>
+
+
+/// <summary>
+/// Constructs an empty growable file, which owns its bytes. A Write past its end extends it,
+/// and a Seek stops at its end.
+/// </summary>
+RAMFileClass::RAMFileClass(void) :
+	Buffer(NULL),
+	MaxLength(0),
+	Length(0),
+	Offset(0),
+	Access(READ),
+	IsOpen(false),
+	IsAllocated(false),
+	IsGrowable(true)
+{
+}
 
 
 /***********************************************************************************************
@@ -81,7 +103,8 @@ RAMFileClass::RAMFileClass(void * buffer, int len) :
 	Offset(0),
 	Access(READ),
 	IsOpen(false),
-	IsAllocated(false)
+	IsAllocated(false),
+	IsGrowable(false)
 {
 	if (buffer == NULL && len > 0) {
 		Buffer = new char[len];
@@ -248,7 +271,7 @@ int RAMFileClass::Open(char const *, int access)
  *=============================================================================================*/
 int RAMFileClass::Open(int access)
 {
-	if (Buffer == NULL || Is_Open()) {
+	if ((Buffer == NULL && !IsGrowable) || Is_Open()) {
 		return(false);
 	}
 
@@ -344,12 +367,12 @@ int RAMFileClass::Read(void * buffer, int size)
  *=============================================================================================*/
 int RAMFileClass::Seek(int pos, int dir)
 {
-	if (Buffer == NULL || !Is_Open()) {
+	if ((Buffer == NULL && !IsGrowable) || !Is_Open()) {
 		return(Offset);
 	}
 
 	int maxoffset = Length;
-	if ((Access & WRITE) != 0) {
+	if ((Access & WRITE) != 0 && !IsGrowable) {
 		maxoffset = MaxLength;
 	}
 
@@ -420,7 +443,7 @@ int RAMFileClass::Size(void)
  *=============================================================================================*/
 int RAMFileClass::Write(void const * buffer, int size)
 {
-	if (Buffer == NULL || buffer == NULL || size == 0) {
+	if ((Buffer == NULL && !IsGrowable) || buffer == NULL || size == 0) {
 		return(0);
 	}
 
@@ -434,10 +457,25 @@ int RAMFileClass::Write(void const * buffer, int size)
 		}
 	}
 
+	if (IsGrowable && size > MaxLength - Offset) {
+		// A source inside this file's bytes moves with them when they grow.
+		char const * source = static_cast<char const *>(buffer);
+		std::ptrdiff_t inside = -1;
+		if (Buffer != NULL && std::less_equal<>()(Buffer, source) && std::less<>()(source, Buffer + MaxLength)) {
+			inside = source - Buffer;
+		}
+		Grow(Offset + std::min(size, INT_MAX - Offset));
+		if (inside >= 0) {
+			buffer = Buffer + inside;
+		}
+	}
+
 	int maxwrite = MaxLength - Offset;
 	int towrite = (size < maxwrite) ? size : maxwrite;
-	memmove(&Buffer[Offset], buffer, towrite);
-	Offset += towrite;
+	if (towrite > 0) {
+		memmove(&Buffer[Offset], buffer, towrite);
+		Offset += towrite;
+	}
 
 	if (Offset > Length) {
 		Length = Offset;
@@ -468,4 +506,34 @@ int RAMFileClass::Write(void const * buffer, int size)
 void RAMFileClass::Close(void)
 {
 	IsOpen = false;
+}
+
+
+std::span<std::uint8_t const> RAMFileClass::Contents(void) const
+{
+	if (Buffer == NULL || Length <= 0) {
+		return(std::span<std::uint8_t const>());
+	}
+	return(std::span<std::uint8_t const>(reinterpret_cast<std::uint8_t const *>(Buffer), std::size_t(Length)));
+}
+
+
+// Leaves the storage as it was when it cannot be extended, so the Write that asked comes up short.
+void RAMFileClass::Grow(int length)
+{
+	try {
+		if (std::size_t(length) > Storage.capacity()) {
+			std::size_t const doubled = std::min<std::size_t>(Storage.capacity() * 2, INT_MAX);
+			try {
+				Storage.reserve(std::max(std::size_t(length), doubled));
+			} catch (std::exception const &) {
+				Storage.reserve(std::size_t(length));
+			}
+		}
+		Storage.resize(std::size_t(length));
+	} catch (std::exception const &) {
+		return;
+	}
+	Buffer = Storage.data();
+	MaxLength = int(Storage.size());
 }

@@ -122,7 +122,6 @@ extern bool Debug_Check_Map;
 extern bool Debug_Playtest;
 extern bool Debug_Trap_Check_Heap;
 extern bool Debug_Print_Events;
-extern bool Debug_Console;
 extern bool Debug_MultipleInstances;
 
 extern ParticleSystemClass *GasSystem;
@@ -132,7 +131,6 @@ extern int NewINIFormat;
 /*
 **	Dynamic global variables (these change or are initialized at run time).
 */
-extern MissionControlClass			MissionControl[MISSION_COUNT];
 extern int							MapTriggerID;
 extern int							LogicTriggerID;
 extern RandomStraw					CryptRandom;
@@ -200,8 +198,6 @@ extern DynamicVectorClass<TechnoTypeClass *>			TechnoTypes;
 extern DynamicVectorClass<ObjectClass *>				Objects;
 extern DynamicVectorClass<AbstractTypeClass *>			AbstractTypes;
 
-extern DynamicVectorClass<AnimClass *>					MoveFlashes;
-
 extern std::deque<EventClass>							OutList;
 extern std::deque<EventClass>							DoList;
 
@@ -250,8 +246,6 @@ extern int							CustomSeed;
 extern bool							IgnoreInput;
 extern bool							drag_select_aborted;
 
-extern GroundType  				Ground[LAND_COUNT];
-
 extern intptr_t LParam;
 
 /*
@@ -259,10 +253,7 @@ extern intptr_t LParam;
 */
 extern char const *							LandName[LAND_COUNT];
 extern char const *							SpeedName[SPEED_COUNT];
-extern double								CrateData[CRATE_COUNT];
 extern char const * const					CrateNames[CRATE_COUNT];
-extern int									CrateShares[CRATE_COUNT];
-extern AnimType								CrateAnims[CRATE_COUNT];
 extern char const * const					ArmorName[ARMOR_COUNT];
 extern char const * const					ActionName[ACTION_COUNT];
 extern Coord const 							StoppingCoordAbs[5];

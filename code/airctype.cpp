@@ -455,6 +455,8 @@ void AircraftTypeClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
 
+	crc(HeapID);
+	crc(IsCarryall);
 	crc(IsRotorEquipped);
 	crc(VoxelRotors);
 	crc(RotorCount);
@@ -463,7 +465,6 @@ void AircraftTypeClass::Compute_CRC(CRCEngine & crc) const
 		crc(RotorMovingRate[rotor]);
 	}
 	crc(IsLandable);
-	crc(HeapID);
 }
 
 

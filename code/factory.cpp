@@ -436,7 +436,7 @@ bool FactoryClass::Abandon(void)
 			**	Refund all money expended so far, back to the owner of the object under construction.
 			*/
 			int money = Object->Class_Of()->Cost_Of(Object->House);
-			House->Refund_Money(money - Balance);
+			House->Refund_Money(money - Balance, INCOME_REFUND_PRODUCTION);
 			Balance = 0;
 		}
 		if (SpecialItem) {
@@ -668,15 +668,20 @@ void FactoryClass::Compute_CRC(CRCEngine &crc) const
 {
 	BASECLASS::Compute_CRC(crc);
 
-	crc(IsSuspended);
-	crc(IsDifferent);
+	crc(QueuedObjects.Count());
+	for (int i = 0; i < QueuedObjects.Count(); i++) {
+		crc(QueuedObjects[i]->Fetch_ID());
+	}
+	if (Object != NULL) crc(Object->Fetch_ID());
 	crc(Balance);
 	crc(OriginalBalance);
-
-	if (Object != NULL) crc(Object->Fetch_ID());
 	crc(SpecialItem);
-
 	crc(House->Fetch_ID());
+	crc(Fetch_Stage());
+	crc(Fetch_Rate());
+	crc(Fetch_Step());
+	crc(IsSuspended);
+	crc(IsOnHold);
 }
 
 

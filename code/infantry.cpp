@@ -465,7 +465,7 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 						Do_Action(DO_FIRE_DEATH, true);
 					} else {
 						AnimClass * anim = new AnimClass(Rule->FlamingInfantry, PositionCoord);
-						anim->AlternativeDrawer = ColorSchemes[PlayerPtr->Scheme]->Converter;
+						anim->Draw.AlternativeDrawer = ColorSchemes[PlayerPtr->Scheme]->Converter;
 						delthis = true;
 					}
 					break;
@@ -1646,7 +1646,7 @@ MoveType InfantryClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir
 			if (Mission == MISSION_ENTER || Mission == MISSION_CAPTURE || Mission == MISSION_SABOTAGE ||
 				((Mission == MISSION_GUARD_AREA || Mission == MISSION_PATROL || Mission == MISSION_GUARD) && Class->IsEngineer)) {
 				if (obj == NavCom || (&Map[(Coord const &)obj->PositionCoord] == NavCom || obj == TarCom)) {
-					if (!IsTethered && !isbridge && Ground[cellptr->Land_Type()].Cost[Class->Speed] == 0) {
+					if (!IsTethered && !isbridge && Rule->Ground[cellptr->Land_Type()].Cost[Class->Speed] == 0) {
 						return(MOVE_NO);
 					}
 					return(MOVE_OK);
@@ -1856,7 +1856,7 @@ MoveType InfantryClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir
 	/*
 	**	If foot soldiers cannot travel on the cell -- consider it impassable.
 	*/
-	if (/*retval == MOVE_OK &&*/ !IsTethered && !isbridge && Ground[cellptr->Land_Type()].Cost[Class->Speed] == 0) {
+	if (/*retval == MOVE_OK &&*/ !IsTethered && !isbridge && Rule->Ground[cellptr->Land_Type()].Cost[Class->Speed] == 0) {
 
 #ifdef OBSOLETE
 		/*
@@ -2292,7 +2292,7 @@ bool InfantryClass::Do_Action(DoType todo, bool force, bool randomize)
 			Set_Rate(MasterDoControls[Doing].Rate);
 		}
 		if (randomize) {
-			Set_Stage(Sim_Random_Pick(0,std::max((int)Class->DoControls[todo].Count, 1) - 1));
+			Set_Stage(Random_Pick(0,std::max((int)Class->DoControls[todo].Count, 1) - 1));
 		} else {
 			Set_Stage(0);
 		}
@@ -4070,14 +4070,17 @@ void InfantryClass::Do_Idle(int which)
 void InfantryClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
+	if (Class != NULL) crc(Class->Fetch_ID());
 	crc(Doing);
 	crc((int)Comment);
 	crc(Fear);
+	crc(IsBerzerk);
 	crc(IsTechnician);
 	crc(IsStoked);
 	crc(IsProne);
 	crc(IsZoneCheat);
-	crc(WasSelected);
+	crc((int)ProneStruggleTimer);
+	crc((int)LookTimer);
 }
 
 

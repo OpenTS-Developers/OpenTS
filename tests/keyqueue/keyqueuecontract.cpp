@@ -231,15 +231,15 @@ TEST_CASE("a click carries where it happened and types nothing")
 }
 
 
-TEST_CASE("a double click is a press and a release")
+TEST_CASE("a double click's second press waits for its own release")
 {
 	WWKeyboardClass keyboard;
 	keyboard.Handle_Window_Event(Click(true, WINDOW_BUTTON_RIGHT, 5, 6, 2));
+	CHECK(keyboard.Get() == KN_RMOUSE);
+	CHECK(keyboard.Check() == 0);
 
-	unsigned short press = keyboard.Get();
-	unsigned short release = keyboard.Get();
-	CHECK(press == KN_RMOUSE);
-	CHECK(release == (KN_RMOUSE | KN_RLSE_BIT));
+	keyboard.Handle_Window_Event(Click(false, WINDOW_BUTTON_RIGHT, 5, 6, 2));
+	CHECK(keyboard.Get() == (KN_RMOUSE | KN_RLSE_BIT));
 }
 
 

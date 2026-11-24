@@ -32,7 +32,6 @@ class ParticleClass : public ObjectClass
 		virtual ~ParticleClass(void) override;
 
 		virtual ClassID Class_ID(void) const override;
-		virtual bool Save(SaveStreamClass & stream, bool cleardirty) override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 
@@ -79,9 +78,6 @@ class ParticleClass : public ObjectClass
 		Coord GasDrift;
 		Vector3 GasVelocity;
 
-		/// Unused
-		Coord UnusedCoord1;
-
 		/*
 		 * The speed at which the particle moves.
 		 */
@@ -125,9 +121,6 @@ class ParticleClass : public ObjectClass
 		 * the particle ages, and it is only honored at the highest detail level.
 		 */
 		signed char Translucency;
-
-		/// Unused
-		bool WasSaved;
 
 		/*
 		 * If this particle has finished and should be removed from the game, then this flag

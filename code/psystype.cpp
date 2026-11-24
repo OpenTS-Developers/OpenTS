@@ -177,6 +177,18 @@ void ParticleSystemTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(SpawnTranslucencyCutoff);
 	crc(BehavesLike);
 	crc(Lifetime);
+
+	crc(SpawnDirection.X);
+	crc(SpawnDirection.Y);
+	crc(SpawnDirection.Z);
+	crc(ParticlesPerCoord);
+	crc(SpiralDeltaPerCoord);
+	crc(SpiralRadius);
+	crc(PositionPerturbationCoefficient);
+	crc(MovementPerturbationCoefficient);
+	crc(VelocityPerturbationCoefficient);
+	crc(SpawnSparkPercentage);
+	crc(SparkSpawnFrames);
 }
 
 

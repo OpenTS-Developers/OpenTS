@@ -15,7 +15,7 @@ on:
       - ".github/workflows/engine.yml"
       - ".github/workflows/engine-build.yml"
   push:
-    branches: [main]
+    branches: [main, "release/**"]
     paths:
       - "code/**"
       - "cmake/**"

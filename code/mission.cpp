@@ -49,11 +49,13 @@
 
 #include "_bench.h"
 #include "_mission.h"
+#include "_rules.h"
 #include "bench.h"
 #include "ccini.h"
 #include "globals.h"
 #include "incdec.h"
 #include "mono.h"
+#include "rules.h"
 #include "savestream.h"
 #include "syncrechook.h"
 
@@ -434,7 +436,7 @@ bool MissionClass::Is_Recruitable_Mission(MissionType mission)
 	if (mission == MISSION_NONE) {
 		return(true);
 	}
-	return(MissionControl[mission].IsRecruitable);
+	return(Rule->MissionControl[mission].IsRecruitable);
 }
 
 
@@ -581,6 +583,7 @@ void MissionClass::Compute_CRC(CRCEngine &crc) const
 	crc(SuspendedMission);
 	crc(MissionQueue);
 	crc(Status);
+	crc(IsMissionUnloadStandby);
 	crc((int)Timer);
 }
 
@@ -594,7 +597,7 @@ void MissionClass::Compute_CRC(CRCEngine &crc) const
 /// mission.</returns>
 MissionControlClass const & MissionClass::Current_Mission_Control(void) const
 {
-	return(MissionControl[CurrentMission]);
+	return(Rule->MissionControl[CurrentMission]);
 }
 
 

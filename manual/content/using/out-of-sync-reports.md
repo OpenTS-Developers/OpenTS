@@ -1,12 +1,13 @@
 ---
 title: Out-of-sync reports
-summary: A network game that goes out of sync writes a checksum report beside the executable, so two players' reports can be compared to find where they diverged.
+summary: A network game that goes out of sync writes a checksum report into the `Debug` folder, so two players' reports can be compared to find where they diverged.
 category: troubleshooting
 source_files:
   - code/syncreport.cpp
   - code/syncrec.cpp
   - code/syncrechook.cpp
   - code/queue.cpp
+  - code/statehash.cpp
 related:
   - type: using
     id: debug-logging
@@ -14,8 +15,6 @@ related:
     id: crash-reports
   - type: system
     id: out-of-sync-recovery
-  - type: key
-    id: PrintCRC
 ---
 
 ## What an out-of-sync report is
@@ -24,11 +23,11 @@ An out-of-sync report is a text file that records one machine's game state on th
 
 Each machine in a network game computes a checksum of its game every frame. It sends that checksum to the other machines only on frames that are a multiple of the frame send rate, the number on the report's `FrameSendRate:` line. When a checksum from another player disagrees with the one this machine computed for the same frame, the two games diverged on that frame or earlier. The machine writes its report at that point, before it asks the players what to do. [Out-of-sync recovery](/systems/out-of-sync-recovery/) describes the dialog that follows.
 
-A network game writes the report without any setup. Recording playback can also write a report through the [`PrintCRC`](/keys/printcrc/) trap, which then exits the game; that page gives the frame the report is written on.
+A network game writes the report without any setup.
 
 ## Where it is written
 
-The report goes into the `Debug` folder beside the executable, the folder that also holds the debug log. The file name gives the local player's house number, the local date and time in day-month-year order, and the frame the report was written on:
+The report goes into the `Debug` folder that holds the [debug log](/using/debug-logging/#where-the-log-is-written): in the user directory with `-USERDIR`, and beside the executable otherwise. The file name gives the local player's house number, the local date and time in day-month-year order, and the frame the report was written on:
 
 ```
 Debug/SYNC_H0_02-09-2026_18-42-07_F1530.LOG
@@ -42,7 +41,7 @@ Each machine limits how many reports it writes:
 
 Before it writes a report, the game deletes reports in the folder that are more than thirty days old.
 
-Keep the folder beside the executable writable. If the report file cannot be created there, no report is written.
+Keep that folder writable. If the report file cannot be created there, no report is written.
 
 ## What it holds
 
@@ -54,9 +53,10 @@ The report is a plain text file. Most lines are a `Label: value` pair, and each 
 4. Every house, with its name, whether a human plays it, its color, its ID and its house type.
 5. Every house's infantry, vehicles (headed `Units`), structures (headed `Buildings`) and aircraft, one line per object with its position, facing, current mission and type. Infantry and vehicle lines add the object's target and destination. Structure and aircraft lines instead identify the object itself: the last six hexadecimal digits of their `Tgt:` field are its unique ID.
 6. Every object on each map layer, then every object in the list of objects the game updates each frame.
-7. One block for each player whose checksum disagreed, giving that player's name and checksum and the frame the checksum was computed for. The block adds this machine's checksum for the same frame when its `Delay:` value is under 256. A report written by the `PrintCRC` trap has a note in place of these blocks.
+7. One block for each player whose checksum disagreed, giving that player's name and checksum and the frame the checksum was computed for. The block adds this machine's checksum for the same frame when its `Delay:` value is under 256.
 8. Histories of the moments before the divergence, each newest first and limited in length: random number draws, executed and queued events, target assignments, mission orders, facing assignments and animation creations.
-9. A checksum table. It gives a count and checksum for each list of objects and type definitions, then one row for each house, vehicle, bullet, team, trigger or other object in the game. Each row gives the object's unique ID and a running checksum of that object and every object before it in the same list.
+9. The start state checksums: the table this machine recorded for the [start check](/systems/out-of-sync-recovery/#games-that-differ-at-the-start), or a line saying that none was recorded, as for a resumed saved game.
+10. A checksum table of the current game. It gives a count and checksum for the scenario, the rules, each list of objects and type definitions, the map's tile types and the map cells. Rows follow for the scenario and the rules in groups of values, then one row for each type definition and tile type, named, and one row for each house, vehicle, bullet, team, trigger or other object in the game, by its unique ID. Each row gives the running checksum of its section through that row.
 
 Each history line records the frame it happened on. Target and mission lines name objects by their unique ID, which is the same on every machine that is still in sync. Animation lines do too, except those marked `(local only)`, which exist on one machine only.
 
@@ -81,7 +81,7 @@ Match reports by their contents. Two reports describe the same divergence only w
 
 With a matched pair, compare the frame checksums to find the first frame whose checksums differ. Then compare the histories around that frame to find the first comparable entry that differs; its call site names the code that diverged.
 
-To find the object whose state differs, compare the checksum table. In each list, the first row whose running checksum differs names that object's unique ID. The object lines earlier in the report can be compared as well, but infantry and vehicle lines carry no ID, so match those objects by house, type and position.
+To find the object whose state differs, compare the checksum tables of the current game. In each list, the first row whose running checksum differs gives that object's unique ID, or the type's name in a list of types. The first scenario or rules row that differs narrows the difference to one group of values. The object lines earlier in the report can be compared as well, but infantry and vehicle lines have no ID, so match those objects by house, type and position.
 
 ## Forcing a divergence on purpose
 

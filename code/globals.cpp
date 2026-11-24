@@ -35,11 +35,11 @@
 #include "classids.h"
 
 #include "_voxel.h"
+#include "ctrlgroup.h"
 #include "globals.h"
 #include "goptions.h"
 #include "ipxmgr.h"
 #include "logic.h"
-#include "mission.h"
 #include "partsys.h"
 #include "queue.h"
 #include "rndstraw.h"
@@ -114,7 +114,6 @@ bool Debug_Check_Map = false;			// true = validate the map each frame
 bool Debug_Playtest = false;
 bool Debug_Trap_Check_Heap = false; // true = check the Heap
 bool Debug_Print_Events = false;    // true = print event & packet processing
-bool Debug_Console = false;
 bool Debug_MultipleInstances = false;	// true = let this copy run beside another one
 
 
@@ -172,8 +171,6 @@ DynamicVectorClass<TechnoTypeClass *>			TechnoTypes;
 DynamicVectorClass<ObjectClass *>				Objects;
 DynamicVectorClass<AbstractTypeClass *>			AbstractTypes;
 
-DynamicVectorClass<AnimClass *>					MoveFlashes;
-
 
 int NewINIFormat = 0;
 
@@ -183,13 +180,6 @@ int NewINIFormat = 0;
 **
 */
 bool GameInFocus = false;
-
-
-/***************************************************************************
-**	These are the mission control structures. They hold the information about
-**	how the missions should behave in the system.
-*/
-MissionControlClass MissionControl[MISSION_COUNT];
 
 
 /***************************************************************************
@@ -204,6 +194,8 @@ RandomStraw CryptRandom;
 **	are used to control access to this list. Do not modify it directly.
 */
 DynamicVectorClass<ObjectClass *> CurrentObject;
+
+ControlGroupsClass ControlGroups;
 
 
 /***************************************************************************

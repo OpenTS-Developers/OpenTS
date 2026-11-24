@@ -143,7 +143,6 @@ void CampaignClass::Compute_CRC(CRCEngine & crc) const
 	crc(CDNumber);
 	crc(ScenarioName);
 	crc(FinalMovie);
-	crc(Description);
 	crc(RequiredAddon);
 }
 

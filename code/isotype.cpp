@@ -234,7 +234,7 @@ IsometricTileType IsometricTileTypeClass::ShadowCasterTiles[5];
  * HISTORY:                                                                                    *
  *   07/29/1994 JLB : Created.                                                                 *
  *=============================================================================================*/
-IsometricTileTypeClass::IsometricTileTypeClass(IsometricTileType type, int unknown1, unsigned char unknown2, char const * ininame, bool skip_registration) :
+IsometricTileTypeClass::IsometricTileTypeClass(IsometricTileType type, char const * ininame, bool skip_registration) :
 	BASECLASS(ininame),
 	HeapID(type),
 	MarbleMadness(ISOTILE_NONE),
@@ -248,14 +248,12 @@ IsometricTileTypeClass::IsometricTileTypeClass(IsometricTileType type, int unkno
 	Offset(Point2D(0,0)),
 	AttachesTo(-1),
 	ZAdjust(0),
-	Unused1((unsigned char)unknown1),
 	IsMorphable(false),
 	IsShadowCaster(false),
 	IsAllowToPlace(true),
 	IsRequiredForRMG(false),
 	Width(0),
 	Height(0),
-	Unused2(unknown2),
 	NumTileTypesInSet(1),
 	IsFileLoaded(false),
 	IsAllowBurrowing(true),
@@ -999,10 +997,8 @@ void IsometricTileTypeClass::Read_Control_File(TheaterType theater, bool from_cc
 				strcat(tile_name, suffix);
 				sprintf(given_name, "%.28s %02d", set_name, i + 1);
 
-				int uninitialized_value = 0x00000003;
-
 				if (tile_count == 0) {
-					tile = new IsometricTileTypeClass((IsometricTileType)heapid++, uninitialized_value, 0, tile_name, false);
+					tile = new IsometricTileTypeClass((IsometricTileType)heapid++, tile_name, false);
 
 					tile->GivenName = given_name;
 					tile->MarbleMadness = _MarbleMadness;
@@ -1087,7 +1083,7 @@ void IsometricTileTypeClass::Read_Control_File(TheaterType theater, bool from_cc
 					if (!mixfile_set && !found_image) {
 						break;
 					}
-					tile = new IsometricTileTypeClass((IsometricTileType)(heapid - 1), uninitialized_value, 0, tile_name, true);
+					tile = new IsometricTileTypeClass((IsometricTileType)(heapid - 1), tile_name, true);
 
 					tile->GivenName = given_name;
 					tile->MarbleMadness = _MarbleMadness;
@@ -1304,22 +1300,6 @@ int IsometricTileTypeClass::Load_Tile_Data(void)
 	Build_Preview_Tiles();
 
 	return(size);
-}
-
-
-/// <summary>
-/// Clears the usage count of every isometric tile type.
-/// This routine is used before the map is scanned, so that the tile loader can tell which
-/// tile types the scenario really needs and which may be dropped from memory.
-/// </summary>
-void IsometricTileTypeClass::Clear_Use_Counts(void)
-{
-	IsometricTileTypeClass * t;
-	for (int i = 0; i < IsometricTileTypes.Count(); i++) {
-		for (t = IsometricTileTypes[i]; t != NULL; t = t->NextTileTypeInSet) {
-			t->UseCount = 0;
-		}
-	}
 }
 
 
@@ -2718,21 +2698,22 @@ void IsometricTileTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(MarbleMadness);
 	crc(NonMarbleMadness);
 	crc(TileSetBaseID);
-	crc(PreviewTiles.Count());
 	if (NextTileTypeInSet != NULL) {
-		crc(NextTileTypeInSet->Fetch_ID());
+		crc(NextTileTypeInSet->HeapID);
 	}
 	crc(ToSnowTheater);
 	crc(ToTemperateTheater);
+	crc((int)Anim);
+	crc(Offset.X);
+	crc(Offset.Y);
 	crc(AttachesTo);
 	crc(ZAdjust);
-	crc(Unused1);
 	crc(IsMorphable);
 	crc(IsShadowCaster);
-	crc(Width);
-	crc(Height);
-	crc(Unused2);
+	// Width and Height stay 0 until the tile file loads, which drawing can cause, so they are left out.
 	crc(NumTileTypesInSet);
+	crc(IsAllowBurrowing);
+	crc(IsAllowTiberium);
 }
 
 
@@ -2774,14 +2755,12 @@ void IsometricTileTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Offset);
 	stream.Serialize(AttachesTo);
 	stream.Serialize(ZAdjust);
-	stream.Serialize(Unused1);
 	stream.Serialize(IsMorphable);
 	stream.Serialize(IsShadowCaster);
 	stream.Serialize(IsAllowToPlace);
 	stream.Serialize(IsRequiredForRMG);
 	stream.Serialize(Width);
 	stream.Serialize(Height);
-	stream.Serialize(Unused2);
 	stream.Serialize(NumTileTypesInSet);
 	stream.Serialize(IsFileLoaded);
 	stream.Serialize(Filename);

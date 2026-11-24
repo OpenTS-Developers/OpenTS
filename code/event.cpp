@@ -277,7 +277,7 @@ void EventClass::Reset_Announcements(void)
  * HISTORY:                                                                                    *
  *   06/25/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-EventClass::EventClass(int index, SpecialClass data)
+EventClass::EventClass(int index, SpecialClass data) : EventClass()
 {
 	if (index >= 0) {
 		ID = index;
@@ -309,7 +309,7 @@ EventClass::EventClass(int index, SpecialClass data)
  * HISTORY:                                                                                    *
  *   06/25/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-EventClass::EventClass(int index, unsigned char type, TargetClass target)
+EventClass::EventClass(int index, unsigned char type, TargetClass target) : EventClass()
 {
 #ifdef _DEBUG
 	DebugString("Adding event %s\n", EventNames[type]);
@@ -336,7 +336,7 @@ EventClass::EventClass(int index, unsigned char type, TargetClass target)
 /// <param name="index">The house index of the player originating this event.</param>
 /// <param name="type">The event type to construct.</param>
 /// <param name="cell">The cell that this event is to apply to.</param>
-EventClass::EventClass(int index, unsigned char type, Cell const & cell)
+EventClass::EventClass(int index, unsigned char type, Cell const & cell) : EventClass()
 {
 	DebugString("Adding event %s\n", EventNames[type]);
 
@@ -368,7 +368,7 @@ EventClass::EventClass(int index, unsigned char type, Cell const & cell)
  * HISTORY:                                                                                    *
  *   12/27/1994 JLB : Created.                                                                 *
  *=============================================================================================*/
-EventClass::EventClass(int index, unsigned char type)
+EventClass::EventClass(int index, unsigned char type) : EventClass()
 {
 	DebugString("Adding event %s\n", EventNames[type]);
 
@@ -397,7 +397,7 @@ EventClass::EventClass(int index, unsigned char type)
  * HISTORY:                                                                                    *
  *   12/27/1994 JLB : Created.                                                                 *
  *=============================================================================================*/
-EventClass::EventClass(int index, unsigned char type, int val)
+EventClass::EventClass(int index, unsigned char type, int val) : EventClass()
 {
 	DebugString("Adding event %s\n", EventNames[type]);
 	if (index >= 0) {
@@ -433,7 +433,7 @@ EventClass::EventClass(int index, unsigned char type, int val)
  * HISTORY:                                                                                    *
  *   12/27/1994 JLB : Created.                                                                 *
  *=============================================================================================*/
-EventClass::EventClass(int index, unsigned char type, TargetClass src, TargetClass dest)
+EventClass::EventClass(int index, unsigned char type, TargetClass src, TargetClass dest) : EventClass()
 {
 	DebugString("Adding event %s\n", EventNames[type]);
 
@@ -467,7 +467,7 @@ EventClass::EventClass(int index, unsigned char type, TargetClass src, TargetCla
  * HISTORY:                                                                                    *
  *   05/19/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-EventClass::EventClass(int index, AnimType anim, HousesType owner, Coord const & coord)
+EventClass::EventClass(int index, AnimType anim, HousesType owner, Coord const & coord) : EventClass()
 {
 	DebugString("Adding event ANIMATION\n");
 
@@ -507,7 +507,7 @@ EventClass::EventClass(int index, AnimType anim, HousesType owner, Coord const &
  * HISTORY:                                                                                    *
  *   05/18/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-EventClass::EventClass(int index, TargetClass src, MissionType mission, TargetClass target, TargetClass destination)
+EventClass::EventClass(int index, TargetClass src, MissionType mission, TargetClass target, TargetClass destination) : EventClass()
 {
 	if (index >= 0) {
 		ID = index;
@@ -550,7 +550,7 @@ EventClass::EventClass(int index, TargetClass src, MissionType mission, TargetCl
  * HISTORY:                                                                                    *
  *   05/18/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-EventClass::EventClass(int index, TargetClass src, MissionType mission, TargetClass target, TargetClass destination, SpeedType speed, MPHType maxspeed)
+EventClass::EventClass(int index, TargetClass src, MissionType mission, TargetClass target, TargetClass destination, SpeedType speed, MPHType maxspeed) : EventClass()
 {
 	DebugString("Adding event MEGAMISSION_F\n");
 
@@ -591,7 +591,7 @@ EventClass::EventClass(int index, TargetClass src, MissionType mission, TargetCl
  * HISTORY:                                                                                    *
  *   05/18/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-EventClass::EventClass(int index, unsigned char type, RTTIType object, int id)
+EventClass::EventClass(int index, unsigned char type, RTTIType object, int id) : EventClass()
 {
 	DebugString("Adding event %s\n", EventNames[type]);
 
@@ -612,7 +612,7 @@ EventClass::EventClass(int index, unsigned char type, RTTIType object, int id)
 /// <summary>
 /// Builds an event that abandons count items of one type, the queued copies first.
 /// </summary>
-EventClass::EventClass(int index, unsigned char type, RTTIType object, int id, int count)
+EventClass::EventClass(int index, unsigned char type, RTTIType object, int id, int count) : EventClass()
 {
 	DebugString("Adding event %s\n", EventNames[type]);
 
@@ -651,7 +651,7 @@ EventClass::EventClass(int index, unsigned char type, RTTIType object, int id, i
  * HISTORY:                                                                                    *
  *   05/18/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-EventClass::EventClass(int index, unsigned char type, RTTIType object, Cell const & cell)
+EventClass::EventClass(int index, unsigned char type, RTTIType object, Cell const & cell) : EventClass()
 {
 	DebugString("Adding event %s\n", EventNames[type]);
 
@@ -687,7 +687,7 @@ EventClass::EventClass(int index, unsigned char type, RTTIType object, Cell cons
  * HISTORY:                                                                                    *
  *   05/18/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-EventClass::EventClass(int index, unsigned char type, int id, Cell const & cell)
+EventClass::EventClass(int index, unsigned char type, int id, Cell const & cell) : EventClass()
 {
 	DebugString("Adding event %s\n", EventNames[type]);
 
@@ -720,7 +720,7 @@ EventClass::EventClass(int index, unsigned char type, int id, Cell const & cell)
  * HISTORY:                                                                                    *
  *   11/10/1995 BRR : Created.                                                                 *
  *=============================================================================================*/
-EventClass::EventClass(int index, unsigned char type, void * ptr, unsigned int size)
+EventClass::EventClass(int index, unsigned char type, void * ptr, unsigned int size) : EventClass()
 {
 	DebugString("Adding event %s\n", EventNames[type]);
 
@@ -794,6 +794,7 @@ void EventClass::Execute(void)
 		case PROCESS_TIME:  Execute_PROCESS_TIME(); break;
 		case NETWORK_REPORT: Execute_NETWORK_REPORT(); break;
 		case GRANT_CONTROL: Execute_GRANT_CONTROL(); break;
+		case SELECTED:      Execute_SELECTED(); break;
 		default:            break;
 	}
 }
@@ -860,6 +861,7 @@ TechnoClass * EventClass::Subject(SubjectRule & rule) const
 		case REPAIR:
 		case PRIMARY:
 		case SELL:
+		case SELECTED:
 			rule = SubjectRule::OWNER;
 			return(Data.Target.Whom.As_Techno());
 
@@ -1014,6 +1016,10 @@ void EventClass::Execute_ANIMATION(void)
 		Reject(RejectReason::InvalidAnimationType, animation_type);
 		return;
 	}
+	if (animation_type == ANIM_NONE && Rule->MoveFlash == NULL) {
+		Reject(RejectReason::InvalidAnimationType, animation_type);
+		return;
+	}
 	if (owner != HOUSE_NONE && (owner < 0 || owner >= Houses.Count() || Houses[owner] == NULL)) {
 		Reject(RejectReason::InvalidAnimationOwner, owner);
 		return;
@@ -1033,7 +1039,7 @@ void EventClass::Execute_ANIMATION(void)
 	}
 	if (anim) {
 		if (owner != HOUSE_NONE && !Houses[owner]->Is_Player_Control()) {
-			anim->Make_Invisible();
+			anim->Draw.IsInvisible = true;
 		}
 	}
 }
@@ -1365,9 +1371,7 @@ void EventClass::Execute_EXIT(void)
 
 void EventClass::Execute_OPTIONS(void)
 {
-	if (!Session.Play) {
-		SpecialDialog = SDLG_OPTIONS;
-	}
+	SpecialDialog = SDLG_OPTIONS;
 }
 
 
@@ -1377,7 +1381,7 @@ void EventClass::Execute_GAMESPEED(void)
 		Reject(RejectReason::InvalidGameSpeed, Data.General.Value);
 		return;
 	}
-	Options.GameSpeed = Data.General.Value;
+	Session.Options.GameSpeed = Data.General.Value;
 	Announce_Setting_Change(TXT_PLAYER_CHANGED_SPEED);
 }
 
@@ -1385,7 +1389,7 @@ void EventClass::Execute_GAMESPEED(void)
 void EventClass::Execute_RESPONSE_TIME(void)
 {
 	int const master = Session.Master_Player_ID();
-	if (!Session.Play && !NetTiming::Timing_Authority_Is_Valid(ID, master)) {
+	if (!NetTiming::Timing_Authority_Is_Valid(ID, master)) {
 		Reject(RejectReason::UnauthorizedTiming, master);
 		return;
 	}
@@ -1433,7 +1437,7 @@ void EventClass::Execute_REMOVEPLAYER(void)
 
 	// The reported player ignores a sender it is still connected to, so a forged report puts
 	// this machine out of sync instead of removing it.
-	if (!Session.Play && target == PlayerPtr && Ipx.Connection_Index(ID) != -1) {
+	if (target == PlayerPtr && Ipx.Connection_Index(ID) != -1) {
 		Reject(RejectReason::LiveRemoval, index);
 		return;
 	}
@@ -1464,7 +1468,7 @@ void EventClass::Execute_TIMING(void)
 {
 	HouseClass * house = Houses[ID];
 	int const master = Session.Master_Player_ID();
-	if (!Session.Play && !NetTiming::Timing_Authority_Is_Valid(ID, master)) {
+	if (!NetTiming::Timing_Authority_Is_Valid(ID, master)) {
 		Reject(RejectReason::UnauthorizedTiming, master);
 		return;
 	}
@@ -1546,13 +1550,11 @@ void EventClass::Execute_PROCESS_TIME(void)
 
 void EventClass::Execute_NETWORK_REPORT(void)
 {
-	// A recording started without a roster has nobody to attribute reports to.
-	if ((Session.CommProtocol != COMM_PROTOCOL_MULTI_E_COMP || Frame < 0
+	if (Session.CommProtocol != COMM_PROTOCOL_MULTI_E_COMP || Frame < 0
 		|| !Session.Record_Network_Report(ID, Data.NetworkReport.AverageProcessMilliseconds,
-			Data.NetworkReport.WorstRoundTripMilliseconds, Data.NetworkReport.StallMilliseconds, static_cast<unsigned int>(Frame)))
-		&& !Session.Play) {
+			Data.NetworkReport.WorstRoundTripMilliseconds, Data.NetworkReport.StallMilliseconds, static_cast<unsigned int>(Frame))) {
 		Reject(RejectReason::InvalidNetworkReport, Data.NetworkReport.WorstRoundTripMilliseconds);
-	} else if (!Session.Play) {
+	} else {
 		DebugString("Network report at frame %d from player %d: process %u ms, RTT %d ms, longest wait %u ms\n", Frame, ID,
 			(unsigned int)Data.NetworkReport.AverageProcessMilliseconds,
 			Data.NetworkReport.WorstRoundTripMilliseconds == NETWORK_RTT_UNAVAILABLE ? -1 : (int)Data.NetworkReport.WorstRoundTripMilliseconds,
@@ -1603,5 +1605,21 @@ void EventClass::Execute_GRANT_CONTROL(void)
 		snprintf(msg, sizeof(msg), Fetch_String(granted ? TXT_CONTROL_GRANTED : TXT_CONTROL_WITHDRAWN),
 			Session.Shown_Name(house).c_str(), Session.Shown_Name(grantee).c_str());
 		Session.Messages.Add_Message(NULL, 0, msg, house->Scheme, TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), Rule->MessageDelay * TICKS_PER_MINUTE);
+	}
+}
+
+
+/// <summary>
+/// Springs the "selected by player" event on the tag of the object the sender selected. Nothing
+/// happens when the object is gone, has no tag, or no longer belongs to the sender.
+/// </summary>
+void EventClass::Execute_SELECTED(void)
+{
+	TechnoClass * techno = Data.Target.Whom.As_Techno();
+	if (techno == NULL || !techno->IsActive || techno->Strength <= 0 || techno->House != Houses[ID]) {
+		return;
+	}
+	if (techno->Tag != NULL) {
+		techno->Tag->Spring(TEVENT_SELECTED, techno);
 	}
 }

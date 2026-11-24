@@ -323,7 +323,8 @@ namespace MapCapture
 		}
 
 
-		// The logic part of a game frame, without input, drawing or the frame rate limit.
+		// The logic part of a game frame, without input, drawing, the frame rate limit or a start state.
+		// Main_Loop runs the same simulation steps, so a step added to either must be added to the other.
 		void Run_Logic_Frame(void)
 		{
 			DisplayClass::Layer[LAYER_GROUND].Sort();

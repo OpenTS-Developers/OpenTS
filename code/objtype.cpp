@@ -25,6 +25,7 @@
 #include "builtype.h"
 #include "ccfile.h"
 #include "coord.h"
+#include "crc.h"
 #include "globals.h"
 #include "house.h"
 #include "mixfile.h"
@@ -730,6 +731,24 @@ void ObjectTypeClass::Serialize(SaveStreamClass & stream)
 	// AuxVoxelIndex
 	// ShadowVoxelIndex
 	// AuxVoxel2Index
+}
+
+
+void ObjectTypeClass::Compute_CRC(CRCEngine & crc) const
+{
+	BASECLASS::Compute_CRC(crc);
+	crc((int)Armor);
+	crc(MaxStrength);
+	crc(IsCrushable);
+	crc(IsStealthy);
+	crc(IsSelectable);
+	crc(IsLegalTarget);
+	crc(IsInsignificant);
+	crc(IsImmune);
+	crc(IsSentient);
+	crc(IsFootprint);
+	crc(IsVoxel);
+	crc(IsIgnoresFirestorm);
 }
 
 

@@ -484,9 +484,6 @@ class HouseClass : public AbstractClass
 		int Capacity;
 		StorageClass Weed;
 
-		/// Unused
-		int field_1BC;
-
 		/*
 		**	Stuff to keep track of the total number of units built by this house.
 		*/
@@ -555,9 +552,9 @@ class HouseClass : public AbstractClass
 		**	For multiplayer games, each house needs to keep track of how many
 		**	objects of each other house they've killed.
 		*/
-		int UnitsKilled[20];
+		int UnitsKilled[HOUSE_MAX];
 		int UnitsLost;
-		int BuildingsKilled[20];
+		int BuildingsKilled[HOUSE_MAX];
 		int BuildingsLost;
 
 		/*
@@ -586,7 +583,7 @@ class HouseClass : public AbstractClass
 				stream.Serialize(ArmorDefense);
 				stream.Serialize(InfantryDefense);
 			}
-		} ZoneInfo[ZONE_COUNT];
+		} ZoneInfo[ZONE_COUNT] = {};
 
 		/*
 		**	This records information about the last time a building of this
@@ -655,21 +652,7 @@ class HouseClass : public AbstractClass
 		**	When this timer expires, send most of this house's units in an
 		**	attack.
 		*/
-		struct AttackStruct {
-			CDTimerClass<FrameTimerClass> Timer;
-
-			/// Unused
-			unsigned InitialAttack;
-			AttackStruct(void) { InitialAttack = 0; }
-
-			// Carries the all out attack schedule to or from a save game.
-			template<typename S>
-			void Serialize(S & stream)
-			{
-				stream.Serialize(Timer);
-				stream.Serialize(InitialAttack);
-			}
-		} Attack;
+		CDTimerClass<FrameTimerClass> Attack;
 
 	public:
 		/*
@@ -884,10 +867,10 @@ class HouseClass : public AbstractClass
 		BuildingTypeClass const * Suggest_New_Building(void) const;
 		void Recalc_Center(void);
 		bool Does_Enemy_Building_Exist(StructType) const;
-		void Harvested(int tiberium, TiberiumType slot);
+		void Harvested(int tiberium, TiberiumType slot, IncomeType income);
 		void Harvested_Weed(int weed, int slot);
 		void Spend_Money(int money);
-		void Refund_Money(int money);
+		void Refund_Money(int money, IncomeType income);
 		void Attacked(BuildingClass * source);
 		void Adjust_Power(int adjust);
 		void Adjust_Drain(int adjust);
@@ -962,9 +945,6 @@ class HouseClass : public AbstractClass
 		 * advances after each delivery, so the three loadouts are spent in turn.
 		 */
 		int CurrentDropship;
-
-		/// Unused
-		bool HasCloakGenerator;
 
 		/*
 		 * This is the color that identifies this house on the radar, derived from its color
@@ -1113,20 +1093,11 @@ class HouseClass : public AbstractClass
 		 */
 		int *BaseAreaMap;
 
-		/// Unused
-		int field_10E20;
-
-		/// Unused
-		double field_10E28;
-
 		/*
 		 * This scales the number of base defenses the computer plans against the value of the
 		 * base it is protecting. It is left at 1.0 throughout, so cost alone decides.
 		 */
 		double DefenseCostMultiplier;
-
-		/// Unused
-		int field_10E38;
 
 		/*
 		 * These are the shares of armor, air and infantry the house expects the enemy to

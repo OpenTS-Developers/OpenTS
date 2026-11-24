@@ -69,7 +69,7 @@ class DelayTimerClass
 		 * frames. Delays are specified in game minutes, so the conversion is performed
 		 * once here and the timer is loaded from the result.
 		 */
-		double Duration;
+		double Duration = 0.0;
 
 		/*
 		 * This is the timer that measures the delay. It runs on game frames rather than

@@ -1787,17 +1787,7 @@ bool FootClass::Active_Click_With(ActionType action, Cell const & cell, bool is_
 				if (Map[coord].IsUnderBridge) {
 					coord.Z += BRIDGE_LEPTON_HEIGHT;
 				}
-				int scenid = Scen->UniqueID;
-				if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
-					Scen->UniqueID = -3;
-					((AnimTypeClass *)Rule->MoveFlash)->YSortAdjust = -5000;
-				}
-				AnimClass * moveflash = new AnimClass(Rule->MoveFlash, coord);
-				if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
-					Scen->UniqueID = scenid;
-					Anims.Delete(moveflash);
-					MoveFlashes.Add(moveflash);
-				}
+				MoveFlashClass::Create(coord);
 			}
 			// Fall into next case.
 
@@ -2884,7 +2874,7 @@ void FootClass::Sell_Back(int control)
 			Speak(VOX_UNIT_SOLD);
 			Sound_Effect(Rule->SellSound);
 		}
-		House->Refund_Money(Refund_Amount());
+		House->Refund_Money(Refund_Amount(), INCOME_SOLD_UNIT);
 		Stun();
 		Limbo();
 		Delete_Me();
@@ -3659,19 +3649,35 @@ void FootClass::Compute_CRC(CRCEngine & crc) const
 	BASECLASS::Compute_CRC(crc);
 	crc(ThreatAvoidanceCoefficient);
 	crc(LastPathingCell.Length());
+	crc(LastAdjacencyCell.X);
+	crc(LastAdjacencyCell.Y);
 	crc(LastTubeCoord.Length());
 	crc(Speed);
 	crc(SpeedBias);
+	crc(RouteQueue.Count());
+	for (int i = 0; i < RouteQueue.Count(); i++) {
+		if (RouteQueue[i] != NULL) crc(RouteQueue[i]->Fetch_ID());
+	}
 	if (NavCom != NULL) crc(NavCom->Fetch_ID());
 	if (SuspendedNavCom != NULL) crc(SuspendedNavCom->Fetch_ID());
+	crc(NavQueue.Count());
+	for (int i = 0; i < NavQueue.Count(); i++) {
+		if (NavQueue[i] != NULL) crc(NavQueue[i]->Fetch_ID());
+	}
 	if (Team != NULL) crc(Team->Fetch_ID());
 	if (Member != NULL) crc(Member->Fetch_ID());
+	if (PatrolCell != NULL) crc(PatrolCell->Fetch_ID());
+	for (int i = 0; i < CONQUER_PATH_MAX; i++) {
+		crc((int)Path[i]);
+	}
 	crc((int)PathDelay);
 	crc(TryTryAgain);
 	crc((int)BaseAttackTimer);
+	crc((int)BlockagePathDelay);
 	crc(HeadToCoord.Length());
 	crc(CurrentTube);
 	crc(CurrentTubeDir);
+	crc(IsToScatter);
 	crc(IsScanLimited);
 	crc(IsInitiated);
 	crc(IsNewNavCom);
@@ -3684,6 +3690,10 @@ void FootClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsScattering);
 	crc(IsIdle);
 	crc(IonBlastYDrawOffset);
+	crc(IsCrushing);
+	crc(IsOccupyingCell);
+	crc(IsToPathAroundBlockage);
+	crc(IsDroppedFromTeam);
 }
 
 

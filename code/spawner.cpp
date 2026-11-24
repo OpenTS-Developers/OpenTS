@@ -21,8 +21,10 @@
 #include "ccini.h"
 #include "dbgprint.h"
 #include "enviro.h"
+#include "event.h"
 #include "globals.h"
 #include "goptions.h"
+#include "house.h"
 #include "houstype.h"
 #include "init.h"
 #include "ipxmgr.h"
@@ -230,6 +232,7 @@ static void Spawner_Bind_Options(void)
 	Session.Options.AttackNeutralUnits = SpawnConfig.AttackNeutralUnits;
 	Session.Options.ScrapMetal = SpawnConfig.ScrapMetal;
 	Session.Options.SharedControl = SpawnConfig.SharedControl;
+	Session.Options.PlayMovies = SpawnConfig.PlayMoviesInMultiplayer;
 
 	// AutoSurrender=no hands a departing player's base to the computer.
 	Session.Options.AITakeover = !SpawnConfig.AutoSurrender;
@@ -237,9 +240,7 @@ static void Spawner_Bind_Options(void)
 	// Only a network match applies the truce; a skirmish records it and ignores it.
 	Session.Options.HarvTruce = SpawnConfig.HarvesterTruce;
 
-	Options.GameSpeed = SpawnConfig.GameSpeed;
 	BuildLevel = SpawnConfig.TechLevel;
-	Session.PlayMovies = SpawnConfig.PlayMoviesInMultiplayer;
 	Session.ConnTimeout = SpawnConfig.ConnTimeout;
 	Session.ReconnectTimeout = SpawnConfig.ReconnectTimeout;
 
@@ -347,6 +348,23 @@ static bool Spawner_Wire_Network(void)
 
 
 /// <summary>
+/// Returns the house of the lowest seat a player occupies in a resumed game, the same house on
+/// every machine, or -1 when only observers are seated.
+/// </summary>
+static int Spawner_Lowest_Player_House(void)
+{
+	int lowest = -1;
+	for (int index = 0; index < Session.Players.Count(); index++) {
+		NodeNameType const * node = Session.Players[index];
+		if (node != NULL && !node->Player.IsObserver && (lowest == -1 || node->Player.ID < lowest)) {
+			lowest = node->Player.ID;
+		}
+	}
+	return(lowest);
+}
+
+
+/// <summary>
 /// Resumes the saved game a launch file names. The save carries the game and its houses,
 /// while a match against other machines takes its seats and their addresses from the file.
 /// </summary>
@@ -401,11 +419,20 @@ static bool Spawner_Resume(bool & gameloaded)
 		return(Spawner_Refuse("SPAWN.INI does not seat the same players as the saved game %s.", SpawnConfig.SaveGameName.c_str()));
 	}
 
-	// The save's options apply, except game speed, movies and this machine's waits.
-	Options.GameSpeed = SpawnConfig.GameSpeed;
-	Session.PlayMovies = SpawnConfig.PlayMoviesInMultiplayer;
+	// The save's options apply, except this machine's waits and the speed of a game played alone.
 	Session.ConnTimeout = SpawnConfig.ConnTimeout;
 	Session.ReconnectTimeout = SpawnConfig.ReconnectTimeout;
+
+	// Each machine's file may name another speed, so a match starts at the saved one and the
+	// lowest player seat changes it for everyone through the speed order.
+	if (type == GAME_INTERNET) {
+		Session.Options.GameSpeed = std::clamp(Session.Options.GameSpeed, 0, OptionsClass::MAX_SPEED_SETTING - 1);
+		if (SpawnConfig.GameSpeed != Session.Options.GameSpeed && PlayerPtr->HeapID == Spawner_Lowest_Player_House()) {
+			OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::GAMESPEED, SpawnConfig.GameSpeed));
+		}
+	} else {
+		Session.Options.GameSpeed = SpawnConfig.GameSpeed;
+	}
 
 	gameloaded = true;
 
@@ -432,7 +459,7 @@ static bool Spawner_Setup_Campaign(void)
 	}
 
 	Session.Type = GAME_NORMAL;
-	Options.GameSpeed = SpawnConfig.GameSpeed;
+	Session.Options.GameSpeed = SpawnConfig.GameSpeed;
 	Session.CampaignDifficulty = (DiffType)SpawnConfig.CampaignDifficulty;
 	Session.CampaignCDifficulty = (DiffType)SpawnConfig.CampaignCDifficulty;
 	CustomSeed = SpawnConfig.Seed;

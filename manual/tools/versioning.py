@@ -1,4 +1,7 @@
-"""Structured release, lifecycle, tombstone, and route-alias validation."""
+"""Structured release, lifecycle, tombstone, and route-alias validation.
+
+The JSON schemas report malformed data; these checks skip what a schema rejects.
+"""
 
 from datetime import date
 from pathlib import Path
@@ -9,10 +12,8 @@ from semantic_version import Version
 from io_utils import load_yaml
 
 
-CHANGE_CATEGORIES = {"feature", "fix", "balance", "internal", "performance"}
 ENTITY_TYPES = {"key", "action", "event", "mission", "format", "enum", "system", "command"}
 RELATION_TYPES = ENTITY_TYPES | {"guide", "using", "internal"}
-LIFECYCLE_EFFECTS = {"added", "changed", "deprecated", "removed"}
 SCRIPTING_TYPES = {
     "actions": ("trigger_actions", "action"),
     "events": ("trigger_events", "event"),
@@ -25,14 +26,7 @@ FORMAT_ROUTES = {
     "scripts": "/mapping/scripts/",
 }
 COMMAND_TABLES = ("registered_commands", "fixed_controls", "launch_options")
-CHANGE_FIELDS = {
-    "title", "category", "release", "breaking", "migration", "targets", "credit"
-}
-TARGET_FIELDS = {"type", "id", "scope", "effect"}
 REFERENCE_FIELDS = {"type", "id", "scope"}
-TOMBSTONE_FIELDS = {
-    "type", "id", "route", "search_aliases", "summary", "replacement"
-}
 
 
 def read_yaml(path):
@@ -70,74 +64,66 @@ def key_route(name, entry):
     route = name.lower()
     if entry.get("case_collides_with"):
         applies = entry.get("scopes", [{}])[0].get("applies_to") or ["global"]
-        route += "-" + slugify(applies[0])
+        route += "-" + slugify(applies[0] or "global")
     return route
 
 
 def validate_releases(errors, manual, root):
     data = read_yaml(manual / "data" / "releases.yaml")
-    if not isinstance(data, dict) or set(data) != {"releases"}:
-        errors.append("manual/data/releases.yaml must contain only a releases array")
-        return {"rows": [], "by_version": {}, "development": None}
-
-    rows = data.get("releases")
-    if not isinstance(rows, list) or not rows:
-        errors.append("release registry must contain at least one release")
-        return {"rows": [], "by_version": {}, "development": None}
+    rows = data.get("releases") if isinstance(data, dict) else None
+    if not isinstance(rows, list):
+        return {"by_version": {}, "development": None}
 
     normalized = []
     seen = set()
     development = []
     for position, row in enumerate(rows, start=1):
-        context = f"release registry entry {position}"
         if not isinstance(row, dict):
-            errors.append(f"{context}: expected a mapping")
             continue
-        allowed = {"version", "status", "date"}
-        unexpected = set(row) - allowed
-        if unexpected:
-            errors.append(f"{context}: unexpected fields {sorted(unexpected)}")
+        context = f"release registry entry {position}"
         version_text = row.get("version")
         parsed = semver(version_text, context, errors)
         if version_text in seen:
             errors.append(f"{context}: duplicate version {version_text}")
         seen.add(version_text)
-        status = row.get("status")
-        if status not in {"development", "released"}:
-            errors.append(f"{context}: status must be development or released")
         release_date = row.get("date")
-        if status == "released":
-            if not isinstance(release_date, str):
-                errors.append(f"{context}: released entries require an ISO date")
-            else:
-                try:
-                    parsed_date = date.fromisoformat(release_date)
-                    if parsed_date.isoformat() != release_date:
-                        raise ValueError
-                except ValueError:
-                    errors.append(f"{context}: invalid ISO date {release_date!r}")
-        elif "date" in row:
-            errors.append(f"{context}: development entries cannot have a date")
-        if status == "development":
+        if isinstance(release_date, str):
+            try:
+                if date.fromisoformat(release_date).isoformat() != release_date:
+                    raise ValueError
+            except ValueError:
+                errors.append(f"{context}: invalid ISO date {release_date!r}")
+        if row.get("status") == "development":
             development.append((version_text, parsed))
         normalized.append({**row, "_parsed": parsed})
 
+    development_version = None
+    development_parsed = None
     if len(development) != 1:
         errors.append("release registry must contain exactly one development release")
-        development_version = None
     else:
         development_version, development_parsed = development[0]
         parsed_versions = [row["_parsed"] for row in normalized if row["_parsed"]]
         if development_parsed and parsed_versions and development_parsed != max(parsed_versions):
             errors.append("the development release must be the highest SemVer entry")
 
+    candidates = [row for row in normalized if row.get("status") == "candidate"]
+    candidate_version = None
+    if len(candidates) > 1:
+        errors.append("release registry may contain at most one candidate release")
+    elif candidates:
+        candidate_version = candidates[0].get("version")
+        released = [
+            row["_parsed"] for row in normalized
+            if row.get("status") == "released" and row["_parsed"]]
+        candidate_parsed = candidates[0]["_parsed"]
+        if candidate_parsed and released and candidate_parsed < max(released):
+            errors.append(
+                f"candidate release {candidate_version} must be higher than every "
+                "released version")
+
     if development_version:
         cmake = (root / "CMakeLists.txt").read_text(encoding="utf-8")
-        development_parsed = next(
-            (row["_parsed"] for row in normalized
-             if row.get("version") == development_version),
-            None,
-        )
         match = re.search(
             r"project\s*\(\s*OpenTS\s+VERSION\s+([0-9]+(?:\.[0-9]+){2,3})",
             cmake,
@@ -175,16 +161,32 @@ def validate_releases(errors, manual, root):
         if isinstance(row.get("version"), str)
     }
     return {
-        "rows": normalized,
         "by_version": by_version,
         "development": development_version,
+        "candidate": candidate_version,
     }
+
+
+def open_releases(registry, base_registry=None):
+    """Return the versions that may receive new or reassigned change records.
+
+    A version is open while it is in development or a candidate. A version that a push
+    releases stays open for that push, so the push can still merge its last records.
+    """
+    result = set()
+    for snapshot in (registry, base_registry):
+        for version, row in ((snapshot or {}).get("by_version") or {}).items():
+            if row.get("status") in {"development", "candidate"}:
+                result.add(version)
+    return result
 
 
 def load_changes(errors, manual):
     folder = manual / "changes"
     changes = {}
     for path in folder.rglob("*.md"):
+        if path.parent == folder / "rc":
+            continue
         if path.parent != folder:
             errors.append(
                 f"{path.relative_to(manual)}: change fragments must be flat; "
@@ -206,6 +208,35 @@ def load_changes(errors, manual):
     return changes
 
 
+def validate_rc_notes(
+        errors, manual, registry, base_registry=None, base_notes=None, change_ids=()):
+    """Check the RC notes in changes/rc.
+
+    A note's release is checked only when the note is new since the base, so a note stays
+    valid after its version is released.
+    """
+    open_versions = open_releases(registry, base_registry)
+    for path in sorted((manual / "changes" / "rc").glob("*.md")):
+        context = path.relative_to(manual).as_posix()
+        if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", path.stem):
+            errors.append(f"{context}: filename must be a kebab-case note ID")
+        if path.stem in change_ids:
+            errors.append(f"{context}: note ID is also a change record ID; rename the note")
+        if not base_registry or path.stem in (base_notes or ()):
+            continue
+        try:
+            data = frontmatter(path, manual)
+        except ValueError as error:
+            errors.append(str(error))
+            continue
+        if isinstance(data, dict) and data.get("release") not in open_versions:
+            errors.append(
+                f"{context}: a new RC note must target the development release "
+                f"{registry['development']}"
+                + (f" or the candidate release {registry['candidate']}"
+                   if registry.get("candidate") else ""))
+
+
 def normalize_target(raw):
     return {
         "type": raw.get("type"),
@@ -213,6 +244,22 @@ def normalize_target(raw):
         "scope": raw.get("scope"),
         "effect": raw.get("effect"),
     }
+
+
+def lifecycle_differences(current, other):
+    """Return the lifecycle fields in which two copies of one change record differ.
+
+    *current* has normalized targets; *other* may carry raw frontmatter.
+    """
+    result = []
+    for field in ("release", "category", "targets", "breaking"):
+        default = False if field == "breaking" else None
+        theirs = other.get(field, default)
+        if field == "targets" and isinstance(theirs, list):
+            theirs = [normalize_target(raw) for raw in theirs if isinstance(raw, dict)]
+        if current.get(field, default) != theirs:
+            result.append(field)
+    return result
 
 
 def target_key(target):
@@ -235,12 +282,10 @@ def scripting_catalog(scripting):
 
 
 def command_catalog(commands):
-    """Return command records keyed by their stable, case-preserved IDs.
+    """Return command records keyed by ID.
 
-    Working-tree validation already supplies a flattened catalog, while Git
-    snapshots retain the three generated command arrays. Lifecycle comparison
-    accepts either representation so a missing historical dataset can remain a
-    distinct ``None`` baseline rather than looking like an empty catalog.
+    *commands* is either the generated file's three arrays or an already
+    flattened mapping; any other value gives an empty catalog.
     """
     if not isinstance(commands, dict):
         return {}
@@ -257,11 +302,15 @@ def command_catalog(commands):
     }
 
 
+def scope_route_base(scope):
+    return slugify((scope.get("applies_to") or [scope.get("section", "global")])[0])
+
+
 def scope_ids(key_entry):
     result = []
     used = set()
     for scope in key_entry.get("scopes", []):
-        base = slugify((scope.get("applies_to") or [scope.get("section", "global")])[0])
+        base = scope_route_base(scope)
         candidate = base
         suffix = 2
         while candidate in used:
@@ -347,45 +396,31 @@ def validate_tombstones(
         errors, manual, keys, scripting, formats, enums=None, entities=None):
     rows = read_yaml(manual / "data" / "tombstones.yaml") or []
     if not isinstance(rows, list):
-        errors.append("manual/data/tombstones.yaml must be an array")
         return []
     scripts = scripting_catalog(scripting)
     seen_targets = set()
     seen_routes = set()
     result = []
     for position, row in enumerate(rows, start=1):
-        context = f"tombstone entry {position}"
         if not isinstance(row, dict):
-            errors.append(f"{context}: expected a mapping")
             continue
-        unexpected = set(row) - TOMBSTONE_FIELDS
-        missing = {"type", "id", "route", "search_aliases", "summary"} - set(row)
-        if unexpected:
-            errors.append(f"{context}: unexpected fields {sorted(unexpected)}")
-        if missing:
-            errors.append(f"{context}: missing fields {sorted(missing)}")
+        context = f"tombstone entry {position}"
         entity_type, entity_id = row.get("type"), row.get("id")
-        if entity_type not in ENTITY_TYPES:
-            errors.append(f"{context}: invalid entity type {entity_type!r}")
         if not isinstance(entity_id, str) or not entity_id:
-            errors.append(f"{context}: id must be a non-empty string")
+            continue
         identity = (entity_type, entity_id)
         if identity in seen_targets:
             errors.append(f"{context}: duplicate tombstone target {entity_type}:{entity_id}")
         seen_targets.add(identity)
         route = row.get("route")
-        if (not isinstance(route, str) or not route.startswith("/")
-                or not route.endswith("/")):
-            errors.append(f"{context}: route must be an absolute trailing-slash path")
-        elif route in seen_routes:
+        if route in seen_routes:
             errors.append(f"{context}: duplicate tombstone route {route}")
         seen_routes.add(route)
         expected_route = None
         expected_family = None
         if entity_type == "command":
-            # A launch option is published under its own family and keeps a route_id
-            # that the catalog no longer carries once the option is removed, so only
-            # the family can be checked here. The removal delta pins the whole route.
+            # A removed launch option's route_id is gone from the catalog, so only the
+            # route prefix is checked here; validate_branch_lifecycle checks the full route.
             if entity_id.startswith("launch:"):
                 expected_family = "/using/command-line/"
             else:
@@ -402,11 +437,6 @@ def validate_tombstones(
             errors.append(
                 f"{context}: {entity_type} route must stay under {expected_family!r}, "
                 f"found {route!r}")
-        if not isinstance(row.get("search_aliases"), list) or not all(
-                isinstance(alias, str) and alias for alias in row.get("search_aliases", [])):
-            errors.append(f"{context}: search_aliases must be an array of strings")
-        if not isinstance(row.get("summary"), str) or not row.get("summary", "").strip():
-            errors.append(f"{context}: summary must be a non-empty string")
         target = {"type": entity_type, "id": entity_id, "scope": None}
         if active_entity(target, keys, scripts, formats, enums, entities):
             errors.append(f"{context}: tombstone target is still active")
@@ -442,10 +472,7 @@ def validate_tombstones(
 
 def validate_aliases(errors, manual, scripting, tombstones, base_aliases=None):
     data = read_yaml(manual / "data" / "scripting-route-aliases.yaml")
-    if not isinstance(data, dict) or set(data) != set(SCRIPTING_TYPES):
-        errors.append(
-            "manual/data/scripting-route-aliases.yaml must contain "
-            "actions, events, and missions mappings")
+    if not isinstance(data, dict):
         return {}
     scripts = scripting_catalog(scripting)
     tombstone_ids = {(row.get("type"), row.get("id")) for row in tombstones}
@@ -453,19 +480,14 @@ def validate_aliases(errors, manual, scripting, tombstones, base_aliases=None):
     for plural, (_, singular) in SCRIPTING_TYPES.items():
         mapping = data.get(plural)
         if not isinstance(mapping, dict):
-            errors.append(f"scripting aliases {plural}: expected a mapping")
             continue
         normalized[plural] = {}
         for raw_index, entity_id in mapping.items():
             index = str(raw_index)
-            context = f"scripting alias {plural}/{index}"
-            if not re.fullmatch(r"0|[1-9][0-9]*", index):
-                errors.append(f"{context}: route index must be a canonical non-negative integer")
-            if not isinstance(entity_id, str) or not entity_id:
-                errors.append(f"{context}: target must be a stable engine ID")
-            elif (entity_id not in scripts.get(singular, {})
+            if (entity_id not in scripts.get(singular, {})
                     and (singular, entity_id) not in tombstone_ids):
-                errors.append(f"{context}: unknown target {singular}:{entity_id}")
+                errors.append(
+                    f"scripting alias {plural}/{index}: unknown target {singular}:{entity_id}")
             normalized[plural][index] = entity_id
 
         for entity_id, row in scripts.get(singular, {}).items():
@@ -510,6 +532,8 @@ def validate_changes(
     }
     versions = registry["by_version"]
     development = registry["development"]
+    candidate = registry.get("candidate")
+    open_versions = open_releases(registry, base_registry)
 
     for change_id, change in changes.items():
         data = change["data"]
@@ -518,63 +542,23 @@ def validate_changes(
             errors.append(
                 f"{context}: change ID collides with release upgrade route /changes/{change_id}/")
         if not isinstance(data, dict):
-            errors.append(f"{context}: frontmatter must be a mapping")
             continue
-        unexpected = set(data) - CHANGE_FIELDS
-        missing = {"title", "category", "release", "targets", "credit"} - set(data)
-        if unexpected:
-            errors.append(f"{context}: unexpected fields {sorted(unexpected)}")
-        if missing:
-            errors.append(f"{context}: missing fields {sorted(missing)}")
-        if not isinstance(data.get("title"), str) or not data.get("title", "").strip():
-            errors.append(f"{context}: title must be a non-empty string")
-        if data.get("category") not in CHANGE_CATEGORIES:
-            errors.append(f"{context}: invalid category {data.get('category')!r}")
         release = data.get("release")
         if release not in versions:
             errors.append(f"{context}: unknown release {release!r}")
-        breaking = data.get("breaking", False)
-        if not isinstance(breaking, bool):
-            errors.append(f"{context}: breaking must be a boolean")
-            breaking = False
-        migration = data.get("migration")
-        if "migration" in data:
-            if (not isinstance(migration, list) or not migration
-                    or not all(isinstance(step, str) and step.strip()
-                               for step in migration)):
-                errors.append(
-                    f"{context}: migration must be a non-empty array of steps")
-            if not breaking:
-                errors.append(
-                    f"{context}: migration is allowed only when breaking is true")
         targets = data.get("targets")
         if not isinstance(targets, list):
-            errors.append(f"{context}: targets must be an array")
             targets = []
         normalized_targets = []
         for position, raw in enumerate(targets, start=1):
-            target_context = f"{context} target {position}"
             if not isinstance(raw, dict):
-                errors.append(f"{target_context}: expected a mapping")
                 continue
-            unexpected_target = set(raw) - TARGET_FIELDS
-            missing_target = {"type", "id", "effect"} - set(raw)
-            if unexpected_target:
-                errors.append(
-                    f"{target_context}: unexpected fields {sorted(unexpected_target)}")
-            if missing_target:
-                errors.append(f"{target_context}: missing fields {sorted(missing_target)}")
+            target_context = f"{context} target {position}"
             target = normalize_target(raw)
-            if target["effect"] not in LIFECYCLE_EFFECTS:
-                errors.append(
-                    f"{target_context}: invalid lifecycle effect {target['effect']!r}")
-            if target["scope"] is not None and target["type"] != "key":
-                errors.append(f"{target_context}: scope is allowed only for key targets")
-            if target["type"] not in ENTITY_TYPES:
-                errors.append(f"{target_context}: invalid entity type {target['type']!r}")
+            normalized_targets.append(target)
             if not isinstance(target["id"], str) or not target["id"]:
-                errors.append(f"{target_context}: id must be a non-empty string")
-            elif target["effect"] == "removed":
+                continue
+            if target["effect"] == "removed":
                 if target["scope"] is None:
                     if (target["type"], target["id"]) not in tombstone_map:
                         errors.append(
@@ -588,48 +572,32 @@ def validate_changes(
             elif (not active_entity(target, keys, scripts, formats, enums, entities)
                     and (target["scope"] is not None
                          or (target["type"], target["id"]) not in tombstone_map)):
-                # History may cite an entity that was removed later; the lifecycle
-                # ordering check keeps such events ahead of the removal.
+                # A target may name a removed entity that has a tombstone;
+                # validate_history rejects events at or after its removal.
                 errors.append(
                     f"{target_context}: unknown active entity "
                     f"{target_description(target)}")
-            normalized_targets.append(target)
         data["targets"] = normalized_targets
-        credits = data.get("credit")
-        if (not isinstance(credits, list) or not credits or not all(
-                isinstance(value, str) and value for value in credits)):
-            errors.append(
-                f"{context}: credit must name at least one author "
-                "as a non-empty array of strings")
 
         base_change = (base_changes or {}).get(change_id)
-        if base_registry and base_change is None and release != development:
+        if base_registry and base_change is None and release not in open_versions:
             errors.append(
-                f"{context}: new changes must target development release {development}")
+                f"{context}: new changes must target the development release {development}"
+                + (f" or the candidate release {candidate}" if candidate else ""))
         if base_change and base_registry:
             old_release = base_change.get("release")
-            if release != old_release:
+            if release != old_release and not (
+                    old_release in open_versions and release in open_versions):
                 errors.append(
                     f"{context}: release assignment is stable and cannot be "
                     f"changed from {old_release!r} to {release!r}")
             old_release_row = base_registry.get("by_version", {}).get(old_release)
-            current_release_row = versions.get(old_release)
-            if ((old_release_row and old_release_row.get("status") == "released")
-                    or (current_release_row
-                        and current_release_row.get("status") == "released")):
-                for field in ("category", "targets", "breaking"):
-                    default = False if field == "breaking" else None
-                    base_value = base_change.get(field, default)
-                    # Base snapshots carry raw frontmatter while the current
-                    # targets were normalized above, so compare one form.
-                    if field == "targets" and isinstance(base_value, list):
-                        base_value = [
-                            normalize_target(raw) for raw in base_value
-                            if isinstance(raw, dict)
-                        ]
-                    if data.get(field, default) != base_value:
-                        errors.append(
-                            f"{context}: released lifecycle field {field} is immutable")
+            if old_release_row and old_release_row.get("status") == "released":
+                for field in lifecycle_differences(data, base_change):
+                    if field == "release":
+                        continue
+                    errors.append(
+                        f"{context}: released lifecycle field {field} is immutable")
 
     if base_registry:
         for removed_id in sorted(set(base_changes or {}) - set(changes)):
@@ -707,29 +675,47 @@ def require_target(errors, changes, entity_type, entity_id, effect, scope=None):
             f"add a change target with effect: {effect}{suffix}")
 
 
-def development_additions(changes, registry, base_changes, base_registry):
-    development = (registry or {}).get("development")
-    if not development or development != (base_registry or {}).get("development"):
-        return set()
-    for snapshot in (registry, base_registry):
-        if snapshot.get("by_version", {}).get(development, {}).get("status") != "development":
-            return set()
+def covering_releases(registry, base_registry, merged_releases=()):
+    """Return the versions whose records can cover an engine change in the checked range.
 
-    current_additions = {
-        target_key(target)
-        for change in changes.values()
-        if change["data"].get("release") == development
-        for target in change["data"].get("targets", [])
-        if target.get("effect") == "added"
+    That is the development version in the current and base registries, so a push that
+    releases or cuts a version still counts its records, plus each candidate whose release
+    branch the range merges. Without a registry every version counts.
+    """
+    if not registry:
+        return None
+    result = {registry.get("development"), (base_registry or {}).get("development")} - {None}
+    for version in merged_releases or ():
+        if version in open_releases(registry, base_registry):
+            result.add(version)
+    return result
+
+
+def unreleased_additions(changes, base_changes, base_registry, versions):
+    """Return the entities added by records of *versions* that already existed in the base.
+
+    A later change to such an entity, in the same unreleased version, needs no record of its
+    own. Only versions that were unreleased in the base qualify.
+    """
+    base_rows = (base_registry or {}).get("by_version", {})
+    versions = {
+        version for version in (versions or ())
+        if base_rows.get(version, {}).get("status") in {"development", "candidate"}
     }
-    base_additions = {
-        target_key(target)
-        for change in (base_changes or {}).values()
-        if change.get("release") == development
-        for target in change.get("targets", [])
-        if target.get("effect") == "added"
-    }
-    return current_additions & base_additions
+    if not versions:
+        return set()
+
+    def additions(records, data_of):
+        return {
+            target_key(target)
+            for change in records
+            if data_of(change).get("release") in versions
+            for target in data_of(change).get("targets", [])
+            if target.get("effect") == "added"
+        }
+
+    return (additions(changes.values(), lambda change: change["data"])
+            & additions((base_changes or {}).values(), lambda change: change))
 
 
 def require_changed_target(errors, changes, entity_type, entity_id, additions):
@@ -742,12 +728,17 @@ def key_scope_sets(keys):
 
 
 def validate_branch_lifecycle(
-        errors, current_keys, base_keys, current_scripting, base_scripting,
-        current_formats, base_formats, changes, tombstones, key_delta,
-        scripting_delta, enum_delta=None, base_enums=None,
+        errors, current_keys, base_keys, current_formats, base_formats,
+        changes, tombstones, key_delta, scripting_delta, enum_delta=None,
         command_delta=None, base_commands=None, registry=None,
-        base_changes=None, base_registry=None):
-    additions = development_additions(changes, registry, base_changes, base_registry)
+        base_changes=None, base_registry=None, merged_releases=()):
+    covering = covering_releases(registry, base_registry, merged_releases)
+    if covering is not None:
+        changes = {
+            change_id: change for change_id, change in changes.items()
+            if change["data"].get("release") in covering
+        }
+    additions = unreleased_additions(changes, base_changes, base_registry, covering)
     tombstone_map = {
         (row.get("type"), row.get("id")): row for row in tombstones
     }
@@ -783,10 +774,8 @@ def validate_branch_lifecycle(
 
     current_format_ids = set(current_formats)
     base_format_ids = set(base_formats or {})
-    # Like the enum catalog, the format catalog is a curated documentation
-    # selection: most formats predate OpenTS, so a new page records a decision
-    # to document one rather than an engine addition. Removal stays an engine
-    # lifecycle event because the published route has to survive it.
+    # A new format page needs no record, because most formats predate OpenTS. A removed
+    # page needs a removal record and a tombstone so that its route still resolves.
     for entity_id in sorted(base_format_ids - current_format_ids):
         require_target(errors, changes, "format", entity_id, "removed")
         record = tombstone_map.get(("format", entity_id))
@@ -798,9 +787,8 @@ def validate_branch_lifecycle(
                 f"format:{entity_id}: tombstone route must remain {expected!r}, "
                 f"found {record.get('route')!r}")
     if enum_delta:
-        # The enum catalog is a curated documentation selection: adding or
-        # removing a page is a docs decision, not an engine lifecycle event.
-        # Only signature drift on a selected domain reflects the engine.
+        # Adding or removing an enum page needs no record; a change to a documented
+        # enum's values does.
         for entity_id in sorted(enum_delta["changed"]):
             require_changed_target(errors, changes, "enum", entity_id, additions)
 
@@ -825,25 +813,95 @@ def validate_branch_lifecycle(
 
 
 def validate_released_registry_history(errors, registry, base_registry):
+    """Check each version's status change against the base registry.
+
+    A development version may become a candidate or be released, a candidate may only be
+    released or removed, and a released version keeps its status and date. Nothing returns
+    to development.
+    """
     if not base_registry:
         return
     current = registry["by_version"]
     for version, row in base_registry.get("by_version", {}).items():
-        if row.get("status") != "released":
-            continue
-        candidate = current.get(version)
-        if not candidate:
-            errors.append(f"released version {version} cannot be removed")
-        elif candidate.get("status") != "released":
-            errors.append(f"released version {version} cannot be demoted")
-        elif candidate.get("date") != row.get("date"):
-            errors.append(f"released version {version} date is immutable")
+        before = row.get("status")
+        after = current.get(version, {}).get("status")
+        if before == "released":
+            if after is None:
+                errors.append(f"released version {version} cannot be removed")
+            elif after != "released":
+                errors.append(f"released version {version} cannot be demoted")
+            elif current[version].get("date") != row.get("date"):
+                errors.append(f"released version {version} date is immutable")
+        elif before == "development" and after is None:
+            errors.append(
+                f"development version {version} must remain in the registry as a "
+                "candidate or a released version")
+        elif before == "candidate" and after == "development":
+            errors.append(f"candidate version {version} cannot return to development")
 
-    old_development = base_registry.get("development")
-    if old_development and old_development not in current:
+
+def _record_text(text):
+    return text.replace("\r\n", "\n")
+
+
+def validate_release_refs(errors, changes, refs):
+    """Check change records against release tags and release branches.
+
+    *refs* comes from manage_engine.release_refs. A candidate's records must match its
+    release branch, a released version's records must keep the IDs and lifecycle fields
+    they had at its tag, and a branch whose development version is already tagged is closed.
+    """
+    errors.extend(refs.get("errors", ()))
+
+    def released_as(version):
+        return {
+            change_id: change for change_id, change in changes.items()
+            if change["data"].get("release") == version}
+
+    for version, branch in sorted(refs.get("branches", {}).items()):
+        current = {
+            change_id: _record_text(change["path"].read_text(encoding="utf-8"))
+            for change_id, change in released_as(version).items()}
+        mirror = {
+            change_id: _record_text(record["text"])
+            for change_id, record in branch["records"].items()
+            if record["data"].get("release") == version}
+        name = branch["branch"]
+        for change_id in sorted(current.keys() - mirror.keys()):
+            errors.append(
+                f"{change_id}: release {version} records come from {name}; "
+                f"add this record there, or retarget it")
+        for change_id in sorted(mirror.keys() - current.keys()):
+            errors.append(
+                f"{change_id}: release {version} record from {name} is missing; merge {name}")
+        for change_id in sorted(current.keys() & mirror.keys()):
+            if current[change_id] != mirror[change_id]:
+                errors.append(
+                    f"{change_id}: release {version} record differs from {name}; "
+                    f"edit it there and merge {name}")
+
+    for version, tag in sorted(refs.get("tags", {}).items()):
+        if not tag["merged"]:
+            errors.append(f"released version {version}: tag {tag['tag']} is not merged into HEAD")
+            continue
+        current = released_as(version)
+        tagged = {
+            change_id: record["data"] for change_id, record in tag["records"].items()
+            if record["data"].get("release") == version}
+        for change_id in sorted(current.keys() - tagged.keys()):
+            errors.append(f"{change_id}: release {version} has no such record at {tag['tag']}")
+        for change_id in sorted(tagged.keys() - current.keys()):
+            errors.append(f"{change_id}: record of released version {version} is missing")
+        for change_id in sorted(current.keys() & tagged.keys()):
+            for field in lifecycle_differences(current[change_id]["data"], tagged[change_id]):
+                errors.append(
+                    f"{change_id}: {field} differs from the released record at {tag['tag']}")
+
+    closed = refs.get("closed")
+    if closed:
         errors.append(
-            f"development version {old_development} must remain in the registry "
-            "and be marked released before opening the next development version")
+            f"version {closed} is already tagged v{closed}; open the next version before "
+            "committing here")
 
 
 def omission_targets(changes):

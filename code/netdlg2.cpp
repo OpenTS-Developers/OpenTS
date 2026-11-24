@@ -49,6 +49,7 @@
 #include "wsproto.h"
 
 #include <algorithm>
+#include <thread>
 
 
 /*
@@ -331,6 +332,8 @@ void Net2Host_Game(void)
 		Session.NetOpen = true;
 		Session.NetStealth = false;
 		Session.Options.ScenarioIndex = 0;
+		// A match starts from the player's setting, kept to the speeds every machine can index.
+		Session.Options.GameSpeed = std::clamp(Options.GameSpeed, 0, OptionsClass::MAX_SPEED_SETTING - 1);
 		Session.PlayingAgainstVersion = VerNum.Version_Number();
 		Set_Scenario_Info_From_Index(Session.Options.ScenarioIndex);
 
@@ -390,7 +393,7 @@ bool Net2Can_Start(void)
 bool Net2_Service_Lobby(void)
 {
 	Ipx.Service();
-	Sleep(0);
+	std::this_thread::yield();
 	Call_Back();
 	Ipx.Service();
 	Title_Screen_Restore();

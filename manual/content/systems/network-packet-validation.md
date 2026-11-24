@@ -32,7 +32,7 @@ Each command is checked again when it runs. A command that fails is ignored, and
 - A game speed change names one of the seven game speeds.
 - A change to the legacy latency setting stays within `0` to `3`.
 
-In a network game, a command aimed at one object requires the sender to own that object when the command runs. This covers power on or off, repair, sell, setting a primary factory or a rally point, deploy, scatter, stop, and move, attack, and other mission orders. An ally who holds a [shared control](/systems/shared-control/) grant from the owner may also send all of these except power, repair, sell and setting a primary factory. A command to a missing or destroyed object does nothing. A captured object ignores commands from its former owner.
+In a network game, a command aimed at one object requires the sender to own that object when the command runs. This covers power on or off, repair, sell, setting a primary factory or a rally point, deploy, scatter, stop, move, attack, and other mission orders, and the selection that offers a tag's [Selected by player](/mapping/events/tevent-selected/) event. An ally who has a [shared control](/systems/shared-control/) grant from the owner may also send all of these except power, repair, sell, setting a primary factory, and that selection. A command to a missing or destroyed object does nothing. A captured object ignores commands from its former owner.
 
 ## Interface rules in network games
 

@@ -141,7 +141,6 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	PitchAngle(DEG_TO_RAD(20)),
 	BuildLimit(0x7FFFFFFF),
 	Category(CATEGORY_NONE),
-	Unused2(0),
 	DeployTime(0),
 	FireAngle(8),
 	PipScale(PIPSCALE_NONE),
@@ -201,7 +200,9 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	ZFudgeColumn(5),
 	ZFudgeTunnel(10),
 	ZFudgeBridge(0),
-	Description("")
+	Description(""),
+	CloakSound(VOC_NONE),
+	UncloakSound(VOC_NONE)
 {
 	IsSentient = true;
 
@@ -676,6 +677,8 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		TargetDistanceCoefficient = ini.Get_Float(Name(), "TargetDistanceCoefficient", TargetDistanceCoefficient == 0 ? Rule->TargetDistanceCoefficientDefault : TargetDistanceCoefficient);
 		SpecialThreatValue = ini.Get_Float(Name(), "SpecialThreatValue", SpecialThreatValue);
 		Description = ini.Get_String(Name(), "Description", Description.c_str());
+		CloakSound = ini.Get_VocType(Name(), "CloakSound", CloakSound);
+		UncloakSound = ini.Get_VocType(Name(), "UncloakSound", UncloakSound);
 
 		IsLeader = false;
 		if (Weapons[0].Weapon != NULL && Weapons[0].Weapon->Attack > 0) {
@@ -947,7 +950,6 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	BASECLASS::Serialize(stream);
 
 	stream.Serialize(CollateralDamageCoefficient);
-	stream.Serialize(Unused1);
 	stream.Serialize(WalkRate);
 	stream.Serialize(VeteranAbilities);
 	stream.Serialize(EliteAbilities);
@@ -981,7 +983,6 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(PitchAngle);
 	stream.Serialize(BuildLimit);
 	stream.Serialize(Category);
-	stream.Serialize(Unused2);
 	stream.Serialize(DeployTime);
 	stream.Serialize(FireAngle);
 	stream.Serialize(PipScale);
@@ -1084,6 +1085,8 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ZFudgeTunnel);
 	stream.Serialize(ZFudgeBridge);
 	stream.Serialize(Description);
+	stream.Serialize(CloakSound);
+	stream.Serialize(UncloakSound);
 }
 
 
@@ -1095,40 +1098,45 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
+	crc(CollateralDamageCoefficient);
+	for (int i = ABILITY_FIRST; i < ABILITY_COUNT; i++) {
+		crc(VeteranAbilities[(AbilityType)i]);
+		crc(EliteAbilities[(AbilityType)i]);
+	}
+	crc(SpecialThreatValue);
+	crc(MyEffectivenessCoefficient);
+	crc(TargetEffectivenessCoefficient);
+	crc(TargetSpecialThreatCoefficient);
+	crc(TargetStrengthCoefficient);
+	crc(TargetDistanceCoefficient);
 	crc(ThreatAvoidanceCoefficient);
 	crc(SlowdownDistance);
 	crc(DeaccelerationFactor);
 	crc(AccelerationFactor);
 	crc(CloakingSpeed);
 	crc(DebrisTypes.Count());
-	crc(Dock.Count());
 	crc(DebrisMaximums.Count());
-	crc((char*)&Locomotor, sizeof(Locomotor));
-	crc(VoxelCenterY);
-	crc(VoxelCenterX);
+	crc((int)Locomotor.Data1);
+	crc((short)Locomotor.Data2);
+	crc((short)Locomotor.Data3);
+	for (int i = 0; i < ARRAY_SIZE(Locomotor.Data4); i++) {
+		crc((char)Locomotor.Data4[i]);
+	}
 	crc(Weight);
 	crc(PhysicalSize);
 	crc(InitialMission);
-	crc(IsImmuneToVeins);
-	crc(Is_Immune_To_EMP());
-	crc(IsTiberiumHeal);
-	crc(IsTargetLaser);
 	crc(RollAngle);
-	crc(PitchAngle);
 	crc(PitchSpeed);
-	crc(FlightLevel);
+	crc(PitchAngle);
 	crc(BuildLimit);
 	crc(Category);
 	crc(DeployTime);
 	crc(FireAngle);
 	crc(PipScale);
 	crc(Max_Pips());
-	crc(VoiceSelect.Count());
-	crc(VoiceMove.Count());
-	crc(VoiceAttack.Count());
-	crc(VoiceDie.Count());
-	crc(VoiceFeedback.Count());
-	crc(DamageParticleSystems.Count());
+	crc(Dock.Count());
+	if (DeploysInto != NULL) crc(DeploysInto->Fetch_ID());
+	if (UndeploysInto != NULL) crc(UndeploysInto->Fetch_ID());
 	crc(MZone);
 	crc(ThreatRange);
 	crc(MaxDebris);
@@ -1139,6 +1147,7 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(SightRange);
 	crc(Cost);
 	crc(Soylent);
+	crc(FlightLevel);
 	crc(Level);
 	crc(Prerequisite.Count());
 	crc(Risk);
@@ -1147,16 +1156,41 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(Speed);
 	crc(MaxAmmo);
 	crc((int)Ownable);
+	crc(IsAllowedToStartInMultiplayer);
 	crc(Rotation);
 	crc(ROT);
 	crc(TurretOffset);
 	crc(Points);
 	crc(Explosion.Count());
 	crc(ScrapExplosion.Count());
-	crc(ShadowIndex);
+	if (NaturalParticleSystem != NULL) crc(NaturalParticleSystem->Fetch_ID());
+	crc(NaturalParticleLocation.X);
+	crc(NaturalParticleLocation.Y);
+	crc(NaturalParticleLocation.Z);
+	crc(DamageParticleSystems.Count());
+	crc(DamageSmokeOffset.X);
+	crc(DamageSmokeOffset.Y);
+	crc(DamageSmokeOffset.Z);
 	crc(Capacity);
-	crc(IsTrain);
+	for (int i = 0; i < WEAPON_SLOT_COUNT; i++) {
+		if (Weapons[i].Weapon != NULL) crc(Weapons[i].Weapon->Fetch_ID());
+		crc(Weapons[i].FireFLH.X);
+		crc(Weapons[i].FireFLH.Y);
+		crc(Weapons[i].FireFLH.Z);
+		crc(Weapons[i].BarrelLength);
+		crc(Weapons[i].BarrelThickness);
+	}
+	crc(IsTypeImmune);
 	crc(IsDetectDisguise);
+	crc(IsMoveToShroud);
+	crc(IsTrainable);
+	crc(IsDamageSparks);
+	crc(IsTargetLaser);
+	crc(IsImmuneToVeins);
+	crc(Is_Immune_To_EMP());
+	crc(IsTiberiumHeal);
+	crc(IsCloakStop);
+	crc(IsTrain);
 	crc(IsDropship);
 	crc(IsToProtect);
 	crc(IsDisableable);
@@ -1185,7 +1219,12 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(IsManualReload);
 	crc(IsVisibleLoad);
 	crc(IsLightningRod);
-	crc(Description.c_str());
+	crc(IsHunterSeeker);
+	crc(IsCrusher);
+	crc(IsTiltsWhenCrushes);
+	crc(IsSubterranean);
+	crc(IsAutoCrush);
+	crc(IsAccelerates);
 }
 
 

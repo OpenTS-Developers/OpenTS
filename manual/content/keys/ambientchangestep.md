@@ -17,4 +17,4 @@ A smaller value truncates to a step of 0, so the ambient level never reaches a n
 
 The [Ambient light <= ...](/mapping/events/tevent-ambient-less-than/) and [Ambient light >= ...](/mapping/events/tevent-ambient-greater-than/) trigger events compare the current ambient level, which moves one step at a time. A trigger that waits for a new target level fires only when the fade reaches that level.
 
-The [Set ambient step...](/mapping/actions/taction-set-ambient-step/) trigger action changes this value, and a saved game keeps the change. The change lasts until a later scenario loads a rules file or map that sets the key. If none sets `AmbientChangeStep`, later scenarios in the same session keep the changed value.
+The [Set ambient step...](/mapping/actions/taction-set-ambient-step/) trigger action changes this value, and a saved game keeps the change. The next scenario starts again from the value its rules files and map give.

@@ -7,7 +7,7 @@ when_omitted:
   value: "no"
 ---
 
-By default, a campaign or skirmish pauses when its window loses the focus and resumes when the window gets the focus back. `SimulateWhileUnfocused=yes` keeps it running instead.
+By default, a campaign or skirmish pauses when its window loses the focus and resumes when the window gets the focus back. The pause does not count toward the play time that the score screen and the diplomacy screen show. `SimulateWhileUnfocused=yes` keeps the game and its play time running instead.
 
 A game running without the focus plays no sound, takes no input and does not redraw the view. The simulation continues: production finishes, harvesters keep working and computer players keep playing.
 

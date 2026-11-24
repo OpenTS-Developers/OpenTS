@@ -188,12 +188,6 @@ class AircraftClass : public FootClass, public IFlyControl
 		*/
 		bool Passenger;
 
-		/// Unused
-		bool IsKamikaze;
-
-		/// Unused
-		bool field_35B;
-
 		/*
 		 * If this aircraft is committed to a strafing run, then this flag will be true. It
 		 * is reported to the locomotor through Is_Locked so the aircraft will hold its

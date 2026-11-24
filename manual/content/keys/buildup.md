@@ -1,14 +1,14 @@
 ---
 key: Buildup
 summary: The construction animation file a structure plays while it is being built.
-see_also: ["BuildupTime", "DemandLoadBuildup", "FreeBuildup", "GateStages", "Unsellable", "system:production"]
+see_also: ["BuildupTime", "DemandLoadBuildup", "GateStages", "Unsellable", "system:production"]
 when_omitted:
   kind: value
   value: ""
   note: The type has no construction artwork.
 ---
 
-The value is a filename without its extension. An empty value keeps the previous one, and only the first 15 characters are kept. Unless [`DemandLoadBuildup=yes`](/keys/demandloadbuildup/) defers it, the game loads `<value>.SHP` with the rules, after rewriting the name for the scenario theater by the structure-art convention that [`DoorAnim`](/keys/dooranim/) describes.
+The value is a filename without its extension. An empty value keeps the previous one, and only the first 15 characters are kept. The game loads `<value>.SHP` with the rules, or with [`DemandLoadBuildup=yes`](/keys/demandloadbuildup/) when a scenario starts or a saved game is loaded, after rewriting the name for the scenario theater by the structure-art convention that [`DoorAnim`](/keys/dooranim/) describes.
 
 ```ini title="art.ini"
 [MYWEAP] ; example war factory, drawn from its own Image ID

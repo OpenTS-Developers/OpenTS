@@ -4502,24 +4502,6 @@ Category:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
-Cell:
-  key: Cell
-  scopes:
-  - applies_to:
-    - multiplayer settings
-    file: sun.ini
-    section:
-      kind: literal
-      name: SyncBug
-    value_type: string
-    status: generated
-    _provenance:
-      default_candidate: 0,0
-      declared_in: SessionClass
-      member: null
-      source: code/session.cpp
-      guard: null
-    level: SessionClass
 CellAnim:
   key: CellAnim
   scopes:
@@ -4983,6 +4965,20 @@ CloakRadiusInCells:
 CloakSound:
   key: CloakSound
   scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: reviewed
+    _provenance:
+      default_candidate: none
+      declared_in: TechnoTypeClass
+      member: CloakSound
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
   - applies_to:
     - global rules
     file: rules.ini
@@ -4990,7 +4986,7 @@ CloakSound:
       kind: literal
       name: AudioVisual
     value_type: sound
-    status: generated
+    status: reviewed
     _provenance:
       default_candidate: none
       declared_in: RulesClass
@@ -5248,6 +5244,24 @@ ColorSpeed:
       source: code/ptype.cpp
       guard: null
     level: ParticleTypeClass
+ComesNearWaypointDistance:
+  key: ComesNearWaypointDistance
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: ComesNearWaypointDistance
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 CompEasyBonus:
   key: CompEasyBonus
   scopes:
@@ -5477,24 +5491,6 @@ Conventional:
       source: code/warhead.cpp
       guard: null
     level: WarheadTypeClass
-Coord:
-  key: Coord
-  scopes:
-  - applies_to:
-    - multiplayer settings
-    file: sun.ini
-    section:
-      kind: literal
-      name: SyncBug
-    value_type: string
-    status: generated
-    _provenance:
-      default_candidate: '0'
-      declared_in: SessionClass
-      member: null
-      source: code/session.cpp
-      guard: null
-    level: SessionClass
 Cost:
   key: Cost
   scopes:
@@ -9331,58 +9327,6 @@ Fraidycat:
       source: code/infatype.cpp
       guard: null
     level: InfantryTypeClass
-Frame:
-  key: Frame
-  scopes:
-  - applies_to:
-    - multiplayer settings
-    file: sun.ini
-    section:
-      kind: literal
-      name: SyncBug
-    value_type: integer
-    status: generated
-    _provenance:
-      default_candidate: null
-      declared_in: SessionClass
-      member: TrapFrame
-      source: code/session.cpp
-      guard: null
-    level: SessionClass
-FreeAfterPlaying:
-  key: FreeAfterPlaying
-  scopes:
-  - applies_to: *id005
-    file: art.ini
-    section:
-      kind: identifier
-      source: object-type
-    value_type: boolean
-    status: generated
-    _provenance:
-      default_candidate: 'no'
-      declared_in: AnimTypeClass
-      member: IsFreeAfterPlaying
-      source: code/animtype.cpp
-      guard: null
-    level: AnimTypeClass
-FreeBuildup:
-  key: FreeBuildup
-  scopes:
-  - applies_to: *id004
-    file: art.ini
-    section:
-      kind: image
-      fallback: object-type
-    value_type: boolean
-    status: generated
-    _provenance:
-      default_candidate: 'no'
-      declared_in: BuildingTypeClass
-      member: IsFreeBuildup
-      source: code/builtype.cpp
-      guard: null
-    level: BuildingTypeClass
 FreeMCV:
   key: FreeMCV
   scopes:
@@ -11527,6 +11471,24 @@ InfantryGroupNumberOffset:
       default_candidate: null
       declared_in: UIControlsClass
       member: InfantryGroupNumberOffset
+      source: code/uicontrol.cpp
+      guard: null
+    level: UIControlsClass
+InfantryHealthBarPos:
+  key: InfantryHealthBarPos
+  scopes:
+  - applies_to:
+    - UI controls
+    file: ui.ini
+    section:
+      kind: literal
+      name: Ingame
+    value_type: point (x,y)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: UIControlsClass
+      member: InfantryHealthBarPos
       source: code/uicontrol.cpp
       guard: null
     level: UIControlsClass
@@ -17302,24 +17264,6 @@ PrimaryFirePixelOffset:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
-PrintCRC:
-  key: PrintCRC
-  scopes:
-  - applies_to:
-    - multiplayer settings
-    file: sun.ini
-    section:
-      kind: literal
-      name: SyncBug
-    value_type: integer
-    status: generated
-    _provenance:
-      default_candidate: null
-      declared_in: SessionClass
-      member: TrapPrintCRC
-      source: code/session.cpp
-      guard: null
-    level: SessionClass
 Priority:
   key: Priority
   scopes:
@@ -23114,24 +23058,6 @@ TalkBubbleTime:
       source: code/rules.cpp
       guard: null
     level: RulesClass
-Target:
-  key: Target
-  scopes:
-  - applies_to:
-    - multiplayer settings
-    file: sun.ini
-    section:
-      kind: literal
-      name: SyncBug
-    value_type: integer
-    status: generated
-    _provenance:
-      default_candidate: null
-      declared_in: SessionClass
-      member: target
-      source: code/session.cpp
-      guard: null
-    level: SessionClass
 TargetDistanceCoefficient:
   key: TargetDistanceCoefficient
   scopes:
@@ -24228,24 +24154,6 @@ TiberiumToSpawn:
       source: code/terrtype.cpp
       guard: null
     level: TerrainTypeClass
-TiberiumTransmogrify:
-  key: TiberiumTransmogrify
-  scopes:
-  - applies_to:
-    - global rules
-    file: rules.ini
-    section:
-      kind: literal
-      name: General
-    value_type: integer
-    status: generated
-    _provenance:
-      default_candidate: null
-      declared_in: RulesClass
-      member: TiberiumTransmogrify
-      source: code/rules.cpp
-      guard: null
-    level: RulesClass
 TiberiumWildlife:
   key: TiberiumWildlife
   scopes:
@@ -25295,21 +25203,6 @@ Type:
       guard: null
     level: SuperWeaponTypeClass
   - applies_to:
-    - multiplayer settings
-    file: sun.ini
-    section:
-      kind: literal
-      name: SyncBug
-    value_type: string
-    status: reviewed
-    _provenance:
-      default_candidate: NONE
-      declared_in: SessionClass
-      member: null
-      source: code/session.cpp
-      guard: null
-    level: SessionClass
-  - applies_to:
     - Sounds
     file: sound01.ini
     section:
@@ -25359,6 +25252,23 @@ URepairRate:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+UncloakSound:
+  key: UncloakSound
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: TechnoTypeClass
+      member: UncloakSound
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 UndeploySound:
   key: UndeploySound
   scopes:
@@ -25480,6 +25390,24 @@ UnitGroupNumberOffset:
       default_candidate: null
       declared_in: UIControlsClass
       member: UnitGroupNumberOffset
+      source: code/uicontrol.cpp
+      guard: null
+    level: UIControlsClass
+UnitHealthBarPos:
+  key: UnitHealthBarPos
+  scopes:
+  - applies_to:
+    - UI controls
+    file: ui.ini
+    section:
+      kind: literal
+      name: Ingame
+    value_type: point (x,y)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: UIControlsClass
+      member: UnitHealthBarPos
       source: code/uicontrol.cpp
       guard: null
     level: UIControlsClass

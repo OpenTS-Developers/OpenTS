@@ -108,7 +108,6 @@
 #include "building.h"
 #include "builtype.h"
 #include "bullettype.h"
-#include "cctooltip.h"
 #include "cell.h"
 #include "conquer.h"
 #include "convert.h"
@@ -141,6 +140,7 @@
 #include "tag.h"
 #include "tagtype.h"
 #include "terrtype.h"
+#include "uitooltip.h"
 #include "unittype.h"
 #include "vein.h"
 #include "vector3.h"
@@ -403,6 +403,7 @@ void DisplayClass::Set_View_Dimensions(Rect const & dimensions)
 		tooltip.ID = 500;
 		tooltip.Text = TXT_NONE;
 		tooltip.Region = TacticalRect;
+		tooltip.TracksPointer = true;
 		ToolTips->Remove(500);
 		ToolTips->Add(&tooltip);
 	}
@@ -1530,7 +1531,9 @@ Cell DisplayClass::Calculated_Cell(SourceType dir, Cell const & waypoint, Cell c
 			index = cells.Count();
 
 			if (trycell == CELL_NONE) {
-				punt = cells[Random_Pick(0, index)];
+				if (index > 0) {
+					punt = cells[Random_Pick(0, index - 1)];
+				}
 			} else {
 				int dist = -1;
 				Cell best = CELL_NONE;
@@ -3063,11 +3066,7 @@ bool DisplayClass::Read_INI(CCINIClass const & ini)
 	*/
 	int uniqueid = Scen->UniqueID;
 	TerrainTypeClass::Init(Scen->Theater);
-	if (Scen->Theater != LastTheater) {
-		IsometricTileTypeClass::Read_Control_File(Scen->Theater, true);
-	} else {
-		IsometricTileTypeClass::Clear_Use_Counts();
-	}
+	IsometricTileTypeClass::Read_Control_File(Scen->Theater, true);
 	Scen->UniqueID = uniqueid + 10000;
 	OverlayTypeClass::Init(Scen->Theater);
 	UnitTypeClass::Init(Scen->Theater);

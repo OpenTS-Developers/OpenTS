@@ -21,6 +21,7 @@
 #include "ui/screens/diplomacy/uidiplomacy.h"
 #include "ui/screens/display/uidisplay.h"
 #include "ui/screens/gamectrl/uigamectrl.h"
+#include "ui/screens/gametip/uigametip.h"
 #include "ui/screens/gameopt/uigameopt.h"
 #include "ui/screens/keyboard/uikeyboard.h"
 #include "ui/screens/mainopt/uimainopt.h"
@@ -1678,6 +1679,11 @@ TEST_CASE("the briefing breaks at @ and newlines, drops the spaces after a break
 	std::vector<std::string> const expected = { "Alpha beta", "gamma", "Delta", "", "Epsilon", "Zeta", "Supercalifr", "agilistic" };
 	REQUIRE_MESSAGE(presenter.Pages.size() == 1, "the briefing breaks at @ and newlines, drops the spaces after a break, and wraps whole words");
 	CHECK_MESSAGE(presenter.Pages[0] == expected, "the briefing breaks at @ and newlines, drops the spaces after a break, and wraps whole words");
+
+	UIRestatePresenterClass escaped(service, clock, "Meet at CP\\@3@Go", false);
+	escaped.Lay_Out(Ten_Per_Character, 200, 14);
+	REQUIRE_MESSAGE(escaped.Pages.size() == 1, "an escaped at sign in a briefing is printed and does not break the line");
+	CHECK_MESSAGE(escaped.Pages[0] == std::vector<std::string>({ "Meet at CP@3", "Go" }), "an escaped at sign in a briefing is printed and does not break the line");
 
 	UIRestatePresenterClass edge(service, clock, "abcd efghi jk", false);
 	edge.Lay_Out(Ten_Per_Character, 100, 14);
@@ -3586,6 +3592,128 @@ void Test_Main_Options_Screen(Rml::Context & context, CountingSystemInterfaceCla
 }
 
 
+void Test_Game_Tip_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	CHECK_MESSAGE(UI_Game_Tip_Text("Power@Low") == "Power\nLow", "an at sign breaks the line");
+	CHECK_MESSAGE(UI_Game_Tip_Text("a\rb\r\nc\nd") == "a\nb\nc\nd", "a return, a return and line feed, and a line feed each break the line once");
+	CHECK_MESSAGE(UI_Game_Tip_Text("50% <b>&amp;") == "50% <b>&amp;", "other text is kept as written");
+	CHECK_MESSAGE(UI_Game_Tip_Text("mail\\@example\r") == "mail@example\n", "an escaped at sign stays an at sign, and a return still breaks the line");
+
+	UIGameTipPlacement placement;
+	placement.PointerX = 100.0f;
+	placement.PointerY = 100.0f;
+	placement.Below = 16.0f;
+	placement.Left = 0.0f;
+	placement.Top = 20.0f;
+	placement.Right = 300.0f;
+	placement.Bottom = 400.0f;
+
+	float x = 0.0f;
+	float y = 0.0f;
+	UI_Place_Game_Tip(placement, 50.0f, 20.0f, x, y);
+	CHECK_MESSAGE((x == 100.0f && y == 116.0f), "a tooltip with room sits below the pointer");
+	UI_Place_Game_Tip(placement, 250.0f, 20.0f, x, y);
+	CHECK_MESSAGE(x == 50.0f, "a tooltip that would cross the right edge moves left to meet it");
+	placement.PointerY = 390.0f;
+	UI_Place_Game_Tip(placement, 50.0f, 20.0f, x, y);
+	CHECK_MESSAGE(y == 370.0f, "a tooltip that would cross the bottom edge sits above the pointer");
+	placement.PointerY = 100.0f;
+	placement.Bottom = 150.0f;
+	UI_Place_Game_Tip(placement, 50.0f, 120.0f, x, y);
+	CHECK_MESSAGE(y == 20.0f, "a tooltip too tall for either side is held at the top edge");
+
+	UIGameTipPlacement beside;
+	beside.Beside = true;
+	beside.PointerY = 345.0f;
+	beside.ControlLeft = 1100.0f;
+	beside.ControlTop = 300.0f;
+	beside.ControlRight = 1160.0f;
+	beside.ControlBottom = 350.0f;
+	beside.Right = 1280.0f;
+	beside.Bottom = 800.0f;
+	UI_Place_Game_Tip(beside, 150.0f, 40.0f, x, y);
+	CHECK_MESSAGE((x == 950.0f && y == 305.0f), "a short control's tooltip sits against its side facing the middle, centered on it wherever the pointer is");
+	UI_Place_Game_Tip(beside, 150.0f, 200.0f, x, y);
+	CHECK_MESSAGE(y == 300.0f, "a tooltip taller than its control starts level with the control's top");
+	beside.ControlLeft = 40.0f;
+	beside.ControlRight = 100.0f;
+	UI_Place_Game_Tip(beside, 150.0f, 40.0f, x, y);
+	CHECK_MESSAGE(x == 100.0f, "a control's tooltip on the left of the screen sits against its right side");
+
+	beside.Upright = true;
+	beside.ControlTop = 100.0f;
+	beside.ControlBottom = 700.0f;
+	beside.PointerY = 400.0f;
+	UI_Place_Game_Tip(beside, 150.0f, 40.0f, x, y);
+	CHECK_MESSAGE(y == 380.0f, "an upright control's tooltip is level with the pointer");
+	beside.PointerY = 105.0f;
+	UI_Place_Game_Tip(beside, 150.0f, 40.0f, x, y);
+	CHECK_MESSAGE(y == 100.0f, "and stays alongside the control near its top");
+	beside.PointerY = 699.0f;
+	UI_Place_Game_Tip(beside, 150.0f, 40.0f, x, y);
+	CHECK_MESSAGE(y == 660.0f, "and near its bottom");
+
+	beside.ControlTop = 770.0f;
+	beside.ControlBottom = 800.0f;
+	UI_Place_Game_Tip(beside, 150.0f, 40.0f, x, y);
+	CHECK_MESSAGE(y == 760.0f, "a control's tooltip that would cross the bottom edge moves up to meet it");
+
+	int problems = system.Problems;
+	UIGameTipPresenterClass presenter;
+	std::unique_ptr<UIViewClass> view = UI_Game_Tip_View(presenter);
+
+	REQUIRE_MESSAGE(Rml(*view).Prepare(context), "the tooltip view prepares against the test context");
+	view->Show(false);
+	context.Update();
+	CHECK_MESSAGE(!view->Is_Shown(), "the tooltip stays hidden until there is a tooltip to show");
+
+	presenter.Text = "Ion Cannon@Ready <b>";
+	presenter.Placement.PointerX = 600.0f;
+	presenter.Placement.PointerY = 300.0f;
+	presenter.Placement.Below = 16.0f;
+	presenter.Placement.Right = 640.0f;
+	presenter.Placement.Bottom = 800.0f;
+	presenter.Wanted = true;
+	view->Sync();
+	context.Update();
+	CHECK_MESSAGE(!view->Is_Shown(), "a tooltip is not shown before it is placed");
+	view->Placed();
+	context.Update();
+	context.Render();
+	CHECK_MESSAGE(view->Is_Shown(), "a placed tooltip is shown");
+	CHECK_MESSAGE(system.Problems == problems, "the tooltip raises no RmlUi warning or error");
+
+	Rml::Element * box = Rml(*view).Document()->GetElementById("gametip");
+	REQUIRE_MESSAGE(box != nullptr, "the tooltip document holds its box");
+	CHECK_MESSAGE(box->GetNumChildren() == 1, "the text is one text node");
+	CHECK_MESSAGE(box->GetInnerRML().find("<b>") == std::string::npos, "markup in the text is not parsed");
+	Rml::Vector2f offset = box->GetAbsoluteOffset(Rml::BoxArea::Border);
+	Rml::Vector2f size = box->GetBox().GetSize(Rml::BoxArea::Border);
+	CHECK_MESSAGE(offset.x + size.x <= 640.0f + 0.5f, "the placed box stays inside its region");
+	CHECK_MESSAGE(offset.y == 316.0f, "the placed box sits below the pointer");
+
+	float const shortheight = size.y;
+	presenter.Text.clear();
+	for (int index = 0; index < 20; index++) {
+		presenter.Text += "Long description test, ";
+	}
+	view->Sync();
+	context.Update();
+	view->Placed();
+	context.Update();
+	size = box->GetBox().GetSize(Rml::BoxArea::Border);
+	CHECK_MESSAGE((size.x <= 360.5f && size.x > 300.0f), "long text wraps at the style sheet's 360dp width");
+	CHECK_MESSAGE(size.y > shortheight, "and the box grows taller instead");
+
+	presenter.Wanted = false;
+	view->Sync();
+	CHECK_MESSAGE(!view->Is_Shown(), "a tooltip taken down is hidden at once");
+
+	view->Release();
+	context.Update();
+}
+
+
 void Test_Wait_Box_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
 {
 	int problems = system.Problems;
@@ -5131,6 +5259,7 @@ struct DocumentFixture
 		REQUIRE_MESSAGE(Rml::LoadFontFace(shipped, "dlg-sans", Rml::Style::FontStyle::Normal), "and stands in for the dialogs' sans family");
 		REQUIRE_MESSAGE(Rml::LoadFontFace(shipped, "dlgsys", Rml::Style::FontStyle::Normal), "and for the bitmap family the art would supply");
 		REQUIRE_MESSAGE(Rml::LoadFontFace(shipped, "fullfnt", Rml::Style::FontStyle::Normal), "and for the family the old menu font's screens use");
+		REQUIRE_MESSAGE(Rml::LoadFontFace(shipped, "wwfont-kia6pt", Rml::Style::FontStyle::Normal), "and for the tooltip font the archives would supply");
 
 		context = Rml::CreateContext("test", Rml::Vector2i(1280, 800));
 		REQUIRE_MESSAGE(context != nullptr, "a context is created");
@@ -5145,6 +5274,70 @@ struct DocumentFixture
 		CHECK_MESSAGE(render.ReleasedTextures == render.Loaded + render.Generated, "every texture is released by shutdown");
 	}
 };
+
+
+// RmlUi with the game's font engine installed over the library's own, as the shell installs it.
+// The engine outlives the shutdown, which still reads the faces it loaded.
+struct FontEngineFixture
+{
+	UIFontEngineClass engine;
+	RecordingRenderInterfaceClass render;
+	CountingSystemInterfaceClass system;
+	Rml::Context * context = nullptr;
+
+	FontEngineFixture(void)
+	{
+		std::filesystem::current_path(std::filesystem::path(OPENTS_UI_DIR));
+
+		Rml::SetRenderInterface(&render);
+		Rml::SetSystemInterface(&system);
+		REQUIRE_MESSAGE(Rml::Initialise(), "RmlUi initialises with the recording interfaces");
+
+		engine.Set_Fallback(Rml::GetFontEngineInterface());
+		Rml::SetFontEngineInterface(&engine);
+
+		context = Rml::CreateContext("fonts", Rml::Vector2i(640, 480));
+		REQUIRE_MESSAGE(context != nullptr, "a context is created");
+	}
+
+	~FontEngineFixture(void)
+	{
+		Rml::RemoveContext("fonts");
+		Rml::Shutdown();
+	}
+};
+
+
+TEST_CASE_FIXTURE(FontEngineFixture, "a style sheet's @font-face loads a font file for its documents, and a repeated or overlapping load stays sound")
+{
+	char const * const markup =
+		"<rml><head><style>"
+		"@font-face { font-family: modface; src: Arimo.ttf; }"
+		"body { font-family: modface; font-size: 13px; }"
+		"</style></head><body><p id='text'>Mod font</p></body></rml>";
+
+	Rml::ElementDocument * document = context->LoadDocumentFromMemory(markup);
+	REQUIRE_MESSAGE(document != nullptr, "a document declaring its own face loads");
+	context->Update();
+	CHECK_MESSAGE(document->GetElementById("text")->GetFontFaceHandle() != 0, "its text finds the face the style sheet declared");
+	document->Close();
+	context->Update();
+
+	Rml::ElementDocument * again = context->LoadDocumentFromMemory(markup);
+	REQUIRE_MESSAGE(again != nullptr, "the same declaration parsed again loads");
+	context->Update();
+	CHECK_MESSAGE(again->GetElementById("text")->GetFontFaceHandle() != 0, "and still finds the face");
+	again->Close();
+	context->Update();
+
+	CHECK_MESSAGE(Rml::LoadFontFace("Arimo.ttf", "overlap", Rml::Style::FontStyle::Normal, Rml::Style::FontWeight::Normal), "one weight of a font loads into a family");
+	CHECK_MESSAGE(Rml::LoadFontFace("Arimo.ttf", "overlap", Rml::Style::FontStyle::Normal), "every weight of the same font then loads past the weight already there");
+	CHECK_MESSAGE(!Rml::LoadFontFace("missing.ttf", "absent", Rml::Style::FontStyle::Normal), "a font file that is not there loads nothing");
+
+	engine.Reserve_Family("dlg-sans");
+	CHECK_MESSAGE(!Rml::LoadFontFace("Arimo.ttf", "DLG-Sans", Rml::Style::FontStyle::Normal), "a reserved family takes no font file, whatever its case");
+	CHECK_MESSAGE(system.Problems == 2, "the missing file and the reserved family are each reported once");
+}
 
 
 TEST_CASE_FIXTURE(DocumentFixture, "every UI document names its resources by bare file name, loads, and draws cleanly within the context")
@@ -5350,6 +5543,12 @@ TEST_CASE_FIXTURE(DocumentFixture, "the main menu")
 TEST_CASE_FIXTURE(DocumentFixture, "the options menu")
 {
 	Test_Main_Options_Screen(*context, system, render);
+}
+
+
+TEST_CASE_FIXTURE(DocumentFixture, "the game tooltip")
+{
+	Test_Game_Tip_Screen(*context, system);
 }
 
 

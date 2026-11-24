@@ -4,7 +4,7 @@ summary: The number of stages the animation runs through before it ends or chain
 see_also: ["Start", "LoopEnd", "LoopCount", "Next", "Rate"]
 when_omitted:
   kind: computed
-  note: The frame count of the shape the type first gets hold of, or zero if it never gets one.
+  note: The frame count of the shape the animation draws, or zero when it has none.
 ---
 
 The animation shows one frame of its shape per stage, starting at [`Start`](/keys/start/). Stages count from zero, so the frames shown are `Start` through `Start` + `End` - 1. When the stage counter reaches `End`, the animation is removed or becomes its [`Next=`](/keys/next/) animation in the same logic pass, and that stage is never drawn.
@@ -15,12 +15,8 @@ The animation shows one frame of its shape per stage, starting at [`Start`](/key
 
 A [`Translucent=yes`](/keys/translucent/#scope-animtype) animation fades in steps placed at fractions of `End`, so changing `End` moves its fade steps.
 
-## Where the stored count comes from
+## Counts taken from the shape
 
-An animation type measures the frame count of the first shape it loads and keeps it, which is why most animations leave `End` unset. When a shape named after the animation's ID exists, the type measures that shape first. A later [`Image=`](/keys/image/#scope-animtype) that selects a different shape does not change the count, so set `End` explicitly on such an animation. A type that never finds a shape has a count of zero, so its last pass ends at its first frame advance.
+An omitted `End`, `End=0` and `End=-1` all mean the frame count of the shape the animation draws, which is why most animations leave `End` unset. The count is read from the shape whenever the animation needs it, including while it plays, so it always matches the shape the type has at that moment: the [`Image=`](/keys/image/#scope-animtype) shape, the variant for the current scenario's theater, or a [`DemandLoad=yes`](/keys/demandload/#scope-animtype) shape loaded when the scenario started or a saved game was loaded.
 
-`End=-1` measures the count again. The frame count of the shape the type currently uses is taken when the next animation of the type is created, and then kept for good.
-
-:::danger[Use `End=-1` only on an animation with artwork]
-An `End=-1` animation whose shape cannot be found crashes the game as soon as anything creates an animation of that type. The shape can be missing because the file does not exist, or because the theater variant of its name does not exist.
-:::
+An animation with no shape draws nothing. Unless `End` is set to a positive number, it counts zero stages, and its last pass ends at its first frame advance.

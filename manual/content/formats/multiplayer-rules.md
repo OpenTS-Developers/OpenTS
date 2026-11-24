@@ -45,17 +45,9 @@ Each time a scenario loads, the game applies the rules files in this order, and 
 
 A scenario that sets one of these values therefore overrides both files, as it overrides every other rules file.
 
+Each time a scenario loads, the game rebuilds its object types from the rules files: vehicles, infantry, aircraft, structures, weapons, warheads, projectiles, superweapons, animations, voxel animations, particles, particle systems, overlays, terrain objects, smudges, Tiberium types, countries, sides and the colors in `[Colors]`. It also returns the settings in sections such as `[General]`, `[CombatDamage]` and `[Powerups]`, and the land type sections such as `[Clear]`, to the values they had before the first scenario. A value `MPLAYER.INI` or `MPLAYERFS.INI` sets in any of them therefore does not reach a campaign started later without restarting the game; the campaign uses the value the other rules files give the key, or its default. `[MultiplayerDefaults]` is the exception: the game also reads that section from `MPLAYER.INI` before the first scenario, so its values there reach a campaign too.
+
 `MultiplayerRules=` and `MultiplayerRulesExpansion=` in [`OPENTS.INI`](/formats/opents-ini/#the-files-it-reads) name the two files. The game looks for them in the same folders, in the same order, as every other file it opens. Only the named file is read; no wildcard gathers other multiplayer rules files.
-
-## Write only keys the rules also write
-
-Each time a scenario loads, the game rebuilds its object types from the rules files: vehicles, infantry, aircraft, structures, weapons, warheads, projectiles, superweapons, animations, voxel animations, particles, particle systems, overlays, terrain objects, smudges, countries and the colors in `[Colors]`. A key in one of their sections therefore returns to the value the other rules files give it, or to its default, when a campaign loads.
-
-Other settings are not reset between scenarios. A key in a section such as `[General]`, `[CombatDamage]` or a Tiberium's section keeps the last value any file gave it. If only `MPLAYER.INI` writes such a key, the multiplayer value stays in force in a campaign started later without restarting the game.
-
-Write such a key here only where `RULES.INI` writes it too. The campaign load then reads the `RULES.INI` value back over it, and the two kinds of game stay separate.
-
-The expansion rules and a map's overrides carry the same risk. `MPLAYER.INI` and `MPLAYERFS.INI` meet it most often, because they exist to hold values that differ from the rules.
 
 ## What they cannot do
 

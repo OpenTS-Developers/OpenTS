@@ -36,7 +36,7 @@ test('manual workflow separates cancellable validation from non-cancellable depl
 	assert.match(pushCheck.run, new RegExp(zeroSha), 'branch creation must be recognized');
 	assert.match(pushCheck.run, /git cat-file -e/, 'a force-push may name a revision the history no longer contains');
 	assert.match(pushCheck.run, /--base-ref/);
-	assert.match(pushCheck.run, /else[\s\S]*manage\.py check/, 'an unavailable base must fall back to the complete check');
+	assert.match(pushCheck.run, /git merge-base HEAD origin\/main/, 'an unavailable base must fall back to where the branch left main');
 
 	const install = step('Install production site dependencies');
 	const build = step('Build publish artifact from production dependencies');

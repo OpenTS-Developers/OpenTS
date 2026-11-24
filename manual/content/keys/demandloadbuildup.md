@@ -1,14 +1,12 @@
 ---
 key: DemandLoadBuildup
-summary: Defers loading the structure's construction artwork until a structure of the type is first created.
-see_also: ["Buildup", "FreeBuildup", "DemandLoad"]
+summary: Loads the structure's construction artwork when each scenario starts, from a loose file or any archive.
+see_also: ["Buildup", "DemandLoad"]
 when_omitted:
   kind: value
   value: "no"
 ---
 
-With `DemandLoadBuildup=yes`, the file [`Buildup=`](/keys/buildup/) names is not loaded with the rules. The game loads it the first time a structure of the type is created. Unless `FreeBuildup=yes` releases it sooner, the type keeps that copy until its rules are read again, the type is destroyed, or a theater is set up for a [`Theater=yes`](/keys/theater/) or [`NewTheater=yes`](/keys/newtheater/) type. Without the flag, the file is loaded with the rules and loaded again on those theater setups.
+With `DemandLoadBuildup=yes`, the file that [`Buildup=`](/keys/buildup/) specifies is loaded when a scenario starts or a saved game is loaded, rather than with the rules, and stays loaded until the next scenario or saved game is loaded. The file can be loose or in any archive. Without the flag, the file is read from a cached archive with the rules, and again when a scenario starts for a [`Theater=yes`](/keys/theater/) or [`NewTheater=yes`](/keys/newtheater/) type.
 
-The deferred load always looks for the name rewritten for the theater by the structure-art convention, with a `.SHP` extension, whatever the type's theater settings say. A `Theater=yes` structure that sets this flag therefore does not look for a file with the theater's own extension. The deferred load also times the animation the ordinary way `Buildup=` describes, spreading [`BuildupTime`](/keys/builduptime/) over the steps. The five-second timing of a `Theater=yes` type does not apply.
-
-[`FreeBuildup=yes`](/keys/freebuildup/) releases only construction artwork loaded this way. Without `DemandLoadBuildup=yes`, `FreeBuildup=yes` has no effect.
+This load always looks for the name rewritten for the theater by the structure-art convention, with a `.SHP` extension, whatever the type's theater settings say. A `Theater=yes` structure that sets this flag therefore does not look for a file with the theater's extension. The load also times the animation the ordinary way `Buildup=` describes, spreading [`BuildupTime`](/keys/builduptime/) over the steps. The five-second timing of a `Theater=yes` type does not apply. Every player in a network game loads the file at the same point, so all of them use the same construction animation.

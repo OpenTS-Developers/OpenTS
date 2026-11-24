@@ -244,7 +244,7 @@ void Sync_Recorder_Arm(void)
 	SyncRecorder.Reset();
 
 	bool const network = Session.Is_Network_Game();
-	SyncRecorder.Set_Recording(network || Session.Record || Session.Play);
+	SyncRecorder.Set_Recording(network);
 
 	ModuleBase = (uintptr_t)GetModuleHandle(nullptr);
 	ModuleSize = 0;

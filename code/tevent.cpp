@@ -43,11 +43,13 @@
 
 #include "tevent.h"
 
+#include "_rules.h"
 #include "building.h"
 #include "builtype.h"
 #include "globals.h"
 #include "house.h"
 #include "incdec.h"
+#include "rules.h"
 #include "savestream.h"
 #include "scenario.h"
 #include "sun.h"
@@ -299,7 +301,7 @@ bool TEventClass::operator () (TEventType event, HouseClass const * house, Objec
 	else if (Event == TEVENT_NEAR_WAYPOINT) {
 		if (event != Event) return(false);
 		Coord waypoint_coord(Scen->Get_Waypoint_Coord(Data.Value));
-		if (object->Distance(waypoint_coord) > (CELL_LEPTON_W*5)) {
+		if (object->Distance(waypoint_coord) > Rule->ComesNearWaypointDistance) {
 			return(false);
 		}
 		return(true);
@@ -836,9 +838,9 @@ void TEventClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
 
-	if (Next != NULL) crc(Next->Fetch_ID());
+	if (Next != NULL) crc(Next->HeapID);
 	crc(Event);
-	if (Team != NULL) crc(Team->Fetch_ID());
+	if (Team != NULL) crc(Team->HeapID);
 	crc((int)Data.Value);
 }
 
