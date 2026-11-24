@@ -122,6 +122,7 @@
 #include "mouse.h"
 #include "movie.h"
 #include "movieskip.h"
+#include "mplayer.h"
 #include "mpu.h"
 #include "msgbox.h"
 #include "netdlg.h"
@@ -2368,6 +2369,113 @@ static NodeNameType * Seated_Node(int seat)
 }
 
 
+/// <summary>
+/// Returns the colors a drawn color is picked from: the eight menu colors not taken; when all
+/// eight are taken, every other color not taken; and when every color is taken, all of them.
+/// </summary>
+static std::vector<int> Open_Colors(std::vector<bool> const & taken)
+{
+	int const colors = int(taken.size());
+	std::vector<int> open;
+	for (int choice = 0; choice < MAX_MPLAYER_COLORS; choice++) {
+		int const color = Session.Color_Choice(choice);
+		if (color < colors && !taken[color]) {
+			open.push_back(color);
+		}
+	}
+
+	if (open.empty()) {
+		for (int color = 0; color < colors; color++) {
+			if (!taken[color]) {
+				open.push_back(color);
+			}
+		}
+	}
+
+	if (open.empty()) {
+		for (int color = 0; color < colors; color++) {
+			open.push_back(color);
+		}
+	}
+	return(open);
+}
+
+
+/// <summary>
+/// Draws the country and color of each player of a new skirmish or multiplayer match who left
+/// them to the game, and gives Session.Computers one entry per computer player. A drawn country
+/// has Multiplay=yes, and a drawn color is one Open_Colors returns; a color a player gives is
+/// kept, even when another player gives it too. The draws use the scenario's random numbers in
+/// house order, so machines that share the seed draw the same values. For a launch or a capture
+/// with listed seats, the session also takes the local player's country and color. Call it after
+/// Init_Random and before anything reads a player's country or color.
+/// </summary>
+void Draw_Player_Choices(void)
+{
+	// A menu match gives only the number of computer players, so earlier entries are replaced.
+	if (Session.LocalPlayer == -1) {
+		Clear_Vector(&Session.Computers);
+	}
+	while (Session.Computers.Count() < Session.Options.AIPlayers) {
+		NodeNameType * node = new NodeNameType;
+		node->Player.House = -1;
+		node->Player.Color = -1;
+		Session.Computers.Add(node);
+	}
+
+	std::vector<int> countries;
+	for (int country = HOUSE_FIRST; country < HouseTypes.Count(); country++) {
+		if (HouseTypes[country]->IsMultiplay) {
+			countries.push_back(country);
+		}
+	}
+	if (countries.empty()) {
+		countries.push_back(HOUSE_FIRST);
+	}
+
+	std::vector<NodeNameType *> players = Session.Humans_In_House_Order();
+	int const humans = int(players.size());
+	for (int index = 0; index < Session.Options.AIPlayers; index++) {
+		players.push_back(Session.Computers[index]);
+	}
+
+	std::vector<bool> taken(std::max(Session.Color_Count(), 0), false);
+	for (NodeNameType const * node : players) {
+		if (node->Player.Color >= 0 && node->Player.Color < int(taken.size())) {
+			taken[node->Player.Color] = true;
+		}
+	}
+
+	for (int position = 0; position < int(players.size()); position++) {
+		NodeNameType * node = players[position];
+
+		bool const draw_country = node->Player.House == -1;
+		if (draw_country) {
+			node->Player.House = countries[Random_Pick(0, int(countries.size()) - 1)];
+		}
+
+		bool const draw_color = node->Player.Color == -1 && !taken.empty();
+		if (draw_color) {
+			std::vector<int> const open = Open_Colors(taken);
+			node->Player.Color = open[Random_Pick(0, int(open.size()) - 1)];
+			taken[node->Player.Color] = true;
+		}
+
+		DebugString("[Players] Player %d, %s%s%s: country %d %s (%s), color %d (%s)\n", position,
+			position < humans ? "human" : "computer", node->Name[0] != '\0' ? " " : "", node->Name,
+			node->Player.House, HouseTypes[node->Player.House]->Name(), draw_country ? "drawn" : "given",
+			node->Player.Color, draw_color ? "drawn" : "given");
+	}
+
+	if (Session.LocalPlayer != -1 && humans > 0) {
+		NodeNameType const * local = Session.Players[0];
+		Session.House = local->Player.House;
+		Session.ColorIdx = local->Player.Color;
+		Session.PrefColor = Session.ColorIdx;
+	}
+}
+
+
 /***********************************************************************************************
  * Assign_Houses -- Assigns multiplayer houses to various players                              *
  *                                                                                             *
@@ -2394,54 +2502,11 @@ static NodeNameType * Seated_Node(int seat)
 void Assign_Houses(void)
 {
 	int i;
-	HousesType pref_house;
-
-	//------------------------------------------------------------------------
-	// Initialize
-	//------------------------------------------------------------------------
-	// The menu colors reach position 36 of the rules' [Colors] list however short it is.
-	std::vector<bool> color_used(std::max(Session.Color_Count(), 64), false);
-
-	bool assigned[MAX_PLAYERS];
-	for (i = 0; i < MAX_PLAYERS; i++) {
-		assigned[i] = false;
-	}
 
 //	DebugString( "Assign_Houses()\n" );
-	//------------------------------------------------------------------------
-	// Assign each player in 'Players' to a multiplayer house.  Players will
-	// be sorted by their chosen color value (this value must be unique among
-	// all the players).
-	//------------------------------------------------------------------------
-	for (i = 0; i < Session.Players.Count(); i++) {
+	// Each human player gets the next house, in the order every machine shares.
+	for (NodeNameType * player : Session.Humans_In_House_Order()) {
 
-		//.....................................................................
-		// Find the player with the lowest color index
-		//.....................................................................
-		int index = -1;
-		int lowest_color = -1;
-		for (int j = 0; j < Session.Players.Count(); j++) {
-			//..................................................................
-			// If we've already assigned this house, skip it.
-			//..................................................................
-			if (!assigned[j] && (lowest_color == -1 || Session.Players[j]->Player.Color < lowest_color)) {
-				lowest_color = Session.Players[j]->Player.Color;
-				index = j;
-			}
-		}
-		assigned[index] = true;
-
-		NodeNameType * player = Session.Players[index];
-
-		//.....................................................................
-		// Mark this player as having been assigned.
-		//.....................................................................
-		color_used[player->Player.Color] = true;
-
-		/*
-		**	Assign the lowest-color'd player to the next available slot in the
-		**	HouseClass array.
-		*/
 		HouseClass * housep = new HouseClass(HouseTypes[player->Player.House]);
 
 		housep->IniName = player->Name;
@@ -2451,7 +2516,7 @@ void Assign_Houses(void)
 		housep->Scheme = Session.Color_Index_To_Scheme(player->Player.Color);
 		housep->Initialize_Radar_Color();
 
-		if (index == 0) {
+		if (player == Session.Players[0]) {
 			PlayerPtr = housep;
 			PlayerPtr->IsPlayerControl = true;
 		}
@@ -2487,60 +2552,26 @@ void Assign_Houses(void)
 		}
 	}
 
-	// A computer player is given one of the countries the lobby offers.
-	DynamicVectorClass<HousesType> playable;
-	for (int country = HOUSE_FIRST; country < HouseTypes.Count(); country++) {
-		if (HouseTypes[country]->IsMultiplay) {
-			playable.Add((HousesType)country);
-		}
-	}
-
 	//------------------------------------------------------------------------
 	// Now assign computer players to the remaining houses.
 	//------------------------------------------------------------------------
-	for (i = Session.Players.Count(); i < Session.Players.Count() + Session.Options.AIPlayers; i++) {
-
-		/*
-		 * A launch file may have seated this computer player. Anything it left unnamed the game
-		 * picks, as it does for a game set up from the menu.
-		 */
-		int seatnum = i - Session.Players.Count();
-		NodeNameType * seat = seatnum < Session.Computers.Count() ? Session.Computers[seatnum] : NULL;
-
-		pref_house = playable.Count() > 0 ? playable[Random_Pick(0, playable.Count() - 1)] : HOUSE_FIRST;
-		if (seat != NULL && seat->Player.House != -1) {
-			pref_house = (HousesType)seat->Player.House;
-		}
-
-		// Pick a color for this house; keep looping until we find one.
-		int color = -1;
-		for (;;) {
-			color = Session.Color_Choice(Random_Pick(0, MAX_MPLAYER_COLORS - 1));
-			if (color_used[color] == false) {
-				break;
-			}
-		}
-
-		/*
-		 * A seated color is taken as written, repeats included: a cooperative team shares one.
-		 */
-		if (seat != NULL && seat->Player.Color != -1) {
-			color = seat->Player.Color;
-		}
-		color_used[color] = true;
+	for (i = 0; i < Session.Options.AIPlayers; i++) {
+		NodeNameType * seat = Session.Computers[i];
+		HousesType const house = (HousesType)seat->Player.House;
+		int const color = seat->Player.Color;
 
 		/*
 		**	Set up the house
 		*/
-		HouseClass * housep = new HouseClass(HouseTypes[pref_house]);
+		HouseClass * housep = new HouseClass(HouseTypes[house]);
 
 		housep->Control.TechLevel = BuildLevel;
 		housep->IsHuman = false;
 
-		housep->Init_Data(color, pref_house, Session.Options.Credits);
+		housep->Init_Data(color, house, Session.Options.Credits);
 		housep->Scheme = Session.Color_Index_To_Scheme(color);
 		housep->Initialize_Radar_Color();
-		housep->IniName = (seat != NULL && seat->Name[0] != '\0') ? seat->Name : Fetch_String(TXT_COMPUTER);
+		housep->IniName = (seat->Name[0] != '\0') ? seat->Name : Fetch_String(TXT_COMPUTER);
 
 		if (Session.Type != GAME_NORMAL) {
 			housep->IQ = Rule->MaxIQ;
@@ -2550,15 +2581,13 @@ void Assign_Houses(void)
 		if (Session.Players.Count() > 1 && Rule->IsCompEasyBonus && difficulty > DIFF_EASY) {
 			difficulty = (DiffType)(difficulty - 1);
 		}
-		if (seat != NULL && seat->Player.Handicap >= 0) {
+		if (seat->Player.Handicap >= 0) {
 			difficulty = (DiffType)seat->Player.Handicap;
 		}
 		housep->Assign_Handicap(difficulty);
 
-		if (seat != NULL) {
-			housep->SpawnWaypoint = seat->Player.SpawnChoice;
-			seat->Player.ID = housep->HeapID;
-		}
+		housep->SpawnWaypoint = seat->Player.SpawnChoice;
+		seat->Player.ID = housep->HeapID;
 	}
 
 	// A seat's mask names other seats, not the houses they became. An observer takes no side.

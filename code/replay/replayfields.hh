@@ -35,12 +35,6 @@ namespace Replay::Field
 		constexpr std::uint32_t INCOME_KINDS = 15;
 	}
 
-	namespace FileHash
-	{
-		constexpr std::uint32_t PATH = 1;
-		constexpr std::uint32_t HASH = 2;
-	}
-
 	namespace PlayerColor
 	{
 		constexpr std::uint32_t NUMBER = 1;
@@ -51,40 +45,6 @@ namespace Replay::Field
 	{
 		constexpr std::uint32_t NUMBER = 1;
 		constexpr std::uint32_t ID = 2;
-	}
-
-	namespace Launch
-	{
-		constexpr std::uint32_t KIND = 1;
-		constexpr std::uint32_t SEED = 2;
-		constexpr std::uint32_t PLAYERS = 3;
-		constexpr std::uint32_t OPTIONS = 4;
-		constexpr std::uint32_t ANONYMOUS = 5;
-	}
-
-	namespace Player
-	{
-		constexpr std::uint32_t HOUSE = 1;
-		constexpr std::uint32_t NAME = 2;
-		constexpr std::uint32_t HUMAN = 3;
-		constexpr std::uint32_t OBSERVER = 4;
-		constexpr std::uint32_t COUNTRY = 5;
-		constexpr std::uint32_t COUNTRY_NAME = 6;
-		constexpr std::uint32_t COLOR = 7;
-		constexpr std::uint32_t START = 8;
-		constexpr std::uint32_t AI_LEVEL = 9;
-		constexpr std::uint32_t ALLIES = 10;
-		constexpr std::uint32_t RESOLVED_COUNTRY = 11;
-		constexpr std::uint32_t RESOLVED_COLOR = 12;
-		constexpr std::uint32_t RESOLVED_START = 13;
-	}
-
-	namespace GameOption
-	{
-		constexpr std::uint32_t KEY = 1;
-		constexpr std::uint32_t NUMBER = 2;
-		constexpr std::uint32_t FLAG = 3;
-		constexpr std::uint32_t TEXT = 4;
 	}
 
 	namespace Frame

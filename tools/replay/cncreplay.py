@@ -2,7 +2,7 @@
 """Read, verify, compare, and write CNCR replay files (.cncr).
 
 This is the reference reader and writer for docs/replay/REPLAY-FORMAT.md,
-and for the launch request of docs/replay/launch.proto. It uses the
+and for the launch request of docs/launch/launch.proto. It uses the
 Python standard library only and needs Python 3.11 or later.
 
 Commands:
@@ -56,9 +56,6 @@ import zlib
 RESERVED_PRIVATE = ((100, 199),)
 
 ENUM_TABLE = {
-    'cncreplay.GameKind': (
-        ('GAME_KIND_UNKNOWN', 0), ('GAME_KIND_CAMPAIGN', 1),
-        ('GAME_KIND_SKIRMISH', 2), ('GAME_KIND_MULTIPLAYER', 3)),
     'cncreplay.EventRole': (
         ('EVENT_ROLE_NONE', 0), ('EVENT_ROLE_CHAT_PROOF', 1)),
     'cncreplay.MessageScope': (
@@ -79,6 +76,9 @@ ENUM_TABLE = {
         ('COUNT_KIND_UNKNOWN', 0), ('COUNT_KIND_BUILT', 1),
         ('COUNT_KIND_KILLED', 2), ('COUNT_KIND_LOST', 3),
         ('COUNT_KIND_CAPTURED', 4), ('COUNT_KIND_REMAINING', 5)),
+    'cnclaunch.GameKind': (
+        ('GAME_KIND_UNKNOWN', 0), ('GAME_KIND_CAMPAIGN', 1),
+        ('GAME_KIND_SKIRMISH', 2), ('GAME_KIND_MULTIPLAYER', 3)),
     'cnclaunch.ResultCode': (
         ('RESULT_CODE_UNKNOWN', 0), ('RESULT_CODE_OK', 1),
         ('RESULT_CODE_REFUSED', 2), ('RESULT_CODE_FAILED', 3),
@@ -104,7 +104,7 @@ MESSAGE_TABLE = {
         (3, 'data_version', 'uint32'),
         (4, 'package', 'string'),
         (5, 'package_version', 'string'),
-        (6, 'files', 'FileHash', 'repeated'),
+        (6, 'files', 'cnclaunch.FileHash', 'repeated'),
         (7, 'recorded_at', 'uint64'),
         (8, 'recorder', 'uint32', 'optional'),
         (9, 'map_name', 'string'),
@@ -114,41 +114,12 @@ MESSAGE_TABLE = {
         (13, 'seal_version', 'uint32'),
         (14, 'colors', 'PlayerColor', 'repeated'),
         (15, 'income_kinds', 'IncomeKind', 'repeated'))),
-    'cncreplay.FileHash': ((), (
-        (1, 'path', 'string'),
-        (2, 'hash', 'string'))),
     'cncreplay.PlayerColor': ((), (
         (1, 'number', 'uint32'),
         (2, 'rgb', 'fixed32'))),
     'cncreplay.IncomeKind': ((), (
         (1, 'number', 'uint32'),
         (2, 'id', 'string'))),
-    # ---- LNCH
-    'cncreplay.Launch': (RESERVED_PRIVATE, (
-        (1, 'kind', 'GameKind'),
-        (2, 'seed', 'fixed32', 'optional'),
-        (3, 'players', 'Player', 'repeated'),
-        (4, 'options', 'GameOption', 'repeated'),
-        (5, 'anonymous', 'bool'))),
-    'cncreplay.Player': (RESERVED_PRIVATE, (
-        (1, 'house', 'uint32'),
-        (2, 'name', 'string'),
-        (3, 'human', 'bool'),
-        (4, 'observer', 'bool'),
-        (5, 'country', 'sint32'),
-        (6, 'country_name', 'string'),
-        (7, 'color', 'sint32'),
-        (8, 'start', 'sint32'),
-        (9, 'ai_level', 'sint32', 'optional'),
-        (10, 'allies', 'uint32', 'repeated'),
-        (11, 'resolved_country', 'sint32', 'optional'),
-        (12, 'resolved_color', 'sint32', 'optional'),
-        (13, 'resolved_start', 'sint32', 'optional'))),
-    'cncreplay.GameOption': ((), (
-        (1, 'key', 'string'),
-        (2, 'number', 'sint64', 'oneof value'),
-        (3, 'flag', 'bool', 'oneof value'),
-        (4, 'text', 'string', 'oneof value'))),
     # ---- FRMS
     'cncreplay.Frame': (RESERVED_PRIVATE, (
         (1, 'skipped', 'uint32'),
@@ -269,7 +240,36 @@ MESSAGE_TABLE = {
         (7, 'game_micros', 'uint64', 'optional'))),
 
     # ---- launch.proto
-    'cnclaunch.LaunchRequest': (RESERVED_PRIVATE, (
+    'cnclaunch.Game': (RESERVED_PRIVATE, (
+        (1, 'kind', 'GameKind'),
+        (2, 'seed', 'fixed32', 'optional'),
+        (3, 'players', 'Player', 'repeated'),
+        (4, 'options', 'Option', 'repeated'),
+        (5, 'anonymous', 'bool'),
+        (6, 'global_flags', 'uint32', 'repeated'))),
+    'cnclaunch.Player': (RESERVED_PRIVATE, (
+        (1, 'house', 'uint32'),
+        (2, 'name', 'string'),
+        (3, 'human', 'bool'),
+        (4, 'observer', 'bool'),
+        (5, 'country', 'sint32'),
+        (6, 'country_name', 'string'),
+        (7, 'color', 'sint32'),
+        (8, 'start', 'sint32'),
+        (9, 'ai_level', 'sint32', 'optional'),
+        (10, 'allies', 'uint32', 'repeated'),
+        (11, 'resolved_country', 'sint32', 'optional'),
+        (12, 'resolved_color', 'sint32', 'optional'),
+        (13, 'resolved_start', 'sint32', 'optional'))),
+    'cnclaunch.Option': ((), (
+        (1, 'key', 'string'),
+        (2, 'number', 'sint64', 'oneof value'),
+        (3, 'flag', 'bool', 'oneof value'),
+        (4, 'text', 'string', 'oneof value'))),
+    'cnclaunch.FileHash': ((), (
+        (1, 'path', 'string'),
+        (2, 'hash', 'string'))),
+    'cnclaunch.Request': (RESERVED_PRIVATE, (
         (1, 'version', 'uint32'),
         (2, 'play', 'Play', 'oneof verb'),
         (3, 'load', 'Load', 'oneof verb'),
@@ -280,7 +280,7 @@ MESSAGE_TABLE = {
         (8, 'channel', 'string'),
         (9, 'request_id', 'string'))),
     'cnclaunch.Play': (RESERVED_PRIVATE, (
-        (1, 'launch', 'cncreplay.Launch'),
+        (1, 'game', 'Game'),
         (2, 'map_path', 'string'),
         (3, 'session', 'Session'),
         (4, 'network', 'Network'),
@@ -325,7 +325,7 @@ MESSAGE_TABLE = {
         (2, 'file_out', 'string'),
         (3, 'package', 'string'),
         (4, 'package_version', 'string'),
-        (5, 'files', 'cncreplay.FileHash', 'repeated'),
+        (5, 'files', 'FileHash', 'repeated'),
         (6, 'embed_map', 'bool', 'optional'))),
     'cnclaunch.Fixture': (RESERVED_PRIVATE, (
         (1, 'headless', 'bool'),
@@ -339,8 +339,9 @@ MESSAGE_TABLE = {
         (1, 'save', 'string'),
         (2, 'session', 'Session'),
         (3, 'network', 'Network'),
-        (4, 'players', 'cncreplay.Player', 'repeated'),
-        (5, 'game_speed', 'sint32', 'optional'))),
+        (4, 'players', 'Player', 'repeated'),
+        (5, 'game_speed', 'sint32', 'optional'),
+        (6, 'anonymous', 'bool'))),
     'cnclaunch.Replay': (RESERVED_PRIVATE, (
         (1, 'file', 'string'),
         (2, 'watch_player', 'uint32', 'optional'),
@@ -356,7 +357,7 @@ MESSAGE_TABLE = {
         (1, 'map_path', 'string'),
         (2, 'out_path', 'string'),
         (3, 'description_path', 'string'))),
-    'cnclaunch.LaunchResult': (RESERVED_PRIVATE, (
+    'cnclaunch.Result': (RESERVED_PRIVATE, (
         (1, 'request_id', 'string'),
         (2, 'code', 'ResultCode'),
         (3, 'message', 'string'),
@@ -743,7 +744,7 @@ def _decode_varint_value(field, raw, offset):
 # The format's limits on repeated message fields and byte fields, keyed by (message, field) and
 # naming the Limits attribute. A decode applies them to every occurrence of a field.
 _COUNT_LIMITS = {
-    ('cncreplay.Launch', 'players'): 'players',
+    ('cnclaunch.Game', 'players'): 'players',
     ('cncreplay.Statistics', 'houses'): 'houses',
     ('cncreplay.Frame', 'events'): 'events',
     ('cncreplay.RecordingInfo', 'income_kinds'): 'income_kinds',
@@ -1261,7 +1262,7 @@ class ReplayWriter:
         self.info.setdefault('seal_version', SEAL_VERSION)
         self.launch = launch
         self.info_body = encode_message('cncreplay.RecordingInfo', self.info)
-        self.lnch_body = encode_message('cncreplay.Launch', launch)
+        self.lnch_body = encode_message('cnclaunch.Game', launch)
         self.init = bytes(init)
         self.map_body = map_body
         self.codec = codec
@@ -1404,7 +1405,7 @@ def checkpoint(frame, state):
 
 SECTION_MESSAGES = {
     b'INFO': 'cncreplay.RecordingInfo',
-    b'LNCH': 'cncreplay.Launch',
+    b'LNCH': 'cnclaunch.Game',
     b'CKPT': 'cncreplay.Checkpoint',
     b'STAT': 'cncreplay.Statistics',
     b'END ': 'cncreplay.RecordingSummary',
@@ -1948,18 +1949,20 @@ def _check_contents(replay):
                         'the first for %r' % (len(bad), bad[0]), section='INFO')
         recorder = info.get('recorder')
         if recorder is not None and launch is not None and recorder >= len(launch.get('players', ())):
-            replay.warn('recorder_range', 'recorder %d is not an index into Launch.players' % recorder,
+            replay.warn('recorder_range', 'recorder %d is not an index into Game.players' % recorder,
                         section='INFO')
     if launch is not None:
         players = launch.get('players', ())
         if launch.get('seed') is None:
-            replay.warn('seed_absent', 'Launch.seed is not set', section='LNCH')
+            replay.warn('seed_absent', 'Game.seed is not set', section='LNCH')
         houses = [p.get('house', 0) for p in players]
         if not _strictly_ascending(houses):
             replay.warn('order', 'players are not in ascending house order', section='LNCH')
         keys = [o.get('key', '').encode('utf-8') for o in launch.get('options', ())]
         if not _strictly_ascending(keys):
             replay.warn('order', 'options are not in ascending key order, each key once', section='LNCH')
+        if not _strictly_ascending(launch.get('global_flags', [])):
+            replay.warn('order', 'global flags are not in ascending order, each once', section='LNCH')
         for o in launch.get('options', ()):
             if all(o.get(k) is None for k in ('number', 'flag', 'text')):
                 replay.warn('option_value', 'option %r has no value' % o.get('key', ''), section='LNCH')
@@ -1969,7 +1972,7 @@ def _check_contents(replay):
                 replay.warn('order', 'allies of house %d are not ascending or list the house itself'
                             % p.get('house', 0), section='LNCH')
         try:
-            if encode_message('cncreplay.Launch', launch) != replay.lnch_body:
+            if encode_message('cnclaunch.Game', launch) != replay.lnch_body:
                 replay.warn('noncanonical', 'LNCH is not in the canonical encoding', section='LNCH')
         except ValueError:
             pass
@@ -2240,7 +2243,7 @@ def listing(replay):
         'package_version': info.get('package_version', ''),
         'recorded_at': info.get('recorded_at', 0),
         'recorded_at_text': _fmt_time(info.get('recorded_at', 0)),
-        'kind': _short_enum('cncreplay.GameKind', launch.get('kind', 0)),
+        'kind': _short_enum('cnclaunch.GameKind', launch.get('kind', 0)),
         'map_name': info.get('map_name', ''),
         'game_mode': info.get('game_mode', ''),
         'map_path': info.get('map_path', ''),
@@ -2439,7 +2442,7 @@ def compare_replays(a, b):
         if a.lnch_body != b.lnch_body:
             d = None
             if a.launch is not None and b.launch is not None:
-                d = _first_difference('cncreplay.Launch', a.launch, b.launch)
+                d = _first_difference('cnclaunch.Game', a.launch, b.launch)
             result['differences'].append('LNCH differs: ' + (d or 'from byte %s'
                                                                 % _first_byte_difference(a.lnch_body, b.lnch_body)))
         if a.init_body != b.init_body:
@@ -2570,8 +2573,8 @@ def from_proto_json(name, obj, path=None):
 
 
 LAUNCH_MESSAGES = {
-    'LaunchRequest': 'cnclaunch.LaunchRequest',
-    'LaunchResult': 'cnclaunch.LaunchResult',
+    'Request': 'cnclaunch.Request',
+    'Result': 'cnclaunch.Result',
 }
 
 
@@ -2594,7 +2597,7 @@ def _dropped_empty_messages(name, msg, path=''):
 
 def launch_warnings(name, msg):
     warnings = ['%s is empty and is left out of the encoding' % p for p in _dropped_empty_messages(name, msg)]
-    if name == 'cnclaunch.LaunchRequest':
+    if name == 'cnclaunch.Request':
         if msg.get('version', 0) != 1:
             warnings.append('version is %d; the engine knows version 1' % msg.get('version', 0))
         if not any(msg.get(v) is not None for v in ('play', 'load', 'replay', 'verify', 'capture')):
@@ -2779,10 +2782,10 @@ def build_parser():
     e = lsub.add_parser('encode', help='write the binary form of a JSON launch message')
     e.add_argument('text', help='JSON file in the proto3 JSON mapping')
     e.add_argument('out', help='binary file to write')
-    e.add_argument('--message', choices=sorted(LAUNCH_MESSAGES), default='LaunchRequest')
+    e.add_argument('--message', choices=sorted(LAUNCH_MESSAGES), default='Request')
     d = lsub.add_parser('decode', help='print a binary launch message as JSON')
     d.add_argument('file')
-    d.add_argument('--message', choices=sorted(LAUNCH_MESSAGES), default='LaunchRequest')
+    d.add_argument('--message', choices=sorted(LAUNCH_MESSAGES), default='Request')
     p.set_defaults(func=cmd_launch)
     return parser
 

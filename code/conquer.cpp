@@ -95,6 +95,7 @@
 #include "ipxmgr.h"
 #include "keyboard.h"
 #include "language/language.h"
+#include "launcher.h"
 #include "loaddlg.h"
 #include "logic.h"
 #include "mainloop.h"
@@ -443,6 +444,10 @@ void Main_Game(int argc, char * argv[])
 		}
 #endif
 		GameLoopActive = false;
+
+		// A scenario still open here ended undecided with no cause recorded, such as after a
+		// failed multiplayer load, and is recorded as left.
+		Launch::Scenario_Ended(Launch::ScenarioEnd::LEFT);
 
 		Stop_Ingame_Movie();
 		IonStormClass::Stop_Audio();

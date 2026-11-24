@@ -46,6 +46,9 @@ namespace ProtoWire
 	void Put_Fixed32(Bytes & out, std::uint32_t value);
 	void Put_Fixed64(Bytes & out, std::uint64_t value);
 
+	// For a writer that must not allocate, such as a crash handler.
+	bool Put_Text_Field(std::span<std::uint8_t> buffer, std::size_t & offset, std::uint32_t field, std::string_view text);
+
 	// Appends fields in canonical form. A plain scalar writer leaves out a zero, false, or empty
 	// value; a Present writer always writes it, for fields with presence and oneof members.
 	class WireWriter

@@ -61,15 +61,15 @@ ReadResult Guarded(Body body)
 
 
 template<typename T>
-bool Decode_Record(ByteSpan data, T & record, LimitsType const & limits, RuleError & broken)
+bool Decode_Record(ByteSpan data, T & record, LimitsType const & limits, RuleBreak & broken)
 {
 	return(Decode(data, record, limits, broken));
 }
 
 
-bool Decode_Record(ByteSpan data, RecordingSummary & record, LimitsType const &, RuleError & broken)
+bool Decode_Record(ByteSpan data, Message::RecordingSummary & record, LimitsType const &, RuleBreak & broken)
 {
-	broken = RuleError::NONE;
+	broken = RuleBreak();
 	return(Decode(data, record));
 }
 
@@ -381,7 +381,7 @@ ReadResult Reader::Read_Record(std::uint32_t tag, T & record)
 	if (result != ReadResult::OK) {
 		return(result);
 	}
-	RuleError broken = RuleError::NONE;
+	RuleBreak broken;
 	if (!Decode_Record(body, record, Limit, broken)) {
 		return((broken != RuleError::NONE) ? ReadResult::LIMIT : ReadResult::MALFORMED);
 	}
@@ -393,7 +393,7 @@ ReadResult Reader::Read_Record(std::uint32_t tag, T & record)
 /// Reads INFO. The result is MALFORMED also when two of its income kinds share a number or an
 /// id, or one has an empty id.
 /// </summary>
-ReadResult Reader::Read_Info(RecordingInfo & info)
+ReadResult Reader::Read_Info(Message::RecordingInfo & info)
 {
 	return(Guarded([&] {
 		ReadResult const result = Read_Record(TAG_INFO, info);
@@ -405,31 +405,31 @@ ReadResult Reader::Read_Info(RecordingInfo & info)
 }
 
 
-ReadResult Reader::Read_Launch(Launch & launch)
+ReadResult Reader::Read_Launch(Launch::Message::Game & launch)
 {
 	return(Guarded([&] { return(Read_Record(TAG_LNCH, launch)); }));
 }
 
 
-ReadResult Reader::Read_Statistics(Statistics & statistics)
+ReadResult Reader::Read_Statistics(Message::Statistics & statistics)
 {
 	return(Guarded([&] { return(Read_Record(TAG_STAT, statistics)); }));
 }
 
 
-ReadResult Reader::Read_Summary(RecordingSummary & summary)
+ReadResult Reader::Read_Summary(Message::RecordingSummary & summary)
 {
 	return(Guarded([&] { return(Read_Record(TAG_END, summary)); }));
 }
 
 
-ReadResult Reader::Read_Checkpoint(SectionInfo const & section, Checkpoint & checkpoint)
+ReadResult Reader::Read_Checkpoint(SectionInfo const & section, Message::Checkpoint & checkpoint)
 {
 	return(Guarded([&] { return(Read_Checkpoint_Body(section, checkpoint)); }));
 }
 
 
-ReadResult Reader::Read_Checkpoint_Body(SectionInfo const & section, Checkpoint & checkpoint)
+ReadResult Reader::Read_Checkpoint_Body(SectionInfo const & section, Message::Checkpoint & checkpoint)
 {
 	Bytes body;
 	ReadResult result = Read_Body_Pieces(section, body);
@@ -523,7 +523,7 @@ ReadResult Reader::Check_Checkpoint_Bodies(void)
 {
 	std::optional<std::uint32_t> previous;
 	for (SectionInfo const * section : CheckpointList) {
-		Checkpoint checkpoint;
+		Message::Checkpoint checkpoint;
 		ReadResult const result = Read_Checkpoint_Body(*section, checkpoint);
 		if (result != ReadResult::OK) {
 			return(result);
@@ -626,7 +626,7 @@ bool FrameReader::Fill(void)
 }
 
 
-FrameStep FrameReader::Next(std::uint32_t & frame, Frame & record)
+FrameStep FrameReader::Next(std::uint32_t & frame, Message::Frame & record)
 {
 	if (Failure != ReadResult::OK) {
 		return(FrameStep::FAILED);
@@ -636,7 +636,7 @@ FrameStep FrameReader::Next(std::uint32_t & frame, Frame & record)
 	}
 	try {
 		if (!Kinds) {
-			RecordingInfo info;
+			Message::RecordingInfo info;
 			ReadResult const result = Owner.Read_Info(info);
 			if (result != ReadResult::OK) {
 				return(Fail(result));
@@ -650,7 +650,7 @@ FrameStep FrameReader::Next(std::uint32_t & frame, Frame & record)
 }
 
 
-FrameStep FrameReader::Next_Record(std::uint32_t & frame, Frame & record)
+FrameStep FrameReader::Next_Record(std::uint32_t & frame, Message::Frame & record)
 {
 	for (;;) {
 		std::size_t offset = Consumed;
@@ -680,7 +680,7 @@ FrameStep FrameReader::Next_Record(std::uint32_t & frame, Frame & record)
 			return(Section.Open ? FrameStep::END : End_Closed());
 		}
 
-		RuleError broken = RuleError::NONE;
+		RuleBreak broken;
 		if (!Decode(ByteSpan(Buffer.data() + offset, std::size_t(length)), record, Owner.Limits(), broken)) {
 			return(Fail((broken != RuleError::NONE) ? ReadResult::LIMIT : ReadResult::MALFORMED));
 		}
@@ -741,7 +741,7 @@ SealReport Check_Seals(Reader & reader)
 {
 	SealReport report;
 
-	RecordingInfo info;
+	Message::RecordingInfo info;
 	report.Error = reader.Read_Info(info);
 	if (report.Error != ReadResult::OK) {
 		return(report);
@@ -774,7 +774,7 @@ SealReport Check_Seals(Reader & reader)
 	FrameReader frames(reader);
 	std::uint32_t frame = 0;
 	std::optional<std::uint32_t> last_record;
-	Frame record;
+	Message::Frame record;
 	for (;;) {
 		FrameStep step = frames.Next(frame, record);
 		if (step == FrameStep::RECORD) {
@@ -791,7 +791,7 @@ SealReport Check_Seals(Reader & reader)
 		break;
 	}
 
-	RecordingSummary summary;
+	Message::RecordingSummary summary;
 	if (reader.Complete()) {
 		report.Error = reader.Read_Summary(summary);
 		if (report.Error != ReadResult::OK) {
@@ -871,10 +871,10 @@ FileReport Check_File(Reader & reader)
 	}
 
 	// Verify_Seals reads LNCH only as bytes and skips MAP and STAT, so their records are decoded here.
-	RecordingInfo info;
-	Launch launch;
+	Message::RecordingInfo info;
+	Launch::Message::Game launch;
 	Bytes map;
-	Statistics statistics;
+	Message::Statistics statistics;
 	SectionInfo const * map_section = reader.Find(TAG_MAP);
 	SectionInfo const * stat_section = reader.Find(TAG_STAT);
 	if (report.Error == ReadResult::OK) {

@@ -567,6 +567,32 @@ TEST_CASE_FIXTURE(RootFixture, "screenshots go to their own folder in the user d
 }
 
 
+/*
+ * A file the game writes for a launcher is placed like stats.dmp, except that a path starting at
+ * a drive or a root folder is used exactly as the launcher gave it.
+ */
+TEST_CASE_FIXTURE(RootFixture, "a file written for a launcher is placed like stats.dmp unless its path is absolute")
+{
+	Reset();
+	CHECK_MESSAGE(Launcher_File_Name("result.bin") == User_File_Write_Name("result.bin"), "a relative path is placed as stats.dmp is");
+	CHECK_MESSAGE(Launcher_File_Name("result.bin") == "result.bin", "with no user directory a relative path stays in the game's folder");
+	CHECK_MESSAGE(Launcher_File_Name("out\\result.bin") == "out\\result.bin", "a relative path keeps its folders");
+
+	Set_User_Directory((Root + "\\User\\Launch").c_str());
+	Apply_Game_Directories();
+
+	std::string const user = Root + "\\User\\Launch\\";
+	CHECK_MESSAGE(Launcher_File_Name("result.bin") == user + "result.bin", "a user directory takes a relative path with it");
+	CHECK_MESSAGE(Launcher_File_Name("result.bin") == User_File_Write_Name("result.bin"), "and places it where stats.dmp goes");
+	CHECK_MESSAGE(Launcher_File_Name("out/result.bin") == user + "out/result.bin", "a relative path keeps its folders in the user directory");
+
+	std::string const absolute = Root + "\\Elsewhere\\result.bin";
+	CHECK_MESSAGE(Launcher_File_Name(absolute.c_str()) == absolute, "an absolute path is used as given");
+	CHECK_MESSAGE(Launcher_File_Name("C:/Results/result.bin") == "C:/Results/result.bin", "an absolute path with forward slashes is used as given");
+	CHECK_MESSAGE(Launcher_File_Name("\\Results\\result.bin") == "\\Results\\result.bin", "a path from the root folder is used as given");
+}
+
+
 bool Make_Root(void)
 {
 	char temp[MAX_PATH];

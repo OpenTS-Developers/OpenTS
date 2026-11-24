@@ -44,30 +44,30 @@ class CanonicalBytesTest(unittest.TestCase):
         return c.encode_message(name, msg).hex()
 
     def test_launch(self):
-        self.assertEqual(self.enc('cncreplay.Launch', {'seed': 0}), '1500000000')
-        self.assertEqual(self.enc('cncreplay.Launch', {}), '')
+        self.assertEqual(self.enc('cnclaunch.Game', {'seed': 0}), '1500000000')
+        self.assertEqual(self.enc('cnclaunch.Game', {}), '')
         msg = {'kind': 2, 'seed': 0x12345678,
                'players': [{'house': 1, 'country': -1, 'allies': [0, 2]}]}
-        self.assertEqual(self.enc('cncreplay.Launch', msg),
+        self.assertEqual(self.enc('cnclaunch.Game', msg),
                          '0802' '1578563412' '1a08' '0801' '2801' '52020002')
 
     def test_fields_in_ascending_number_whatever_the_dict_order(self):
         msg = {'anonymous': True, 'kind': 1, 'seed': 1}
-        self.assertEqual(self.enc('cncreplay.Launch', msg), '0801' '1501000000' '2801')
+        self.assertEqual(self.enc('cnclaunch.Game', msg), '0801' '1501000000' '2801')
 
     def test_implicit_zero_is_left_out_and_optional_zero_is_written(self):
-        self.assertEqual(self.enc('cncreplay.Player', {'house': 0, 'name': '', 'human': False}), '')
-        self.assertEqual(self.enc('cncreplay.Player', {'ai_level': 0, 'resolved_start': 0}), '4800' '6800')
+        self.assertEqual(self.enc('cnclaunch.Player', {'house': 0, 'name': '', 'human': False}), '')
+        self.assertEqual(self.enc('cnclaunch.Player', {'ai_level': 0, 'resolved_start': 0}), '4800' '6800')
         self.assertEqual(self.enc('cncreplay.HouseSample', {'credits': 0, 'defeated': False}), '1000')
         self.assertEqual(self.enc('cncreplay.RecordingSummary', {'last_frame': 0}), '0800')
         self.assertEqual(self.enc('cncreplay.Frame', {'hash': 0}), '1500000000')
 
     def test_oneof_member_is_written_when_zero(self):
-        self.assertEqual(self.enc('cncreplay.GameOption', {'key': 'A', 'flag': False}), '0a0141' '1800')
-        self.assertEqual(self.enc('cncreplay.GameOption', {'key': 'A', 'number': 0}), '0a0141' '1000')
-        self.assertEqual(self.enc('cncreplay.GameOption', {'key': 'A', 'text': ''}), '0a0141' '2200')
+        self.assertEqual(self.enc('cnclaunch.Option', {'key': 'A', 'flag': False}), '0a0141' '1800')
+        self.assertEqual(self.enc('cnclaunch.Option', {'key': 'A', 'number': 0}), '0a0141' '1000')
+        self.assertEqual(self.enc('cnclaunch.Option', {'key': 'A', 'text': ''}), '0a0141' '2200')
         with self.assertRaises(ValueError):
-            c.encode_message('cncreplay.GameOption', {'number': 1, 'flag': True})
+            c.encode_message('cnclaunch.Option', {'number': 1, 'flag': True})
 
     def test_empty_message_fields(self):
         # optional message set with an empty encoding: written with length 0
@@ -77,7 +77,7 @@ class CanonicalBytesTest(unittest.TestCase):
         self.assertEqual(self.enc('cncreplay.Frame', {'view': {}}), '')
         self.assertEqual(self.enc('cncreplay.HouseStatistics', {'house': 1, 'final': {'house': 0}}), '0801')
         # oneof message member set and empty: written
-        self.assertEqual(self.enc('cnclaunch.LaunchRequest', {'verify': {}}), '2a00')
+        self.assertEqual(self.enc('cnclaunch.Request', {'verify': {}}), '2a00')
         # repeated message entries are always written
         self.assertEqual(self.enc('cncreplay.Frame', {'events': [{}]}), '1a00')
 
@@ -112,7 +112,7 @@ class CanonicalBytesTest(unittest.TestCase):
 
     def test_strings_are_stored_as_given(self):
         decomposed = 'é'
-        self.assertEqual(self.enc('cncreplay.FileHash', {'path': decomposed}), '0a03' + ' 65cc81'.strip())
+        self.assertEqual(self.enc('cnclaunch.FileHash', {'path': decomposed}), '0a03' + ' 65cc81'.strip())
 
     def test_unknown_fields_are_merged_in_number_order(self):
         msg = {'skipped': 1, 'defeated': [2],
@@ -131,15 +131,15 @@ class DecoderRulesTest(unittest.TestCase):
         return cm.exception.code
 
     def test_group_wire_types_are_malformed(self):
-        self.assertEqual(self.code('cncreplay.Launch', '9b03' '9c03'), 'group_wire_type')
-        self.assertEqual(self.code('cncreplay.Launch', '0b0c'), 'group_wire_type')
-        self.assertEqual(self.code('cncreplay.Launch', '9c03'), 'group_wire_type')
+        self.assertEqual(self.code('cnclaunch.Game', '9b03' '9c03'), 'group_wire_type')
+        self.assertEqual(self.code('cnclaunch.Game', '0b0c'), 'group_wire_type')
+        self.assertEqual(self.code('cnclaunch.Game', '9c03'), 'group_wire_type')
 
     def test_invalid_wire_types_and_tags(self):
-        self.assertEqual(self.code('cncreplay.Launch', '0e'), 'bad_wire_type')
-        self.assertEqual(self.code('cncreplay.Launch', '9f03'), 'bad_wire_type')
-        self.assertEqual(self.code('cncreplay.Launch', '0000'), 'bad_tag')
-        self.assertEqual(self.code('cncreplay.Launch', '8080808010'), 'bad_tag')
+        self.assertEqual(self.code('cnclaunch.Game', '0e'), 'bad_wire_type')
+        self.assertEqual(self.code('cnclaunch.Game', '9f03'), 'bad_wire_type')
+        self.assertEqual(self.code('cnclaunch.Game', '0000'), 'bad_tag')
+        self.assertEqual(self.code('cnclaunch.Game', '8080808010'), 'bad_tag')
 
     def test_known_field_with_another_wire_type_is_skipped(self):
         # skipped (uint32) as length-delimited, hash (fixed32) as a varint, defeated as fixed32
@@ -156,9 +156,9 @@ class DecoderRulesTest(unittest.TestCase):
             self.dec('cncreplay.Frame', '0a05')
 
     def test_truncation(self):
-        for name, hexstr in (('cncreplay.Launch', '1a'), ('cncreplay.Launch', '1a05616263'),
-                             ('cncreplay.Launch', '15000000'), ('cncreplay.Launch', '08'),
-                             ('cncreplay.Launch', '0880'), ('cncreplay.Frame', '1a0208'),
+        for name, hexstr in (('cnclaunch.Game', '1a'), ('cnclaunch.Game', '1a05616263'),
+                             ('cnclaunch.Game', '15000000'), ('cnclaunch.Game', '08'),
+                             ('cnclaunch.Game', '0880'), ('cncreplay.Frame', '1a0208'),
                              ('cncreplay.Frame', '9003'), ('cncreplay.Frame', '9103000000')):
             with self.assertRaises(c.Truncated, msg=hexstr):
                 self.dec(name, hexstr)
@@ -167,25 +167,25 @@ class DecoderRulesTest(unittest.TestCase):
         big = lambda v: c.encode_varint(v).hex()
         self.assertEqual(self.dec('cncreplay.Seal', '08' + big(1 << 32)), {'through': 0})
         self.assertEqual(self.dec('cncreplay.Seal', '08' + big((1 << 32) + 5)), {'through': 5})
-        self.assertEqual(self.dec('cncreplay.Player', '28' + big((1 << 32) + 3)), {'country': -2})
-        self.assertEqual(self.dec('cncreplay.Player', '1802'), {'human': True})
-        self.assertEqual(self.dec('cncreplay.Player', '18' + big(1 << 40)), {'human': True})
-        self.assertEqual(self.dec('cncreplay.Launch', '08' + big(1 << 31)), {'kind': -(1 << 31)})
-        self.assertEqual(self.dec('cncreplay.Launch', '08' + big((1 << 32) + 1)), {'kind': 1})
+        self.assertEqual(self.dec('cnclaunch.Player', '28' + big((1 << 32) + 3)), {'country': -2})
+        self.assertEqual(self.dec('cnclaunch.Player', '1802'), {'human': True})
+        self.assertEqual(self.dec('cnclaunch.Player', '18' + big(1 << 40)), {'human': True})
+        self.assertEqual(self.dec('cnclaunch.Game', '08' + big(1 << 31)), {'kind': -(1 << 31)})
+        self.assertEqual(self.dec('cnclaunch.Game', '08' + big((1 << 32) + 1)), {'kind': 1})
         self.assertEqual(self.dec('cncreplay.RecordingSummary', '10' + big(c.U64)), {'ended_at': c.U64})
 
     def test_negative_enum_value_is_read(self):
-        self.assertEqual(self.dec('cncreplay.Launch', '08' + 'ff' * 9 + '01'), {'kind': -1})
-        self.assertEqual(c.encode_message('cncreplay.Launch', {'kind': -1}), H('08' + 'ff' * 9 + '01'))
+        self.assertEqual(self.dec('cnclaunch.Game', '08' + 'ff' * 9 + '01'), {'kind': -1})
+        self.assertEqual(c.encode_message('cnclaunch.Game', {'kind': -1}), H('08' + 'ff' * 9 + '01'))
 
     def test_last_value_counts(self):
-        self.assertEqual(self.dec('cncreplay.Launch', '0801' '0802'), {'kind': 2})
+        self.assertEqual(self.dec('cnclaunch.Game', '0801' '0802'), {'kind': 2})
         # a message field given twice is replaced, not merged
         self.assertEqual(self.dec('cncreplay.Frame', '2204' '0a020802' '2204' '0a021004'),
                          {'view': {'camera': {'y': 2}}})
 
     def test_last_oneof_member_counts(self):
-        self.assertEqual(self.dec('cncreplay.GameOption', '1002' '1801'), {'flag': True})
+        self.assertEqual(self.dec('cnclaunch.Option', '1002' '1801'), {'flag': True})
 
     def test_packed_and_unpacked_repeated_fields(self):
         self.assertEqual(self.dec('cncreplay.Frame', '520201' '02' '5003'), {'defeated': [1, 2, 3]})
@@ -207,15 +207,15 @@ class DecoderRulesTest(unittest.TestCase):
                          '0801' '900307' 'f50601020304' 'f9060102030405060708' 'b209020102')
 
     def test_invalid_utf8_is_malformed(self):
-        self.assertEqual(self.code('cncreplay.Player', '1202c328'), 'invalid_utf8')
+        self.assertEqual(self.code('cnclaunch.Player', '1202c328'), 'invalid_utf8')
 
     def test_string_limit(self):
         limits = c.Limits(string=3)
-        self.assertEqual(self.dec('cncreplay.Player', '1203616263', limits), {'name': 'abc'})
-        self.assertEqual(self.code('cncreplay.Player', '120461626364', limits), 'limit_string')
-        long_name = c.encode_message('cncreplay.Player', {'name': 'x' * 1025})
+        self.assertEqual(self.dec('cnclaunch.Player', '1203616263', limits), {'name': 'abc'})
+        self.assertEqual(self.code('cnclaunch.Player', '120461626364', limits), 'limit_string')
+        long_name = c.encode_message('cnclaunch.Player', {'name': 'x' * 1025})
         with self.assertRaises(c.MalformedError):
-            c.decode_message('cncreplay.Player', long_name, 0, len(long_name), c.DEFAULT_LIMITS)
+            c.decode_message('cnclaunch.Player', long_name, 0, len(long_name), c.DEFAULT_LIMITS)
 
 
 class RoundTripTest(unittest.TestCase):
@@ -246,13 +246,13 @@ class RoundTripTest(unittest.TestCase):
         obj = c.to_proto_json('cncreplay.RecordingInfo',
                               {'map_sha256': b'\xff\x00', 'recorded_at': 5, 'recorder': 0})
         self.assertEqual(obj, {'recordedAt': '5', 'recorder': 0, 'mapSha256': '/wA='})
-        msg = c.from_proto_json('cncreplay.Launch', {'kind': 'GAME_KIND_CAMPAIGN', 'anonymous': True,
+        msg = c.from_proto_json('cnclaunch.Game', {'kind': 'GAME_KIND_CAMPAIGN', 'anonymous': True,
                                                      'seed': '0'})
         self.assertEqual(msg, {'kind': 1, 'anonymous': True, 'seed': 0})
         with self.assertRaises(ValueError):
-            c.from_proto_json('cncreplay.Launch', {'nope': 1})
+            c.from_proto_json('cnclaunch.Game', {'nope': 1})
         with self.assertRaises(ValueError):
-            c.from_proto_json('cncreplay.Launch', {'kind': 'GAME_KIND_NONE'})
+            c.from_proto_json('cnclaunch.Game', {'kind': 'GAME_KIND_NONE'})
 
 
 class Utf8ReplacementTest(unittest.TestCase):

@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "replay/replayrecords.h"
+#include "replay/replaymessages.h"
 #include "sha256.h"
 
 #include <cstddef>
@@ -30,7 +30,7 @@ namespace Replay
 		ByteSpan launch, ByteSpan init);
 
 	// Appends the record's canonical bytes to out; false, with nothing appended, when it has none.
-	bool Canonical_Frame_Bytes(std::uint32_t frame, Frame const & record, Bytes & out);
+	bool Canonical_Frame_Bytes(std::uint32_t frame, Message::Frame const & record, Bytes & out);
 
 	// Takes records in ascending frame order.
 	class SealChain
@@ -39,10 +39,10 @@ namespace Replay
 			explicit SealChain(Digest const & start);
 
 			// Adds the record for frame; closed receives the interval seals that belong on that record.
-			void Add(std::uint32_t frame, Frame const & record, std::vector<Seal> & closed);
+			void Add(std::uint32_t frame, Message::Frame const & record, std::vector<Message::Seal> & closed);
 
 			// Appends the seals left through last_frame, the final seal last, and ends the chain.
-			void Finish(std::uint32_t last_frame, std::vector<Seal> & seals);
+			void Finish(std::uint32_t last_frame, std::vector<Message::Seal> & seals);
 
 			// The number of unsealed intervals that end before frame.
 			std::uint64_t Intervals_Before(std::uint32_t frame) const;
@@ -51,7 +51,7 @@ namespace Replay
 			std::uint64_t Interval_End(void) const { return(IntervalEnd); }
 
 		private:
-			void Close_Interval(std::vector<Seal> & seals);
+			void Close_Interval(std::vector<Message::Seal> & seals);
 
 			SHA256Class Hash;
 			std::uint64_t IntervalEnd;   // last frame of the open interval
@@ -63,10 +63,10 @@ namespace Replay
 		public:
 			explicit SealVerifier(Digest const & start);
 
-			void Add(std::uint32_t frame, Frame const & record);
+			void Add(std::uint32_t frame, Message::Frame const & record);
 
 			// Compares the summary's seals with the whole chain.
-			void Finish(RecordingSummary const & summary);
+			void Finish(Message::RecordingSummary const & summary);
 
 			bool Good(void) const { return(!Mismatch.has_value() && !Misplaced.has_value()); }
 			std::size_t Compared(void) const { return(Matched); }
@@ -78,7 +78,7 @@ namespace Replay
 			std::optional<std::uint32_t> First_Misplaced(void) const { return(Misplaced); }
 
 		private:
-			void Compare(Seal const & seal);
+			void Compare(Message::Seal const & seal);
 
 			SealChain Chain;
 			std::map<std::uint32_t, Bytes> Computed;

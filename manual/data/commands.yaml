@@ -2283,6 +2283,18 @@ launch_options:
   _provenance:
     source: code/init.cpp
     guard: null
+- id: launch:launch
+  route_id: launch
+  kind: launch
+  title: Launch request
+  description: Plays the game or makes the map capture that the launch request file describes, in place
+    of the startup movies and the menu, and exits when it ends.
+  group: startup
+  availability: *id001
+  syntax: -LAUNCH=<file>
+  _provenance:
+    source: code/init.cpp
+    guard: null
 - id: launch:capture-map
   route_id: capture-map
   kind: launch

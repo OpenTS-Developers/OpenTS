@@ -9,6 +9,8 @@ syntax = "proto3";
 
 package cncreplay;
 
+import "launch.proto";
+
 // ---- INFO ----
 
 message RecordingInfo {
@@ -17,7 +19,7 @@ message RecordingInfo {
   uint32 data_version     = 3;   // from 1
   string package          = 4;
   string package_version  = 5;
-  repeated FileHash files = 6;
+  repeated cnclaunch.FileHash files = 6;
   uint64 recorded_at      = 7;
   optional uint32 recorder = 8;
   string map_name         = 9;
@@ -29,11 +31,6 @@ message RecordingInfo {
   repeated IncomeKind income_kinds = 15;
 
   reserved 100 to 199;
-}
-
-message FileHash {
-  string path = 1;
-  string hash = 2;               // "<algorithm>:<lowercase hex>"
 }
 
 message PlayerColor {
@@ -48,55 +45,7 @@ message IncomeKind {
 
 // ---- LNCH ----
 
-message Launch {
-  GameKind kind               = 1;
-  optional fixed32 seed       = 2;   // always set in LNCH
-  repeated Player players     = 3;
-  repeated GameOption options = 4;
-  bool anonymous              = 5;   // players were shown substitute names
-
-  reserved 100 to 199;
-}
-
-// Engines define further kinds from 100.
-enum GameKind {
-  GAME_KIND_UNKNOWN     = 0;
-  GAME_KIND_CAMPAIGN    = 1;
-  GAME_KIND_SKIRMISH    = 2;
-  GAME_KIND_MULTIPLAYER = 3;
-}
-
-// country, color, and start are the requested values, -1 for random.
-// country counts the engine's countries, and color uses the engine's
-// player-color numbering. ai_level is the requested difficulty in the
-// engine's numbering, absent for a human player and for the game's default.
-// The resolved fields and country_name are what the game assigned.
-message Player {
-  uint32 house        = 1;
-  string name         = 2;
-  bool   human        = 3;
-  bool   observer     = 4;
-  sint32 country      = 5;
-  string country_name = 6;
-  sint32 color        = 7;
-  sint32 start        = 8;
-  optional sint32 ai_level = 9;
-  repeated uint32 allies = 10;
-  optional sint32 resolved_country = 11;
-  optional sint32 resolved_color   = 12;
-  optional sint32 resolved_start   = 13;
-
-  reserved 100 to 199;
-}
-
-message GameOption {
-  string key = 1;
-  oneof value {
-    sint64 number = 2;
-    bool   flag   = 3;
-    string text   = 4;
-  }
-}
+// The section is a cnclaunch.Game, which launch.proto defines.
 
 // ---- FRMS ----
 

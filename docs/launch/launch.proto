@@ -8,16 +8,15 @@
 // without raising it. The engine refuses a request whose version it does not
 // know, 0 included, a request with no verb or with a verb it does not know,
 // and a request with a string that is not valid UTF-8. A refused request
-// applies nothing. Fields 1, 7, and 9 of LaunchRequest and fields 1 to 3 of
-// LaunchResult keep their meaning in every version, so that a refusal can be
-// reported.
+// applies nothing. Fields 1, 7, and 9 of Request and fields 1 to 3 of Result
+// keep their meaning in every version, so that a refusal can be reported.
 //
 // Paths. Paths are UTF-8 and use '/' or '\'. A relative path is relative to
 // the game's folder. The files the engine writes for the launcher
 // (result_path, Recording.file_out, Verify.out_path, Capture.out_path) are
 // the exception: when -USERDIR= is set, a relative path is relative to that
 // folder, as it is for stats.dmp. An absolute path is used as given. Paths
-// in a LaunchResult are absolute.
+// in a Result are absolute.
 //
 // Field numbers 100 to 199 are engine-private in every message that reserves
 // them.
@@ -26,9 +25,7 @@ syntax = "proto3";
 
 package cnclaunch;
 
-import "replay.proto";
-
-message LaunchRequest {
+message Request {
   uint32 version = 1;            // 1
   oneof verb {
     Play    play    = 2;
@@ -37,43 +34,110 @@ message LaunchRequest {
     Verify  verify  = 5;
     Capture capture = 6;
   }
-  string result_path = 7;        // where the engine writes a LaunchResult; empty for none
+  string result_path = 7;        // where the engine writes a Result; empty for none
   string channel     = 8;        // name of a live channel to the launcher; not used yet
   string request_id  = 9;        // any text; the result repeats it
 
   reserved 100 to 199;
 }
 
+// ---- game ----
+
+// A game: its kind, seed, players, and options. A play request sends one, and
+// the LNCH section of a replay file is one.
+message Game {
+  GameKind kind               = 1;
+  optional fixed32 seed       = 2;   // always set in LNCH
+  repeated Player players     = 3;
+  repeated Option options     = 4;
+  bool anonymous              = 5;   // players were shown substitute names
+  repeated uint32 global_flags = 6;  // campaign: the scenario's global flags that are
+                                     // set, by number, ascending, each once
+
+  reserved 100 to 199;
+}
+
+// Engines define further kinds from 100.
+enum GameKind {
+  GAME_KIND_UNKNOWN     = 0;
+  GAME_KIND_CAMPAIGN    = 1;
+  GAME_KIND_SKIRMISH    = 2;
+  GAME_KIND_MULTIPLAYER = 3;
+}
+
+// country, color, and start are the requested values, -1 for random.
+// country counts the engine's countries, and color uses the engine's
+// player-color numbering. ai_level is the requested difficulty in the
+// engine's numbering, absent for a human player and for the game's default.
+// The resolved fields and country_name are what the game assigned.
+message Player {
+  uint32 house        = 1;
+  string name         = 2;
+  bool   human        = 3;
+  bool   observer     = 4;
+  sint32 country      = 5;
+  string country_name = 6;
+  sint32 color        = 7;
+  sint32 start        = 8;
+  optional sint32 ai_level = 9;
+  repeated uint32 allies = 10;
+  optional sint32 resolved_country = 11;
+  optional sint32 resolved_color   = 12;
+  optional sint32 resolved_start   = 13;
+
+  reserved 100 to 199;
+}
+
+message Option {
+  string key = 1;
+  oneof value {
+    sint64 number = 2;
+    bool   flag   = 3;
+    string text   = 4;
+  }
+}
+
+// A file a recording lists with its hash.
+message FileHash {
+  string path = 1;
+  string hash = 2;               // "<algorithm>:<lowercase hex>"
+}
+
 // ---- play ----
 
 // Starts a game.
 //
-// `launch` is the replay format's Launch message in its request form. It
-// has only values shared by every machine in the game, and the launcher
-// gives every machine the same bytes. The engine decodes it, checks it, and
-// writes the LNCH section from what it applied, adding what it assigns.
-// Machines in a network game compare a hash of `launch` at the start, and the
-// game ends when it differs.
+// `game` describes the game in its request form. It has only values shared
+// by every machine in the game, and the launcher gives every machine the
+// same bytes. The engine decodes it, checks it, and writes the LNCH section
+// from what it applied, adding what it assigns. Machines in a network game
+// compare a hash of `game` at the start, and the game ends when it differs.
 //
 // Rules for the request form. The engine refuses a request that breaks one.
 //
 // - kind is GAME_KIND_MULTIPLAYER exactly when more than one player is
 //   human, observers included.
-// - seed is required for a multiplayer game and is used as given, 0
-//   included. When a campaign or skirmish request leaves it out, the engine
-//   draws one and writes it in LNCH.
-// - players has at most 8 entries. In a skirmish or multiplayer game a
-//   player's house number is its position in `players`, for human and
-//   computer players. The launcher leaves out Player.house, country_name,
-//   and the resolved fields, and the engine ignores them.
-// - Player.name is at most 63 bytes. A human player needs one. For a
-//   computer player it is the name to show; when it is empty the engine
-//   shows a name it chooses, which LNCH does not record.
+// - seed is required for a multiplayer game. A seed that is set is used as
+//   given, 0 included. When a campaign or skirmish request leaves it out,
+//   the engine draws one and writes it in LNCH.
+// - players has at most 8 entries, human players before computer players.
+//   In a skirmish or multiplayer game a player's house number is its
+//   position in `players`, for human and computer players. The launcher
+//   leaves out Player.house, country_name, and the resolved fields, and the
+//   engine ignores them.
+// - Player.name is at most 63 bytes. A human player needs one, and in a
+//   multiplayer game no two human players have the same name, ignoring
+//   ASCII case. For a computer player it is the name to show; when it is
+//   empty the engine shows a name it chooses, which LNCH does not record.
 // - Player.country is a position in the rules' country list, from 0. color is
 //   a position in the rules' player colors, from 0, and human players need
 //   different colors. start is 0 to 7. Each may be -1: the engine then draws
 //   a value, for a human or a computer player, and writes it in the resolved
-//   field. A field left out means 0, because the encoding leaves out a zero.
+//   field. The engine draws countries and colors before the scenario loads,
+//   human players first and then computer players, each in list order,
+//   from random numbers that start from the seed, so every machine draws
+//   the same values. A field left out means 0, because the encoding leaves
+//   out a zero.
 // - Player.observer is set only on a human player.
 // - Player.ai_level is set only on a computer player, to 0 for the hardest,
 //   1, or 2 for the easiest. For a computer player without it, the game's
@@ -89,6 +153,9 @@ message LaunchRequest {
 //   defaults in a table beside the spec. LNCH lists every option the engine
 //   applied, defaults included, in ascending key order.
 // - anonymous is set when the game shows "Player N" in place of names.
+// - global_flags is set only in a campaign request. It lists the numbers
+//   of the scenario's global flags that are set when the first mission
+//   starts, from 0, ascending, each once. OpenTS has flags 0 to 49.
 //
 // A campaign request lists one human player, the person playing, whose
 // country, color, and start are ignored, and session.local_player is 0. The
@@ -96,7 +163,7 @@ message LaunchRequest {
 // mission. The seed and options apply to that mission, and the engine carries
 // the rest over to the missions that follow.
 message Play {
-  cncreplay.Launch launch = 1;
+  Game      game      = 1;
   string    map_path  = 2;       // a name the game's file search opens; required.
                                  // Recorded in RecordingInfo.map_path when it is
                                  // relative and stays inside the game's folder
@@ -110,7 +177,7 @@ message Play {
 
 // This machine's part of the game. Nothing here is recorded in LNCH.
 //
-// "The player list" is launch.players in a play request and Load.players in
+// "The player list" is game.players in a play request and Load.players in
 // a load request.
 message Session {
   optional uint32 local_player = 1; // position in the player list of the human playing
@@ -192,7 +259,7 @@ message Recording {
                                  // never deletes a file named here
   string package          = 3;   // RecordingInfo.package
   string package_version  = 4;   // RecordingInfo.package_version
-  repeated cncreplay.FileHash files = 5; // RecordingInfo.files
+  repeated FileHash files = 5; // RecordingInfo.files
   optional bool embed_map = 6;   // absent: embed a map that was a loose file
 
   reserved 100 to 199;
@@ -242,8 +309,9 @@ message Load {
   string  save      = 1;         // a file name in the saves folder, with no folder part
   Session session   = 2;
   Network network   = 3;
-  repeated cncreplay.Player players = 4;
+  repeated Player players = 4;
   optional sint32 game_speed = 5;
+  bool    anonymous = 6;         // as Game.anonymous, which a save does not keep
 
   reserved 100 to 199;
 }
@@ -293,7 +361,7 @@ message Capture {
 
 // ---- result ----
 
-// Written to LaunchRequest.result_path when the engine exits, and by the
+// Written to Request.result_path when the engine exits, and by the
 // crash handler when it crashes.
 //
 // The engine deletes any file at that path once it has read the request, and
@@ -305,9 +373,9 @@ message Capture {
 //
 // When result_path is set, the engine reports a refusal here and exits
 // without showing a message. A game started through SPAWN.INI or a shorthand
-// switch names no result path, and none is written.
-message LaunchResult {
-  string request_id   = 1;       // LaunchRequest.request_id
+// switch gives no result path, and none is written.
+message Result {
+  string request_id   = 1;       // Request.request_id
   ResultCode code     = 2;
   string message      = 3;       // English, for a person, when code is not
                                  // RESULT_CODE_OK. A launcher does not parse it
@@ -338,8 +406,7 @@ message ScenarioResult {
   string map_path     = 1;       // the scenario, as the engine opened it
   GameOutcome outcome = 2;       // for the local player
   bool   completed    = 3;       // the game decided the result: a win, a loss, or a
-                                 // draw. False when a player left, on a desync,
-                                 // and on a lost connection
+                                 // draw. False for every other outcome
   optional uint32 last_frame = 4; // the last frame the simulation ran; absent: none
   string replay_path  = 5;       // the recording; empty when none was written
   NotRecorded not_recorded = 6;  // why replay_path is empty
@@ -359,24 +426,28 @@ enum ResultCode {
                                   // readable replay
   RESULT_CODE_MAP_MISSING    = 6; // replay, verify: no map was found for a file that
                                   // does not embed one
-  RESULT_CODE_START_MISMATCH = 7; // play: the machines' start states or launch
-                                  // descriptions differed, and the game ended.
+  RESULT_CODE_START_MISMATCH = 7; // play, load: the machines' start states differed,
+                                  // and the game ended before its first frame.
                                   // verify: the start state differed from the file
   RESULT_CODE_HASH_MISMATCH  = 8; // verify: a frame hash differed
   RESULT_CODE_SEAL_MISMATCH  = 9; // verify: the hashes matched and a seal did not
 }
 
 enum GameOutcome {
-  GAME_OUTCOME_UNKNOWN         = 0; // also for an observer
+  GAME_OUTCOME_UNKNOWN         = 0; // an observer's win, loss, or departure, and the
+                                    // scenario a crash ended
   GAME_OUTCOME_WON             = 1;
   GAME_OUTCOME_LOST            = 2; // the local house was defeated, a surrender included
-  GAME_OUTCOME_DRAW            = 3;
+  GAME_OUTCOME_DRAW            = 3; // OpenTS does not report it
   GAME_OUTCOME_ABORTED         = 4; // the local player left a game that went on or was
                                     // never decided
-  GAME_OUTCOME_DESYNC          = 5; // the game ended on a desync
-  GAME_OUTCOME_CONNECTION_LOST = 6;
+  GAME_OUTCOME_DESYNC          = 5; // the game ended because the machines' games
+                                    // differed
+  GAME_OUTCOME_CONNECTION_LOST = 6; // the game ended because the other machines stopped
+                                    // answering or voted this machine out
   GAME_OUTCOME_NOT_STARTED     = 7; // the game ended before its first frame: a machine
-                                    // did not join, or the start comparison failed
+                                    // did not join, or the machines' start states
+                                    // differed
 }
 
 enum NotRecorded {

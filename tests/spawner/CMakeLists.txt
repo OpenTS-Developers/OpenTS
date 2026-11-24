@@ -1,6 +1,6 @@
 # The launch file reader is compiled straight into the harness along with the INI reader it
-# is written against. It lives outside code/ so that the recursive glob building the engine
-# cannot pick this target's entry point up.
+# is written against and the launch request code it fills. It lives outside code/ so that the
+# recursive glob building the engine cannot pick this target's entry point up.
 
 opents_add_test(SpawnContract
     NAME spawncontract
@@ -24,6 +24,10 @@ opents_add_test(SpawnContract
         pk.cpp
         int.cpp
         mpmath.cpp
+        launch/gamelaunch.cpp
+        proto/wire.cpp
+        launch/launchmessages.cpp
+        replay/replaymessages.cpp
     INCLUDES ${OPENTS_GENERATED_DIR}
     DEFINITIONS WIN32 _WINDOWS _MBCS NOMINMAX
     UTF8

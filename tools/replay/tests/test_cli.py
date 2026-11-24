@@ -92,7 +92,7 @@ class CliTest(unittest.TestCase):
             self.assertEqual(code, 0)
             with open(vec('launch_play.json'), encoding='utf-8') as fh:
                 self.assertEqual(json.loads(text), json.load(fh))
-            code, text = run('launch', 'decode', '--message', 'LaunchResult', vec('launch_result.bin'))
+            code, text = run('launch', 'decode', '--message', 'Result', vec('launch_result.bin'))
             self.assertEqual(json.loads(text)['code'], 'RESULT_CODE_OK')
             bad = os.path.join(tmp, 'bad.json')
             with open(bad, 'w', encoding='utf-8') as fh:

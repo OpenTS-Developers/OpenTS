@@ -6,7 +6,8 @@ import sys
 TESTS = os.path.dirname(os.path.abspath(__file__))
 TOOL = os.path.dirname(TESTS)
 REPO = os.path.abspath(os.path.join(TOOL, '..', '..'))
-PROTO_DIR = os.path.join(REPO, 'docs', 'replay')
+PROTO_DIRS = {'replay.proto': os.path.join(REPO, 'docs', 'replay'),
+              'launch.proto': os.path.join(REPO, 'docs', 'launch')}
 VECTORS = os.path.join(REPO, 'tests', 'replay', 'vectors')
 
 if TOOL not in sys.path:

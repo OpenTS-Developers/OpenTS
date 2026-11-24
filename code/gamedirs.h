@@ -43,6 +43,7 @@ char const * Game_Directory_Error(void);
  * searches and disk queries the game makes of Windows directly.
  */
 std::string User_File_Write_Name(char const * filename);
+std::string Launcher_File_Name(char const * path);
 
 /*
  * Where the player's saved games are. They are never searched for: the folder is named

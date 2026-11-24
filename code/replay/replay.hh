@@ -9,6 +9,8 @@
 
 #pragma once
 
+#include "proto/message.h"
+
 #include <cstddef>
 #include <cstdint>
 
@@ -52,27 +54,19 @@ namespace Replay
 		DEFLATE = 1,
 	};
 
-	// The format's size limits. Each reader has a separate copy.
-	struct LimitsType {
+	// The format's size limits: those of a message, and those of a section. Each reader has a
+	// separate copy.
+	struct LimitsType : ProtoMessage::LimitsType {
+		std::size_t EventsPerFrame = 16384;
+		std::size_t EventPayload = 4096;             // each payload and sealed_payload
+		std::size_t IncomeKinds = 4096;
 		std::uint64_t SmallSection = 1u << 20;       // INFO, LNCH, END
 		std::uint64_t LargeSection = 32u << 20;      // MAP, INIT, STAT
 		std::uint64_t Checkpoint = 64u << 20;
 		std::uint64_t FrameRecord = 1u << 20;
-		std::size_t EventsPerRecord = 16384;
-		std::size_t EventPayload = 4096;
-		std::size_t String = 1024;
-		std::size_t Players = 64;
-		std::size_t IncomeKinds = 4096;
 	};
 
 	// Open enumerations: a value outside the list is kept as it was read.
-	enum class GameKind : std::int32_t {
-		GAME_KIND_UNKNOWN = 0,
-		GAME_KIND_CAMPAIGN = 1,
-		GAME_KIND_SKIRMISH = 2,
-		GAME_KIND_MULTIPLAYER = 3,
-	};
-
 	enum class EventRole : std::int32_t {
 		EVENT_ROLE_NONE = 0,
 		EVENT_ROLE_CHAT_PROOF = 1,

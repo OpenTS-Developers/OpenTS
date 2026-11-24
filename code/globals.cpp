@@ -439,11 +439,9 @@ bool Just4Fun = false;
 int Seed = 0;
 
 
-/***************************************************************************
-**	If this value is non-zero, use it as the random # seed instead; this should
-**	help reproduce some bugs.
-*/
-int CustomSeed = 0;
+// When set, the seed a campaign mission or skirmish starts from; otherwise Init_Random draws
+// one. A network game does not read it.
+std::optional<unsigned> CustomSeed;
 
 
 /***************************************************************************

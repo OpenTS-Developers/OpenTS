@@ -4,7 +4,7 @@ import os
 import re
 import unittest
 
-from _support import PROTO_DIR, cncreplay as c
+from _support import PROTO_DIRS, cncreplay as c
 
 SCALARS = c.SCALAR_TYPES
 
@@ -184,7 +184,7 @@ def differences(proto, tables):
 
 
 def read(name):
-    with open(os.path.join(PROTO_DIR, name), encoding='utf-8') as fh:
+    with open(os.path.join(PROTO_DIRS[name], name), encoding='utf-8') as fh:
         return fh.read()
 
 
@@ -210,7 +210,7 @@ class SchemaTest(unittest.TestCase):
             ('sint32 due     = 3;', 'int32 due     = 3;'),
             ('repeated uint32 defeated        = 10;', 'repeated uint32 defeat        = 10;'),
             ('OUTCOME_DRAW    = 3;', 'OUTCOME_DRAW    = 4;'),
-            ('reserved 100 to 199;\n}\n\nmessage FileHash', 'reserved 100 to 198;\n}\n\nmessage FileHash'),
+            ('reserved 100 to 199;\n}\n\nmessage PlayerColor', 'reserved 100 to 198;\n}\n\nmessage PlayerColor'),
         ]
         for old, new in cases:
             self.assertIn(old, replay)

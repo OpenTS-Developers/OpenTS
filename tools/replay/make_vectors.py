@@ -194,7 +194,7 @@ def build(out):
 
     # ---- S0 for a known set of sections
     info = base_info()
-    lnch = c.encode_message('cncreplay.Launch', base_launch())
+    lnch = c.encode_message('cnclaunch.Game', base_launch())
     s0 = c.compute_s0(1, 'opents', 1, lnch, INIT_BODY)
     b.computations.append({
         'name': 's0_base',
@@ -221,7 +221,7 @@ def build(out):
     data = w.close(summary={'ended_at': RECORDED_AT + 1})
     b.add('minimal_complete.cncr', data, 0,
           'Smallest complete file: one record on frame 0 with a zero hash, every section stored. '
-          'Launch.seed is set to 0 and RecordingSummary.last_frame to 0, so both are written.',
+          'Game.seed is set to 0 and RecordingSummary.last_frame to 0, so both are written.',
           {'file_hex': data.hex(), 'seals': seals_hex(w.final_seals(0)), 'canonical': canon_hex(w)})
 
     # ---- no frame ran
@@ -906,7 +906,7 @@ def build(out):
     request = {
         'version': 1,
         'play': {
-            'launch': {'kind': 3, 'seed': 0,
+            'game': {'kind': 3, 'seed': 0,
                        'players': [{'name': 'Alpha', 'human': True, 'country': 0, 'color': 0, 'start': -1},
                                    {'name': 'Bravo', 'human': True, 'country': -1, 'color': 3, 'start': 1,
                                     'allies': [0]}],
@@ -921,19 +921,19 @@ def build(out):
         'result_path': 'launch-result.bin',
         'request_id': 'vector-1',
     }
-    data = c.encode_message('cnclaunch.LaunchRequest', request)
-    text = json.dumps(c.to_proto_json('cnclaunch.LaunchRequest', request), indent=2) + '\n'
+    data = c.encode_message('cnclaunch.Request', request)
+    text = json.dumps(c.to_proto_json('cnclaunch.Request', request), indent=2) + '\n'
     b.write('launch_play.bin', data)
     b.write('launch_play.json', text.encode('utf-8'))
     result = {'request_id': 'vector-1', 'code': 1,
               'scenarios': [{'map_path': 'maps/vector.map', 'outcome': 1, 'completed': True,
                              'last_frame': 0, 'replay_path': 'C:/Games/Replays/vector.cncr'}]}
-    rdata = c.encode_message('cnclaunch.LaunchResult', result)
+    rdata = c.encode_message('cnclaunch.Result', result)
     b.write('launch_result.bin', rdata)
     b.computations.append({
         'name': 'launch_request',
         'description': 'launch_play.json in the proto3 JSON mapping encodes to launch_play.bin. '
-                       'Launch.seed and Session.local_player are optional and set to 0, so both '
+                       'Game.seed and Session.local_player are optional and set to 0, so both '
                        'are written; the oneof member Crates.flag = false is written.',
         'json_file': 'launch_play.json', 'binary_file': 'launch_play.bin', 'binary': data.hex(),
     })

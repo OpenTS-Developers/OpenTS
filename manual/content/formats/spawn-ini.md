@@ -7,6 +7,9 @@ source_files:
 - code/spawnerconfig.cpp
 - code/spawnerconfig.h
 - code/spawner.cpp
+- code/launcher.cpp
+- code/launcherapply.cpp
+- code/launcherapply.h
 filenames:
 - SPAWN.INI
 related:
@@ -47,7 +50,7 @@ The `[Settings]` section says what kind of game to start.
 
 ## The host
 
-The [master](/systems/out-of-sync-recovery/#the-master) of a game against other machines sets the network timing, decides for everyone when the game goes out of sync, and can load a saved game during play. When the match starts, the master is the lowest seat in [house order](#who-is-playing), the person with the lowest `Color`, on every machine. When the master leaves, the lowest seat still held takes over.
+The [master](/systems/out-of-sync-recovery/#the-master) of a game against other machines sets the network timing, decides for everyone when the game goes out of sync, and can load a saved game during play. When the match starts, the master is the lowest seat in [house order](#who-is-playing), on every machine. When the master leaves, the lowest seat still held takes over.
 
 `Host=yes` marks this machine as the host, in any seat. The host becomes the master after an in-game load, if it is still playing, whichever seat it holds. Until then it is the master only when it holds the lowest seat.
 
@@ -157,12 +160,12 @@ Each person has a section: `[Settings]` for the player at this machine, and `[Ot
 - `Side` is the person's country, numbered from `0` in the order of the rules' `[Houses]` list.
 - `Color` is the person's color, numbered from `0` in the order of the rules' `[Colors]` list. An entry that repeats an earlier name is skipped and takes no number. In a game against other machines, no two people may share a color.
 
-A person's section must give a valid `Side` and `Color`; it cannot leave them to the game.
+A section that leaves out `Side` or `Color`, or gives `-1`, leaves that choice to the game. The game draws it as for a [launch request](/formats/launch-request/#countries-and-colors-left-to-the-game): for the people in house order, then for the computer players in house order, from random numbers that start from `Seed`. A skirmish with `Seed=0` draws differently at each launch.
 
 The file names each seat in one of two ways, both written `Multi1` to `Multi8`:
 
 - By file position: `[Settings]` is `Multi1`, `[Other1]` is `Multi2`, and so on to `[Other7]` as `Multi8`.
-- By house order: the people first, from the lowest `Color` up, then the computer players in file position order. This is the order in which the game creates the houses.
+- By house order: the people first, from the lowest `Color` up, then the computer players in file position order. People who leave `Color` to the game come before the others, in order of `Name`. This is the order in which the game creates the houses.
 
 When the people fill `[Settings]` and `[Other1]` onward without gaps, each computer player has the same number both ways, and only the people's numbers can differ.
 
@@ -176,7 +179,7 @@ The file positions that no person's section claims are for computer players. The
 
 An entry omitted from these three sections means `-1`, and an entry at a person's file position is ignored.
 
-An entry of `-1` leaves the choice to the game, as in a game set up from the menu. The game picks a country the rules offer in multiplayer, and one of the eight colors the menu offers that no person or earlier computer player has taken. A color the file writes is used as given, so a computer player can share a color with a person or with another computer player.
+An entry of `-1` leaves the choice to the game, which draws it as it draws a person's [`Side` or `Color`](#who-is-playing). A color the file writes is used as given, so a computer player can share a color with a person or with another computer player.
 
 A handicap sets the seat's [difficulty slot](/systems/difficulty/#from-the-setting-to-a-slot) directly: `0` is the hardest opponent and `2` the easiest, and `3` to `6` play as `2`. This runs opposite to `AIDifficulty`: a handicap of `0` and `AIDifficulty=2` both make a hard opponent. A computer player at slot `0` reads the rules' `[Easy]` section and is the opponent a player meets on Hard.
 
@@ -273,7 +276,7 @@ The keys under [What a player is shown](#what-a-player-is-shown) and [The match 
 
 Before play begins, the machines compare the games they loaded, and the match stops with the message `Scenarios don't match.` if they differ. [Out-of-sync recovery](/systems/out-of-sync-recovery/#games-that-differ-at-the-start) lists what is compared.
 
-The `Session identity:` line in an [out-of-sync report](/using/out-of-sync-reports/) differs between machines whose files disagree on anything in the list above, except `Name`, `AutoSaveGame` and the `[Tunnel]` section. Scenario files that differ under the same name give the same identity. `Host`, the `Ip` and `Port` entries, the waits and the keys under [What a player is shown](#what-a-player-is-shown) and [The match results file](#the-match-results-file) do not change it.
+The `Session identity:` line in an [out-of-sync report](/using/out-of-sync-reports/) is a checksum of the game the file describes. It differs between machines whose files disagree on anything in the list above except `Scenario`, `AutoSaveGame` and the `[Tunnel]` section, or on `QuickMatch` or `DifficultyBasedAINames`. `Host`, the `Ip` and `Port` entries, the waits, and the other keys under [What a player is shown](#what-a-player-is-shown) and [The match results file](#the-match-results-file) do not change it. A resumed saved game has no session identity; its report gives the scenario, seed and number of players on that line instead.
 
 Without a tunnel, each `[OtherN]` section also gives `Ip`, the address that machine answers on, and `Port`, the port it listens on. `[Settings] Port` is the port this machine listens on, `1234` by default. Write each address as a dotted IPv4 address such as `203.0.113.7`; a host name is refused.
 
@@ -291,7 +294,7 @@ Each machine applies its own waits, so files that differ do not put the match ou
 
 ## When something is wrong
 
-The game refuses a launch it cannot play. It shows the reason, writes it to the log, and exits instead of falling back to its menu.
+The game refuses a launch it cannot play. It shows the reason, writes it to the log, and exits instead of falling back to its menu. The reason starts with the section and key at fault, such as `SPAWN.INI [Other1] Side:`, and a player it numbers is counted from `0` in house order.
 
 Any launch is refused when `SPAWN.INI` is missing or `GameSpeed` is outside `0` to `6`.
 
@@ -304,13 +307,13 @@ A new skirmish, and any game against other machines, new or resumed, is also ref
 - the file has no `[Settings]` or `[OtherN]` section, so it seats no person;
 - `AIDifficulty` is outside `0` to `2`;
 - `AIPlayers` is negative or more than the seats no person holds;
-- a person's `Side` is not a country the rules have, or their `Color` is not an entry in the rules' `[Colors]` list; a computer seat's country and color are checked the same way unless they are `-1`;
+- a person's `Side` or a computer seat's country is neither `-1` nor a country the rules have, or a `Color` or a computer seat's color is neither `-1` nor an entry in the rules' `[Colors]` list;
 - a `[HouseHandicaps]` entry is outside `-1` to `6`;
 - an occupied seat's alliance entry is outside `-1` to `7`, or names a seat that is empty.
 
 A game against other machines, new or resumed, is also refused when:
 
-- a person has no `Name`, or two people have the same name, ignoring case, or the same `Color`;
+- a person has no `Name`, or two people have the same name, ignoring case, or give the same `Color`;
 - without a tunnel, `[Settings] Port` or another person's `Port` is outside `1` to `65535`, or another person's `Ip` is not a dotted IPv4 address other than `0.0.0.0`;
 - through a tunnel, `[Tunnel] Port` is negative or above `65535`, or `[Tunnel] Ip` is not a dotted IPv4 address other than `0.0.0.0`;
 - through a tunnel, `[Settings] Port` or another person's `Port` is `0` or outside `-65535` to `65535`;

@@ -10,7 +10,7 @@
 #pragma once
 
 #include "deflate.h"
-#include "replay/replayrecords.h"
+#include "replay/replaymessages.h"
 #include "replay/replayseal.h"
 #include "wwfile.h"
 
@@ -64,16 +64,16 @@ namespace Replay
 			// True when INIT or FRMS uses a codec this reader does not know.
 			bool Unknown_Codec(void) const;
 
-			ReadResult Read_Info(RecordingInfo & info);
-			ReadResult Read_Launch(Launch & launch);
-			ReadResult Read_Statistics(Statistics & statistics);
-			ReadResult Read_Summary(RecordingSummary & summary);
+			ReadResult Read_Info(Message::RecordingInfo & info);
+			ReadResult Read_Launch(Launch::Message::Game & launch);
+			ReadResult Read_Statistics(Message::Statistics & statistics);
+			ReadResult Read_Summary(Message::RecordingSummary & summary);
 
 			// The uncompressed body of a section, within its limit.
 			ReadResult Read_Body(SectionInfo const & section, Bytes & body);
 
 			std::vector<SectionInfo const *> const & Checkpoints(void) const { return(CheckpointList); }
-			ReadResult Read_Checkpoint(SectionInfo const & section, Checkpoint & checkpoint);
+			ReadResult Read_Checkpoint(SectionInfo const & section, Message::Checkpoint & checkpoint);
 
 			// Reads a checkpoint's frame by inflating only the start of its section.
 			ReadResult Read_Checkpoint_Frame(SectionInfo const & section, std::uint32_t & frame);
@@ -88,7 +88,7 @@ namespace Replay
 			ReadResult Open_Sections(void);
 			ReadResult Check_Structure(void) const;
 			ReadResult Read_Body_Pieces(SectionInfo const & section, Bytes & body);
-			ReadResult Read_Checkpoint_Body(SectionInfo const & section, Checkpoint & checkpoint);
+			ReadResult Read_Checkpoint_Body(SectionInfo const & section, Message::Checkpoint & checkpoint);
 			ReadResult Read_Checkpoint_Start(SectionInfo const & section, std::uint32_t & frame);
 			ReadResult Check_Checkpoint_Bodies(void);
 			std::uint64_t Raw_Limit(std::uint32_t tag) const;
@@ -117,12 +117,12 @@ namespace Replay
 		public:
 			explicit FrameReader(Reader & reader);
 
-			FrameStep Next(std::uint32_t & frame, Frame & record);
+			FrameStep Next(std::uint32_t & frame, Message::Frame & record);
 			ReadResult Error(void) const { return(Failure); }
 
 		private:
 			FrameStep Fail(ReadResult result);
-			FrameStep Next_Record(std::uint32_t & frame, Frame & record);
+			FrameStep Next_Record(std::uint32_t & frame, Message::Frame & record);
 			FrameStep End_Closed(void);
 			bool Fill(void);
 

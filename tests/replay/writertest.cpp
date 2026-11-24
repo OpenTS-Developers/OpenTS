@@ -23,9 +23,9 @@ using namespace Replay;
 
 namespace {
 
-Frame Hash_Frame(std::uint32_t hash)
+Message::Frame Hash_Frame(std::uint32_t hash)
 {
-	Frame frame;
+	Message::Frame frame;
 	frame.Hash = hash;
 	return(frame);
 }
@@ -33,9 +33,9 @@ Frame Hash_Frame(std::uint32_t hash)
 
 // Decodes the records of an inflated frame stream, stopping at the terminator or at the first
 // record cut short.
-std::vector<Frame> Parse_Records(ByteVector const & stream, bool * terminated = nullptr)
+std::vector<Message::Frame> Parse_Records(ByteVector const & stream, bool * terminated = nullptr)
 {
-	std::vector<Frame> records;
+	std::vector<Message::Frame> records;
 	std::size_t offset = 0;
 	if (terminated != nullptr) {
 		*terminated = false;
@@ -54,7 +54,7 @@ std::vector<Frame> Parse_Records(ByteVector const & stream, bool * terminated = 
 		if (length > stream.size() - offset) {
 			break;
 		}
-		Frame frame;
+		Message::Frame frame;
 		REQUIRE(Decode(ByteSpan(stream.data() + offset, std::size_t(length)), frame));
 		records.push_back(frame);
 		offset += std::size_t(length);
@@ -81,9 +81,9 @@ WriteResult Record_Game(FileClass & sink, std::uint32_t frames)
 	ByteVector const map = Bytes_Of("[Basic]\nName=Synthetic Map\n");
 	WriteResult result = writer.Begin(Sample_Info(), Sample_Launch(), init, ByteSpan(map));
 	for (std::uint32_t frame = 0; frame < frames && result == WriteResult::OK; frame++) {
-		Frame record = Hash_Frame(frame * 7);
+		Message::Frame record = Hash_Frame(frame * 7);
 		if (frame % 10 == 0) {
-			Event event;
+			Message::Event event;
 			event.Type = 3;
 			event.House = frame % 2;
 			event.Payload = { std::uint8_t(frame), 1, 2, 3 };
@@ -92,16 +92,16 @@ WriteResult Record_Game(FileClass & sink, std::uint32_t frames)
 		result = writer.Add_Frame(frame, record);
 	}
 	if (result == WriteResult::OK) {
-		Checkpoint checkpoint;
+		Message::Checkpoint checkpoint;
 		checkpoint.Frame = 0;
 		checkpoint.State = Bytes_Of("state");
 		result = writer.Add_Checkpoint(checkpoint);
 	}
 	if (result == WriteResult::OK) {
-		RecordingSummary summary;
+		Message::RecordingSummary summary;
 		summary.LastFrame = frames - 1;
 		summary.Completed = true;
-		Statistics statistics;
+		Message::Statistics statistics;
 		statistics.Houses.resize(2);
 		statistics.Houses[1].House = 1;
 		result = writer.Close(summary, &statistics);
@@ -123,7 +123,7 @@ TEST_CASE("the writer holds the first sections until the first record")
 	ByteVector const init = Sample_Init();
 	REQUIRE(writer.Begin(Sample_Info(), Sample_Launch(), init, std::nullopt) == WriteResult::OK);
 	CHECK(sink.Written().empty());
-	CHECK_MESSAGE(writer.Add_Frame(3, Frame()) == WriteResult::OK, "an empty record is accepted");
+	CHECK_MESSAGE(writer.Add_Frame(3, Message::Frame()) == WriteResult::OK, "an empty record is accepted");
 	CHECK_MESSAGE(sink.Written().empty(), "and not written");
 
 	REQUIRE(writer.Add_Frame(5, Hash_Frame(1)) == WriteResult::OK);
@@ -137,7 +137,7 @@ TEST_CASE("the writer holds the first sections until the first record")
 	CHECK(sections[3].Raw == ~0ull);
 	CHECK_MESSAGE(sink.Flushed().size() >= sections[3].Offset, "the header reaches the OS at once");
 
-	RecordingInfo info;
+	Message::RecordingInfo info;
 	REQUIRE(Decode(ByteSpan(sink.Written().data() + sections[0].Offset, std::size_t(sections[0].Stored)), info));
 	CHECK(info.SealVersion == SEAL_VERSION);
 	CHECK(info.Engine == "opents");
@@ -173,7 +173,7 @@ TEST_CASE("a closed file holds every section in order with real sizes")
 	CHECK(records[900].Seals[0].Through == 899);
 
 	ByteVector summary_body(file.begin() + sections[7].Offset, file.end());
-	RecordingSummary summary;
+	Message::RecordingSummary summary;
 	REQUIRE(Decode(summary_body, summary));
 	REQUIRE(summary.Seals.size() == 2);
 	CHECK(summary.Seals[0].Hash == records[900].Seals[0].Hash);
@@ -202,7 +202,7 @@ TEST_CASE("a recording in which no frame ran has an empty frame stream and no se
 	Writer writer(sink);
 	ByteVector const init = Sample_Init();
 	REQUIRE(writer.Begin(Sample_Info(), Sample_Launch(), init, std::nullopt) == WriteResult::OK);
-	REQUIRE(writer.Close(RecordingSummary(), nullptr) == WriteResult::OK);
+	REQUIRE(writer.Close(Message::RecordingSummary(), nullptr) == WriteResult::OK);
 
 	auto const sections = Walk_Sections(sink.Written());
 	CHECK(Section_Tags(sections) == "INFO,LNCH,INIT,FRMS,END ");
@@ -210,7 +210,7 @@ TEST_CASE("a recording in which no frame ran has an empty frame stream and no se
 	CHECK(sections[3].Raw == 1);
 	CHECK_MESSAGE(sections[4].Stored == 0, "an empty summary");
 	CHECK(writer.Add_Frame(0, Hash_Frame(1)) == WriteResult::STATE);
-	CHECK(writer.Close(RecordingSummary(), nullptr) == WriteResult::STATE);
+	CHECK(writer.Close(Message::RecordingSummary(), nullptr) == WriteResult::STATE);
 }
 
 
@@ -220,7 +220,7 @@ TEST_CASE("the writer refuses input that breaks the format and keeps recording")
 	Writer writer(sink);
 	ByteVector const init = Sample_Init();
 
-	Launch unordered = Sample_Launch();
+	Launch::Message::Game unordered = Sample_Launch();
 	std::swap(unordered.Options[0], unordered.Options[1]);
 	CHECK(writer.Begin(Sample_Info(), unordered, init, std::nullopt) == WriteResult::REFUSED);
 	CHECK(writer.Add_Frame(0, Hash_Frame(1)) == WriteResult::STATE);
@@ -231,19 +231,19 @@ TEST_CASE("the writer refuses input that breaks the format and keeps recording")
 	CHECK(writer.Add_Frame(10, Hash_Frame(2)) == WriteResult::STATE);
 	CHECK(writer.Add_Frame(9, Hash_Frame(2)) == WriteResult::STATE);
 
-	Frame big = Hash_Frame(3);
+	Message::Frame big = Hash_Frame(3);
 	big.Events.resize(1);
 	big.Events[0].Payload.resize(4097);
 	CHECK(writer.Add_Frame(11, big) == WriteResult::REFUSED);
 	big.Events[0].Payload.resize(4096);
 	CHECK(writer.Add_Frame(11, big) == WriteResult::OK);
 
-	Checkpoint checkpoint;
+	Message::Checkpoint checkpoint;
 	checkpoint.Frame = 5;
 	CHECK(writer.Add_Checkpoint(checkpoint) == WriteResult::OK);
 	CHECK(writer.Add_Checkpoint(checkpoint) == WriteResult::REFUSED);
 
-	RecordingSummary summary;
+	Message::RecordingSummary summary;
 	CHECK_MESSAGE(writer.Close(summary, nullptr) == WriteResult::REFUSED, "frames ran, so last_frame is needed");
 	summary.LastFrame = 10;
 	CHECK(writer.Close(summary, nullptr) == WriteResult::REFUSED);
@@ -256,9 +256,9 @@ TEST_CASE("the writer refuses input that breaks the format and keeps recording")
 TEST_CASE("the writer refuses an income kind table that breaks the rules, and income of an unlisted kind")
 {
 	auto with_kinds = [](std::vector<std::pair<std::uint32_t, std::string>> const & listed) {
-		RecordingInfo info = Sample_Info();
+		Message::RecordingInfo info = Sample_Info();
 		for (auto const & entry : listed) {
-			IncomeKind kind;
+			Message::IncomeKind kind;
 			kind.Number = entry.first;
 			kind.Id = entry.second;
 			info.IncomeKinds.push_back(kind);
@@ -266,9 +266,9 @@ TEST_CASE("the writer refuses an income kind table that breaks the rules, and in
 		return(info);
 	};
 	auto paying = [](std::vector<std::uint32_t> const & used) {
-		Frame record = Hash_Frame(1);
+		Message::Frame record = Hash_Frame(1);
 		for (std::uint32_t number : used) {
-			Income income;
+			Message::Income income;
 			income.Kind = number;
 			income.Amount = 5;
 			record.Income.push_back(income);
@@ -288,7 +288,7 @@ TEST_CASE("the writer refuses an income kind table that breaks the rules, and in
 	CHECK(writer.Add_Frame(0, paying({ 3, 1 })) == WriteResult::OK);
 	CHECK(writer.Add_Frame(1, paying({ 1 })) == WriteResult::OK);
 
-	RecordingSummary summary;
+	Message::RecordingSummary summary;
 	summary.LastFrame = 1;
 	CHECK(writer.Close(summary, nullptr) == WriteResult::OK);
 	CHECK(!writer.Failed());

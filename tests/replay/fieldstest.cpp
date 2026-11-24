@@ -7,10 +7,12 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
+#include "doctest/doctest.h"
+#include "launch/launchmessages.h"
+
+#include "launch/launchfields.hh"
 #include "replay/replay.hh"
 #include "replay/replayfields.hh"
-
-#include "doctest/doctest.h"
 
 #include <cctype>
 #include <fstream>
@@ -21,6 +23,7 @@
 #include <vector>
 
 namespace F = Replay::Field;
+namespace L = Launch::Field;
 
 
 namespace {
@@ -53,7 +56,7 @@ FieldEntry const FIELDS[] = {
 	{ "RecordingInfo", "data_version", F::RecordingInfo::DATA_VERSION, "uint32", Label::PLAIN },
 	{ "RecordingInfo", "package", F::RecordingInfo::PACKAGE, "string", Label::PLAIN },
 	{ "RecordingInfo", "package_version", F::RecordingInfo::PACKAGE_VERSION, "string", Label::PLAIN },
-	{ "RecordingInfo", "files", F::RecordingInfo::FILES, "FileHash", Label::REPEATED },
+	{ "RecordingInfo", "files", F::RecordingInfo::FILES, "cnclaunch.FileHash", Label::REPEATED },
 	{ "RecordingInfo", "recorded_at", F::RecordingInfo::RECORDED_AT, "uint64", Label::PLAIN },
 	{ "RecordingInfo", "recorder", F::RecordingInfo::RECORDER, "uint32", Label::PRESENCE },
 	{ "RecordingInfo", "map_name", F::RecordingInfo::MAP_NAME, "string", Label::PLAIN },
@@ -63,34 +66,10 @@ FieldEntry const FIELDS[] = {
 	{ "RecordingInfo", "seal_version", F::RecordingInfo::SEAL_VERSION, "uint32", Label::PLAIN },
 	{ "RecordingInfo", "colors", F::RecordingInfo::COLORS, "PlayerColor", Label::REPEATED },
 	{ "RecordingInfo", "income_kinds", F::RecordingInfo::INCOME_KINDS, "IncomeKind", Label::REPEATED },
-	{ "FileHash", "path", F::FileHash::PATH, "string", Label::PLAIN },
-	{ "FileHash", "hash", F::FileHash::HASH, "string", Label::PLAIN },
 	{ "PlayerColor", "number", F::PlayerColor::NUMBER, "uint32", Label::PLAIN },
 	{ "PlayerColor", "rgb", F::PlayerColor::RGB, "fixed32", Label::PLAIN },
 	{ "IncomeKind", "number", F::IncomeKind::NUMBER, "uint32", Label::PLAIN },
 	{ "IncomeKind", "id", F::IncomeKind::ID, "string", Label::PLAIN },
-	{ "Launch", "kind", F::Launch::KIND, "GameKind", Label::PLAIN },
-	{ "Launch", "seed", F::Launch::SEED, "fixed32", Label::PRESENCE },
-	{ "Launch", "players", F::Launch::PLAYERS, "Player", Label::REPEATED },
-	{ "Launch", "options", F::Launch::OPTIONS, "GameOption", Label::REPEATED },
-	{ "Launch", "anonymous", F::Launch::ANONYMOUS, "bool", Label::PLAIN },
-	{ "Player", "house", F::Player::HOUSE, "uint32", Label::PLAIN },
-	{ "Player", "name", F::Player::NAME, "string", Label::PLAIN },
-	{ "Player", "human", F::Player::HUMAN, "bool", Label::PLAIN },
-	{ "Player", "observer", F::Player::OBSERVER, "bool", Label::PLAIN },
-	{ "Player", "country", F::Player::COUNTRY, "sint32", Label::PLAIN },
-	{ "Player", "country_name", F::Player::COUNTRY_NAME, "string", Label::PLAIN },
-	{ "Player", "color", F::Player::COLOR, "sint32", Label::PLAIN },
-	{ "Player", "start", F::Player::START, "sint32", Label::PLAIN },
-	{ "Player", "ai_level", F::Player::AI_LEVEL, "sint32", Label::PRESENCE },
-	{ "Player", "allies", F::Player::ALLIES, "uint32", Label::REPEATED },
-	{ "Player", "resolved_country", F::Player::RESOLVED_COUNTRY, "sint32", Label::PRESENCE },
-	{ "Player", "resolved_color", F::Player::RESOLVED_COLOR, "sint32", Label::PRESENCE },
-	{ "Player", "resolved_start", F::Player::RESOLVED_START, "sint32", Label::PRESENCE },
-	{ "GameOption", "key", F::GameOption::KEY, "string", Label::PLAIN },
-	{ "GameOption", "number", F::GameOption::NUMBER, "sint64", Label::ONEOF },
-	{ "GameOption", "flag", F::GameOption::FLAG, "bool", Label::ONEOF },
-	{ "GameOption", "text", F::GameOption::TEXT, "string", Label::ONEOF },
 	{ "Frame", "skipped", F::Frame::SKIPPED, "uint32", Label::PLAIN },
 	{ "Frame", "hash", F::Frame::HASH, "fixed32", Label::PRESENCE },
 	{ "Frame", "events", F::Frame::EVENTS, "Event", Label::REPEATED },
@@ -191,10 +170,6 @@ FieldEntry const FIELDS[] = {
 };
 
 EnumEntry const ENUMS[] = {
-	{ "GameKind", "GAME_KIND_UNKNOWN", int(Replay::GameKind::GAME_KIND_UNKNOWN) },
-	{ "GameKind", "GAME_KIND_CAMPAIGN", int(Replay::GameKind::GAME_KIND_CAMPAIGN) },
-	{ "GameKind", "GAME_KIND_SKIRMISH", int(Replay::GameKind::GAME_KIND_SKIRMISH) },
-	{ "GameKind", "GAME_KIND_MULTIPLAYER", int(Replay::GameKind::GAME_KIND_MULTIPLAYER) },
 	{ "EventRole", "EVENT_ROLE_NONE", int(Replay::EventRole::EVENT_ROLE_NONE) },
 	{ "EventRole", "EVENT_ROLE_CHAT_PROOF", int(Replay::EventRole::EVENT_ROLE_CHAT_PROOF) },
 	{ "MessageScope", "MESSAGE_SCOPE_UNKNOWN", int(Replay::MessageScope::MESSAGE_SCOPE_UNKNOWN) },
@@ -220,6 +195,157 @@ EnumEntry const ENUMS[] = {
 	{ "CountKind", "COUNT_KIND_LOST", int(Replay::CountKind::COUNT_KIND_LOST) },
 	{ "CountKind", "COUNT_KIND_CAPTURED", int(Replay::CountKind::COUNT_KIND_CAPTURED) },
 	{ "CountKind", "COUNT_KIND_REMAINING", int(Replay::CountKind::COUNT_KIND_REMAINING) },
+};
+
+
+// Every field of launch.proto, by the constant the codec writes it with.
+FieldEntry const LAUNCH_FIELDS[] = {
+	{ "Request", "version", L::Request::VERSION, "uint32", Label::PLAIN },
+	{ "Request", "play", L::Request::PLAY, "Play", Label::ONEOF },
+	{ "Request", "load", L::Request::LOAD, "Load", Label::ONEOF },
+	{ "Request", "replay", L::Request::REPLAY, "Replay", Label::ONEOF },
+	{ "Request", "verify", L::Request::VERIFY, "Verify", Label::ONEOF },
+	{ "Request", "capture", L::Request::CAPTURE, "Capture", Label::ONEOF },
+	{ "Request", "result_path", L::Request::RESULT_PATH, "string", Label::PLAIN },
+	{ "Request", "channel", L::Request::CHANNEL, "string", Label::PLAIN },
+	{ "Request", "request_id", L::Request::REQUEST_ID, "string", Label::PLAIN },
+	{ "Play", "game", L::Play::GAME, "Game", Label::PLAIN },
+	{ "Play", "map_path", L::Play::MAP_PATH, "string", Label::PLAIN },
+	{ "Play", "session", L::Play::SESSION, "Session", Label::PLAIN },
+	{ "Play", "network", L::Play::NETWORK, "Network", Label::PLAIN },
+	{ "Play", "recording", L::Play::RECORDING, "Recording", Label::PLAIN },
+	{ "Play", "fixture", L::Play::FIXTURE, "Fixture", Label::PLAIN },
+	{ "Game", "kind", L::Game::KIND, "GameKind", Label::PLAIN },
+	{ "Game", "seed", L::Game::SEED, "fixed32", Label::PRESENCE },
+	{ "Game", "players", L::Game::PLAYERS, "Player", Label::REPEATED },
+	{ "Game", "options", L::Game::OPTIONS, "Option", Label::REPEATED },
+	{ "Game", "anonymous", L::Game::ANONYMOUS, "bool", Label::PLAIN },
+	{ "Game", "global_flags", L::Game::GLOBAL_FLAGS, "uint32", Label::REPEATED },
+	{ "Player", "house", L::Player::HOUSE, "uint32", Label::PLAIN },
+	{ "Player", "name", L::Player::NAME, "string", Label::PLAIN },
+	{ "Player", "human", L::Player::HUMAN, "bool", Label::PLAIN },
+	{ "Player", "observer", L::Player::OBSERVER, "bool", Label::PLAIN },
+	{ "Player", "country", L::Player::COUNTRY, "sint32", Label::PLAIN },
+	{ "Player", "country_name", L::Player::COUNTRY_NAME, "string", Label::PLAIN },
+	{ "Player", "color", L::Player::COLOR, "sint32", Label::PLAIN },
+	{ "Player", "start", L::Player::START, "sint32", Label::PLAIN },
+	{ "Player", "ai_level", L::Player::AI_LEVEL, "sint32", Label::PRESENCE },
+	{ "Player", "allies", L::Player::ALLIES, "uint32", Label::REPEATED },
+	{ "Player", "resolved_country", L::Player::RESOLVED_COUNTRY, "sint32", Label::PRESENCE },
+	{ "Player", "resolved_color", L::Player::RESOLVED_COLOR, "sint32", Label::PRESENCE },
+	{ "Player", "resolved_start", L::Player::RESOLVED_START, "sint32", Label::PRESENCE },
+	{ "Option", "key", L::Option::KEY, "string", Label::PLAIN },
+	{ "Option", "number", L::Option::NUMBER, "sint64", Label::ONEOF },
+	{ "Option", "flag", L::Option::FLAG, "bool", Label::ONEOF },
+	{ "Option", "text", L::Option::TEXT, "string", Label::ONEOF },
+	{ "Session", "local_player", L::Session::LOCAL_PLAYER, "uint32", Label::PRESENCE },
+	{ "Session", "host", L::Session::HOST, "bool", Label::PLAIN },
+	{ "Session", "autosave_interval", L::Session::AUTOSAVE_INTERVAL, "uint32", Label::PLAIN },
+	{ "Session", "next_campaign_autosave", L::Session::NEXT_CAMPAIGN_AUTOSAVE, "uint32", Label::PLAIN },
+	{ "Session", "next_skirmish_autosave", L::Session::NEXT_SKIRMISH_AUTOSAVE, "uint32", Label::PLAIN },
+	{ "Session", "skip_score_screen", L::Session::SKIP_SCORE_SCREEN, "bool", Label::PLAIN },
+	{ "Session", "write_statistics", L::Session::WRITE_STATISTICS, "bool", Label::PLAIN },
+	{ "Session", "game_id", L::Session::GAME_ID, "uint32", Label::PLAIN },
+	{ "Session", "map_hash", L::Session::MAP_HASH, "string", Label::PLAIN },
+	{ "Session", "map_name", L::Session::MAP_NAME, "string", Label::PLAIN },
+	{ "Session", "game_mode", L::Session::GAME_MODE, "string", Label::PLAIN },
+	{ "Session", "load_screen", L::Session::LOAD_SCREEN, "LoadScreen", Label::PLAIN },
+	{ "Session", "difficulty_name", L::Session::DIFFICULTY_NAME, "string", Label::PLAIN },
+	{ "LoadScreen", "image", L::LoadScreen::IMAGE, "string", Label::PLAIN },
+	{ "LoadScreen", "x", L::LoadScreen::X, "sint32", Label::PRESENCE },
+	{ "LoadScreen", "y", L::LoadScreen::Y, "sint32", Label::PRESENCE },
+	{ "Network", "port", L::Network::PORT, "sint32", Label::PLAIN },
+	{ "Network", "peers", L::Network::PEERS, "Peer", Label::REPEATED },
+	{ "Network", "tunnel", L::Network::TUNNEL, "Tunnel", Label::PLAIN },
+	{ "Network", "protocol", L::Network::PROTOCOL, "uint32", Label::PLAIN },
+	{ "Network", "frame_send_rate", L::Network::FRAME_SEND_RATE, "uint32", Label::PLAIN },
+	{ "Network", "max_ahead", L::Network::MAX_AHEAD, "uint32", Label::PLAIN },
+	{ "Network", "connect_timeout", L::Network::CONNECT_TIMEOUT, "uint32", Label::PLAIN },
+	{ "Network", "reconnect_timeout", L::Network::RECONNECT_TIMEOUT, "uint32", Label::PLAIN },
+	{ "Peer", "player", L::Peer::PLAYER, "uint32", Label::PLAIN },
+	{ "Peer", "address", L::Peer::ADDRESS, "string", Label::PLAIN },
+	{ "Peer", "port", L::Peer::PORT, "sint32", Label::PLAIN },
+	{ "Tunnel", "address", L::Tunnel::ADDRESS, "string", Label::PLAIN },
+	{ "Tunnel", "port", L::Tunnel::PORT, "uint32", Label::PLAIN },
+	{ "Recording", "enabled", L::Recording::ENABLED, "bool", Label::PRESENCE },
+	{ "Recording", "file_out", L::Recording::FILE_OUT, "string", Label::PLAIN },
+	{ "Recording", "package", L::Recording::PACKAGE, "string", Label::PLAIN },
+	{ "Recording", "package_version", L::Recording::PACKAGE_VERSION, "string", Label::PLAIN },
+	{ "Recording", "files", L::Recording::FILES, "FileHash", Label::REPEATED },
+	{ "Recording", "embed_map", L::Recording::EMBED_MAP, "bool", Label::PRESENCE },
+	{ "FileHash", "path", L::FileHash::PATH, "string", Label::PLAIN },
+	{ "FileHash", "hash", L::FileHash::HASH, "string", Label::PLAIN },
+	{ "Fixture", "headless", L::Fixture::HEADLESS, "bool", Label::PLAIN },
+	{ "Fixture", "stop_frame", L::Fixture::STOP_FRAME, "uint32", Label::PRESENCE },
+	{ "Fixture", "script_path", L::Fixture::SCRIPT_PATH, "string", Label::PLAIN },
+	{ "Fixture", "checkpoint_check", L::Fixture::CHECKPOINT_CHECK, "CheckpointCheck", Label::PLAIN },
+	{ "CheckpointCheck", "save_frame", L::CheckpointCheck::SAVE_FRAME, "uint32", Label::PLAIN },
+	{ "CheckpointCheck", "run_frames", L::CheckpointCheck::RUN_FRAMES, "uint32", Label::PLAIN },
+	{ "Load", "save", L::Load::SAVE, "string", Label::PLAIN },
+	{ "Load", "session", L::Load::SESSION, "Session", Label::PLAIN },
+	{ "Load", "network", L::Load::NETWORK, "Network", Label::PLAIN },
+	{ "Load", "players", L::Load::PLAYERS, "Player", Label::REPEATED },
+	{ "Load", "game_speed", L::Load::GAME_SPEED, "sint32", Label::PRESENCE },
+	{ "Load", "anonymous", L::Load::ANONYMOUS, "bool", Label::PLAIN },
+	{ "Replay", "file", L::Replay::FILE, "string", Label::PLAIN },
+	{ "Replay", "watch_player", L::Replay::WATCH_PLAYER, "uint32", Label::PRESENCE },
+	{ "Replay", "free_view", L::Replay::FREE_VIEW, "bool", Label::PLAIN },
+	{ "Replay", "start_frame", L::Replay::START_FRAME, "uint32", Label::PLAIN },
+	{ "Replay", "map_path", L::Replay::MAP_PATH, "string", Label::PLAIN },
+	{ "Replay", "load_screen", L::Replay::LOAD_SCREEN, "LoadScreen", Label::PLAIN },
+	{ "Verify", "file", L::Verify::FILE, "string", Label::PLAIN },
+	{ "Verify", "out_path", L::Verify::OUT_PATH, "string", Label::PLAIN },
+	{ "Verify", "map_path", L::Verify::MAP_PATH, "string", Label::PLAIN },
+	{ "Capture", "map_path", L::Capture::MAP_PATH, "string", Label::PLAIN },
+	{ "Capture", "out_path", L::Capture::OUT_PATH, "string", Label::PLAIN },
+	{ "Capture", "description_path", L::Capture::DESCRIPTION_PATH, "string", Label::PLAIN },
+	{ "Result", "request_id", L::Result::REQUEST_ID, "string", Label::PLAIN },
+	{ "Result", "code", L::Result::CODE, "ResultCode", Label::PLAIN },
+	{ "Result", "message", L::Result::MESSAGE, "string", Label::PLAIN },
+	{ "Result", "scenarios", L::Result::SCENARIOS, "ScenarioResult", Label::REPEATED },
+	{ "Result", "statistics_path", L::Result::STATISTICS_PATH, "string", Label::PLAIN },
+	{ "Result", "different_build", L::Result::DIFFERENT_BUILD, "bool", Label::PLAIN },
+	{ "Result", "unverified", L::Result::UNVERIFIED, "bool", Label::PLAIN },
+	{ "Result", "mismatch_frame", L::Result::MISMATCH_FRAME, "uint32", Label::PRESENCE },
+	{ "Result", "output_path", L::Result::OUTPUT_PATH, "string", Label::PLAIN },
+	{ "Result", "crash_path", L::Result::CRASH_PATH, "string", Label::PLAIN },
+	{ "ScenarioResult", "map_path", L::ScenarioResult::MAP_PATH, "string", Label::PLAIN },
+	{ "ScenarioResult", "outcome", L::ScenarioResult::OUTCOME, "GameOutcome", Label::PLAIN },
+	{ "ScenarioResult", "completed", L::ScenarioResult::COMPLETED, "bool", Label::PLAIN },
+	{ "ScenarioResult", "last_frame", L::ScenarioResult::LAST_FRAME, "uint32", Label::PRESENCE },
+	{ "ScenarioResult", "replay_path", L::ScenarioResult::REPLAY_PATH, "string", Label::PLAIN },
+	{ "ScenarioResult", "not_recorded", L::ScenarioResult::NOT_RECORDED, "NotRecorded", Label::PLAIN },
+};
+
+EnumEntry const LAUNCH_ENUMS[] = {
+	{ "GameKind", "GAME_KIND_UNKNOWN", int(Launch::GameKind::GAME_KIND_UNKNOWN) },
+	{ "GameKind", "GAME_KIND_CAMPAIGN", int(Launch::GameKind::GAME_KIND_CAMPAIGN) },
+	{ "GameKind", "GAME_KIND_SKIRMISH", int(Launch::GameKind::GAME_KIND_SKIRMISH) },
+	{ "GameKind", "GAME_KIND_MULTIPLAYER", int(Launch::GameKind::GAME_KIND_MULTIPLAYER) },
+	{ "ResultCode", "RESULT_CODE_UNKNOWN", int(Launch::ResultCode::RESULT_CODE_UNKNOWN) },
+	{ "ResultCode", "RESULT_CODE_OK", int(Launch::ResultCode::RESULT_CODE_OK) },
+	{ "ResultCode", "RESULT_CODE_REFUSED", int(Launch::ResultCode::RESULT_CODE_REFUSED) },
+	{ "ResultCode", "RESULT_CODE_FAILED", int(Launch::ResultCode::RESULT_CODE_FAILED) },
+	{ "ResultCode", "RESULT_CODE_CRASHED", int(Launch::ResultCode::RESULT_CODE_CRASHED) },
+	{ "ResultCode", "RESULT_CODE_UNREADABLE", int(Launch::ResultCode::RESULT_CODE_UNREADABLE) },
+	{ "ResultCode", "RESULT_CODE_MAP_MISSING", int(Launch::ResultCode::RESULT_CODE_MAP_MISSING) },
+	{ "ResultCode", "RESULT_CODE_START_MISMATCH", int(Launch::ResultCode::RESULT_CODE_START_MISMATCH) },
+	{ "ResultCode", "RESULT_CODE_HASH_MISMATCH", int(Launch::ResultCode::RESULT_CODE_HASH_MISMATCH) },
+	{ "ResultCode", "RESULT_CODE_SEAL_MISMATCH", int(Launch::ResultCode::RESULT_CODE_SEAL_MISMATCH) },
+	{ "GameOutcome", "GAME_OUTCOME_UNKNOWN", int(Launch::GameOutcome::GAME_OUTCOME_UNKNOWN) },
+	{ "GameOutcome", "GAME_OUTCOME_WON", int(Launch::GameOutcome::GAME_OUTCOME_WON) },
+	{ "GameOutcome", "GAME_OUTCOME_LOST", int(Launch::GameOutcome::GAME_OUTCOME_LOST) },
+	{ "GameOutcome", "GAME_OUTCOME_DRAW", int(Launch::GameOutcome::GAME_OUTCOME_DRAW) },
+	{ "GameOutcome", "GAME_OUTCOME_ABORTED", int(Launch::GameOutcome::GAME_OUTCOME_ABORTED) },
+	{ "GameOutcome", "GAME_OUTCOME_DESYNC", int(Launch::GameOutcome::GAME_OUTCOME_DESYNC) },
+	{ "GameOutcome", "GAME_OUTCOME_CONNECTION_LOST", int(Launch::GameOutcome::GAME_OUTCOME_CONNECTION_LOST) },
+	{ "GameOutcome", "GAME_OUTCOME_NOT_STARTED", int(Launch::GameOutcome::GAME_OUTCOME_NOT_STARTED) },
+	{ "NotRecorded", "NOT_RECORDED_NONE", int(Launch::NotRecorded::NOT_RECORDED_NONE) },
+	{ "NotRecorded", "NOT_RECORDED_DISABLED", int(Launch::NotRecorded::NOT_RECORDED_DISABLED) },
+	{ "NotRecorded", "NOT_RECORDED_RESUMED", int(Launch::NotRecorded::NOT_RECORDED_RESUMED) },
+	{ "NotRecorded", "NOT_RECORDED_CHEATS", int(Launch::NotRecorded::NOT_RECORDED_CHEATS) },
+	{ "NotRecorded", "NOT_RECORDED_TIME_LIMIT", int(Launch::NotRecorded::NOT_RECORDED_TIME_LIMIT) },
+	{ "NotRecorded", "NOT_RECORDED_WRITE_FAILED", int(Launch::NotRecorded::NOT_RECORDED_WRITE_FAILED) },
 };
 
 
@@ -278,8 +404,9 @@ std::vector<std::string> Tokenize(std::string const & text)
 }
 
 
-// Parses the subset of proto3 that replay.proto uses. Any other construct fails the parse, so a
-// schema that uses one fails this test until the parser handles it.
+// Parses the subset of proto3 that replay.proto and launch.proto use. A type from an imported
+// file keeps its package prefix, as in cnclaunch.FileHash. Any other construct fails the parse, so
+// a schema that uses one fails this test until the parser handles it.
 class ProtoParser
 {
 	public:
@@ -298,7 +425,7 @@ class ProtoParser
 					Expect("=");
 					Take();
 					Expect(";");
-				} else if (word == "package") {
+				} else if (word == "package" || word == "import") {
 					Take();
 					Expect(";");
 				} else if (word == "message") {
@@ -426,30 +553,28 @@ class ProtoParser
 };
 
 
-ProtoSchema Load_Schema(void)
+ProtoSchema Load_Schema(char const * path)
 {
-	std::ifstream file(REPLAY_PROTO_FILE);
-	REQUIRE_MESSAGE(file.good(), "cannot open ", REPLAY_PROTO_FILE);
+	std::ifstream file(path);
+	REQUIRE_MESSAGE(file.good(), "cannot open ", path);
 	std::stringstream text;
 	text << file.rdbuf();
 
 	ProtoSchema schema;
 	ProtoParser parser(Tokenize(text.str()));
 	bool parsed = parser.Parse(schema);
-	REQUIRE_MESSAGE(parsed, "replay.proto: ", parser.Problem);
+	REQUIRE_MESSAGE(parsed, path, ": ", parser.Problem);
 	return(schema);
 }
 
-}
 
-
-TEST_CASE("the field table matches replay.proto")
+template<std::size_t N>
+void Check_Fields(ProtoSchema const & schema, FieldEntry const (&table)[N])
 {
-	ProtoSchema const schema = Load_Schema();
 	REQUIRE(!schema.Messages.empty());
 
 	std::map<std::string, std::size_t> listed;
-	for (FieldEntry const & entry : FIELDS) {
+	for (FieldEntry const & entry : table) {
 		std::string const where = std::string(entry.Message) + "." + entry.Name;
 		listed[entry.Message]++;
 		auto message = schema.Messages.find(entry.Message);
@@ -471,12 +596,11 @@ TEST_CASE("the field table matches replay.proto")
 }
 
 
-TEST_CASE("the enumerations match replay.proto")
+template<std::size_t N>
+void Check_Enums(ProtoSchema const & schema, EnumEntry const (&table)[N])
 {
-	ProtoSchema const schema = Load_Schema();
-
 	std::map<std::string, std::size_t> listed;
-	for (EnumEntry const & entry : ENUMS) {
+	for (EnumEntry const & entry : table) {
 		listed[entry.Enum]++;
 		auto values = schema.Enums.find(entry.Enum);
 		REQUIRE_MESSAGE(values != schema.Enums.end(), "the schema has no enum ", std::string(entry.Enum));
@@ -488,4 +612,30 @@ TEST_CASE("the enumerations match replay.proto")
 	for (auto const & [name, values] : schema.Enums) {
 		CHECK_MESSAGE(listed[name] == values.size(), "the table lists ", listed[name], " of the ", values.size(), " values of ", name);
 	}
+}
+
+}
+
+
+TEST_CASE("the field table matches replay.proto")
+{
+	Check_Fields(Load_Schema(REPLAY_PROTO_FILE), FIELDS);
+}
+
+
+TEST_CASE("the enumerations match replay.proto")
+{
+	Check_Enums(Load_Schema(REPLAY_PROTO_FILE), ENUMS);
+}
+
+
+TEST_CASE("the launch field table matches launch.proto")
+{
+	Check_Fields(Load_Schema(LAUNCH_PROTO_FILE), LAUNCH_FIELDS);
+}
+
+
+TEST_CASE("the launch enumerations match launch.proto")
+{
+	Check_Enums(Load_Schema(LAUNCH_PROTO_FILE), LAUNCH_ENUMS);
 }

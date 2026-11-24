@@ -33,9 +33,9 @@ Digest Sample_Start(void)
 }
 
 
-Event Make_Event(std::uint32_t type, std::uint32_t house, std::int32_t due, char const * payload, bool local = false)
+Message::Event Make_Event(std::uint32_t type, std::uint32_t house, std::int32_t due, char const * payload, bool local = false)
 {
-	Event event;
+	Message::Event event;
 	event.Type = type;
 	event.House = house;
 	event.Due = due;
@@ -47,9 +47,9 @@ Event Make_Event(std::uint32_t type, std::uint32_t house, std::int32_t due, char
 
 // Records of a game whose frames 0, 5, 899, and 2000 have canonical bytes and whose frame 6 has
 // none. Nothing happens between 900 and 1799.
-std::vector<std::pair<std::uint32_t, Frame>> Sample_Records(void)
+std::vector<std::pair<std::uint32_t, Message::Frame>> Sample_Records(void)
 {
-	std::vector<std::pair<std::uint32_t, Frame>> records(5);
+	std::vector<std::pair<std::uint32_t, Message::Frame>> records(5);
 
 	records[0].first = 0;
 	records[0].second.Hash = 0xDEADBEEF;
@@ -57,14 +57,14 @@ std::vector<std::pair<std::uint32_t, Frame>> Sample_Records(void)
 	records[1].first = 5;
 	records[1].second.Events.push_back(Make_Event(7, 1, 2, "010203"));
 	records[1].second.Events.push_back(Make_Event(9, 1, 0, "ff", true));
-	Event sealed = Make_Event(8, 2, -1, "aa");
+	Message::Event sealed = Make_Event(8, 2, -1, "aa");
 	sealed.SealedPayload = From_Hex("bbcc");
 	sealed.Role = EventRole::EVENT_ROLE_CHAT_PROOF;
 	records[1].second.Events.push_back(sealed);
 
 	records[2].first = 6;
 	records[2].second.Events.push_back(Make_Event(9, 1, 0, "ff", true));
-	records[2].second.View.Camera = Point();
+	records[2].second.View.Camera = Message::Point();
 
 	records[3].first = 899;
 	records[3].second.Defeated = { 2, 3 };
@@ -109,7 +109,7 @@ TEST_CASE("canonical frame bytes cover the hash, shared events by their sealed b
 	CHECK(Hex(bytes) == "00000000" "01" "efbeadde" "00000000" "00000000");
 
 	bytes.clear();
-	Frame unsorted;
+	Message::Frame unsorted;
 	unsorted.Defeated = { 3, 2 };
 	REQUIRE(Canonical_Frame_Bytes(899, unsorted, bytes));
 	CHECK(Hex(bytes) == "83030000" "00" "00000000" "02000000" "02000000" "03000000");
@@ -124,9 +124,9 @@ TEST_CASE("a chain of three intervals with an empty one and a final seal on a bo
 {
 	auto const records = Sample_Records();
 	SealChain chain(Sample_Start());
-	std::vector<Seal> all;
+	std::vector<Message::Seal> all;
 	for (auto const & [frame, record] : records) {
-		std::vector<Seal> closed;
+		std::vector<Message::Seal> closed;
 		chain.Add(frame, record, closed);
 		if (frame < 2000) {
 			CHECK_MESSAGE(closed.empty(), "no interval has ended before frame ", frame);
@@ -140,7 +140,7 @@ TEST_CASE("a chain of three intervals with an empty one and a final seal on a bo
 		all.insert(all.end(), closed.begin(), closed.end());
 	}
 
-	std::vector<Seal> ending;
+	std::vector<Message::Seal> ending;
 	chain.Finish(2699, ending);
 	REQUIRE_MESSAGE(ending.size() == 1, "the interval seal is the final seal, with no second one");
 	CHECK(ending[0].Through == 2699);
@@ -153,11 +153,11 @@ TEST_CASE("a final seal inside an interval covers part of it and closes the ones
 	auto const records = Sample_Records();
 	SealChain chain(Sample_Start());
 	for (std::size_t i = 0; i < 4; i++) {
-		std::vector<Seal> closed;
+		std::vector<Message::Seal> closed;
 		chain.Add(records[i].first, records[i].second, closed);
 	}
 
-	std::vector<Seal> seals;
+	std::vector<Message::Seal> seals;
 	chain.Finish(1000, seals);
 	REQUIRE(seals.size() == 2);
 	CHECK(seals[0].Through == 899);
@@ -167,8 +167,8 @@ TEST_CASE("a final seal inside an interval covers part of it and closes the ones
 		"frames 900 to 1000 have no canonical bytes");
 
 	SealChain stopped_early(Sample_Start());
-	std::vector<Seal> early;
-	std::vector<Seal> closed;
+	std::vector<Message::Seal> early;
+	std::vector<Message::Seal> closed;
 	stopped_early.Add(0, records[0].second, closed);
 	stopped_early.Finish(0, early);
 	REQUIRE(early.size() == 1);
@@ -181,7 +181,7 @@ TEST_CASE("two copies that stop on different frames agree on every interval seal
 	auto const records = Sample_Records();
 	auto run = [&](std::uint32_t last_frame) {
 		SealChain chain(Sample_Start());
-		std::vector<Seal> seals;
+		std::vector<Message::Seal> seals;
 		for (auto const & [frame, record] : records) {
 			if (frame <= last_frame) {
 				chain.Add(frame, record, seals);
@@ -191,8 +191,8 @@ TEST_CASE("two copies that stop on different frames agree on every interval seal
 		return(seals);
 	};
 
-	std::vector<Seal> const longer = run(2500);
-	std::vector<Seal> const shorter = run(1900);
+	std::vector<Message::Seal> const longer = run(2500);
+	std::vector<Message::Seal> const shorter = run(1900);
 	REQUIRE(longer.size() == 3);
 	REQUIRE(shorter.size() == 3);
 	CHECK(longer[0].Hash == shorter[0].Hash);
@@ -210,7 +210,7 @@ TEST_CASE("the verifier accepts the chain a writer emits and finds the first alt
 	for (auto & [frame, record] : records) {
 		chain.Add(frame, record, record.Seals);
 	}
-	RecordingSummary summary;
+	Message::RecordingSummary summary;
 	summary.LastFrame = 2699;
 	for (auto const & [frame, record] : records) {
 		summary.Seals.insert(summary.Seals.end(), record.Seals.begin(), record.Seals.end());
@@ -218,7 +218,7 @@ TEST_CASE("the verifier accepts the chain a writer emits and finds the first alt
 	chain.Finish(2699, summary.Seals);
 	REQUIRE(summary.Seals.size() == 3);
 
-	auto verify = [&](std::vector<std::pair<std::uint32_t, Frame>> const & file, RecordingSummary const & end) {
+	auto verify = [&](std::vector<std::pair<std::uint32_t, Message::Frame>> const & file, Message::RecordingSummary const & end) {
 		SealVerifier verifier(Sample_Start());
 		for (auto const & [frame, record] : file) {
 			verifier.Add(frame, record);
@@ -242,7 +242,7 @@ TEST_CASE("the verifier accepts the chain a writer emits and finds the first alt
 	role_changed[2].second.Events[0].Payload[0] ^= 1;
 	CHECK_MESSAGE(verify(role_changed, summary).Good(), "role and local events are not covered");
 
-	RecordingSummary short_summary = summary;
+	Message::RecordingSummary short_summary = summary;
 	short_summary.Seals.pop_back();
 	SealVerifier const lacking = verify(records, short_summary);
 	CHECK(!lacking.Good());
@@ -250,10 +250,10 @@ TEST_CASE("the verifier accepts the chain a writer emits and finds the first alt
 	short_summary.Seals.erase(short_summary.Seals.begin());
 	CHECK(verify(records, short_summary).First_Misplaced() == 899u);
 
-	RecordingSummary no_frames;
+	Message::RecordingSummary no_frames;
 	no_frames.Seals.push_back(summary.Seals[0]);
 	CHECK_MESSAGE(!verify({}, no_frames).Good(), "a recording with no frame has no seals");
-	CHECK(verify({}, RecordingSummary()).Good());
+	CHECK(verify({}, Message::RecordingSummary()).Good());
 }
 
 
@@ -265,12 +265,12 @@ TEST_CASE("the verifier requires each interval seal on the first record after it
 		chain.Add(frame, record, record.Seals);
 	}
 	REQUIRE(records[4].second.Seals.size() == 2);
-	RecordingSummary summary;
+	Message::RecordingSummary summary;
 	summary.LastFrame = 2699;
 	summary.Seals = records[4].second.Seals;
 	chain.Finish(2699, summary.Seals);
 
-	auto verify = [&](std::vector<std::pair<std::uint32_t, Frame>> const & file) {
+	auto verify = [&](std::vector<std::pair<std::uint32_t, Message::Frame>> const & file) {
 		SealVerifier verifier(Sample_Start());
 		for (auto const & [frame, record] : file) {
 			verifier.Add(frame, record);
@@ -294,7 +294,7 @@ TEST_CASE("the verifier requires each interval seal on the first record after it
 
 	auto later = records;
 	later[4].second.Seals.clear();
-	later.push_back({ 2100, Frame() });
+	later.push_back({ 2100, Message::Frame() });
 	later.back().second.Seals = records[4].second.Seals;
 	SealVerifier const moved = verify(later);
 	CHECK(moved.First_Misplaced() == 899u);
@@ -316,8 +316,8 @@ TEST_CASE("the chain counts the intervals that end before a frame")
 	CHECK(chain.Intervals_Before(1800) == 2);
 	CHECK(chain.Intervals_Before(0xFFFFFFFFu) == 4772185);
 
-	std::vector<Seal> closed;
-	chain.Add(1000, Frame(), closed);
+	std::vector<Message::Seal> closed;
+	chain.Add(1000, Message::Frame(), closed);
 	CHECK(closed.size() == 1);
 	CHECK(chain.Interval_End() == 1799);
 	CHECK(chain.Intervals_Before(1000) == 0);
@@ -327,13 +327,13 @@ TEST_CASE("the chain counts the intervals that end before a frame")
 
 TEST_CASE("a forged frame number finds the missing seals without building the chain")
 {
-	Frame record;
+	Message::Frame record;
 	record.Hash = 1;
 
 	SealVerifier late(Sample_Start());
 	late.Add(0xFFFFFFFFu, record);
 	CHECK(late.First_Misplaced() == 899u);
-	RecordingSummary summary;
+	Message::RecordingSummary summary;
 	summary.LastFrame = 0xFFFFFFFFu;
 	late.Finish(summary);
 	CHECK(late.First_Misplaced() == 899u);
@@ -341,8 +341,8 @@ TEST_CASE("a forged frame number finds the missing seals without building the ch
 
 	// The record has the first two seals; the third is the first one missing.
 	SealChain chain(Sample_Start());
-	std::vector<Seal> seals;
-	chain.Add(2000, Frame(), seals);
+	std::vector<Message::Seal> seals;
+	chain.Add(2000, Message::Frame(), seals);
 	REQUIRE(seals.size() == 2);
 	record.Seals = seals;
 	SealVerifier partial(Sample_Start());

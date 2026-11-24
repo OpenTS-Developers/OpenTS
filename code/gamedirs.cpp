@@ -271,6 +271,21 @@ std::string User_File_Write_Name(char const * filename)
 }
 
 
+/// <summary>
+/// Names a file the game writes for a launcher. A path that starts at a drive or at a root
+/// folder is used as given; any other is placed as User_File_Write_Name places stats.dmp, in the
+/// user directory when one is set and otherwise in the game's folder.
+/// </summary>
+std::string Launcher_File_Name(char const * path)
+{
+	if (std::filesystem::path(path).has_root_path()) {
+		return(path);
+	}
+
+	return(User_File_Write_Name(path));
+}
+
+
 static std::string Own_Folder_Name(char const * folder, char const * filename)
 {
 	std::string const path = UserDirectory + folder;

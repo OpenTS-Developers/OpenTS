@@ -130,6 +130,7 @@
 #include "keyboard.h"
 #include "language/language.h"
 #include "laser.h"
+#include "launcher.h"
 #include "light.h"
 #include "lightcon.h"
 #include "loaddlg.h"
@@ -169,7 +170,6 @@
 #include "side.h"
 #include "skirmish.h"
 #include "smudtype.h"
-#include "spawner.h"
 #include "stimer.h"
 #include "tactical.h"
 #include "tag.h"
@@ -421,7 +421,7 @@ int Init_Game(int , char * [])
 	/*
 	**	Play the startup animation.
 	*/
-	if (!Spawner_Is_Requested() && !Headless::Is_Active()) {
+	if (!Launch::Replaces_Menu()) {
 		if (Special.IsFromInstall == true) {
 			DebugString("Playing first time intro sequence.\n");
 			Play_Movie("EVA.VQA", THEME_NONE, false);
@@ -953,8 +953,8 @@ restart:
 		 * A launch replaces the menu once. An ended match or a refusal answers false, so the
 		 * process exits and the client sees it go.
 		 */
-		if (Spawner_Is_Requested()) {
-			if (!Spawner_Prepare(gameloaded)) {
+		if (Launch::Is_Game_Requested()) {
+			if (!Launch::Prepare(gameloaded)) {
 				return(false);
 			}
 			process = false;
@@ -1222,24 +1222,26 @@ restart:
 
 		Show_Mouse();
 
+		// The random countries and colors come from the seed Init_Random set.
 		if (Session.Type != GAME_NORMAL) {
+			Draw_Player_Choices();
 			Session.PlayerHouse = (HousesType)Session.Players[0]->Player.House;
 		}
 
 		// The menu sets the difficulty pair on every path but a client launch, which chose it.
-		if (!Spawner_Is_Active()) {
+		if (!Launch::Is_Active()) {
 			Session.CampaignDifficulty = (DiffType)Options.Difficulty;
 			Session.CampaignCDifficulty = (DiffType)(DIFF_COUNT - 1 - Options.Difficulty);
 		}
 
 		// A campaign from the menu plays at the player's speed setting; every other game was
 		// given its speed when it was set up.
-		if (Session.Type == GAME_NORMAL && !Spawner_Is_Active()) {
+		if (Session.Type == GAME_NORMAL && !Launch::Is_Active()) {
 			Session.Options.GameSpeed = Options.GameSpeed;
 		}
 
-		if (Session.Type != GAME_NORMAL || Debug_ForceScenario || Spawner_Is_Active()) {
-			if (!Start_Scenario(Scen->ScenarioName, true, Spawner_Is_Active() ? Scen->Campaign : CAMPAIGN_NONE)) {
+		if (Session.Type != GAME_NORMAL || Debug_ForceScenario || Launch::Is_Active()) {
+			if (!Start_Scenario(Scen->ScenarioName, true, Launch::Is_Active() ? Scen->Campaign : CAMPAIGN_NONE)) {
 				if (Debug_Map) {
 					return(false);
 				} else {
@@ -1257,11 +1259,13 @@ restart:
 		}
 
 		// The mission read clears these, so a launch file's carried-over flags are set after it.
-		if (Spawner_Is_Active() && Session.Type == GAME_NORMAL) {
+		if (Launch::Is_Active() && Session.Type == GAME_NORMAL) {
 			for (int index = 0; index < ARRAY_SIZE(Environment.Globals); index++) {
 				Scen->Set_Global_To(index, Environment.Globals[index]);
 			}
 		}
+
+		Launch::Scenario_Started();
 
 		if (Special.IsFromInstall == true) {
 			Show_Mouse();
@@ -1275,7 +1279,7 @@ restart:
 
 	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
 		Session.Create_Connections();
-		Spawner_Announce_Master();
+		Launch::Announce_Master();
 		SaveManager.Multiplayer_Saves_Begin_Match(gameloaded || Session.LoadGame);
 
 		if (Session.Type == GAME_IPX) {
@@ -1509,28 +1513,38 @@ bool Parse_Command_Line(int argc, char * argv[])
 			continue;
 		}
 
+		// Launch::Read_Request reads the file once every switch is parsed.
+		if (strnicmp(string, "-LAUNCH=", strlen("-LAUNCH=")) == 0) {
+			Launch::Request_File(&original[strlen("-LAUNCH=")]);
+			continue;
+		}
+
 		if (strnicmp(string, "-CAPTUREMAP=", strlen("-CAPTUREMAP=")) == 0) {
+			Launch::Note_Switch("-CAPTUREMAP=");
 			MapCapture::Request_Map(&original[strlen("-CAPTUREMAP=")]);
 			continue;
 		}
 
 		if (strnicmp(string, "-CAPTUREOUT=", strlen("-CAPTUREOUT=")) == 0) {
+			Launch::Note_Switch("-CAPTUREOUT=");
 			MapCapture::Request_Output(&original[strlen("-CAPTUREOUT=")]);
 			continue;
 		}
 
 		if (strnicmp(string, "-CAPTURE=", strlen("-CAPTURE=")) == 0) {
+			Launch::Note_Switch("-CAPTURE=");
 			MapCapture::Request_Description(&original[strlen("-CAPTURE=")]);
 			continue;
 		}
 
 		// A client asking the game to launch what SPAWN.INI describes.
 		if (stricmp(string, "-SPAWN") == 0) {
-			Spawner_Request();
+			Launch::Request_Spawn_File();
 			continue;
 		}
 
 		if (memcmp(string, "-TIME=", 6) == 0) {
+			Launch::Note_Switch("-TIME=");
 			sscanf(&string[6], "%d", &TournamentTime);
 		}
 
@@ -1577,12 +1591,20 @@ bool Parse_Command_Line(int argc, char * argv[])
 			Session.ForceDesyncFrame = atoi(string + strlen("-DESYNCTEST="));
 			continue;
 		}
+
+		// Seen in every build so that -LAUNCH= can refuse it; only a Debug build takes the seed.
+		if (strstr(string, "-SEED")) {
+			Launch::Note_Switch("-SEED");
+		}
 #ifdef _DEBUG
 		/*
 		**	Specify the random number seed (for debugging)
 		*/
 		if (strstr(string, "-SEED")) {
-			CustomSeed = (unsigned short)(atoi(string + strlen("-SEED")));
+			unsigned short const seed = (unsigned short)(atoi(string + strlen("-SEED")));
+			if (seed != 0) {
+				CustomSeed = seed;
+			}
 			continue;
 		}
 #endif
@@ -1656,7 +1678,7 @@ bool Parse_Command_Line(int argc, char * argv[])
 			continue;
 		}
 	}
-	return(true);
+	return(Launch::Read_Request());
 }
 
 
@@ -1732,8 +1754,8 @@ void Init_Random(void)
 		/*
 		**	Set the optional user-specified seed
 		*/
-		if (CustomSeed != 0) {
-			Seed = CustomSeed;
+		if (CustomSeed) {
+			Seed = int(*CustomSeed);
 		} else {
 			CryptRandom.Get(&Seed, sizeof(Seed));
 			Seed = GetTickCount();

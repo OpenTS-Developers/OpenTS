@@ -33,7 +33,7 @@ stores each of them as opaque bytes with a length.
 - "Shared" data is identical in every copy of one game. "Local" data belongs to
   the copy's recording player.
 - House numbers are the engine's house indices. Events, samples, and statistics
-  all use the same numbers, and `Launch.players[].house` maps them to players.
+  all use the same numbers, and `Game.players[].house` maps them to players.
 - Color numbers are the engine's player-color numbering. Every color field
   in a file uses that one numbering, and `RecordingInfo.colors` gives the
   RGB value of each number the file uses.
@@ -155,7 +155,7 @@ and its raw size limit (section 10) are checked from its header.
 | Tag | Body | Occurs | Scope | Order |
 |---|---|---|---|---|
 | `INFO` | `RecordingInfo` | once | local | first |
-| `LNCH` | `Launch` | once | shared | second |
+| `LNCH` | `Game` | once | shared | second |
 | `MAP ` | the map file's bytes | at most once | local | before `FRMS` |
 | `INIT` | engine start state, opaque | once | shared | before `FRMS` |
 | `FRMS` | frame stream | once | mixed | after the above |
@@ -223,7 +223,7 @@ message RecordingInfo {
   string package_version  = 5;   // game package version
   repeated FileHash files = 6;   // game files the simulation depends on
   uint64 recorded_at      = 7;   // Unix seconds when recording started
-  optional uint32 recorder = 8;  // index into Launch.players of the recording player
+  optional uint32 recorder = 8;  // index into Game.players of the recording player
   string map_name         = 9;   // this machine's name for the map
   string map_path         = 10;  // where this machine found the map, relative to the game directory
   bytes  map_sha256       = 11;  // SHA-256 of the map file's bytes as this machine read them
@@ -327,13 +327,18 @@ lists players in ascending `house` order, and it has no addresses, ports,
 tunnels, file paths, or playback settings. Each value in it comes from the
 game's shared setup, never from a setting that only one machine has.
 
+The section is a `Game` message. `launch.proto` defines it, because a launch
+request sends the same message.
+
 ```proto
-message Launch {
+message Game {
   GameKind kind               = 1;
   optional fixed32 seed       = 2;   // always set
   repeated Player players     = 3;   // ascending house
-  repeated GameOption options = 4;   // ascending key
+  repeated Option options     = 4;   // ascending key
   bool anonymous              = 5;   // players were shown substitute names
+  repeated uint32 global_flags = 6;  // campaign: the scenario's global flags that were
+                                     // set at the start, by number, ascending
 
   reserved 100 to 199;
 }
@@ -363,7 +368,7 @@ message Player {
   reserved 100 to 199;
 }
 
-message GameOption {
+message Option {
   string key = 1;                // the engine's option name
   oneof value {
     sint64 number = 2;
@@ -382,7 +387,7 @@ from 100.
 
 The engine writes `LNCH` from its session state. A launcher is one source of
 that state, and a game started from the engine's menus has the same section.
-A launcher that hands the engine a `Launch` message uses the same schema in
+A launcher that hands the engine a `Game` message uses the same schema in
 a different form, which the engine's launch interface defines.
 
 `seed` is always set, so a seed of 0 is written.
@@ -1173,19 +1178,19 @@ so the notes define what an engine writes once it does.
   map pixels, which depend on the tile size. `Selection.ids` lists each
   selected object's target value, whose top 8 bits are the object's kind.
 - In a skirmish or multiplayer game, a player's house number is its position
-  in `Launch.players`. In a campaign the map creates the houses.
+  in `Game.players`. In a campaign the map creates the houses.
 - For a `country`, `color`, or `start` request of -1, the engine draws a value,
   for a human or a computer player, and writes it in the resolved field.
 - A color number is the color's position in the rules' `[Colors]` list.
 - `ai_level` is 0 for the hardest computer player, 1 for medium, and 2 for
   the easiest. A larger value plays as 2. When the field is absent the
   game's `AIDifficulty` option sets the player's difficulty.
-- `Launch.options` includes `PlayMoviesInMultiplayer` and, for a multiplayer
+- `Game.options` includes `PlayMovies` and, for a multiplayer
   game, `SessionType`, which records whether the game was a LAN or an
   internet game. At the start an internet game clears fixed alliances and a
   LAN game does not.
 - `LNCH` records a player's real name. In a quick match the engine shows
-  "Player N" in its place and sets `Launch.anonymous`. `PlayerMessage.sender`
+  "Player N" in its place and sets `Game.anonymous`. `PlayerMessage.sender`
   and `HouseStatistics.name` are the name as it was shown, which in a quick
   match is that text in this machine's language.
 - In a game started through `SPAWN.INI`, `UIMapName` fills
@@ -1206,9 +1211,9 @@ so the notes define what an engine writes once it does.
   Playback on a build with another identity warns first and reports a hash
   mismatch as a different build.
 - OpenTS writes no chat fingerprints.
-- OpenTS accepts launch requests in the format of `launch.proto`, beside this
-  document. Its `Play.launch` field is the `Launch` message before the engine
-  has filled in what it assigns, and `launch.proto` lists the differences.
+- OpenTS accepts launch requests in the format of `docs/launch/launch.proto`.
+  Its `Play.game` field is the `Game` message before the engine has filled in
+  what it assigns, and `launch.proto` lists the differences.
 
 OpenTS writes these `IncomeKind.id` values:
 
@@ -1236,7 +1241,7 @@ OpenTS writes these `IncomeKind.id` values:
 |---|---|
 | `docs/replay/REPLAY-FORMAT.md` | This specification |
 | `docs/replay/replay.proto` | The schema of every record |
-| `docs/replay/launch.proto` | The schema of the launch request |
+| `docs/launch/launch.proto` | The schema of the launch request and of the `Game` message in `LNCH` |
 | `tests/replay/vectors/` | Test vectors, listed in its manifest `vectors.json` and generated by `tools/replay/make_vectors.py` |
 | `tools/replay/cncreplay.py` | The Python reference reader |
 

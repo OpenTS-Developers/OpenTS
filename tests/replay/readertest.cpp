@@ -46,7 +46,7 @@ ReadBack Read_All(ByteVector const & file, LimitsType const & limits = LimitsTyp
 
 	FrameReader frames(reader);
 	std::uint32_t frame = 0;
-	Frame record;
+	Message::Frame record;
 	while ((back.Last = frames.Next(frame, record)) == FrameStep::RECORD) {
 		back.Records.emplace_back(frame, Encoded(record));
 	}
@@ -55,12 +55,12 @@ ReadBack Read_All(ByteVector const & file, LimitsType const & limits = LimitsTyp
 }
 
 
-Frame Game_Record(std::uint32_t frame)
+Message::Frame Game_Record(std::uint32_t frame)
 {
-	Frame record;
+	Message::Frame record;
 	record.Hash = frame ^ 0x5A5A5A5A;
 	if (frame % 25 == 0) {
-		Event event;
+		Message::Event event;
 		event.Type = 4;
 		event.House = 1;
 		event.Payload = { std::uint8_t(frame), 9, 9 };
@@ -88,16 +88,16 @@ ByteVector Recording(std::uint32_t last, bool close = true)
 		return(sink.Written());
 	}
 	for (std::uint32_t frame : { 0u, 100u }) {
-		Checkpoint checkpoint;
+		Message::Checkpoint checkpoint;
 		checkpoint.Frame = frame;
 		checkpoint.State = Bytes_Of("checkpoint state");
 		checkpoint.Crc32 = CRC::Memory(checkpoint.State.data(), unsigned(checkpoint.State.size()));
 		REQUIRE(writer.Add_Checkpoint(checkpoint) == WriteResult::OK);
 	}
-	Statistics statistics;
+	Message::Statistics statistics;
 	statistics.Houses.resize(2);
 	statistics.Houses[1].House = 1;
-	RecordingSummary summary;
+	Message::RecordingSummary summary;
 	summary.LastFrame = last;
 	summary.Completed = true;
 	REQUIRE(writer.Close(summary, &statistics) == WriteResult::OK);
@@ -146,7 +146,7 @@ ByteVector Closed_Frames(bool terminated = true)
 
 std::vector<RawSection> Minimal_Sections(void)
 {
-	RecordingInfo info = Sample_Info();
+	Message::RecordingInfo info = Sample_Info();
 	info.SealVersion = SEAL_VERSION;
 	return(std::vector<RawSection>{
 		{ "INFO", 0, Encoded(info), {}, {} },
@@ -182,7 +182,7 @@ ByteVector Rewrite_Frames(ByteVector const & file, Change change)
 {
 	ByteVector raw;
 	for (auto const & [frame, bytes] : Read_All(file).Records) {
-		Frame record;
+		Message::Frame record;
 		REQUIRE(Decode(bytes, record));
 		change(frame, record);
 		Replay::Bytes const encoded = Encoded(record);
@@ -206,13 +206,13 @@ ByteVector Rewrite_Frames(ByteVector const & file, Change change)
 // match their records, so the file verifies.
 std::vector<RawSection> Sealed_Sections(std::vector<RawSection> sections = Minimal_Sections())
 {
-	RecordingInfo info;
+	Message::RecordingInfo info;
 	REQUIRE(Decode(sections[0].Body, info));
 	SealChain chain(Seal_Start(info.SealVersion, info.Engine, info.DataVersion, sections[1].Body, sections[2].Body));
-	RecordingSummary summary;
+	Message::RecordingSummary summary;
 	summary.LastFrame = 3;
 	for (auto const & [frame, bytes] : Read_All(Build_File(sections)).Records) {
-		Frame record;
+		Message::Frame record;
 		REQUIRE(Decode(bytes, record));
 		chain.Add(frame, record, summary.Seals);
 	}
@@ -224,7 +224,7 @@ std::vector<RawSection> Sealed_Sections(std::vector<RawSection> sections = Minim
 
 ByteVector Checkpoint_Body(std::uint32_t frame)
 {
-	Checkpoint checkpoint;
+	Message::Checkpoint checkpoint;
 	checkpoint.Frame = frame;
 	checkpoint.State = Bytes_Of("state");
 	checkpoint.Crc32 = CRC::Memory(checkpoint.State.data(), unsigned(checkpoint.State.size()));
@@ -242,13 +242,13 @@ TEST_CASE("the reader reads back everything the writer wrote")
 	REQUIRE(reader.Open() == ReadResult::OK);
 	CHECK(reader.Complete());
 
-	RecordingInfo info;
+	Message::RecordingInfo info;
 	REQUIRE(reader.Read_Info(info) == ReadResult::OK);
-	RecordingInfo expected_info = Sample_Info();
+	Message::RecordingInfo expected_info = Sample_Info();
 	expected_info.SealVersion = SEAL_VERSION;
 	CHECK(Encoded(info) == Encoded(expected_info));
 
-	Launch launch;
+	Launch::Message::Game launch;
 	REQUIRE(reader.Read_Launch(launch) == ReadResult::OK);
 	CHECK(Encoded(launch) == Encoded(Sample_Launch()));
 
@@ -262,8 +262,8 @@ TEST_CASE("the reader reads back everything the writer wrote")
 	CHECK(back.Last == FrameStep::END);
 	REQUIRE(back.Records.size() == 1001);
 	for (std::uint32_t frame = 0; frame <= 1000; frame++) {
-		Frame expected = Game_Record(frame);
-		Frame actual;
+		Message::Frame expected = Game_Record(frame);
+		Message::Frame actual;
 		REQUIRE(Decode(back.Records[frame].second, actual));
 		CHECK(back.Records[frame].first == frame);
 		expected.Seals = actual.Seals;
@@ -277,15 +277,15 @@ TEST_CASE("the reader reads back everything the writer wrote")
 	CHECK_MESSAGE(frame == 0, "a checkpoint at frame 0 has no frame field");
 	REQUIRE(reader.Read_Checkpoint_Frame(*checkpoints[1], frame) == ReadResult::OK);
 	CHECK(frame == 100);
-	Checkpoint checkpoint;
+	Message::Checkpoint checkpoint;
 	REQUIRE(reader.Read_Checkpoint(*checkpoints[1], checkpoint) == ReadResult::OK);
 	CHECK(checkpoint.State == Bytes_Of("checkpoint state"));
 
-	Statistics statistics;
+	Message::Statistics statistics;
 	CHECK(reader.Read_Statistics(statistics) == ReadResult::OK);
 	CHECK(statistics.Houses.size() == 2);
 
-	RecordingSummary summary;
+	Message::RecordingSummary summary;
 	REQUIRE(reader.Read_Summary(summary) == ReadResult::OK);
 	CHECK(summary.LastFrame == 1000u);
 	CHECK(summary.Seals.size() == 2);
@@ -381,15 +381,15 @@ TEST_CASE("every file a failed write, seek, or flush leaves reads without an err
 		for (std::uint32_t frame = 0; frame < 200 && result == WriteResult::OK; frame++) {
 			result = writer.Add_Frame(frame, Game_Record(frame));
 		}
-		Checkpoint checkpoint;
+		Message::Checkpoint checkpoint;
 		checkpoint.State = Bytes_Of("state");
 		checkpoint.Crc32 = CRC::Memory(checkpoint.State.data(), unsigned(checkpoint.State.size()));
 		if (result == WriteResult::OK) {
 			result = writer.Add_Checkpoint(checkpoint);
 		}
-		RecordingSummary summary;
+		Message::RecordingSummary summary;
 		summary.LastFrame = 199;
-		Statistics statistics;
+		Message::Statistics statistics;
 		if (result == WriteResult::OK) {
 			result = writer.Close(summary, &statistics);
 		}
@@ -455,7 +455,7 @@ TEST_CASE("each limit holds at its value and refuses one more")
 	CHECK(limited.FrameError == ReadResult::LIMIT);
 
 	limits = LimitsType();
-	limits.EventsPerRecord = 0;
+	limits.EventsPerFrame = 0;
 	CHECK(Read_All(file, limits).FrameError == ReadResult::LIMIT);
 
 	InputFile source(file);
@@ -463,14 +463,14 @@ TEST_CASE("each limit holds at its value and refuses one more")
 	limits.Players = 1;
 	Reader few_players(source, limits);
 	REQUIRE(few_players.Open() == ReadResult::OK);
-	Launch launch;
+	Launch::Message::Game launch;
 	CHECK(few_players.Read_Launch(launch) == ReadResult::LIMIT);
 
 	limits = LimitsType();
 	limits.String = 5;
 	Reader short_strings(source, limits);
 	REQUIRE(short_strings.Open() == ReadResult::OK);
-	RecordingInfo info;
+	Message::RecordingInfo info;
 	CHECK(short_strings.Read_Info(info) == ReadResult::LIMIT);
 }
 
@@ -580,7 +580,7 @@ TEST_CASE("an unknown codec on INIT or FRMS leaves the file not verified")
 {
 	auto closed = [](std::uint32_t last_frame) {
 		auto sections = Minimal_Sections();
-		RecordingSummary summary;
+		Message::RecordingSummary summary;
 		summary.LastFrame = last_frame;
 		sections[4].Body = Encoded(summary);
 		return(sections);
@@ -622,7 +622,7 @@ TEST_CASE("an unknown codec on INIT or FRMS leaves the file not verified")
 TEST_CASE("defeated houses out of ascending order make the frame stream malformed")
 {
 	auto with_defeated = [](std::vector<std::uint32_t> const & defeated) {
-		Frame record;
+		Message::Frame record;
 		record.Hash = 1;
 		record.Defeated = defeated;
 		Replay::Bytes const encoded = Encoded(record);
@@ -633,7 +633,7 @@ TEST_CASE("defeated houses out of ascending order make the frame stream malforme
 
 		auto sections = Minimal_Sections();
 		sections[3].Body = raw;
-		RecordingSummary summary;
+		Message::RecordingSummary summary;
 		summary.LastFrame = 0;
 		sections[4].Body = Encoded(summary);
 		return(Read_All(Build_File(sections)));
@@ -653,33 +653,33 @@ TEST_CASE("defeated houses out of ascending order make the frame stream malforme
 TEST_CASE("INFO lists each income kind once, and a record whose income uses another kind is malformed")
 {
 	auto kind = [](std::uint32_t number, std::string const & id) {
-		IncomeKind entry;
+		Message::IncomeKind entry;
 		entry.Number = number;
 		entry.Id = id;
 		return(entry);
 	};
 	auto paid = [](std::uint32_t number) {
-		Income income;
+		Message::Income income;
 		income.Kind = number;
 		income.Amount = 10;
 		return(income);
 	};
-	auto build = [](std::vector<IncomeKind> const & kinds, std::vector<Frame> const & records, bool closed) {
+	auto build = [](std::vector<Message::IncomeKind> const & kinds, std::vector<Message::Frame> const & records, bool closed) {
 		ByteVector raw;
-		for (Frame const & record : records) {
+		for (Message::Frame const & record : records) {
 			Replay::Bytes const encoded = Encoded(record);
 			Put_Varint(raw, encoded.size());
 			raw.insert(raw.end(), encoded.begin(), encoded.end());
 		}
 		auto sections = Minimal_Sections();
-		RecordingInfo info = Sample_Info();
+		Message::RecordingInfo info = Sample_Info();
 		info.SealVersion = SEAL_VERSION;
 		info.IncomeKinds = kinds;
 		sections[0].Body = Encoded(info);
 		if (closed) {
 			raw.push_back(0);
 			sections[3].Body = raw;
-			RecordingSummary summary;
+			Message::RecordingSummary summary;
 			summary.LastFrame = std::uint32_t(records.size() - 1);
 			sections[4].Body = Encoded(summary);
 		} else {
@@ -694,12 +694,12 @@ TEST_CASE("INFO lists each income kind once, and a record whose income uses anot
 		InputFile source(file);
 		Reader reader(source, limits);
 		REQUIRE(reader.Open() == ReadResult::OK);
-		RecordingInfo info;
+		Message::RecordingInfo info;
 		return(reader.Read_Info(info));
 	};
 
-	std::vector<IncomeKind> const listed = { kind(1, "Crate"), kind(2, "Trigger") };
-	std::vector<Frame> records(3);
+	std::vector<Message::IncomeKind> const listed = { kind(1, "Crate"), kind(2, "Trigger") };
+	std::vector<Message::Frame> records(3);
 	records[0].Income = { paid(1) };
 	records[1].Hash = 2;
 	records[2].Income = { paid(2), paid(1) };
@@ -710,7 +710,7 @@ TEST_CASE("INFO lists each income kind once, and a record whose income uses anot
 	CHECK(good_back.Records.size() == 3);
 	CHECK_MESSAGE(Read_All(build({ kind(1, "Crate"), kind(2, "Trigger"), kind(3, "Sold") }, records, true)).Last == FrameStep::END, "a listed kind no entry uses");
 
-	std::vector<Frame> unlisted = records;
+	std::vector<Message::Frame> unlisted = records;
 	unlisted[1].Income = { paid(3) };
 	ReadBack const unlisted_back = Read_All(build(listed, unlisted, true));
 	CHECK_MESSAGE(unlisted_back.Last == FrameStep::FAILED, "a kind INFO does not list");
@@ -721,7 +721,7 @@ TEST_CASE("INFO lists each income kind once, and a record whose income uses anot
 	CHECK(unlisted_open.Records.size() == 1);
 	CHECK_MESSAGE(Read_All(build({}, records, true)).FrameError == ReadResult::MALFORMED, "income in a file that lists no kinds");
 
-	auto check_broken = [&](std::vector<IncomeKind> const & kinds, char const * why) {
+	auto check_broken = [&](std::vector<Message::IncomeKind> const & kinds, char const * why) {
 		ByteVector const file = build(kinds, records, true);
 		CHECK_MESSAGE(info_result(file) == ReadResult::MALFORMED, why);
 		ReadBack const back = Read_All(file);
@@ -764,10 +764,10 @@ TEST_CASE("broken deflate data and wrong raw sizes are malformed")
 	CHECK(Verify_Seals(broken).Status == SealStatus::MALFORMED);
 
 	sections = Minimal_Sections();
-	RecordingInfo info = Sample_Info();
+	Message::RecordingInfo info = Sample_Info();
 	info.SealVersion = SEAL_VERSION + 1;
 	sections[0].Body = Encoded(info);
-	RecordingSummary summary;
+	Message::RecordingSummary summary;
 	summary.LastFrame = 3;
 	sections[4].Body = Encoded(summary);
 	file = Build_File(sections);
@@ -781,7 +781,7 @@ TEST_CASE("broken deflate data and wrong raw sizes are malformed")
 TEST_CASE("a record after last_frame is malformed, whatever the seal version")
 {
 	auto sections = Minimal_Sections();
-	RecordingSummary summary;
+	Message::RecordingSummary summary;
 	summary.LastFrame = 2;
 	sections[4].Body = Encoded(summary);
 	SealReport report = Seal_Report(Build_File(sections));
@@ -789,7 +789,7 @@ TEST_CASE("a record after last_frame is malformed, whatever the seal version")
 	CHECK(report.Error == ReadResult::MALFORMED);
 	CHECK_MESSAGE(report.LateRecord == 3u, "the record on frame 3 seals nothing and is still caught");
 
-	RecordingInfo info = Sample_Info();
+	Message::RecordingInfo info = Sample_Info();
 	info.SealVersion = SEAL_VERSION + 1;
 	sections[0].Body = Encoded(info);
 	CHECK_MESSAGE(Seal_Report(Build_File(sections)).Status == SealStatus::MALFORMED, "malformed outranks not verified");
@@ -804,7 +804,7 @@ TEST_CASE("an interval seal missing from its record or on another record is malf
 	ByteVector const file = Recording(1000);
 	REQUIRE(Seal_Report(file).Status == SealStatus::VERIFIED);
 
-	SealReport const missing = Seal_Report(Rewrite_Frames(file, [](std::uint32_t frame, Frame & record) {
+	SealReport const missing = Seal_Report(Rewrite_Frames(file, [](std::uint32_t frame, Message::Frame & record) {
 		if (frame == 900) {
 			record.Seals.clear();
 		}
@@ -813,8 +813,8 @@ TEST_CASE("an interval seal missing from its record or on another record is malf
 	CHECK(missing.FirstMisplaced == 899u);
 	CHECK_MESSAGE(!missing.FirstMismatch.has_value(), "the summary's seals are still right");
 
-	std::vector<Seal> moved;
-	SealReport const later = Seal_Report(Rewrite_Frames(file, [&](std::uint32_t frame, Frame & record) {
+	std::vector<Message::Seal> moved;
+	SealReport const later = Seal_Report(Rewrite_Frames(file, [&](std::uint32_t frame, Message::Frame & record) {
 		if (frame == 900) {
 			moved = record.Seals;
 			record.Seals.clear();
@@ -886,7 +886,7 @@ TEST_CASE("an edited record is found by the seal check")
 	// carried seal kept as it was.
 	ByteVector raw;
 	for (auto const & [frame, bytes] : back.Records) {
-		Frame record;
+		Message::Frame record;
 		REQUIRE(Decode(bytes, record));
 		if (frame == 500) {
 			REQUIRE(!record.Events.empty());
@@ -951,7 +951,7 @@ TEST_CASE("Verify_File applies the rules of the records that Verify_Seals does n
 	for (auto const & [text, expected] : cases) {
 		CAPTURE(text.size());
 
-		Launch launch = Sample_Launch();
+		Launch::Message::Game launch = Sample_Launch();
 		launch.Players[1].CountryName = text;
 		auto sections = Minimal_Sections();
 		sections[1].Body = Encoded(launch);
@@ -962,14 +962,14 @@ TEST_CASE("Verify_File applies the rules of the records that Verify_Seals does n
 		CHECK_MESSAGE(Verify_Seals(reader).Status == SealStatus::VERIFIED, "the seals read LNCH only as bytes");
 		CHECK(File_Status(in_launch) == expected);
 
-		Statistics country;
+		Message::Statistics country;
 		country.Houses.resize(1);
 		country.Houses[0].CountryName = text;
-		Statistics crate;
+		Message::Statistics crate;
 		crate.Houses.resize(1);
 		crate.Houses[0].Crates.resize(1);
 		crate.Houses[0].Crates[0].Id = text;
-		for (Statistics const & statistics : { country, crate }) {
+		for (Message::Statistics const & statistics : { country, crate }) {
 			auto with_statistics = Sealed_Sections();
 			with_statistics.insert(with_statistics.begin() + 4, RawSection{ "STAT", 0, Encoded(statistics), {}, {} });
 			ByteVector const in_statistics = Build_File(with_statistics);
@@ -1113,7 +1113,7 @@ TEST_CASE("bytes after a closed stream's terminator fail without being read")
 
 		FrameReader frames(reader);
 		std::uint32_t frame = 0;
-		Frame record;
+		Message::Frame record;
 		FrameStep step;
 		while ((step = frames.Next(frame, record)) == FrameStep::RECORD) {
 		}
@@ -1129,7 +1129,7 @@ TEST_CASE("bytes after a closed stream's terminator fail without being read")
 	// one record and the terminator, so the zeros come only from later input.
 	ByteVector stream;
 	for (std::size_t padding = 4000; stream.size() + 5 != 4096; padding++) {
-		Frame padded;
+		Message::Frame padded;
 		padded.Hash = 1;
 		UnknownField field;
 		field.Number = 100;
@@ -1245,7 +1245,7 @@ TEST_CASE("the reader applies limits while it decodes")
 	InputFile source(file);
 	Reader reader(source);
 	REQUIRE(reader.Open() == ReadResult::OK);
-	Launch launch;
+	Launch::Message::Game launch;
 	CHECK(reader.Read_Launch(launch) == ReadResult::LIMIT);
 	CHECK(launch.Players.size() == 64);
 
@@ -1261,7 +1261,7 @@ TEST_CASE("the reader applies limits while it decodes")
 	InputFile info_source(file);
 	Reader info_reader(info_source);
 	REQUIRE(info_reader.Open() == ReadResult::OK);
-	RecordingInfo decoded;
+	Message::RecordingInfo decoded;
 	CHECK(info_reader.Read_Info(decoded) == ReadResult::LIMIT);
 	CHECK(Verify_Seals(info_reader).Error == ReadResult::LIMIT);
 }
@@ -1275,7 +1275,7 @@ TEST_CASE("a record on frame 0xFFFFFFFF without its seals is malformed and quick
 	raw.insert(raw.end(), record.begin(), record.end());
 	raw.push_back(0);
 
-	RecordingSummary summary;
+	Message::RecordingSummary summary;
 	summary.LastFrame = 0xFFFFFFFFu;
 	auto sections = Minimal_Sections();
 	sections[3].Body = raw;
@@ -1307,12 +1307,12 @@ TEST_CASE("no call lets an allocation failure escape")
 	REQUIRE(reader.Checkpoints().size() == 2);
 	source.Fail = true;
 
-	RecordingInfo info;
-	Launch launch;
-	Statistics statistics;
-	RecordingSummary summary;
+	Message::RecordingInfo info;
+	Launch::Message::Game launch;
+	Message::Statistics statistics;
+	Message::RecordingSummary summary;
 	Replay::Bytes body;
-	Checkpoint checkpoint;
+	Message::Checkpoint checkpoint;
 	std::uint32_t frame = 0;
 	CHECK(reader.Read_Info(info) == ReadResult::MEMORY);
 	CHECK(reader.Read_Launch(launch) == ReadResult::MEMORY);
@@ -1324,7 +1324,7 @@ TEST_CASE("no call lets an allocation failure escape")
 	CHECK(reader.Check_Checkpoints() == ReadResult::MEMORY);
 
 	FrameReader frames(reader);
-	Frame record;
+	Message::Frame record;
 	CHECK(frames.Next(frame, record) == FrameStep::FAILED);
 	CHECK(frames.Error() == ReadResult::MEMORY);
 
@@ -1362,17 +1362,17 @@ TEST_CASE("mutated files never crash the reader")
 			continue;
 		}
 		opened++;
-		RecordingInfo info;
-		Launch launch;
-		RecordingSummary summary;
-		Statistics statistics;
+		Message::RecordingInfo info;
+		Launch::Message::Game launch;
+		Message::RecordingSummary summary;
+		Message::Statistics statistics;
 		reader.Read_Info(info);
 		reader.Read_Launch(launch);
 		reader.Read_Summary(summary);
 		reader.Read_Statistics(statistics);
 		for (SectionInfo const * checkpoint : reader.Checkpoints()) {
 			std::uint32_t frame = 0;
-			Checkpoint body;
+			Message::Checkpoint body;
 			reader.Read_Checkpoint_Frame(*checkpoint, frame);
 			reader.Read_Checkpoint(*checkpoint, body);
 		}

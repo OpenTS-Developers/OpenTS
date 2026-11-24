@@ -9,17 +9,18 @@ opents_add_test(ReplayTest
         filetest.cpp
         wiretest.cpp
         fieldstest.cpp
-        recordstest.cpp
+        messagestest.cpp
         deflatetest.cpp
         sealtest.cpp
         writertest.cpp
         synthtest.cpp
         readertest.cpp
         vectorstest.cpp
+        launchtest.cpp
     ENGINE
         crc.cpp
         sha256.cpp
-        protowire.cpp
+        proto/wire.cpp
         deflate.cpp
         rawfile.cpp
         ramfile.cpp
@@ -28,8 +29,9 @@ opents_add_test(ReplayTest
         file.cpp
         file_posix.cpp
         file_win.cpp
+        launch/launchmessages.cpp
         replay/replayreader.cpp
-        replay/replayrecords.cpp
+        replay/replaymessages.cpp
         replay/replayseal.cpp
         replay/replaywriter.cpp
     INCLUDES
@@ -37,6 +39,7 @@ opents_add_test(ReplayTest
     LIBRARIES bimg
     DEFINITIONS WIN32 _WINDOWS _MBCS NOMINMAX
         REPLAY_PROTO_FILE="${CMAKE_SOURCE_DIR}/docs/replay/replay.proto"
+        LAUNCH_PROTO_FILE="${CMAKE_SOURCE_DIR}/docs/launch/launch.proto"
         REPLAY_OUT_DIR="${CMAKE_CURRENT_BINARY_DIR}/out"
         REPLAY_VECTORS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/vectors"
     DOCTEST

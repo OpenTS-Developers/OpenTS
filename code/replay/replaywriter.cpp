@@ -154,7 +154,7 @@ bool Writer::Sync(void)
 /// Holds the first sections until the first frame record or Close writes them. The writer sets
 /// the file's SealVersion to the version of the seals it computes and ignores the value in info.
 /// </summary>
-WriteResult Writer::Begin(RecordingInfo const & info, Launch const & launch, ByteSpan init,
+WriteResult Writer::Begin(Message::RecordingInfo const & info, Launch::Message::Game const & launch, ByteSpan init,
 	std::optional<ByteSpan> map)
 {
 	if (State == StateType::FAILED) {
@@ -171,10 +171,10 @@ WriteResult Writer::Begin(RecordingInfo const & info, Launch const & launch, Byt
 }
 
 
-WriteResult Writer::Begin_Body(RecordingInfo const & info, Launch const & launch, ByteSpan init,
+WriteResult Writer::Begin_Body(Message::RecordingInfo const & info, Launch::Message::Game const & launch, ByteSpan init,
 	std::optional<ByteSpan> map)
 {
-	RecordingInfo sealed_info = info;
+	Message::RecordingInfo sealed_info = info;
 	sealed_info.SealVersion = SEAL_VERSION;
 
 	if (Check_Limits(sealed_info, Limits) != RuleError::NONE || Check_Order(sealed_info) != RuleError::NONE
@@ -211,7 +211,7 @@ WriteResult Writer::Begin_Body(RecordingInfo const & info, Launch const & launch
 /// Writes the record for frame, which must follow the last record's frame, with Skipped and
 /// Seals set by the writer. An empty record is not written.
 /// </summary>
-WriteResult Writer::Add_Frame(std::uint32_t frame, Frame record)
+WriteResult Writer::Add_Frame(std::uint32_t frame, Message::Frame record)
 {
 	if (State == StateType::FAILED) {
 		return(WriteResult::FAILED);
@@ -227,7 +227,7 @@ WriteResult Writer::Add_Frame(std::uint32_t frame, Frame record)
 }
 
 
-WriteResult Writer::Add_Frame_Body(std::uint32_t frame, Frame & record)
+WriteResult Writer::Add_Frame_Body(std::uint32_t frame, Message::Frame & record)
 {
 	if (LastRecord && frame <= *LastRecord) {
 		return(WriteResult::STATE);
@@ -281,7 +281,7 @@ WriteResult Writer::Add_Frame_Body(std::uint32_t frame, Frame & record)
 }
 
 
-WriteResult Writer::Add_Checkpoint(Checkpoint const & checkpoint)
+WriteResult Writer::Add_Checkpoint(Message::Checkpoint const & checkpoint)
 {
 	if (State == StateType::FAILED) {
 		return(WriteResult::FAILED);
@@ -297,7 +297,7 @@ WriteResult Writer::Add_Checkpoint(Checkpoint const & checkpoint)
 }
 
 
-WriteResult Writer::Add_Checkpoint_Body(Checkpoint const & checkpoint)
+WriteResult Writer::Add_Checkpoint_Body(Message::Checkpoint const & checkpoint)
 {
 	if (!Checkpoints.empty() && checkpoint.Frame <= Checkpoints.back().Frame) {
 		return(WriteResult::REFUSED);
@@ -344,7 +344,7 @@ WriteResult Writer::Flush(void)
 /// Seals the writer fills. Set summary.LastFrame when any record was written, no earlier than
 /// the last record's frame; otherwise the call is refused.
 /// </summary>
-WriteResult Writer::Close(RecordingSummary summary, Statistics const * statistics)
+WriteResult Writer::Close(Message::RecordingSummary summary, Message::Statistics const * statistics)
 {
 	if (State == StateType::FAILED) {
 		return(WriteResult::FAILED);
@@ -360,7 +360,7 @@ WriteResult Writer::Close(RecordingSummary summary, Statistics const * statistic
 }
 
 
-WriteResult Writer::Close_Body(RecordingSummary & summary, Statistics const * statistics)
+WriteResult Writer::Close_Body(Message::RecordingSummary & summary, Message::Statistics const * statistics)
 {
 	if (LastRecord && (!summary.LastFrame || *summary.LastFrame < *LastRecord)) {
 		return(WriteResult::REFUSED);

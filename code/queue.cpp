@@ -120,6 +120,7 @@
 #include "ipxmgr.h"
 #include "keyboard.h"
 #include "language/language.h"
+#include "launcher.h"
 #include "light.h"
 #include "mainloop.h"
 #include "mono.h"
@@ -250,6 +251,19 @@ enum RetcodeType {
 	RC_CANCEL,              // user cancelled
 	RC_LOAD_PENDING,        // every machine agreed to load a save; the main loop performs it
 };
+
+
+static Launch::ScenarioEnd Wait_Failure_End(RetcodeType rc)
+{
+	switch (rc) {
+		case RC_SCENARIO_MISMATCH:
+			return(Launch::ScenarioEnd::START_MISMATCH);
+		case RC_CANCEL:
+			return(Launch::ScenarioEnd::WAIT_CANCELLED);
+		default:
+			return(Launch::ScenarioEnd::CONNECTION_LOST);
+	}
+}
 
 
 struct FrameSyncStruct {
@@ -571,6 +585,7 @@ static void Queue_AI_Normal(void)
 	// Execute the DoList; if an error occurs, bail out.
 	//------------------------------------------------------------------------
 	if (!Execute_DoList(1, PlayerPtr->Class->House, NULL, NULL, NULL)) {
+		Launch::Scenario_Ended(Launch::ScenarioEnd::DESYNC);
 		GameActive = 0;
 		return;
 	}
@@ -810,6 +825,7 @@ static void Queue_AI_Multiplayer(void)
 		}
 
 		if (rc != RC_NORMAL) {
+			Launch::Scenario_Ended(Wait_Failure_End(rc));
 			if (Session.Type == GAME_INTERNET){
 				Register_Game_End_Time();
 			}
@@ -828,6 +844,7 @@ static void Queue_AI_Multiplayer(void)
 			Stop_Game(!is_error);
 			return;
 		}
+		Launch::Scenario_Joined();
 
 		//.....................................................................
 		// Re-initialize frame numbers (in case somebody signed off while I was
@@ -916,6 +933,7 @@ static void Queue_AI_Multiplayer(void)
 
 	if (rc != RC_NORMAL) {
 		DebugString("Wait_For_Players returned %d\n", rc);
+		Launch::Scenario_Ended(Wait_Failure_End(rc));
 		if (Session.Type == GAME_INTERNET) {
 			Register_Game_End_Time();
 		}
@@ -940,6 +958,7 @@ static void Queue_AI_Multiplayer(void)
 	//------------------------------------------------------------------------
 	if (!Execute_DoList(Session.MaxPlayers, HOUSE_FIRST, net, &skip_crc, TheirFrameSync)) {
 		DebugString("Failure executing DoList\n");
+		Launch::Scenario_Ended(Launch::ScenarioEnd::DESYNC);
 		if (Session.Type == GAME_INTERNET){
 			Register_Game_End_Time();
 		}
@@ -1301,6 +1320,7 @@ static RetcodeType Wait_For_Players(int first_time, ConnManClass *net,
 					DebugString("Kicking player %s from the game due to %d votes\n", Session.Players[i]->Name, votes);
 					if (i == 0) {
 						DebugString("Outvoted player is me!\n");
+						Launch::Scenario_Ended(Launch::ScenarioEnd::CONNECTION_LOST);
 						if (reconnect_dlg) {
 							Close_Reconnect_Dialog();
 						}

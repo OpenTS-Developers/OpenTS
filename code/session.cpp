@@ -62,6 +62,7 @@
 #include "globals.h"
 #include "ipxmgr.h"
 #include "language/language.h"
+#include "launcher.h"
 #include "msgloop.h"
 #include "netglobal.h"
 #include "progress.h"
@@ -71,7 +72,6 @@
 #include "savestream.h"
 #include "scenario.h"
 #include "scheme.h"
-#include "spawner.h"
 #include "spawnhouse.h"
 #include "special.h"
 #include "stats.h"
@@ -234,6 +234,7 @@ SessionClass::SessionClass(void)
 	NetOpen = 0;
 	SkipScoreScreen = false;
 	QuickMatch = false;
+	LocalPlayer = -1;
 	LoadScreen[0] = '\0';
 	LoadScreenX = 0;
 	LoadScreenY = 0;
@@ -296,7 +297,7 @@ void SessionClass::One_Time(void)
 	//Read_MultiPlayer_Settings();
 
 	// A client-launched game names its scenario outright and never shows the map list.
-	if (!Spawner_Is_Requested()) {
+	if (!Launch::Is_Game_Requested()) {
 		Read_Scenario_Descriptions();
 	}
 
@@ -1049,7 +1050,7 @@ static int const ColorChoiceEntries[MAX_MPLAYER_COLORS] = { 1, 10, 23, 36, 13, 2
 /// </summary>
 int SessionClass::Color_Count(void) const
 {
-	if (Spawner_Is_Active()) {
+	if (Launch::Is_Active()) {
 		return(ColorSchemes.Count() / 2);
 	}
 	return(MAX_MPLAYER_COLORS);
@@ -1063,7 +1064,7 @@ int SessionClass::Color_Count(void) const
 /// <param name="choice">One of the eight menu colors, 0 through 7.</param>
 int SessionClass::Color_Choice(int choice) const
 {
-	if (Spawner_Is_Active()) {
+	if (Launch::Is_Active()) {
 		return(ColorChoiceEntries[choice]);
 	}
 	return(choice);
@@ -1079,7 +1080,7 @@ int SessionClass::Color_Choice(int choice) const
 int SessionClass::Color_Index_To_Scheme(int id) const
 {
 	// The rules build each [Colors] entry twice, and the second copy is the lighting-aware one.
-	if (Spawner_Is_Active()) {
+	if (Launch::Is_Active()) {
 		return((2 * id) + 1);
 	}
 
@@ -1113,18 +1114,36 @@ std::string SessionClass::Shown_Name(HouseClass const * house) const
 
 
 /// <summary>
+/// Returns the human players in the order their houses are created, which is the same on every
+/// machine. A launch or a capture with listed seats numbers its players, and that number is the
+/// order; a game set up from the menu orders them by color, lowest first.
+/// </summary>
+std::vector<NodeNameType *> SessionClass::Humans_In_House_Order(void) const
+{
+	std::vector<NodeNameType *> humans;
+	int const local = LocalPlayer;
+	for (int seat = 0; seat < Players.Count(); seat++) {
+		int const index = (local == -1) ? seat : (seat == local ? 0 : (seat < local ? seat + 1 : seat));
+		humans.push_back(Players[index]);
+	}
+
+	if (local == -1) {
+		std::stable_sort(humans.begin(), humans.end(), [](NodeNameType const * a, NodeNameType const * b) {
+			return(a->Player.Color < b->Player.Color);
+		});
+	}
+	return(humans);
+}
+
+
+/// <summary>
 /// The name shown for a seat before the houses exist, matching its house's later name.
 /// </summary>
 std::string SessionClass::Shown_Seat_Name(NodeNameType const * node) const
 {
-	// Assign_Houses makes the human houses first, lowest color first, and no two share a color.
-	int house = 0;
-	for (int index = 0; index < Players.Count(); index++) {
-		if (Players[index]->Player.Color < node->Player.Color) {
-			house++;
-		}
-	}
-
+	// Assign_Houses creates the human houses first, in this order.
+	std::vector<NodeNameType *> const humans = Humans_In_House_Order();
+	int const house = int(std::find(humans.begin(), humans.end(), node) - humans.begin());
 	return(Shown_Name(house, node->Name));
 }
 
