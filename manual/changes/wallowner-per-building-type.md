@@ -14,7 +14,10 @@ targets:
   id: save-games
   effect: changed
 credit:
-- Shush
+- JoyfulShush
+- Rampastring
 ---
 
 `WallOwner=no` in a structure type's `rules.ini` section stops that type's buildings from claiming the walls placed with the map, even when their owner's country allows it. The other structure types of that country still claim walls.
+
+Credits to Rampastring for his original Vinifera implementation.
