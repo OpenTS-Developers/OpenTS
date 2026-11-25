@@ -849,6 +849,11 @@ class BuildingTypeClass : public TechnoTypeClass
 		 */
 		char TheaterImageFile[19 + 1];
 
+		/*
+		 * Determines whether this building is able to claim nearby walls pre-placed on maps as belonging to the owner's house.
+		 */
+		bool IsWallOwner;
+
 		/*---------------------------------------------------------------------------
 		**	This is the building type explicit constructor.
 		*/
