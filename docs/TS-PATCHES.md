@@ -311,7 +311,6 @@ yet.
 
 | ts-patches file | What it did | In OpenTS |
 | --- | --- | --- |
-| Every product's `*_hacks.asm` | Turned `IsScoreShuffle` on by default. | Set `IsScoreShuffle=yes` in the settings file. |
 | `dta_hacks.asm`, `to_hacks.asm` | Turned sidebar cameo text and action lines off by default. | Set `SidebarCameoText=no` and `UnitActionLines=no` in the settings file. |
 | `dta_hacks.asm`, `ti_hacks.asm`, `to_hacks.asm` | Limited the tech level slider to 7 in the network and modem game dialogs. DTA also set a default of 7, which the rules replaced at startup. | `[MultiplayerDefaults] TechLevel=` in the rules sets the default. For the limit, a mod's own `netgame.rml` and `skirmish.rml` can give the slider a lower `max`. [UI files](../manual/content/systems/ui-files.md) |
 | Every product's `*_hacks.asm`, `res/` | Replaced the window title, the `Language.dll` error message, the icon, the cursor and the internal-error dialog text with the product's own. | A mod replaces `cursor.png` for the pointer over the screens. The window title, icon and error texts have no setting yet. [UI files](../manual/content/systems/ui-files.md) |
