@@ -26288,13 +26288,27 @@ WallBuildSpeedCoefficient:
 WallOwner:
   key: WallOwner
   scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: reviewed
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: BuildingTypeClass
+      member: IsWallOwner
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
   - applies_to: *id010
     file: rules.ini
     section:
       kind: identifier
       source: object-type
     value_type: boolean
-    status: generated
+    status: reviewed
     _provenance:
       default_candidate: 'yes'
       declared_in: HouseTypeClass

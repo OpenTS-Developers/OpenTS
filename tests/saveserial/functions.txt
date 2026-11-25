@@ -41,8 +41,8 @@ d062d1bdb81ade3a code/blight.cpp BuildingLightClass::Serialize(SaveStreamClass&s
 278a286683ff5f1a code/building.cpp BuildingClass::Compute_CRC(CRCEngine&crc)
 9c376dda0ec4141e code/building.cpp BuildingClass::Load(SaveStreamClass&stream)
 f6cf394cf157ce8d code/building.cpp BuildingClass::Serialize(SaveStreamClass&stream)
-336e1ac43e6f56d3 code/builtype.cpp BuildingTypeClass::Compute_CRC(CRCEngine&crc)
-dc9b4cd682e22b28 code/builtype.cpp BuildingTypeClass::Serialize(SaveStreamClass&stream)
+4f9bc37899ea29c8 code/builtype.cpp BuildingTypeClass::Compute_CRC(CRCEngine&crc)
+94db4b744034b979 code/builtype.cpp BuildingTypeClass::Serialize(SaveStreamClass&stream)
 cd9fe04c3d331584 code/builtype.h Serialize(S&stream)
 3df5233c0f8e1067 code/builtype.h Serialize(S&stream) #2
 34ef9e8e7c94e7eb code/bullet.cpp BulletClass::Serialize(SaveStreamClass&stream)
