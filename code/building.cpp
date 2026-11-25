@@ -2504,7 +2504,8 @@ void BuildingClass::Drop_Debris(AbstractClass * source)
 	Cell cell;
 
 	// Prevents a structure being sold from producing a crew after it already released a crew from the sale.
-	if (Mission == MISSION_DECONSTRUCTION) return;
+	// Does not count when the structure is undeploying.
+	if (Mission == MISSION_DECONSTRUCTION && !IsUndeploying) return;
 
 	/*
 	**	Generate random survivors from the destroyed building.
@@ -5047,7 +5048,7 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 				**	Construction yards that deconstruct, really just revert back
 				**	to an MCV.
 				*/
-				if (IsUndeploying && (Session.Type == GAME_NORMAL || Session.Options.MCVRedeploy)
+				if (IsUndeploying && (!Class->IsConstructionYard || (Session.Type != GAME_NORMAL && Session.Options.MCVRedeploy))
 				) {
 
 					if (Class->IsArtillary && (BarrelPitch.Current() != Class->StartPitch || PrimaryFacing.Current() != Class->StartFace)) {

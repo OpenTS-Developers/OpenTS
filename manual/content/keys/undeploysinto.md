@@ -1,6 +1,6 @@
 ---
 key: UndeploysInto
-summary: The UnitType a structure turns back into when it is taken down.
+summary: The UnitType a structure packs up into when it undeploys.
 see_also: ["DeploysInto", "UnloadingClass", AltToRally]
 when_omitted:
   kind: value
@@ -12,7 +12,9 @@ when_omitted:
 UndeploysInto=MCV ; Mobile Construction Vehicle
 ```
 
-A structure that names a vehicle type can pack up into one vehicle of that type. Selling the structure or giving it a move order starts its deconstruction, and the vehicle appears when the deconstruction ends. A structure without a destination ends its deconstruction partway through the animation, before the last frame. Destroying the structure never produces the vehicle.
+A structure that names a vehicle type can pack up into one vehicle of that type. Giving it a move order starts its deconstruction, and the vehicle appears when the deconstruction ends. A structure without a destination ends its deconstruction partway through the animation, before the last frame. Destroying the structure never produces the vehicle.
+
+A sale does not pack the structure up. It starts the same deconstruction, pays the owner the refund, and takes the structure off the map when the deconstruction ends; the vehicle never appears.
 
 A structure whose type has no [construction artwork](/keys/buildup/#a-type-with-no-construction-artwork-cannot-be-sold) is never taken down, so a sale or a move order does nothing.
 
@@ -22,7 +24,7 @@ The structure undeploys only if any of these holds:
 - It is an [`IsMobileWar=yes`](/keys/ismobilewar/) mobile war factory.
 - Outside a campaign, it belongs to a human player in a session with the MCV redeploy option on, and it has a destination. A move order gives it one, and so does a factory's [rally point](/systems/production/#rally-points).
 
-A structure that meets none of these is sold for its refund. A move order therefore sells a structure outside the first two groups in a campaign, or in a session with the MCV redeploy option off. It also sells one other than a construction yard when the game finds no reachable cell near the clicked point and the structure has no earlier destination.
+A move order that does not undeploy the structure leaves it in place.
 
 The vehicle appears on the structure's cell for a structure with one of those flags, and on the cell to the south-east for any other structure. It faces north for an artillery structure, east for a sensor array, tick tank or ICBM launcher, and south otherwise. If the vehicle cannot be placed, the house receives the structure's refund instead.
 
@@ -30,7 +32,7 @@ The vehicle's health is the structure's fraction of full health applied to the v
 
 Everything that was targeting the structure switches its target to the vehicle, except an engineer, which loses its target.
 
-A structure that names a type never lets out a crew and never plays the "structure sold" announcement, whether it undeploys or is sold. Of these structures, only a construction yard plays the sell sound.
+A structure that names a type releases no crew and plays no "structure sold" announcement when it undeploys. Selling it releases survivors like any other sold structure, and a player's completed sale plays the "structure sold" announcement. Of these structures, only a construction yard plays the sell sound.
 
 Except for a construction yard, a structure that names a type counts as a [deployed vehicle](/systems/capture/#an-engineer-over-a-structure). It counts toward its house's vehicles instead of its buildings, cannot be repaired, and does not start the [base-attacked response](/systems/base-attacked/). A [band selection](/systems/band-selection/) picks it up unless it is an `IsMobileWar=yes` structure.
 

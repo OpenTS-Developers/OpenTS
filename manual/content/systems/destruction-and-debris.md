@@ -159,6 +159,7 @@ The footprint walk releases survivors and marks the ground in one pass over the 
 
 - the structure is not [`Crewed=yes`](/keys/crewed/);
 - it was destroyed by forced damage;
+- it is being sold;
 - the game uses a [`SurvivorDivisor`](/keys/survivordivisor/) of `0`.
 
 When the count is above zero, each footprint cell in turn may release one survivor, at the odds [capture](/systems/capture/#survivors) sets out, until the count runs out. A multiplayer house whose player has resigned gets no survivors, and neither does one whose player left a game without AI takeover.
@@ -171,13 +172,13 @@ A mark cannot land on a cell a structure still stands on, and the walk runs whil
 
 An ordinary structure is taken off the map on the frame it dies, right after the walk. Two kinds stay at zero strength and are removed on their next update:
 
-- a structure that was being sold when it died;
+- a structure that was being sold or undeployed when it died;
 - an `Explodes=yes` structure. The explodes ability does not delay removal.
 
 The delayed removal lifts the structure off its cells, runs the footprint walk a second time, and then deletes the structure.
 
-:::caution[A delayed removal releases survivors twice]
-Nothing records that the walk has already run. A structure removed late therefore releases up to twice the usual number of soldiers: once when it dies and once when it is removed.
+:::caution[A delayed removal can release survivors twice]
+Nothing records that the walk has already run. A structure removed late therefore releases up to twice the usual number of soldiers: once when it dies and once when it is removed. A structure being sold is the exception: it skips both walks and releases none.
 :::
 
 ## Infantry and aircraft
