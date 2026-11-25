@@ -339,7 +339,7 @@ class ObjectClass : public AbstractClass
 		virtual RadioMessageType Receive_Message(RadioClass * from, RadioMessageType message, intptr_t & param);
 		virtual bool Revealed(HouseClass * house);
 		virtual void Repair(int);
-		virtual void Sell_Back(int);
+		virtual void Sell_Back();
 		virtual void Set_Waypoint_Path(PathType path, char index);
 		virtual void AI(void) override;
 

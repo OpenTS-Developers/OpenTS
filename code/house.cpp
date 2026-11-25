@@ -4411,7 +4411,7 @@ bool HouseClass::AI_Raise_Money(UrgencyType urgency)
 				RecalcRadar = true;
 				Adjust_House_Power(this);
 			} else {
-				bptr->Sell_Back(1);
+				bptr->Sell_Back();
 				if (bptr->Class->IsGate) {
 					Base.Nodes.Delete_Index(i);
 				}
@@ -5781,7 +5781,7 @@ bool HouseClass::Fire_Sale(void)
 			BuildingClass * b = Buildings[index];
 
 			if (b != NULL && b != keep && !b->IsInLimbo && b->House == this && b->Strength > 0) {
-				b->Sell_Back(1);
+				b->Sell_Back();
 			}
 		}
 		return(false);

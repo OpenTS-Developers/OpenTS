@@ -365,6 +365,12 @@ class BuildingClass : public TechnoClass
 		int ProduceCashRemaining;			// Budget left to move; zero is spent and negative is unlimited.
 		bool IsProduceCashStartupPaid;
 
+		/*
+		 * Is this building currently in the process of undeploying?
+		 * Used to differentiate between being sold and undeployed, both of which use MISSION_DECONSTRUCTION (and thus have different effects)
+		 */
+		bool IsUndeploying;
+
 		/*---------------------------------------------------------------------
 		**	Constructors, Destructors, and overloaded operators.
 		*/
@@ -519,7 +525,7 @@ class BuildingClass : public TechnoClass
 		void Animation_AI(void);
 		virtual bool Revealed(HouseClass * house) override;
 		virtual void Repair(int control) override;
-		virtual void Sell_Back(int control) override;
+		virtual void Sell_Back() override;
 		virtual RadioMessageType Receive_Message(RadioClass * from, RadioMessageType message, intptr_t & param) override;
 		virtual void AI(void) override;
 		virtual void Cloaking_AI(bool fast) override;
@@ -586,6 +592,7 @@ class BuildingClass : public TechnoClass
 		void Update_Anim_Appearance(void);
 		void Set_Anim_Translucency(int translucency);
 		bool Anim_Active(BAnimType anim) { return(Anims[anim] != NULL); }
+		void Undeploy();
 
 		/*
 		**	Scenario and debug support.

@@ -62,6 +62,7 @@ unsigned char EventClass::EventLength[EventClass::LAST_EVENT] = {
 	size_of(EventClass, Data.General),               // GRANT_CONTROL
 	size_of(EventClass, Data.ChatProof),             // CHAT_PROOF
 	size_of(EventClass, Data.Target),                // SELECTED
+	size_of(EventClass, Data.Target),				 // UNDEPLOY
 };
 
 char const * EventClass::EventNames[EventClass::LAST_EVENT] = {
@@ -106,4 +107,5 @@ char const * EventClass::EventNames[EventClass::LAST_EVENT] = {
 	"GRANT_CONTROL",
 	"CHAT_PROOF",
 	"SELECTED",
+	"UNDEPLOY"
 };

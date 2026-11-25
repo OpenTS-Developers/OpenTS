@@ -273,7 +273,7 @@ void Debug_Key(unsigned input)
 					Map.Recalc();
 					CurrentObject[0]->Detach_All();
 					if (CurrentObject[0]->What_Am_I() == RTTI_BUILDING) {
-						((BuildingClass *)CurrentObject[0])->Sell_Back(1);
+						((BuildingClass *)CurrentObject[0])->Sell_Back();
 					} else {
 						ObjectClass * object = CurrentObject[0];
 						object->Unselect();
