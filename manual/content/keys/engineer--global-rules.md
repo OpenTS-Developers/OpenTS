@@ -17,6 +17,8 @@ The roll applies whether the structure is destroyed or sold, with two limits on 
 
 A structure that has ever [changed hands](/systems/capture/#what-changes-hands) never produces this type for the rest of the match. A captured construction yard therefore never returns an engineer.
 
+A side can name its own engineer type for structures of houses acting as its countries. [`Engineer`](/keys/engineer/#scope-side) covers that scope.
+
 :::danger[Name a type here if a buildings factory can be sold]
-With no type named, a destroyed structure produces no survivor on that one-in-four roll. Selling the structure crashes the game whenever the roll comes up. This applies to any [`Crewed=yes`](/keys/crewed/), `Factory=BuildingType` structure that names no `UndeploysInto` vehicle.
+With no type named here or by the owner's side, a destroyed structure produces no survivor on that one-in-four roll. Selling the structure crashes the game whenever the roll comes up. This applies to any [`Crewed=yes`](/keys/crewed/), `Factory=BuildingType` structure that names no `UndeploysInto` vehicle.
 :::

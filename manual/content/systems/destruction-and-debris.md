@@ -159,7 +159,7 @@ The footprint walk releases survivors and marks the ground in one pass over the 
 
 - the structure is not [`Crewed=yes`](/keys/crewed/);
 - it was destroyed by forced damage;
-- the game uses a [`SurvivorDivisor`](/keys/survivordivisor/) of `0`.
+- the [`SurvivorDivisor`](/keys/survivordivisor/) in force for the structure is `0`.
 
 When the count is above zero, each footprint cell in turn may release one survivor, at the odds [capture](/systems/capture/#survivors) sets out, until the count runs out. A multiplayer house whose player has resigned gets no survivors, and neither does one whose player left a game without AI takeover.
 

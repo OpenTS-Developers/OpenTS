@@ -123,6 +123,7 @@
 #include "savestream.h"
 #include "scheme.h"
 #include "session.h"
+#include "side.h"
 #include "sun.h"
 #include "swizzle.h"
 #include "syncrechook.h"
@@ -133,13 +134,13 @@
 #include "tiberium.h"
 #include "tracker.h"
 #include "tube.h"
-#include "tube.hh"
 #include "unit.h"
 #include "vox.h"
 #include "warhead.h"
 #include "weapon.h"
 
 #include "bench.hh"
+#include "tube.hh"
 
 #include <algorithm>
 #include <intrin.h>
@@ -2923,8 +2924,10 @@ const char * InfantryClass::Full_Name(void) const
 		return(Fetch_String(TXT_TECHNICIAN));
 	}
 
-	if (Class->IsDisguised && !House->Is_Player_Control() && Rule->Disguise != NULL) {
-		return(Rule->Disguise->GivenName);
+	auto side = House->Acted_Side();
+	auto disguise = (side != NULL && side->Disguise != NULL) ? side->Disguise : Rule->Disguise;
+	if (Class->IsDisguised && !House->Is_Player_Control() && disguise != NULL) {
+		return(disguise->GivenName);
 	}
 
 	return(Class->GivenName);
@@ -3737,8 +3740,11 @@ void const * InfantryClass::Get_Image_Data(void) const
 	if (Doing == DO_STRUGGLE && Rule->WebbedInfantry != NULL) {
 		return(Rule->WebbedInfantry->Get_Image_Data());
 	}
-	if (!IsOwnedByPlayer && Class->IsDisguised && Rule->Disguise != NULL) {
-		return(Rule->Disguise->ImageData);
+
+	auto side = House->Acted_Side();
+	auto disguise = (side != NULL && side->Disguise != NULL) ? side->Disguise : Rule->Disguise;
+	if (!IsOwnedByPlayer && Class->IsDisguised && disguise != NULL) {
+		return(disguise->ImageData);
 	}
 	return(BASECLASS::Get_Image_Data());
 }

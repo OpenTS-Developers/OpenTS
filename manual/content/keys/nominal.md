@@ -16,4 +16,6 @@ Holding the cursor over an object shows its name. That is normally the type's [`
 
 A structure placed by a map can carry the same exemption on that one building, whatever its type sets.
 
-On an InfantryType, the key has a second, unrelated effect. A structure's [survivor](/systems/capture/#survivors) of this type can be marked as a technician. A technician is named "Technician", does not count toward its house's infantry total, and cannot be picked up as a civilian evacuee. [`Technician`](/keys/technician/) lists when a sold or destroyed structure marks its survivors.
+On an InfantryType, the key has a second, unrelated effect. A survivor of this type can be marked as a technician. A marked survivor is named with the game's "Technician" text, cannot be picked up as a civilian evacuee, and is not counted among its house's infantry. A sold structure marks every such survivor; a destroyed structure marks them only if it has build-up artwork; a vehicle's escaping crew is never marked.
+
+The mark applies whatever type the survivor is, whether it came from [`Crew`](/keys/crew/), [`Technician`](/keys/technician/) or [`Engineer`](/keys/engineer/).

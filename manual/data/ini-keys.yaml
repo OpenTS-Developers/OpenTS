@@ -5855,6 +5855,22 @@ Credits:
 Crew:
   key: Crew
   scopes:
+  - applies_to: *id002
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: reviewed
+    _provenance:
+      default_candidate: none
+      declared_in: SideClass
+      member: Crew
+      source: code/side.cpp
+      guard: null
+    note: a side names the survivor type for objects of houses acting as its countries; a side that names
+      none leaves the [General] type in force
+    level: SideClass
   - applies_to:
     - global rules
     file: rules.ini
@@ -5862,7 +5878,7 @@ Crew:
       kind: literal
       name: General
     value_type: class
-    status: generated
+    status: reviewed
     _provenance:
       default_candidate: none
       declared_in: RulesClass
@@ -7351,6 +7367,22 @@ Disableable:
 Disguise:
   key: Disguise
   scopes:
+  - applies_to: *id002
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: reviewed
+    _provenance:
+      default_candidate: none
+      declared_in: SideClass
+      member: Disguise
+      source: code/side.cpp
+      guard: null
+    note: a side names the disguise type for objects of houses acting as its countries; a side that names
+      none leaves the [General] type in force
+    level: SideClass
   - applies_to:
     - global rules
     file: rules.ini
@@ -7358,7 +7390,7 @@ Disguise:
       kind: literal
       name: General
     value_type: class
-    status: generated
+    status: reviewed
     _provenance:
       default_candidate: none
       declared_in: RulesClass
@@ -8190,6 +8222,22 @@ Engineer:
       source: code/infatype.cpp
       guard: null
     level: InfantryTypeClass
+  - applies_to: *id002
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: reviewed
+    _provenance:
+      default_candidate: none
+      declared_in: SideClass
+      member: Engineer
+      source: code/side.cpp
+      guard: null
+    note: a side names its own survivor engineer type; a side that names none leaves the [General] type
+      in force
+    level: SideClass
   - applies_to:
     - global rules
     file: rules.ini
@@ -22407,6 +22455,22 @@ Surface:
 SurvivorDivisor:
   key: SurvivorDivisor
   scopes:
+  - applies_to: *id002
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: reviewed
+    _provenance:
+      default_candidate: '-1'
+      declared_in: SideClass
+      member: SurvivorDivisor
+      source: code/side.cpp
+      guard: null
+    note: a side stores its own divisor and falls back to the [General] one when the stored value is negative;
+      zero is stored and yields no survivors
+    level: SideClass
   - applies_to:
     - global rules
     file: rules.ini
@@ -22414,7 +22478,7 @@ SurvivorDivisor:
       kind: literal
       name: General
     value_type: integer
-    status: generated
+    status: reviewed
     _provenance:
       default_candidate: '100'
       declared_in: RulesClass
@@ -23037,6 +23101,22 @@ TechLevel:
 Technician:
   key: Technician
   scopes:
+  - applies_to: *id002
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: reviewed
+    _provenance:
+      default_candidate: none
+      declared_in: SideClass
+      member: Technician
+      source: code/side.cpp
+      guard: null
+    note: a side names the technician type for objects of houses acting as its countries; a side that
+      names none leaves the [General] type in force
+    level: SideClass
   - applies_to:
     - global rules
     file: rules.ini
@@ -23044,7 +23124,7 @@ Technician:
       kind: literal
       name: General
     value_type: class
-    status: generated
+    status: reviewed
     _provenance:
       default_candidate: none
       declared_in: RulesClass
