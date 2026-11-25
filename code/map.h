@@ -318,7 +318,6 @@ class MapClass: public GScreenClass
 		Cell Clip_To_Map(Cell const & cell);
 		Cell Closest_Passable_Cell(Cell const & tarcell, Cell const & objcell);
 		bool Check_Map_Integrity(void);
-		void Initialize_Wall_Ownership(void);
 		Coord Firestorm_On_Path(Coord const & from, Coord const & to, HouseClass * house);
 		void Place_Firestorm_Wall(Cell const & cell, HouseClass * owner, BuildingTypeClass * type);
 		void Place_Wall(Cell const & cell, HouseClass * owner, BuildingTypeClass * type);
