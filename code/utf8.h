@@ -36,6 +36,7 @@ namespace UTF8
 	char const * Previous(char const * begin, char const * text);
 	char * Previous(char * begin, char * text);
 	bool Is_Valid(std::string_view text);
+	int Sequence_At(std::string_view text, int & subpart);
 	bool Is_Printable(char32_t code);
 	std::size_t BOM_Length(std::string_view text);
 

@@ -26,6 +26,7 @@
 #include "headless.h"
 #include "house.h"
 #include "init.h"
+#include "launcherapply.h"
 #include "light.h"
 #include "logic.h"
 #include "mplayer.h"
@@ -71,7 +72,7 @@ namespace MapCapture
 		CaptureType Capture;
 		std::string DescriptionPath;
 		bool IsShorthand = false;
-		SpawnerConfigClass ListedSeats;
+		Spawner::Config ListedSeats;
 
 
 		/// <summary>
@@ -231,11 +232,11 @@ namespace MapCapture
 		}
 
 
-		unsigned Allies_Mask(SpawnerConfigClass::SlotType const & seat)
+		unsigned Allies_Mask(Spawner::Config::SlotType const & seat)
 		{
 			unsigned mask = 0;
 			for (int ally : seat.Alliances) {
-				if (ally >= 0 && ally < SpawnerConfigClass::SLOT_COUNT) {
+				if (ally >= 0 && ally < Spawner::Config::SLOT_COUNT) {
 					mask |= 1u << ally;
 				}
 			}
@@ -246,8 +247,24 @@ namespace MapCapture
 		// Seats the houses the description lists, as a client launch seats them for a skirmish.
 		bool Seat_Listed(void)
 		{
+			// The seats are judged as the launch request the same file would give.
 			std::string fault;
-			if (!ListedSeats.Is_Playable(HouseTypes.Count(), Session.Color_Count(), fault)) {
+			bool playable = ListedSeats.Is_Launchable(fault);
+			if (playable) {
+				Launch::Message::Request request;
+				ListedSeats.To_Request(request);
+				Launch::Message::Play const * play = std::get_if<Launch::Message::Play>(&request.Verb);
+				Launch::FaultSite site;
+				Launch::Game game;
+				if (play == nullptr) {
+					playable = false;
+					fault = "The description resumes a saved game.";
+				} else if (!game.From_Message(play->Game, Launch::Limits(), fault, &site)) {
+					playable = false;
+					fault = ListedSeats.Describe_Fault(site, fault);
+				}
+			}
+			if (!playable) {
 				Headless::Fail("The listed seats cannot be played: %s", fault.c_str());
 				return(false);
 			}
@@ -266,7 +283,7 @@ namespace MapCapture
 			Session.Options.FogOfWar = ListedSeats.FogOfWar;
 			BuildLevel = ListedSeats.TechLevel;
 
-			SpawnerConfigClass::SlotType const & local = ListedSeats.Slots[ListedSeats.LocalSlot];
+			Spawner::Config::SlotType const & local = ListedSeats.Slots[ListedSeats.LocalSlot];
 			std::snprintf(Session.Handle, sizeof(Session.Handle), "%s", local.Name.empty() ? "Player" : local.Name.c_str());
 			Session.House = local.Country;
 			Session.ColorIdx = local.Color;
@@ -281,7 +298,7 @@ namespace MapCapture
 			}
 
 			for (int index : humans) {
-				SpawnerConfigClass::SlotType const & seat = ListedSeats.Slots[index];
+				Spawner::Config::SlotType const & seat = ListedSeats.Slots[index];
 				NodeNameType * node = new NodeNameType;
 				std::snprintf(node->Name, sizeof(node->Name), "%s", seat.Name.empty() ? "Player" : seat.Name.c_str());
 				node->Player.House = seat.Country;
@@ -293,23 +310,23 @@ namespace MapCapture
 				Session.Players.Add(node);
 			}
 
-			for (int index = ListedSeats.HumanCount; index < SpawnerConfigClass::SLOT_COUNT; index++) {
-				SpawnerConfigClass::SlotType const & seat = ListedSeats.Slots[index];
-				if (seat.Occupancy != SpawnerConfigClass::OccupancyType::Computer) {
+			for (int index = ListedSeats.HumanCount; index < Spawner::Config::SLOT_COUNT; index++) {
+				Spawner::Config::SlotType const & seat = ListedSeats.Slots[index];
+				if (seat.Occupancy != Spawner::Config::OccupancyType::Computer) {
 					continue;
 				}
 
 				NodeNameType * node = new NodeNameType;
 				node->Player.House = seat.Country;
 				node->Player.Color = seat.Color;
-				node->Player.Handicap = SpawnerConfigClass::Playable_Handicap(seat.Handicap);
+				node->Player.Handicap = Spawner::Config::Playable_Handicap(seat.Handicap);
 				node->Player.SpawnChoice = seat.StartingPosition;
 				node->Player.AlliesMask = Allies_Mask(seat);
 				Session.Computers.Add(node);
 			}
 
 			Session.NumPlayers = ListedSeats.HumanCount;
-			Session.PlayerHouse = (HousesType)local.Country;
+			Session.LocalPlayer = ListedSeats.LocalSlot;
 			return(true);
 		}
 
@@ -323,7 +340,8 @@ namespace MapCapture
 		}
 
 
-		// The logic part of a game frame, without input, drawing or the frame rate limit.
+		// The logic part of a game frame, without input, drawing, the frame rate limit or a start state.
+		// Main_Loop runs the same simulation steps, so a step added to either must be added to the other.
 		void Run_Logic_Frame(void)
 		{
 			DisplayClass::Layer[LAYER_GROUND].Sort();
@@ -443,6 +461,14 @@ namespace MapCapture
 			CustomSeed = (listed && ListedSeats.Seed != 0) ? ListedSeats.Seed : CAPTURE_SEED;
 			Init_Random();
 
+			// The random countries and colors come from the seed just set, as in a launched match.
+			if (!campaign) {
+				Draw_Player_Choices();
+			}
+			if (listed) {
+				Session.PlayerHouse = (HousesType)Session.Players[0]->Player.House;
+			}
+
 			std::snprintf(Scen->ScenarioName, sizeof(Scen->ScenarioName), "%s", Capture.Map.c_str());
 			DebugString("MapCapture: loading %s as a %s.\n", Scen->ScenarioName,
 				campaign ? "campaign map" : (listed ? "multiplayer map with listed seats" : "multiplayer map"));
@@ -508,5 +534,15 @@ namespace MapCapture
 	{
 		DescriptionPath = path;
 		Headless::Request(Task);
+	}
+
+
+	/// <summary>
+	/// Returns the path of the PNG the capture writes. For a capture description, the path is set
+	/// only once the run has checked its options.
+	/// </summary>
+	std::string Output_Path(void)
+	{
+		return(Capture.Output);
 	}
 }

@@ -40,9 +40,12 @@
 #include "goptions.h"
 #include "ipxmgr.h"
 #include "language/language.h"
+#include "launch/gamelaunch.h"
+#include "launcher.h"
 #include "logic.h"
 #include "misc.h"
 #include "mpscore.h"
+#include "mpu.h"
 #include "msgbox.h"
 #include "msgloop.h"
 #include "mstimer.h"
@@ -55,6 +58,7 @@
 #include "scenario.h"
 #include "scheme.h"
 #include "session.h"
+#include "statehash.h"
 #include "stats.h"
 #include "stimer.h"
 #include "surface.h"
@@ -71,17 +75,12 @@
 #include "special.hh"
 
 #include <algorithm>
-
-//
-// Special module globals for recording and playback
-//
-int TeamEvent = 0;			// 0 = no event, 1,2,3 = team event type
-int TeamNumber = 0;			// which team was selected? (1-9)
+#include <chrono>
+#include <thread>
 
 void Message_Input(KeyNumType &input);
 void Sync_Delay(void);
 void Multiplayer_Debug_Print(void);
-static void Do_Record_Playback(void);
 
 
 /// <summary>
@@ -167,14 +166,24 @@ static void Check_For_Focus_Loss(void)
 {
 	bool parks = (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) && !Options.SimulateWhileUnfocused;
 
+	// Time parked is not play time; a clock a menu already stopped stays stopped.
+	bool const stops_clock = parks && !GameInFocus && Scen->ElapsedTimer.Is_Active();
+	if (stops_clock) {
+		Scen->ElapsedTimer.Stop();
+	}
+
 	while (!GameInFocus) {
 		// A running game already sleeps in Sync_Delay, so a pause here would only slow it.
 		if (!parks) {
 			Windows_Message_Handler();
 			break;
 		}
-		Sleep(10);
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		Windows_Message_Handler();
+	}
+
+	if (stops_clock) {
+		Scen->ElapsedTimer.Start();
 	}
 }
 
@@ -199,10 +208,17 @@ static void Finish_Decided_Game(void)
 	PlayerLoses = false;
 	PlayerRestarts = false;
 	PlayerAborts = false;
+	bool const local_win = Launch::Local_Win(Session.Type == GAME_NORMAL, won, PlayerPtr != NULL && PlayerPtr->IsDefeated);
+	Launch::Scenario_Ended(local_win ? Launch::ScenarioEnd::WON : Launch::ScenarioEnd::LOST);
 	if (won) {
 		Do_Win();
 	} else {
 		Do_Lose();
+	}
+
+	// A campaign goes on to its next mission, or restarts the lost one, inside the call.
+	if (GameActive) {
+		Launch::Scenario_Started();
 	}
 }
 
@@ -213,11 +229,10 @@ static void Finish_Decided_Game(void)
 static int Target_Frame_Rate(void)
 {
 	if (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) {
-		return((int)NetTiming::Solo_Game_Speed_Frame_Rate(Options.GameSpeed));
+		return((int)NetTiming::Solo_Game_Speed_Frame_Rate(Session.Options.GameSpeed));
 	}
 
-	// A recording is played back as fast as possible.
-	return(Session.Play ? 0 : Session.DesiredFrameRate);
+	return(Session.DesiredFrameRate);
 }
 
 /***********************************************************************************************
@@ -254,17 +269,13 @@ bool Main_Loop(void)
 
 	InMainLoop = true;
 
+	// This frame's input and drawing come after, so they cannot change the recorded state.
+	StateHash::Take_Start();
+
 	/*
 	**	Call the focus loss handler
 	*/
 	Check_For_Focus_Loss();
-
-	/*
-	**	Sync-bug trapping code
-	*/
-	if (Frame >= Session.TrapFrame) {
-		Session.Trap_Object();
-	}
 
 	//
 	// Initialize our AI processing timer
@@ -302,30 +313,27 @@ bool Main_Loop(void)
 	/*
 	**	Update the display, unless we're inside a dialog.
 	*/
-	if (!Session.Play) {
-		if (SpecialDialog == SDLG_NONE && GameInFocus) {
-			UI_Diplomacy_Update();
-			UIShell.Tick();
-			Map.Input(input, x, y);
-			if (input) {
-				Keyboard_Process(input);
-			}
-			if ((Frame & 7) == 7 && Session.Type == GAME_INTERNET) {
-				Ipx.Store_Stats();
-			}
-			Update_Fogged_Objects();
-			Map.Render();
+	if (SpecialDialog == SDLG_NONE && GameInFocus) {
+		UI_Diplomacy_Update();
+		UIShell.Tick();
+		Map.Input(input, x, y);
+		if (input) {
+			Keyboard_Process(input);
 		}
+		if ((Frame & 7) == 7 && Session.Type == GAME_INTERNET) {
+			Ipx.Store_Stats();
+		}
+		Update_Fogged_Objects();
+		Map.Render();
 	}
 
 	drag_select_aborted = false;
 
-	/*
-	**	Save map's position & selected objects, if we're recording the game.
-	*/
-	if (Session.Record || Session.Play) {
-		Do_Record_Playback();
-	}
+	// Drawing the frame above can leave the floating-point state changed by a driver.
+	Reset_Float_State();
+
+	// Run_Logic_Frame in mapcapture.cpp runs the same simulation steps from this sort to the
+	// deferred deletion, so a step added to either loop must be added to the other.
 
 	/*
 	**	Sort the map's ground layer by y-coordinate value.  This is done
@@ -389,13 +397,16 @@ bool Main_Loop(void)
 			PlayerLoses = false;
 			PlayerRestarts = false;
 			PlayerAborts = false;
+			Launch::Scenario_Ended(Launch::ScenarioEnd::LEFT);
 			Do_Restart();
+			Launch::Scenario_Started();
 			done = true;
 		} else if (PlayerAborts) {
 			PlayerWins = false;
 			PlayerLoses = false;
 			PlayerRestarts = false;
 			PlayerAborts = false;
+			Launch::Scenario_Ended(Launch::ScenarioEnd::LEFT);
 			Do_Abort();
 			done = true;
 		}
@@ -496,7 +507,7 @@ void Keyboard_Process(KeyNumType & input)
 				case int(int(KN_M) | int(KN_ALT_BIT)):
 				case int(int(KN_M) | int(KN_CTRL_BIT)):
 					for (int h = 0; h < Houses.Count(); h++) {
-						Houses[h]->Refund_Money(10000);
+						Houses[h]->Refund_Money(10000, INCOME_DEBUG);
 					}
 					break;
 
@@ -557,7 +568,7 @@ void Sync_Delay(void)
 				TacticalMap->AI();
 				Map.Render();
 			} else {
-				Sleep(0);
+				std::this_thread::yield();
 			}
 			if (!FrameTimer()) {
 				break;
@@ -567,7 +578,11 @@ void Sync_Delay(void)
 		}
 
 		// Out of focus nothing is drawn, so the wait gives the processor back.
-		Sleep(GameInFocus ? 0 : 1);
+		if (GameInFocus) {
+			std::this_thread::yield();
+		} else {
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		}
 	}
 
 	static CDTimerClass<MillisecondSystemTimerClass> fps_timer;
@@ -715,138 +730,4 @@ void Multiplayer_Debug_Print(void)
 	Fancy_Text_Print(buffer, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D(0, top + 42), Fetch_Scheme_By_Name("Grey"), 0, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
 
 	Ipx.Multiplayer_Debug_Print(top);
-}
-
-
-/***********************************************************************************************
- * Do_Record_Playback -- handles saving/loading map pos & current object                       *
- *                                                                                             *
- * INPUT:                                                                                      *
- *      none.                                                                                  *
- *                                                                                             *
- * OUTPUT:                                                                                     *
- *      none.                                                                                  *
- *                                                                                             *
- * WARNINGS:                                                                                   *
- *      none.                                                                                  *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   08/15/1995 BRR : Created.                                                                 *
- *=============================================================================================*/
-static void Do_Record_Playback(void)
-{
-	int count;
-	int tgt;
-	int i;
-	Point2D coord;
-	ObjectClass * obj;
-	unsigned int sum;
-	unsigned int sum2;
-	unsigned int ltgt;
-
-	/*
-	**	Record a game
-	*/
-	if (Session.Record) {
-
-		/*
-		**	Save the map's location
-		*/
-		coord = TacticalMap->Get_Tactical_Position();
-		Session.RecordFile.Write(&coord, sizeof(coord));
-
-		/*
-		**	Save the current object list count
-		*/
-		count = CurrentObject.Count();
-		Session.RecordFile.Write(&count, sizeof(count));
-
-		/*
-		**	Save a CRC of the selected-object list.
-		*/
-		sum = 0;
-		for (i = 0; i < count; i++) {
-			ltgt = TargetClass(CurrentObject[i]).Encode();
-			sum += ltgt;
-		}
-		Session.RecordFile.Write (&sum, sizeof(sum));
-
-		/*
-		**	Save all selected objects.
-		*/
-		for (i = 0; i < count; i++) {
-			tgt = TargetClass(CurrentObject[i]).Encode();
-			Session.RecordFile.Write (&tgt, sizeof(tgt));
-		}
-
-		//
-		// Save team-selection and formation events
-		//
-		Session.RecordFile.Write (&TeamEvent, sizeof(TeamEvent));
-		Session.RecordFile.Write (&TeamNumber, sizeof(TeamNumber));
-		TeamEvent = 0;
-		TeamNumber = 0;
-	}
-
-	/*
-	**	Play back a game ("attract" mode)
-	*/
-	if (Session.Play) {
-
-		/*
-		**	Read & set the map's location.
-		*/
-		if (Session.RecordFile.Read(&coord, sizeof(coord))==sizeof(coord)) {
-			TacticalMap->Set_Tactical_Position(coord);
-		}
-
-		if (Session.RecordFile.Read(&count, sizeof(count))==sizeof(count)) {
-			/*
-			**	Compute a CRC of the current object-selection list.
-			*/
-			sum = 0;
-			for (i = 0; i < CurrentObject.Count(); i++) {
-				ltgt = TargetClass(CurrentObject[i]).Encode();
-				sum += ltgt;
-			}
-
-			/*
-			**	Load the CRC of the objects on disk; if it doesn't match, select
-			**	all objects as they're loaded.
-			*/
-			Session.RecordFile.Read (&sum2, sizeof(sum2));
-			if (sum2 != sum) {
-				Unselect_All();
-			}
-
-			AllowVoice = true;
-
-			for (i = 0; i < count; i++) {
-				if (Session.RecordFile.Read (&tgt, sizeof(tgt))==sizeof(tgt)) {
-					TargetClass tmp;
-					tmp.Decode(tgt);
-					obj = tmp.As_Object();
-					if (obj && (sum2 != sum)) {
-						obj->Select();
-						AllowVoice = false;
-					}
-				}
-			}
-
-			AllowVoice = true;
-
-		}
-
-		//
-		// Save team-selection and formation events
-		//
-		Session.RecordFile.Read (&TeamEvent, sizeof(TeamEvent));
-		Session.RecordFile.Read (&TeamNumber, sizeof(TeamNumber));
-
-		/*
-		**	The map isn't drawn in playback mode, so draw it here.
-		*/
-		Map.Flag_To_Redraw();
-		Map.Render();
-	}
 }

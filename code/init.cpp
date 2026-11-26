@@ -97,11 +97,11 @@
 #include "bullettype.h"
 #include "campaign.h"
 #include "ccfile.h"
-#include "cctooltip.h"
 #include "cell.h"
 #include "chat.h"
 #include "command.h"
 #include "conquer.h"
+#include "ctrlgroup.h"
 #include "data.h"
 #include "dbgprint.h"
 #include "deploymentconfig.h"
@@ -130,6 +130,7 @@
 #include "keyboard.h"
 #include "language/language.h"
 #include "laser.h"
+#include "launcher.h"
 #include "light.h"
 #include "lightcon.h"
 #include "loaddlg.h"
@@ -169,9 +170,7 @@
 #include "side.h"
 #include "skirmish.h"
 #include "smudtype.h"
-#include "spawner.h"
 #include "stimer.h"
-#include "suprtype.h"
 #include "tactical.h"
 #include "tag.h"
 #include "team.h"
@@ -189,6 +188,7 @@
 #include "ui/screens/version/uiversion.h"
 #include "ui/uienginehost.h"
 #include "uicontrol.h"
+#include "uitooltip.h"
 #include "unit.h"
 #include "unittype.h"
 #include "vein.h"
@@ -249,7 +249,6 @@ static bool Init_One_Time_Systems(void);
 static bool Init_Fonts(void);
 static bool Init_Bootstrap_Mixfiles(void);
 static bool Init_Secondary_Mixfiles(void);
-static bool Mount_Side_Mixfiles(int id, bool required);
 static void Init_Mouse(void);
 static bool Bootstrap(void);
 static bool Init_Bulk_Data(void);
@@ -260,11 +259,6 @@ static CampaignType Choose_Campaign(void);
 static void Init_Threads(void);
 void Draw_Version_Text(Surface * surface);
 void Version_Dialog(void);
-
-#define ATTRACT_MODE_TIMEOUT	TIMER_MINUTE		// timeout for attract mode
-
-bool Load_Recording_Values(CCFileClass & file);
-bool Save_Recording_Values(CCFileClass & file);
 
 struct CheatEntryStruct {
 	bool * State;
@@ -399,8 +393,6 @@ int Init_Game(int , char * [])
 
 	DebugStringNoPrefix(" ...OK\n");
 
-	Mount_Side_Mixfiles(0, false);
-
 	DebugString("Init Campaigns\n");
 	Init_Campaigns();
 
@@ -414,8 +406,7 @@ int Init_Game(int , char * [])
 	Init_Threads();
 
 	/*
-	**	Read game options, so the GameSpeed is initialized when multiplayer
-	**	dialogs are invoked. (GameSpeed must be synchronized between systems.)
+	**	Read game options.
 	*/
 	DebugString("Reading Game Settings\n");
 	Options.Load_Settings();
@@ -430,7 +421,7 @@ int Init_Game(int , char * [])
 	/*
 	**	Play the startup animation.
 	*/
-	if (!Spawner_Is_Requested() && !Headless::Is_Active()) {
+	if (!Launch::Replaces_Menu()) {
 		if (Special.IsFromInstall == true) {
 			DebugString("Playing first time intro sequence.\n");
 			Play_Movie("EVA.VQA", THEME_NONE, false);
@@ -807,6 +798,8 @@ static bool Init_Rules(void)
 		Rule->Addition(lang_ini);
 	}
 
+	Rule->Set_Baseline();
+
 	CCFileClass ai_file(DeploymentConfig.AIFile.c_str());
 	AIINI.Load(ai_file, true);
 
@@ -854,6 +847,9 @@ bool Select_Game(bool )
 	Show_Mouse();
 
 restart:
+	// A scenario that failed to start returns here with its side's archives still searched first.
+	Prep_For_No_Side();
+
 	gameloaded = false;
 	process = true;
 
@@ -875,6 +871,26 @@ restart:
 	PlayerAborts = false;
 	Session.ObiWan = false;
 	Session.AIOnly = false;
+
+	// Game options start from their defaults; only the launch switches are kept for the next game.
+	bool const from_install = Special.IsFromInstall;
+	Special.Init();
+	Special.IsFromInstall = from_install;
+	Special.IsInert = Debug_Inert;
+	Special.IsSpeedBuild = Debug_SpeedBuild;
+
+	// Only a launch file or a save sets these, so a menu game must not keep a loaded save's values.
+	Session.Options.CoachMode = false;
+	Session.Options.AITakeover = true;
+	Session.Options.BuildOffAlly = false;
+	Session.Options.AutoDeployMCV = false;
+	Session.Options.AttackNeutralUnits = false;
+	Session.Options.ScrapMetal = false;
+	Session.Options.SharedControl = false;
+	Session.Options.PlayMovies = false;
+
+	// A new game must not read an earlier game's copy of a scenario file with the same name.
+	Scen->SourceFile.Clear();
 #ifdef _DEBUG
 	Debug_Unshroud = false;
 #endif
@@ -934,25 +950,11 @@ restart:
 		Theme.Play_Song(Fetch_Main_Menu_Theme());
 
 		/*
-		**	If we're playing back a recording, load all pertinent values & skip
-		**	the menu loop.  Hide the now-useless mouse pointer.
-		*/
-		if (Session.Play && Session.RecordFile.Is_Available()) {
-			if (Session.RecordFile.Open(FileClass::READ)) {
-				Load_Recording_Values(Session.RecordFile);
-				process = false;
-				Theme.Stop(true);
-			} else {
-				Session.Play = false;
-			}
-		}
-
-		/*
 		 * A launch replaces the menu once. An ended match or a refusal answers false, so the
 		 * process exits and the client sees it go.
 		 */
-		if (Spawner_Is_Requested()) {
-			if (!Spawner_Prepare(gameloaded)) {
+		if (Launch::Is_Game_Requested()) {
+			if (!Launch::Prepare(gameloaded)) {
 				return(false);
 			}
 			process = false;
@@ -972,7 +974,7 @@ restart:
 				if (Get_New_Menu()->MixFile) {
 					selection = New_Main_Menu();
 				} else {
-					selection = Main_Menu(ATTRACT_MODE_TIMEOUT);
+					selection = Main_Menu();
 				}
 			}
 
@@ -1029,6 +1031,7 @@ restart:
 						process = false;
 						gameloaded = true;
 					} else {
+						Prep_For_No_Side();
 						selection = SEL_NONE;
 					}
 
@@ -1175,24 +1178,6 @@ restart:
 				case SEL_FAME:
 					break;
 
-				case SEL_TIMEOUT: {
-						if (Session.Attract && Session.RecordFile.Is_Available()) {
-							Session.Play = true;
-
-							if (Session.RecordFile.Open(FileClass::READ)) {
-								Load_Recording_Values(Session.RecordFile);
-								process = false;
-								Theme.Stop(true);
-							} else {
-								Session.Play = false;
-								selection = SEL_NONE;
-							}
-						} else {
-							selection = SEL_NONE;
-						}
-					}
-					break;
-
 				default:
 					break;
 			}
@@ -1237,18 +1222,26 @@ restart:
 
 		Show_Mouse();
 
+		// The random countries and colors come from the seed Init_Random set.
 		if (Session.Type != GAME_NORMAL) {
+			Draw_Player_Choices();
 			Session.PlayerHouse = (HousesType)Session.Players[0]->Player.House;
 		}
 
 		// The menu sets the difficulty pair on every path but a client launch, which chose it.
-		if (!Spawner_Is_Active()) {
+		if (!Launch::Is_Active()) {
 			Session.CampaignDifficulty = (DiffType)Options.Difficulty;
 			Session.CampaignCDifficulty = (DiffType)(DIFF_COUNT - 1 - Options.Difficulty);
 		}
 
-		if (Session.Type != GAME_NORMAL || Debug_ForceScenario || Session.Play || Spawner_Is_Active()) {
-			if (!Start_Scenario(Scen->ScenarioName, true, Spawner_Is_Active() ? Scen->Campaign : CAMPAIGN_NONE)) {
+		// A campaign from the menu plays at the player's speed setting; every other game was
+		// given its speed when it was set up.
+		if (Session.Type == GAME_NORMAL && !Launch::Is_Active()) {
+			Session.Options.GameSpeed = Options.GameSpeed;
+		}
+
+		if (Session.Type != GAME_NORMAL || Debug_ForceScenario || Launch::Is_Active()) {
+			if (!Start_Scenario(Scen->ScenarioName, true, Launch::Is_Active() ? Scen->Campaign : CAMPAIGN_NONE)) {
 				if (Debug_Map) {
 					return(false);
 				} else {
@@ -1266,22 +1259,13 @@ restart:
 		}
 
 		// The mission read clears these, so a launch file's carried-over flags are set after it.
-		if (Spawner_Is_Active() && Session.Type == GAME_NORMAL) {
+		if (Launch::Is_Active() && Session.Type == GAME_NORMAL) {
 			for (int index = 0; index < ARRAY_SIZE(Environment.Globals); index++) {
 				Scen->Set_Global_To(index, Environment.Globals[index]);
 			}
 		}
 
-		/*
-		**	Save initialization values if we're recording this game.
-		*/
-		if (Session.Record) {
-			if (Session.RecordFile.Open(FileClass::WRITE)) {
-				Save_Recording_Values(Session.RecordFile);
-			} else {
-				Session.Record = false;
-			}
-		}
+		Launch::Scenario_Started();
 
 		if (Special.IsFromInstall == true) {
 			Show_Mouse();
@@ -1293,9 +1277,9 @@ restart:
 	DebugString("IsTGrowth = %d\n", Special.IsTGrowth);
 	DebugString("IsTSpread = %d\n", Special.IsTSpread);
 
-	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH && !Session.Play) {
+	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
 		Session.Create_Connections();
-		Spawner_Announce_Master();
+		Launch::Announce_Master();
 		SaveManager.Multiplayer_Saves_Begin_Match(gameloaded || Session.LoadGame);
 
 		if (Session.Type == GAME_IPX) {
@@ -1308,8 +1292,6 @@ restart:
 				Ipx.Set_Timing(std::max<unsigned>(TIMER_SECOND, Ipx.Global_Response_Time() + 2), (unsigned int) -1, 10 * TIMER_SECOND);
 			}
 		}
-	} else if (Session.Play && Session.Is_Network_Game()) {
-		Session.Reset_Network_Timing(Frame >= 0 ? static_cast<unsigned int>(Frame) : 0u);
 	}
 
 	/*
@@ -1461,7 +1443,7 @@ bool Parse_Command_Line(int argc, char * argv[])
 		*/
 		if (stricmp("/?", string) == 0 || stricmp("-?", string) == 0 || stricmp("-h", string) == 0 || stricmp("/h", string) == 0) {
 #ifdef _DEBUG
-			Debug_Init_Console();
+			Debug_Enable_Console();
 #endif
 
 			/*
@@ -1531,28 +1513,38 @@ bool Parse_Command_Line(int argc, char * argv[])
 			continue;
 		}
 
+		// Launch::Read_Request reads the file once every switch is parsed.
+		if (strnicmp(string, "-LAUNCH=", strlen("-LAUNCH=")) == 0) {
+			Launch::Request_File(&original[strlen("-LAUNCH=")]);
+			continue;
+		}
+
 		if (strnicmp(string, "-CAPTUREMAP=", strlen("-CAPTUREMAP=")) == 0) {
+			Launch::Note_Switch("-CAPTUREMAP=");
 			MapCapture::Request_Map(&original[strlen("-CAPTUREMAP=")]);
 			continue;
 		}
 
 		if (strnicmp(string, "-CAPTUREOUT=", strlen("-CAPTUREOUT=")) == 0) {
+			Launch::Note_Switch("-CAPTUREOUT=");
 			MapCapture::Request_Output(&original[strlen("-CAPTUREOUT=")]);
 			continue;
 		}
 
 		if (strnicmp(string, "-CAPTURE=", strlen("-CAPTURE=")) == 0) {
+			Launch::Note_Switch("-CAPTURE=");
 			MapCapture::Request_Description(&original[strlen("-CAPTURE=")]);
 			continue;
 		}
 
 		// A client asking the game to launch what SPAWN.INI describes.
 		if (stricmp(string, "-SPAWN") == 0) {
-			Spawner_Request();
+			Launch::Request_Spawn_File();
 			continue;
 		}
 
 		if (memcmp(string, "-TIME=", 6) == 0) {
+			Launch::Note_Switch("-TIME=");
 			sscanf(&string[6], "%d", &TournamentTime);
 		}
 
@@ -1565,14 +1557,6 @@ bool Parse_Command_Line(int argc, char * argv[])
 		*/
 		if (strstr(string, "-STEALTH")) {
 			Session.NetStealth = true;
-			continue;
-		}
-
-		/*
-		**	Allow "attract" mode
-		*/
-		if (strstr(string, "-ATTRACT")) {
-			Session.Attract = true;
 			continue;
 		}
 
@@ -1607,12 +1591,20 @@ bool Parse_Command_Line(int argc, char * argv[])
 			Session.ForceDesyncFrame = atoi(string + strlen("-DESYNCTEST="));
 			continue;
 		}
+
+		// Seen in every build so that -LAUNCH= can refuse it; only a Debug build takes the seed.
+		if (strstr(string, "-SEED")) {
+			Launch::Note_Switch("-SEED");
+		}
 #ifdef _DEBUG
 		/*
 		**	Specify the random number seed (for debugging)
 		*/
 		if (strstr(string, "-SEED")) {
-			CustomSeed = (unsigned short)(atoi(string + strlen("-SEED")));
+			unsigned short const seed = (unsigned short)(atoi(string + strlen("-SEED")));
+			if (seed != 0) {
+				CustomSeed = seed;
+			}
 			continue;
 		}
 #endif
@@ -1652,20 +1644,6 @@ bool Parse_Command_Line(int argc, char * argv[])
 						break;
 
 					/*
-					**	"Record" a multi-player game
-					*/
-					case 'X':
-						Session.Record = 1;
-						break;
-
-					/*
-					**	"Play Back" a multi-player game
-					*/
-					case 'Y':
-						Session.Play = 1;
-						break;
-
-					/*
 					**	Print lots of debug stuff about events & packets
 					*/
 					case 'P':
@@ -1677,8 +1655,7 @@ bool Parse_Command_Line(int argc, char * argv[])
 					 * Enable debug output to a console.
 					 */
 					case 'C':
-						Debug_Console = true;
-						Debug_Init_Console();
+						/* Argument already processed by dbgprint module. */
 						break;
 
 					/*
@@ -1690,7 +1667,7 @@ bool Parse_Command_Line(int argc, char * argv[])
 
 					default:
 #ifdef _DEBUG
-						Debug_Init_Console();
+						Debug_Enable_Console();
 #endif
 						puts(Fetch_String(TXT_INVALID));
 						return(false);
@@ -1701,7 +1678,7 @@ bool Parse_Command_Line(int argc, char * argv[])
 			continue;
 		}
 	}
-	return(true);
+	return(Launch::Read_Request());
 }
 
 
@@ -1724,25 +1701,17 @@ void Init_Random(void)
 {
 	DebugString("Init random number\n");
 	/*
-	**	Do nothing if we've loaded a multiplayer game, or we're playing back
-	**	a recording; the random number generator is initialized by loading
-	**	the game.
+	**	Do nothing if we've loaded a multiplayer game; the random number
+	**	generator is initialized by loading the game.
 	*/
 	if (Session.LoadGame) {
 		return;
 	}
 
-	if (Session.Play) {
-		Scen->RandomNumber = Seed;
-		NonCriticalRandomNumber = Seed;
-		DebugString("Seed is %08x\n", Seed);
-		return;
-	}
-
 	/*
 	**	Initialize the random number Seed.  For multiplayer, this will have been done
-	**	in the connection dialogs.  For single-player games, AND if we're not playing
-	**	back a recording, init the Seed to a random value.
+	**	in the connection dialogs.  For single-player games, init the Seed to a
+	**	random value.
 	*/
 	if (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) {
 
@@ -1785,8 +1754,8 @@ void Init_Random(void)
 		/*
 		**	Set the optional user-specified seed
 		*/
-		if (CustomSeed != 0) {
-			Seed = CustomSeed;
+		if (CustomSeed) {
+			Seed = int(*CustomSeed);
 		} else {
 			CryptRandom.Get(&Seed, sizeof(Seed));
 			Seed = GetTickCount();
@@ -2636,80 +2605,6 @@ static void Init_Keys(void)
 }
 
 
-/***************************************************************************
- * Save_Recording_Values -- Saves multiplayer-specific values              *
- *                                                                         *
- * This routine saves multiplayer values that need to be restored for a    *
- * save game.  In addition to saving the random # seed for this scenario,  *
- * it saves the contents of the actual random number generator; this       *
- * ensures that the random # sequencer will pick up where it left off when *
- * the game was saved.                                                     *
- * This routine also saves the header for a Recording file, so it must     *
- * save some data not needed specifically by a save-game file (ie Seed).   *
- *                                                                         *
- * INPUT:                                                                  *
- *      file      file to save to                                          *
- *                                                                         *
- * OUTPUT:                                                                 *
- *      true = success, false = failure                                    *
- *                                                                         *
- * WARNINGS:                                                               *
- *      none.                                                              *
- *                                                                         *
- * HISTORY:                                                                *
- *   09/28/1995 BRR : Created.                                             *
- *=========================================================================*/
-bool Save_Recording_Values(CCFileClass & file)
-{
-	//Session.Save(file);
-	DebugString("Saving recording values for scenario : %s\n", Scen->ScenarioName);
-	file.Write(&BuildLevel, sizeof(BuildLevel));
-#if defined(_DEBUG)
-	file.Write(&Debug_Unshroud, sizeof(Debug_Unshroud));
-#endif
-	file.Write(&Seed, sizeof(Seed));
-	file.Write(&Scen->Scenario, sizeof(Scen->Scenario));
-	file.Write(Scen->ScenarioName, sizeof(Scen->ScenarioName));
-	file.Write(&Whom, sizeof(Whom));
-	file.Write(&Special, sizeof(SpecialClass));
-	file.Write(&Options, sizeof(OptionsClass));
-	return(true);
-}
-
-
-/***************************************************************************
- * Load_Recording_Values -- Loads multiplayer-specific values              *
- *                                                                         *
- * INPUT:                                                                  *
- *      file         file to load from                                     *
- *                                                                         *
- * OUTPUT:                                                                 *
- *      true = success, false = failure                                    *
- *                                                                         *
- * WARNINGS:                                                               *
- *      none.                                                              *
- *                                                                         *
- * HISTORY:                                                                *
- *   09/28/1995 BRR : Created.                                             *
- *=========================================================================*/
-bool Load_Recording_Values(CCFileClass & file)
-{
-	//Session.Load(file);
-	file.Read(&BuildLevel, sizeof(BuildLevel));
-#if defined(_DEBUG)
-	file.Read(&Debug_Unshroud, sizeof(Debug_Unshroud));
-#endif
-	file.Read(&Seed, sizeof(Seed));
-	file.Read(&Scen->Scenario, sizeof(Scen->Scenario));
-	file.Read(Scen->ScenarioName, sizeof(Scen->ScenarioName));
-	file.Read(&Whom, sizeof(Whom));
-	file.Read(&Special, sizeof(SpecialClass));
-	file.Read(&Options, sizeof(OptionsClass));
-	DebugString("Loaded recording values for scenario : %s\n", Scen->ScenarioName);
-	return(true);
-}
-
-
 /// <summary>
 /// Appends the code letters of the active cheats to the version string.
 /// This routine is used by the version text so that the corner of the screen betrays
@@ -2831,7 +2726,7 @@ static bool Main_Menu_Keys(void)
  *      none.                                                              *
  *                                                                         *
  * OUTPUT:                                                                 *
- *      index of item selected, -1 if time out                             *
+ *      index of item selected                                             *
  *                                                                         *
  * WARNINGS:                                                               *
  *      none.                                                              *
@@ -2839,11 +2734,9 @@ static bool Main_Menu_Keys(void)
  * HISTORY:                                                                *
  *   05/17/1995 BRR : Created.                                             *
  *=========================================================================*/
-int Main_Menu(unsigned int timeout)
+int Main_Menu(void)
 {
 	int retval = SEL_NONE;
-
-	timeout = 0;
 
 	MainMenuKeyResult = SEL_NONE;
 
@@ -2956,7 +2849,7 @@ static void Select_Team_Members(int team)
 {
 	for (int i = 0; i < Technos.Count(); i++) {
 		TechnoClass * obj = Technos[i];
-		if (obj && !obj->IsInLimbo && obj->Group == team - 1 && obj->House->Is_Player_Commanded()) {
+		if (obj && !obj->IsInLimbo && ControlGroups.Group_Of(obj) == team - 1 && obj->House->Is_Player_Commanded()) {
 			if (!obj->IsSelected) {
 				obj->Select();
 				AllowVoice = false;
@@ -2971,11 +2864,11 @@ static void Assign_Selection_To_Team(int team)
 	for (int i = 0; i < Technos.Count(); i++) {
 		TechnoClass * obj = Technos[i];
 		if (obj && !obj->IsInLimbo && obj->House->Is_Player_Commanded()) {
-			if (obj->Group == team - 1) {
-				obj->Group = -1;
+			if (ControlGroups.Group_Of(obj) == team - 1) {
+				ControlGroups.Remove(obj);
 			}
 			if (obj->IsSelected) {
-				obj->Group = team - 1;
+				ControlGroups.Assign(obj, team - 1);
 			}
 		}
 	}
@@ -3037,7 +2930,7 @@ class SelectTeamCommandClass : public CommandClass
 			Map.Repair_Mode_Control(0);
 			Map.Sell_Mode_Control(0);
 
-			bool already = CurrentObject.Count() > 0 && CurrentObject[0]->Is_Foot() && ((FootClass *)CurrentObject[0])->Group == (Team - 1);
+			bool already = CurrentObject.Count() > 0 && CurrentObject[0]->Is_Foot() && ControlGroups.Group_Of((FootClass *)CurrentObject[0]) == (Team - 1);
 			if (CurrentObject.Count() > 0 && !already) {
 				Unselect_All();
 			}
@@ -3169,7 +3062,7 @@ class CenterTeamCommandClass : public CommandClass
 			Map.Repair_Mode_Control(0);
 			Map.Sell_Mode_Control(0);
 
-			if (CurrentObject.Count() && (!CurrentObject[0]->Is_Foot() || ((TechnoClass *)CurrentObject[0])->Group != Team - 1)) {
+			if (CurrentObject.Count() && (!CurrentObject[0]->Is_Foot() || ControlGroups.Group_Of((TechnoClass *)CurrentObject[0]) != Team - 1)) {
 				Unselect_All();
 			}
 
@@ -5195,7 +5088,7 @@ class RepeatLastAircraftCommandClass : public CommandClass
 /// </summary>
 static bool Quick_Save_Allowed(void)
 {
-	if (!ScenarioActive || Session.Play || Scen->IsInputLocked) {
+	if (!ScenarioActive || Scen->IsInputLocked) {
 		return(false);
 	}
 	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
@@ -5842,6 +5735,8 @@ void Delete_All_Objects(void)
 	Process_Deferred_Deletion();
 
 	LaserDrawClass::All_Clear();
+	IonBlastClass::Delete_All();
+	MoveFlashClass::Clear_All();
 
 	while (AbstractTypes.Count()) {
 		delete AbstractTypes[0];
@@ -6013,8 +5908,56 @@ void Init_Theater(TheaterType theater)
 }
 
 
-static void Release_Side_Mixfiles(void)
+// The side's archives in the order they were mounted, which is also their search order.
+static std::vector<MFCD *> SideMixfiles;
+static bool SideMixfilesFirst = false;
+
+
+/// <summary>
+/// Mounts a side archive so that it is searched after the patch and expansion archives
+/// mounted at startup and before every other archive, behind the side archives mounted
+/// before it.
+/// </summary>
+static MFCD * Mount_Side_Mixfile(char const * name)
 {
+	MFCD * anchor = NULL;
+	for (int index = (int)SideMixfiles.size() - 1; anchor == NULL && index >= 0; index--) {
+		if (SideMixfiles[index]->Is_Valid()) {
+			anchor = SideMixfiles[index];
+		}
+	}
+	for (int index = ExpandMix.Count() - 1; anchor == NULL && index >= 0; index--) {
+		if (ExpandMix[index]->Is_Valid()) {
+			anchor = ExpandMix[index];
+		}
+	}
+
+	MFCD * mix = new MFCD(name, &FastKey);
+	mix->Search_After(anchor);
+	SideMixfiles.push_back(mix);
+	SideMixfilesFirst = true;
+	return(mix);
+}
+
+
+/// <summary>
+/// Prepares the art and data mixfiles for the specified side.
+/// This routine is called whenever the side being played changes. It releases the previous
+/// side's archives, mounts the cached, uncached and CD archives belonging to the new one,
+/// and then lets the map rebuild whatever it keeps on a per house basis.
+/// </summary>
+/// <param name="side">The side whose archives should be made available.</param>
+/// <returns>bool; Was the side's SIDEC archive found?</returns>
+bool Prep_For_Side(SideType side)
+{
+	int id;
+	char name[64];
+	int index;
+
+	DebugString("Preparing Mixfiles for Side %02d.\n", side);
+
+	SideMixfiles.clear();
+
 	if (SideCMix != NULL) {
 		DebugString("     Releasing %s\n", SideCMix->Filename);
 		delete SideCMix;
@@ -6033,31 +5976,21 @@ static void Release_Side_Mixfiles(void)
 		SideCDMix = NULL;
 	}
 
+	id = (int)side + 1;
+
 	while (ExpandSideMix.Count() > 0) {
 		delete ExpandSideMix[0];
 		ExpandSideMix.Delete_Index(0);
 	}
-}
-
-
-/// <summary>
-/// Mounts the cached and uncached side archives numbered id, with the expansions' copies.
-/// </summary>
-/// <param name="id">The side's number in the archive names; 0 names the archives used outside a match.</param>
-/// <param name="required">Whether a missing SIDEC archive stops the mounting.</param>
-/// <returns>bool; False when a required SIDEC archive is missing, leaving the later archives unmounted.</returns>
-static bool Mount_Side_Mixfiles(int id, bool required)
-{
-	char name[64];
 
 	if (Addon_Enabled(ADDON_ANY) == true) {
-		for (int index = 99; index >= 0; index--) {
+		for (index = 99; index >= 0; index--) {
 			sprintf(name, "E%02dSC%02d.MIX", index, id);
 
 			if (CCFileClass(name).Is_Available()) {
 
 				DebugString("     Initializing %s\n", name);
-				MFCD * mix = new MFCD(name, &FastKey);
+				MFCD * mix = Mount_Side_Mixfile(name);
 				ExpandSideMix.Add(mix);
 				mix->Cache();
 			}
@@ -6068,26 +6001,24 @@ static bool Mount_Side_Mixfiles(int id, bool required)
 	DebugString("     Initializing %s\n", name);
 
 	if (CCFileClass(name).Is_Available()) {
-		SideCMix = new MFCD(name, &FastKey);
+		SideCMix = Mount_Side_Mixfile(name);
 	}
 
-	if (SideCMix != NULL) {
-		SideCMix->Cache();
-	} else if (required) {
+	if (SideCMix == NULL) {
 		DebugString("     FAILED!\n");
 		return(false);
-	} else {
-		DebugString("     Not found\n");
 	}
 
+	SideCMix->Cache();
+
 	if (Addon_Enabled(ADDON_ANY) == true) {
-		for (int index = 99; index >= 0; index--) {
+		for (index = 99; index >= 0; index--) {
 			sprintf(name, "E%02dSNC%02d.MIX", index, id);
 
 			if (CCFileClass(name).Is_Available()) {
 
 				DebugString("     Initializing %s\n", name);
-				MFCD *mix = new MFCD(name, &FastKey);
+				MFCD * mix = Mount_Side_Mixfile(name);
 				ExpandSideMix.Add(mix);
 			}
 		}
@@ -6097,60 +6028,7 @@ static bool Mount_Side_Mixfiles(int id, bool required)
 	DebugString("     Initializing %s\n", name);
 
 	if (CCFileClass(name).Is_Available()) {
-		SideNCMix = new MFCD(name, &FastKey);
-	}
-
-	return(true);
-}
-
-
-/// <summary>
-/// Mounts the archives used outside a match, SIDEC00.MIX and SIDENC00.MIX with the expansions'
-/// copies, in place of any side's. Every one of them is optional. The interface drops the side's
-/// style sheet and reads its files again.
-/// </summary>
-void Prep_For_No_Side(void)
-{
-	DebugString("Preparing Mixfiles for no side.\n");
-
-	// The sidebar and the cameos point into the side's cached archive until it is prepared again.
-	Map.Clear_For_House();
-	for (int index = 0; index < TechnoTypes.Count(); index++) {
-		TechnoTypes[index]->CameoData = NULL;
-	}
-	for (int index = 0; index < SuperWeaponTypes.Count(); index++) {
-		SuperWeaponTypes[index]->CameoData = NULL;
-	}
-
-	Release_Side_Mixfiles();
-	Mount_Side_Mixfiles(0, false);
-
-	UIControls.Read_INI_File(DeploymentConfig.UIFile.c_str(), true);
-	UI_On_Archives_Change(SIDE_NONE);
-}
-
-
-/// <summary>
-/// Prepares the art and data mixfiles for the specified side.
-/// This routine is called whenever the side being played changes. It releases the previous
-/// side's archives, mounts the cached, uncached and CD archives belonging to the new one,
-/// and then lets the map rebuild whatever it keeps on a per house basis.
-/// </summary>
-/// <param name="side">The side whose archives should be made available.</param>
-/// <returns>bool; Was the side's SIDEC archive found?</returns>
-bool Prep_For_Side(SideType side)
-{
-	int id;
-	char name[64];
-
-	DebugString("Preparing Mixfiles for Side %02d.\n", side);
-
-	Release_Side_Mixfiles();
-
-	id = (int)side + 1;
-
-	if (!Mount_Side_Mixfiles(id, true)) {
-		return(false);
+		SideNCMix = Mount_Side_Mixfile(name);
 	}
 
 	if (Session.Type == GAME_NORMAL) {
@@ -6160,7 +6038,7 @@ bool Prep_For_Side(SideType side)
 
 			DebugString("     Initializing %s\n", name);
 			if (CCFileClass(name).Is_Available()) {
-				SideCDMix = new MFCD(name, &FastKey);
+				SideCDMix = Mount_Side_Mixfile(name);
 			}
 		}
 
@@ -6170,7 +6048,7 @@ bool Prep_For_Side(SideType side)
 
 			DebugString("     Initializing %s\n", name);
 			if (CCFileClass(name).Is_Available()) {
-				SideCDMix = new MFCD(name, &FastKey);
+				SideCDMix = Mount_Side_Mixfile(name);
 			}
 		}
 
@@ -6185,6 +6063,28 @@ bool Prep_For_Side(SideType side)
 	Map.Init_For_House();
 
 	return(true);
+}
+
+
+/// <summary>
+/// Clears the player's side when a match ends or a scenario fails to start. The side's archives
+/// stay mounted until the next side is prepared, but move behind every archive mounted so far,
+/// and the interface drops the side's style sheet and reads its files again. Does nothing when
+/// no side's archives are searched first.
+/// </summary>
+void Prep_For_No_Side(void)
+{
+	if (!SideMixfilesFirst) {
+		return;
+	}
+	SideMixfilesFirst = false;
+
+	for (MFCD * mix : SideMixfiles) {
+		mix->Search_Last();
+	}
+
+	UIControls.Read_INI_File(DeploymentConfig.UIFile.c_str(), true);
+	UI_On_Archives_Change(SIDE_NONE);
 }
 
 
@@ -6375,7 +6275,7 @@ int New_Main_Menu(void)
 	int selection = newmenu->Process_Game_Select();
 
 	if (selection == NSEL_OLD_MENU) {
-		return(Main_Menu(TIMER_MINUTE));
+		return(Main_Menu());
 	}
 
 	switch (selection) {

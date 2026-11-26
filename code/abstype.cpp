@@ -121,7 +121,6 @@ void AbstractTypeClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
 	crc((const char *)IniName);
-	crc((const char *)GivenName);
 }
 
 

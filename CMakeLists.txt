@@ -1,14 +1,18 @@
 cmake_minimum_required(VERSION 3.23)
 
-project(OpenTS VERSION 0.2.0 LANGUAGES C CXX)
+project(OpenTS VERSION 0.3.0 LANGUAGES C CXX)
 
-# A SemVer prerelease label, which project() cannot carry because it takes numbers only. Set it
-# to "beta1" and the version reads 0.1.0-beta1; leave it empty outside a prerelease series. The
-# manual's release registry is checked against both this and the project version.
+# The SemVer prerelease label, set apart because project() accepts only numbers. With "beta1",
+# version 1.2.3 reads 1.2.3-beta1. manual/data/releases.yaml must match this and the project
+# version.
 set(OPENTS_VERSION_PRERELEASE "")
 
-# Marks a build published under the version it declares, so that it is named by that version
-# alone. Every other build names the commit it came from as well.
+# A release candidate's label, such as "rc1", normally taken from a v<version>-<label> tag at
+# HEAD. The release workflow sets it from the tag it builds.
+set(OPENTS_VERSION_LABEL "" CACHE STRING "Prerelease label to build with, such as rc1")
+
+# An official build displays its version alone. Any other build also displays its commit when
+# git reports one.
 option(OPENTS_OFFICIAL_BUILD "Build as an official release of the declared version" OFF)
 
 option(OPENTS_EXPERIMENTAL_CLANG_CL "Build with clang-cl using the MSVC ABI" OFF)
@@ -61,11 +65,9 @@ set(OPENTS_GAME_DIR "${CMAKE_SOURCE_DIR}/Run" CACHE PATH "Tiberian Sun game data
 # Build identity stamp
 # ---------------------------------------------------------
 #
-# The version resources, the version displays, and the debug log's opening banner all report
-# the version and commit that produced the binary. Stamping runs once here so the headers exist
-# before the first compile, and again per build through OpenTSBuildStamp so that committing does
-# not require a reconfigure to be reflected. The UI shell's string-name table is generated from
-# language.h on the same schedule.
+# cmake/GitStamp.cmake runs here so the headers exist before the first compile, and on every
+# build through OpenTSBuildStamp so a new commit needs no reconfigure. The UI string-name table
+# is generated from language.h on the same schedule.
 set(OPENTS_GENERATED_DIR "${CMAKE_BINARY_DIR}/generated")
 set(OPENTS_VERSION_HEADER "${OPENTS_GENERATED_DIR}/opents_version.h")
 set(OPENTS_STAMP_HEADER "${OPENTS_GENERATED_DIR}/opents_build.h")
@@ -77,6 +79,7 @@ set(OPENTS_STAMP_ARGS
     "-DOPENTS_VERSION_MINOR=${PROJECT_VERSION_MINOR}"
     "-DOPENTS_VERSION_PATCH=${PROJECT_VERSION_PATCH}"
     "-DOPENTS_VERSION_PRERELEASE=${OPENTS_VERSION_PRERELEASE}"
+    "-DOPENTS_VERSION_LABEL=${OPENTS_VERSION_LABEL}"
     "-DOPENTS_OFFICIAL_BUILD=${OPENTS_OFFICIAL_BUILD}"
     "-DOPENTS_SOURCE_DIR=${CMAKE_SOURCE_DIR}"
     "-DOPENTS_VERSION_HEADER=${OPENTS_VERSION_HEADER}"

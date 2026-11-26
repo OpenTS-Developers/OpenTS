@@ -125,7 +125,6 @@ class RadarClass: public DisplayClass
 		virtual void Set_Local_Dimensions(Rect const & size) override;
 		virtual void Set_Tactical_Position(Coord const & coord);
 		virtual void Init_For_House(void);
-		virtual void Clear_For_House(void);
 
 		void Radar_Activate(int control);
 		void Radar_Background(Cell const & cell);
@@ -279,9 +278,6 @@ class RadarClass: public DisplayClass
 		*/
 		int RadarScale;
 		int RadarX;
-
-		/// Unused
-		int field_149C;
 
 		/*
 		 * This is the row origin of the radar picture -- the smallest sum of X and Y among the

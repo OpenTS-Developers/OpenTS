@@ -12,16 +12,10 @@ when_omitted:
 MoveFlash=MOVEFLSH ; an AnimType registered in [Animations]
 ```
 
-When the player orders a move, the named animation plays at the cell the player clicked. It sits at ground height there, or on the bridge deck if the cell has a bridge. A move order for a group plays it at most once, not once per object.
+When the player orders a move, the `MoveFlash` animation plays at the cell the player clicked. It sits at ground height there, or on the bridge deck if the cell has a bridge. A move order for a group plays it at most once, not once per object. If no rules file sets `MoveFlash`, or it is set to `none`, a move order shows no marker.
 
-:::danger[Set `MoveFlash` to an existing AnimType]
-If no rules file sets `MoveFlash`, or it is set to `none`, the game crashes on the player's first move order.
-:::
+In every kind of game, the marker plays only on the machine of the player who gave the order. Saves, the multiplayer synchronization check, and the other players never see it, and its random settings, such as [`RandomRate`](/keys/randomrate/) and [`RandomLoopDelay`](/keys/randomloopdelay/), use a random generator that the game's outcome does not depend on.
 
-In a campaign or skirmish game, the marker is an ordinary animation. In a network or Internet game, it plays only on the machine of the player who gave the order, and the game keeps it out of the multiplayer synchronization check. The same order also sets the AnimType's [`YSortAdjust`](/keys/ysortadjust/) to `-5000` on that machine, which draws a ground-layer marker behind the objects around it. The type keeps that value for the rest of the game.
+The marker plays its frames, its loops, the animations in its [`Next`](/keys/next/) chain, and its `Report` sound. It has none of an animation's game effects, such as [`Damage`](/keys/damage/), a [`Scorch`](/keys/scorch/) mark, [`Spawns`](/keys/spawns/), a [`TrailerAnim`](/keys/traileranim/), or the light of an [`AlphaImage`](/keys/alphaimage/).
 
-:::danger[Give the marker an AnimType of its own in network games]
-Use an AnimType for `MoveFlash` that nothing else creates. Once one player has given a move order, other animations of that type sort differently on that player's machine, and an animation of the type in the ground layer then puts the game out of sync.
-
-Also keep random settings such as [`RandomRate`](/keys/randomrate/) and [`RandomLoopDelay`](/keys/randomloopdelay/) off that type. The marker exists only on one machine, so any random number it draws puts that machine out of step with the others.
-:::
+A marker in the ground layer is drawn behind every object in that layer, and any other marker is drawn after every object in its layer, so the type's [`YSortAdjust`](/keys/ysortadjust/) does not move it.

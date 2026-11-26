@@ -1,0 +1,271 @@
+// Schema of the records in a CNCR replay file, container version 1.
+// REPLAY-FORMAT.md defines the container, the frame stream framing, the seal
+// chain, and the limits, and it defines every field below.
+//
+// Field numbers 100 to 199 are engine-private in every message that reserves
+// them. Their meaning depends on RecordingInfo.engine.
+
+syntax = "proto3";
+
+package cncreplay;
+
+import "launch.proto";
+
+// ---- INFO ----
+
+message RecordingInfo {
+  string engine           = 1;
+  string engine_version   = 2;
+  uint32 data_version     = 3;   // from 1
+  string package          = 4;
+  string package_version  = 5;
+  repeated cnclaunch.FileHash files = 6;
+  uint64 recorded_at      = 7;
+  optional uint32 recorder = 8;
+  string map_name         = 9;
+  string map_path         = 10;  // relative to the game directory, or empty
+  bytes  map_sha256       = 11;
+  string game_mode        = 12;
+  uint32 seal_version     = 13;  // 1
+  repeated PlayerColor colors = 14;
+  repeated IncomeKind income_kinds = 15;
+
+  reserved 100 to 199;
+}
+
+message PlayerColor {
+  uint32  number = 1;            // in the numbering of Player.color
+  fixed32 rgb    = 2;            // 0x00RRGGBB
+}
+
+message IncomeKind {
+  uint32 number = 1;
+  string id     = 2;
+}
+
+// ---- LNCH ----
+
+// The section is a cnclaunch.Game, which launch.proto defines.
+
+// ---- FRMS ----
+
+message Frame {
+  uint32 skipped                  = 1;
+  optional fixed32 hash           = 2;
+  repeated Event events           = 3;
+  ViewState view                  = 4;
+  repeated PlayerMessage messages = 5;
+  optional uint32 frame_micros    = 6;
+  repeated HouseSample samples    = 7;
+  repeated Income income          = 8;
+  repeated Seal seals             = 9;
+  repeated uint32 defeated        = 10;  // shared and sealed
+
+  reserved 100 to 199;
+}
+
+message Event {
+  uint32 type    = 1;
+  uint32 house   = 2;
+  sint32 due     = 3;
+  bytes  payload = 4;
+  bool   local   = 5;
+  EventRole role = 6;
+  optional bytes sealed_payload = 7;
+
+  reserved 100 to 199;
+}
+
+enum EventRole {
+  EVENT_ROLE_NONE       = 0;
+  EVENT_ROLE_CHAT_PROOF = 1;
+}
+
+message ViewState {
+  optional Point camera        = 1;
+  optional Selection selection = 2;
+
+  reserved 100 to 199;
+}
+
+message Point {
+  sint32 x = 1;
+  sint32 y = 2;
+}
+
+message Selection {
+  repeated uint32 ids = 1;
+}
+
+message PlayerMessage {
+  uint32 house               = 1;
+  string sender              = 2;
+  string text                = 3;
+  sint32 color               = 4;   // in the numbering of Player.color
+  MessageScope scope         = 5;
+  repeated uint32 recipients = 6;
+  bytes  salt                = 7;
+
+  reserved 100 to 199;
+}
+
+enum MessageScope {
+  MESSAGE_SCOPE_UNKNOWN = 0;
+  MESSAGE_SCOPE_ALL     = 1;
+  MESSAGE_SCOPE_TEAM    = 2;
+  MESSAGE_SCOPE_PRIVATE = 3;
+  MESSAGE_SCOPE_OBSERVERS = 4;
+}
+
+// A metric the engine tracks is set in every sample, zero included. A metric
+// it does not track is left out.
+message HouseSample {
+  uint32 house                     = 1;
+  optional sint64 credits          = 2;
+  optional sint64 stored_value     = 3;
+  optional sint64 spent            = 4;
+  optional sint64 earned           = 5;
+  optional sint32 power_output     = 6;
+  optional sint32 power_drain      = 7;
+  optional uint32 vehicles         = 8;
+  optional uint32 infantry         = 9;
+  optional uint32 aircraft         = 10;
+  optional uint32 buildings        = 11;
+  optional sint64 army_value       = 12;
+  optional sint64 building_value   = 13;
+  optional uint32 units_killed     = 14;
+  optional uint32 buildings_killed = 15;
+  optional uint32 units_lost       = 16;
+  optional uint32 buildings_lost   = 17;
+  optional uint32 units_built      = 18;
+  optional uint32 buildings_built  = 19;
+  optional sint64 score            = 20;
+  bool   defeated                  = 21;
+
+  reserved 100 to 199;
+}
+
+message Income {
+  uint32 house  = 1;
+  uint32 kind   = 2;
+  sint64 amount = 3;
+
+  reserved 100 to 199;
+}
+
+message Seal {
+  uint32 through = 1;
+  bytes  hash    = 2;
+}
+
+// ---- CKPT ----
+
+message Checkpoint {
+  uint32  frame = 1;
+  fixed32 crc32 = 2;
+  bytes   state = 3;
+
+  reserved 100 to 199;
+}
+
+// ---- STAT ----
+
+message Statistics {
+  repeated ObjectType types   = 1;
+  repeated HouseStatistics houses = 2;
+
+  reserved 100 to 199;
+}
+
+enum ObjectCategory {
+  OBJECT_CATEGORY_UNKNOWN  = 0;
+  OBJECT_CATEGORY_BUILDING = 1;
+  OBJECT_CATEGORY_INFANTRY = 2;
+  OBJECT_CATEGORY_VEHICLE  = 3;
+  OBJECT_CATEGORY_AIRCRAFT = 4;
+}
+
+message ObjectType {
+  ObjectCategory category = 1;
+  uint32 index         = 2;
+  string id            = 3;
+  string name          = 4;
+  sint32 cost          = 5;
+  string icon          = 6;
+  bool   naval         = 7;
+  bool   unscored      = 8;      // left out of the engine's score
+  bool   insignificant = 9;      // never counted by the engine's tallies
+
+  reserved 100 to 199;
+}
+
+message HouseStatistics {
+  uint32 house           = 1;
+  string name            = 2;
+  string country_name    = 3;
+  sint32 color           = 4;    // in the numbering of Player.color
+  sint32 start           = 5;    // -1 when the house was never placed
+  repeated uint32 allies = 6;
+  Outcome outcome        = 7;
+  LeaveReason leave      = 8;
+  HouseSample final      = 9;
+  repeated TypeCount counts = 10;
+  repeated HouseKills kills = 11;
+  repeated CrateCount crates = 12;
+
+  reserved 100 to 199;
+}
+
+enum Outcome {
+  OUTCOME_UNKNOWN = 0;
+  OUTCOME_WON     = 1;
+  OUTCOME_LOST    = 2;
+  OUTCOME_DRAW    = 3;
+}
+
+enum LeaveReason {
+  LEAVE_REASON_NONE         = 0;
+  LEAVE_REASON_RESIGNED     = 1;
+  LEAVE_REASON_DISCONNECTED = 2;
+}
+
+message TypeCount {
+  CountKind kind    = 1;
+  ObjectCategory category = 2;
+  uint32 index      = 3;
+  uint32 count      = 4;
+}
+
+message CrateCount {
+  string id    = 1;
+  uint32 count = 2;
+}
+
+enum CountKind {
+  COUNT_KIND_UNKNOWN   = 0;
+  COUNT_KIND_BUILT     = 1;
+  COUNT_KIND_KILLED    = 2;
+  COUNT_KIND_LOST      = 3;
+  COUNT_KIND_CAPTURED  = 4;
+  COUNT_KIND_REMAINING = 5;
+}
+
+message HouseKills {
+  uint32 house     = 1;
+  uint32 units     = 2;
+  uint32 buildings = 3;
+}
+
+// ---- END ----
+
+message RecordingSummary {
+  optional uint32 last_frame     = 1;
+  uint64 ended_at                = 2;
+  optional uint32 desync_frame   = 3;
+  bool   completed               = 4;
+  repeated Seal seals            = 5;
+  optional uint64 elapsed_micros = 6;
+  optional uint64 game_micros    = 7;
+
+  reserved 100 to 199;
+}

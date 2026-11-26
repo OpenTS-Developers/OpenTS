@@ -14,15 +14,9 @@ class Surface;
 extern Surface * TileSurface;
 extern Surface * SidebarSurface;
 
-extern Surface * Unk1Surface; /// unused
-
 extern Surface * VisibleSurface;
 extern Surface * HiddenSurface;
 extern Surface * AlternateSurface;
 extern Surface * LogicalSurface;
 
-extern Surface * Unk2Surface; /// unused
-
 extern Surface * CompositeSurface;
-
-extern Surface * PreviewSurface; /// unused

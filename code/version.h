@@ -104,7 +104,8 @@ class VersionClass {
 		// The version the program reports, taken from the project version so that the
 		// number a build negotiates with matches the number it displays. The minor
 		// field carries the SemVer minor and patch, one byte each, which makes the
-		// composed version number the packed form the save stamp also uses.
+		// composed version number the packed version. The save stamp adds a serial
+		// above it, which this number leaves out.
 		enum VersionEnum {
 			MAJOR_VERSION = OPENTS_VERSION_MAJOR,
 			MINOR_VERSION = (OPENTS_VERSION_MINOR << 8) | OPENTS_VERSION_PATCH

@@ -104,6 +104,7 @@
 #include "swizzle.h"
 #include "tactical.h"
 #include "tag.h"
+#include "tagtype.h"
 #include "target.h"
 #include "taskforc.h"
 #include "teamtype.h"
@@ -264,7 +265,7 @@ void TeamClass::Debug_Dump(MonoClass * mono) const
  * HISTORY:                                                                                    *
  *   09/21/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-TeamClass::TeamClass(TeamTypeClass const * type, HouseClass * owner, void * unknown) :
+TeamClass::TeamClass(TeamTypeClass const * type, HouseClass * owner) :
 	BASECLASS(),
 	Class((TeamTypeClass *)type),
 	House(owner),
@@ -292,7 +293,6 @@ TeamClass::TeamClass(TeamTypeClass const * type, HouseClass * owner, void * unkn
 	Member(0),
 	Script(NULL),
 	HouseToScout(NULL),
-	UnusedPtr1(unknown),
 	CreationFrame(Frame),
 	Tag(NULL),
 	IsDeleteTypeWhenDone(false),
@@ -305,7 +305,6 @@ TeamClass::TeamClass(TeamTypeClass const * type, HouseClass * owner, void * unkn
 	AbstractTypePtrTracker.Add(this);
 	TagPtrTracker.Add(this);
 	ObjectPtrTracker.Add(this);
-	NeuronPtrTracker.Add(this);
 
 	memset(Quantity, 0, sizeof(Quantity));
 	if (Class != NULL) {
@@ -384,7 +383,6 @@ TeamClass::~TeamClass(void)
 	}
 	Detach_This_From_All(this);
 
-	NeuronPtrTracker.Delete(this);
 	ObjectPtrTracker.Delete(this);
 	AbstractTypePtrTracker.Delete(this);
 	TagPtrTracker.Delete(this);
@@ -1389,10 +1387,6 @@ void TeamClass::Detach(AbstractClass const * target, bool all)
 		ClosestMember = NULL;
 	}
 
-	if ((AbstractClass *)UnusedPtr1 == target) {
-		UnusedPtr1 = NULL;
-	}
-
 	if (HouseToScout == target) {
 		HouseToScout = NULL;
 	}
@@ -2267,7 +2261,6 @@ void TeamClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ClosestMember);
 	stream.Serialize(MissionTarget);
 	stream.Serialize(Target);
-	// UnusedPtr1 -- untyped, so it carries no swizzle identity, and nothing reads it.
 	stream.Serialize(Total);
 	stream.Serialize(Risk);
 	stream.Serialize(CreationFrame);
@@ -2310,28 +2303,28 @@ void TeamClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
 
-	crc(Class->Fetch_ID());
-
+	crc(Class->HeapID);
+	// A script is never given an ID, so its type's heap position is hashed, or -1 for none.
+	crc(Script != NULL && Script->Class_Of() != NULL ? Script->Class_Of()->Fetch_Heap_ID() : -1);
 	crc(House->Fetch_ID());
-
+	if (HouseToScout != NULL) crc(HouseToScout->Fetch_ID());
+	if (Zone != NULL) crc(Zone->Fetch_ID());
 	if (ClosestMember != NULL) {
 		crc(ClosestMember->Fetch_ID());
 	}
-
+	if (MissionTarget != NULL) crc(MissionTarget->Fetch_ID());
+	if (Target != NULL) crc(Target->Fetch_ID());
 	crc(Total);
 	crc(Risk);
-
+	crc(CreationFrame);
 	if (Member != NULL) {
 		crc(Member->Fetch_ID());
 	}
-
 	crc((int)TimeOut);
 	crc((int)SuspendTimer);
-
-	if (Tag != NULL) {
-		crc(Tag->Fetch_ID());
-	}
-
+	// A tag is never given an ID, so its type's heap position is hashed, or -1 for none.
+	crc(Tag != NULL ? Tag->Class->Fetch_Heap_ID() : -1);
+	crc(IsDeleteTypeWhenDone);
 	crc(IsForcedActive);
 	crc(IsHasBeen);
 	crc(IsFullStrength);
@@ -2344,8 +2337,10 @@ void TeamClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsNextMission);
 	crc(IsLeaveMap);
 	crc(Suspended);
-
-	crc(Quantity, sizeof(Quantity));
+	crc(Succeeded);
+	for (int i = 0; i < ARRAY_SIZE(Quantity); i++) {
+		crc(Quantity[i]);
+	}
 }
 
 

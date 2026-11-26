@@ -75,7 +75,6 @@ ParticleClass::ParticleClass(ParticleTypeClass const * type, Coord const & origi
 	ColorIndex(0),
 	GasDrift(0,0,0),
 	GasVelocity(0,0,-1),
-	UnusedCoord1(0,0,0),
 	Speed(Class->Velocity),
 	FireTarget(target),
 	FireOrigin(origin),
@@ -87,7 +86,6 @@ ParticleClass::ParticleClass(ParticleTypeClass const * type, Coord const & origi
 	IsFireBelowGround(false),
 	StateAI(Class->StartStateAI),
 	Translucency(Class->Translucency),
-	WasSaved(false),
 	IsToDie(false)
 {
 	Create_ID();
@@ -163,7 +161,6 @@ ParticleClass::ParticleClass(void) :
 	ColorIndex(0),
 	GasDrift(0,0,0),
 	GasVelocity(0,0,-1),
-	UnusedCoord1(0,0,0),
 	Speed(0),
 	FireTarget(COORD_NONE),
 	FireOrigin(COORD_NONE),
@@ -175,7 +172,6 @@ ParticleClass::ParticleClass(void) :
 	IsFireBelowGround(false),
 	StateAI(0),
 	Translucency(0),
-	WasSaved(false),
 	IsToDie(false)
 {
 	Particles.Add(this);
@@ -904,7 +900,6 @@ void ParticleClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ColorAccum);
 	stream.Serialize(GasDrift);
 	stream.Serialize(GasVelocity);
-	stream.Serialize(UnusedCoord1);
 	stream.Serialize(Speed);
 	stream.Serialize(FireTarget);
 	stream.Serialize(FireOrigin);
@@ -918,22 +913,7 @@ void ParticleClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsFireBelowGround);
 	stream.Serialize(StateAI);
 	stream.Serialize(Translucency);
-	stream.Serialize(WasSaved);
 	stream.Serialize(IsToDie);
-}
-
-
-/// <summary>
-/// Writes this particle out to the save game stream.
-/// </summary>
-/// <param name="stream">The stream to write this particle to.</param>
-/// <param name="cleardirty">Should the modified flag be cleared once written?</param>
-/// <returns>bool; Was the record written whole?</returns>
-bool ParticleClass::Save(SaveStreamClass & stream, bool cleardirty)
-{
-	bool result = BASECLASS::Save(stream, cleardirty);
-	WasSaved = true;
-	return(result);
 }
 
 

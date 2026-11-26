@@ -19,6 +19,7 @@ keys:
   - RadialColor
   - SensorArray
   - Sensors
+  - UncloakSound
 related:
   - type: system
     id: emp-pulse
@@ -70,7 +71,7 @@ The two fades differ in length:
 - **Fading out** ends early. The object becomes hidden as soon as it reaches the shadowy band, at the first step at or above half of `CloakingStages`. It never shows the ripple on the way out.
 - **Fading back in** starts one step below the whole, so it opens with the ripple, and runs all the way down to fully visible.
 
-With the stock `CloakingStages=9` and the stealth tank's `CloakingSpeed=5` from the example above, the tank disappears after about 25 frames and takes about 40 to reappear. [`CloakSound`](/keys/cloaksound/) plays at the object's position as each fade begins.
+With the stock `CloakingStages=9` and the stealth tank's `CloakingSpeed=5` from the example above, the tank disappears after about 25 frames and takes about 40 to reappear. A [`CloakSound`](/keys/cloaksound/) plays at the object's position as the fade out begins, and as the fade back in begins unless the object's type sets an [`UncloakSound`](/keys/uncloaksound/).
 
 A structure ignores both settings. It steps through fifteen fixed levels of translucency, one level per frame in either direction, and is hidden at the fifteenth.
 
@@ -119,7 +120,7 @@ Each event below ends the cloak and starts the full fade back into view:
 - **A jumpjet nearby:** a moving jumpjet uncloaks everything near it, whoever owns it. [Jumpjet overflight](#jumpjet-overflight) gives the area.
 - **Losing cover:** an object hidden only because a field covered its cell, as soon as that cover is lifted.
 - **Being immobilized:** an [EM pulse](/systems/emp-pulse/) and anything else that stuns. An object that holds the `CLOAK` ability, or stands in its house's cloaking field, keeps its cloak.
-- **Critical damage while fading out:** while the fade out is in its darkened band and health is at or below `ConditionRed`, a 10% chance on each frame abandons the cloak. The chance is taken on every frame of that band, so a slow fade is abandoned more often. With the stock nine stages the band lasts about twice `CloakingSpeed` frames, so at the stealth tank's `CloakingSpeed=5` about two critically damaged cloaks in three are abandoned. This is the only uncloak that plays no `CloakSound`.
+- **Critical damage while fading out:** while the fade out is in its darkened band and health is at or below `ConditionRed`, a 10% chance on each frame abandons the cloak. The chance is taken on every frame of that band, so a slow fade is abandoned more often. With the stock nine stages the band lasts about twice `CloakingSpeed` frames, so at the stealth tank's `CloakingSpeed=5` about two critically damaged cloaks in three are abandoned. This is the only uncloak that plays no sound.
 - **A detector beside a structure:** a hidden structure has a `Sensors=yes` object within one cell of its footprint, and that object's owner does not consider the structure allied.
 
 Sensor coverage is not on the list. Marking a cell as sensed never uncloaks anything standing on it.

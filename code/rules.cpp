@@ -65,6 +65,7 @@
 #include "bullettype.h"
 #include "ccfile.h"
 #include "conquer.h"
+#include "crc.h"
 #include "convert.h"
 #include "dbgprint.h"
 #include "deploymentconfig.h"
@@ -85,6 +86,7 @@
 #include "session.h"
 #include "side.h"
 #include "smudtype.h"
+#include "statehash.h"
 #include "stimer.h"
 #include "sun.h"
 #include "suprtype.h"
@@ -103,6 +105,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <memory>
 
 
 void Difficulty_Get(CCINIClass const & ini, DifficultyClass & diff, char const * section);
@@ -610,7 +613,53 @@ RulesClass::RulesClass(void) :
 	UpgradeEliteSound(VOC_NONE),
 	VoxUnitPromoted(VOX_NONE),
 	VeteranFlashTimer(0),
-	EliteFlashTimer(0)
+	EliteFlashTimer(0),
+	ComesNearWaypointDistance(CELL_LEPTON_W * 5),
+	Ground(),
+	CrateShares{
+		50,     // CRATE_MONEY
+		20,     // CRATE_UNIT
+		1,      // CRATE_HEAL_BASE
+		3,      // CRATE_CLOAK
+		5,      // CRATE_EXPLOSION
+		5,      // CRATE_NAPALM
+		20,     // CRATE_SQUAD
+		1,      // CRATE_DARKNESS
+		1,      // CRATE_REVEAL
+		10,     // CRATE_ARMOR
+		10,     // CRATE_SPEED
+		10,     // CRATE_FIREPOWER
+		1,      // CRATE_ICBM
+		3,      // CRATE_INVULN
+		1,      // CRATE_VETERAN
+		1,      // CRATE_ION_STORM
+		1,      // CRATE_GAS
+		1,      // CRATE_TIBERIUM
+		1       // CRATE_POD
+	},
+	CrateAnims{
+		ANIM_NONE,  // CRATE_MONEY
+		ANIM_NONE,  // CRATE_UNIT
+		ANIM_NONE,  // CRATE_HEAL_BASE
+		ANIM_NONE,  // CRATE_CLOAK
+		ANIM_NONE,  // CRATE_EXPLOSION
+		ANIM_NONE,  // CRATE_NAPALM
+		ANIM_NONE,  // CRATE_SQUAD
+		ANIM_NONE,  // CRATE_DARKNESS
+		ANIM_NONE,  // CRATE_REVEAL
+		ANIM_NONE,  // CRATE_ARMOR
+		ANIM_NONE,  // CRATE_SPEED
+		ANIM_NONE,  // CRATE_FIREPOWER
+		ANIM_NONE,  // CRATE_ICBM
+		ANIM_NONE,  // CRATE_INVULN
+		ANIM_NONE,  // CRATE_VETERAN
+		ANIM_NONE,  // CRATE_ION_STORM
+		ANIM_NONE,  // CRATE_GAS
+		ANIM_NONE,  // CRATE_TIBERIUM
+		ANIM_NONE   // CRATE_POD
+	},
+	CrateData(),
+	MissionControl()
 {
 	/// nothing
 }
@@ -627,6 +676,28 @@ RulesClass::~RulesClass(void)
 }
 
 
+namespace {
+	// The rule values as they stood before the first scenario.
+	std::unique_ptr<RulesClass> Baseline;
+}
+
+
+/// <summary>
+/// Records the current rule values, land types, crate settings and mission controls as the ones
+/// every later Initialize starts from. Call it once, after the startup rule files are read and
+/// before the first scenario.
+/// </summary>
+void RulesClass::Set_Baseline(void) const
+{
+	std::unique_ptr<RulesClass> baseline = std::make_unique<RulesClass>(*this);
+	// Initialize deletes every type these values could refer to, so the copy refers to none.
+	for (int index = 0; index < AbstractTypes.Count(); index++) {
+		baseline->Detach(AbstractTypes[index], true);
+	}
+	Baseline = std::move(baseline);
+}
+
+
 /// <summary>
 /// Builds the game's rule data from scratch.
 /// This routine wipes every object type heap clean, reloads the art database, and then
@@ -635,10 +706,15 @@ RulesClass::~RulesClass(void)
 /// caller's own overrides are applied after this returns, so a scenario outranks them all.
 /// </summary>
 /// <remarks>Every type object in the game is destroyed here, so nothing may be holding a
-/// pointer to one when this routine is called. The scalars are not reset first, so one no
-/// file names keeps the value the last game left it with.</remarks>
+/// pointer to one when this routine is called. The rule values, land types, crate settings and
+/// mission controls first return to the ones Set_Baseline recorded, so a value an earlier
+/// scenario set there does not reach the next game.</remarks>
 void RulesClass::Initialize(CCINIClass const & ini)
 {
+	if (Baseline != nullptr) {
+		*this = *Baseline;
+	}
+
 	while (ColorSchemes.Count()) {
 		delete ColorSchemes[0];
 	}
@@ -1267,7 +1343,6 @@ bool RulesClass::General(CCINIClass const & ini)
 		IsBlendedFog = ini.Get_Bool(GENERAL, "BlendedFog", IsBlendedFog);
 		AttackingAircraftSightRange = ini.Get_Int(GENERAL, "AttackingAircraftSightRange", AttackingAircraftSightRange);
 		LeptonsPerSightIncrease = ini.Get_Int(GENERAL, "LeptonsPerSightIncrease", LeptonsPerSightIncrease);
-		TiberiumTransmogrify = ini.Get_Int(GENERAL, "TiberiumTransmogrify", TiberiumTransmogrify);
 		LightningFrequency = int(ini.Get_Float(GENERAL, "IonLightningFrequency", LightningFrequency / 10) * 10);
 		LightningRandomness = ini.Get_Int(GENERAL, "IonLightningRandomness", LightningRandomness);
 		LightningDamage = ini.Get_Int(GENERAL, "IonLightningDamage", LightningDamage);
@@ -1332,6 +1407,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		EngineerCaptureLevel = (float)ini.Get_Float(GENERAL, "EngineerCaptureLevel", EngineerCaptureLevel);
 		EngineerDamage = (float)ini.Get_Float(GENERAL, "EngineerDamage", EngineerDamage);
 		TalkBubbleTime = int(TIMER_SECOND * ini.Get_Float(GENERAL, "TalkBubbleTime", TalkBubbleTime * (1.0f/TIMER_SECOND)));
+		ComesNearWaypointDistance = ini.Get_Int(GENERAL, "ComesNearWaypointDistance", ComesNearWaypointDistance);
 		return(true);
 	}
 	return(false);
@@ -2554,7 +2630,6 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AmbientLightChangeStep);
 	stream.Serialize(CrateTime);
 	stream.Serialize(TimerWarning);
-	stream.Serialize(TiberiumTransmogrify);
 	stream.Serialize(NukeTime);
 	stream.Serialize(EMPulseTime);
 	stream.Serialize(IonCannonTime);
@@ -2650,6 +2725,586 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(VoxUnitPromoted);
 	stream.Serialize(VeteranFlashTimer);
 	stream.Serialize(EliteFlashTimer);
+	stream.Serialize(ComesNearWaypointDistance);
+	stream.Serialize(Ground);
+	stream.Serialize(CrateShares);
+	stream.Serialize(CrateAnims);
+	stream.Serialize(CrateData);
+	stream.Serialize(MissionControl);
+}
+
+
+namespace {
+	void Add_Type(CRCEngine & crc, AbstractTypeClass const * type)
+	{
+		if (type == nullptr) {
+			crc(-1);
+			return;
+		}
+		char const * const name = type->Name();
+		crc((int)std::strlen(name));
+		crc(name);
+	}
+
+	template<class T>
+	void Add_List(CRCEngine & crc, TypeList<T const *> const & list)
+	{
+		crc(list.Count());
+		for (int index = 0; index < list.Count(); index++) {
+			Add_Type(crc, list[index]);
+		}
+	}
+
+	void Add_List(CRCEngine & crc, TypeList<int> const & list)
+	{
+		crc(list.Count());
+		for (int index = 0; index < list.Count(); index++) {
+			crc(list[index]);
+		}
+	}
+
+	void Add_Difficulty(CRCEngine & crc, DifficultyClass const & difficulty)
+	{
+		crc(difficulty.FirepowerBias);
+		crc(difficulty.GroundspeedBias);
+		crc(difficulty.AirspeedBias);
+		crc(difficulty.ArmorBias);
+		crc(difficulty.ROFBias);
+		crc(difficulty.CostBias);
+		crc(difficulty.BuildSpeedBias);
+		crc(difficulty.RepairDelay);
+		crc(difficulty.BuildDelay);
+		crc(difficulty.IsBuildSlowdown);
+		crc(difficulty.IsWallDestroyer);
+		crc(difficulty.IsContentScan);
+	}
+
+	void Add_Ground(CRCEngine & crc, GroundType const & ground)
+	{
+		for (int speed = 0; speed < SPEED_COUNT; speed++) {
+			crc(ground.Cost[speed]);
+		}
+		crc(ground.Build);
+	}
+
+	void Add_Mission_Control(CRCEngine & crc, MissionControlClass const & control)
+	{
+		crc((int)control.Mission);
+		crc(control.IsNoThreat);
+		crc(control.IsZombie);
+		crc(control.IsRecruitable);
+		crc(control.IsParalyzed);
+		crc(control.IsRetaliate);
+		crc(control.IsScatter);
+		crc(control.Rate);
+		crc(control.AARate);
+	}
+}
+
+
+/// <summary>
+/// Adds the rule values that affect the simulation to a checksum, together with the
+/// terrain, crate, and mission tables the rules files fill in.
+/// </summary>
+/// <param name="crc">The checksum the values are added to.</param>
+/// <param name="checkpoints">When not null, receives the running checksum after each rules
+/// section, labeled with the section. A long section also gets one after about every 35
+/// values, labeled with the last member added before it.</param>
+void RulesClass::Compute_CRC(CRCEngine & crc, std::vector<StateHash::Checkpoint> * checkpoints) const
+{
+	auto checkpoint = [&](char const * label) {
+		if (checkpoints != nullptr) {
+			checkpoints->push_back({label, (unsigned int)crc()});
+		}
+	};
+
+	// Sound and speech choices are left out, since they only pick entries from the sound
+	// tables that SOUND.INI and EVA.INI build on each machine.
+	crc(MaxPlayers);
+	checkpoint("[Maximums]");
+	crc(JumpjetTurnRate);
+	crc(JumpjetSpeed);
+	crc(JumpjetClimb);
+	crc(JumpjetCruiseHeight);
+	crc(JumpjetAcceleration);
+	crc(JumpjetWobblesPerSecond);
+	crc(JumpjetWobbleDeviation);
+	crc(JumpjetCloakDetectionRadius);
+	checkpoint("[JumpjetControls]");
+	crc(MPMoney);
+	crc(MPMaxMoney);
+	crc(MPUnitCount);
+	crc(MPBuildLevel);
+	crc(IsMPBridgeDestruction);
+	crc(IsMPShadowGrow);
+	crc(IsMPBasesOn);
+	crc(IsMPTiberiumGrow);
+	crc(IsMPCrates);
+	crc(IsMPCaptureTheFlag);
+	crc(IsMPBuildOffAllyAnyStructure);
+	checkpoint("[MultiplayerDefaults]");
+	Add_List(crc, BuildConst);
+	Add_List(crc, BuildPower);
+	Add_List(crc, BuildRefinery);
+	Add_List(crc, BuildBarracks);
+	Add_List(crc, BuildTech);
+	Add_List(crc, BuildWeapons);
+	Add_List(crc, BuildDefense);
+	Add_List(crc, BuildPDefense);
+	Add_List(crc, BuildAA);
+	Add_List(crc, BuildHelipad);
+	Add_List(crc, BuildRadar);
+	Add_List(crc, ConcreteWalls);
+	Add_List(crc, NSGates);
+	Add_List(crc, EWGates);
+	crc(AttackInterval);
+	crc(AttackDelay);
+	crc(PatrolTime);
+	crc(RepairThreshhold);
+	crc(PathDelay);
+	crc(BlockagePathDelay);
+	crc(TiberiumShortScan);
+	crc(TiberiumLongScan);
+	crc(AutocreateTime);
+	crc(InfantryReserve);
+	crc(InfantryBaseMult);
+	crc(PowerSurplus);
+	crc(BaseSizeAdd);
+	crc(RefineryRatio);
+	checkpoint("[AI] through RefineryRatio");
+	crc(RefineryLimit);
+	crc(BarracksRatio);
+	crc(BarracksLimit);
+	crc(WarRatio);
+	crc(WarLimit);
+	crc(DefenseRatio);
+	crc(DefenseLimit);
+	crc(AARatio);
+	crc(AALimit);
+	crc(TeslaRatio);
+	crc(TeslaLimit);
+	crc(HelipadRatio);
+	crc(HelipadLimit);
+	crc(AirstripRatio);
+	crc(AirstripLimit);
+	crc(IsCompEasyBonus);
+	crc(IsComputerParanoid);
+	crc(PowerEmergencyFraction);
+	crc(AIBaseSpacing);
+	crc(GDIWallDefense);
+	crc(GDIWallDefenseCoefficient);
+	crc(NodBaseDefenseCoefficient);
+	crc(GDIBaseDefenseCoefficient);
+	crc(MaximumBaseDefenseValue);
+	crc(ComputerBaseDefenseResponse);
+	crc(AIDetectDisguise);
+	crc(FireSaleKeepThreshold);
+	crc(FireSaleStructureWeight);
+	checkpoint("[AI]");
+	for (int i = 0; i < CRATE_COUNT; i++) {
+		crc(CrateShares[i]);
+	}
+	checkpoint("[Powerups] shares");
+	for (int i = 0; i < CRATE_COUNT; i++) {
+		crc((int)CrateAnims[i]);
+	}
+	checkpoint("[Powerups] animations");
+	for (int i = 0; i < CRATE_COUNT; i++) {
+		crc(CrateData[i]);
+	}
+	checkpoint("[Powerups] data");
+	for (int i = 0; i < LAND_COUNT; i++) {
+		Add_Ground(crc, Ground[i]);
+	}
+	checkpoint("land types");
+	crc(MaxIQ);
+	crc(IQSuperWeapons);
+	crc(IQProduction);
+	crc(IQGuardArea);
+	crc(IQRepairSell);
+	crc(IQCrush);
+	crc(IQScatter);
+	crc(IQContentScan);
+	crc(IQAircraft);
+	crc(IQHarvester);
+	crc(IQSellBack);
+	checkpoint("[IQ]");
+	Add_Type(crc, LargeVisceroid);
+	Add_Type(crc, SmallVisceroid);
+	crc(TiberiumHeal);
+	Add_List(crc, PrerequisitePower);
+	Add_List(crc, PrerequisiteFactory);
+	Add_List(crc, PrerequisiteBarracks);
+	Add_List(crc, PrerequisiteRadar);
+	Add_List(crc, PrerequisiteTech);
+	Add_List(crc, PrerequisiteGDIFactory);
+	Add_List(crc, PrerequisiteNodFactory);
+	crc(ZoomInFactor);
+	crc(IsRevealByHeight);
+	crc(IsShroudedSubteranneanMovesAllowed);
+	crc(AircraftFogReveal);
+	crc(MinLowPowerProductionSpeed);
+	crc(MultipleFactory);
+	crc(MultipleFactoryCap);
+	crc(CraterLevel);
+	crc(TreeFlammability);
+	crc(MissileROTVar);
+	crc(MissileSpeedVar);
+	Add_Type(crc, DropPodWeapon);
+	crc(DropPodHeight);
+	crc(DropPodSpeed);
+	crc(DropPodAngle);
+	crc(CrewEscape);
+	crc(TunnelSpeed);
+	crc(HoverDampen);
+	crc(HoverBob);
+	crc(HoverHeight);
+	crc(HoverBoost);
+	crc(HoverAcceleration);
+	crc(HoverBrake);
+	crc(VeteranRatio);
+	checkpoint("[General] through VeteranRatio");
+	crc(VeteranCombat);
+	crc(VeteranSpeed);
+	crc(VeteranSight);
+	crc(VeteranArmor);
+	crc(VeteranROF);
+	crc(VeteranCap);
+	Add_List(crc, ExplosiveVoxelDebris);
+	crc(BridgeVoxelMax);
+	Add_Type(crc, TireVoxelDebris);
+	Add_Type(crc, ScrapVoxelDebris);
+	crc(CloakingStages);
+	crc(IceCrackingWeight);
+	crc(IceBreakingWeight);
+	crc((int)CliffBackImpassability);
+	crc(PlacementDelay);
+	crc(TrackedUphill);
+	crc(TrackedDownhill);
+	crc(WheeledUphill);
+	crc(WheeledDownhill);
+	crc((int)WindDirection);
+	crc(CameraRange);
+	crc(FlightLevel);
+	Add_Type(crc, RepairBay);
+	Add_Type(crc, GDIGateOne);
+	Add_Type(crc, GDIGateTwo);
+	Add_Type(crc, NodGateOne);
+	Add_Type(crc, NodGateTwo);
+	Add_Type(crc, WallTower);
+	Add_Type(crc, GDIPowerPlant);
+	Add_Type(crc, GDIPowerTurbine);
+	Add_Type(crc, NodRegularPower);
+	Add_Type(crc, NodAdvancedPower);
+	Add_Type(crc, GDIFirestormGenerator);
+	Add_Type(crc, GDIHunterSeeker);
+	checkpoint("[General] through GDIHunterSeeker");
+	Add_Type(crc, NodHunterSeeker);
+	Add_List(crc, BaseUnit);
+	Add_List(crc, HarvesterUnit);
+	Add_List(crc, PadAircraft);
+	Add_Type(crc, Paratrooper);
+	Add_Type(crc, Disguise);
+	Add_Type(crc, Engineer);
+	Add_Type(crc, Technician);
+	Add_Type(crc, Pilot);
+	Add_Type(crc, Crew);
+	crc(IsCurleyShuffle);
+	crc(IsMultiMCV);
+	crc(IsRecheckPrerequisites);
+	crc(IsFineDifficulty);
+	Add_List(crc, TeamDelays);
+	Add_List(crc, AIHateDelays);
+	crc(AIAlternateProductionCreditCutoff);
+	crc(AIUseTurbineUpgradeChance);
+	crc(NodAIBuildsWalls);
+	crc(AIBuildsWalls);
+	Add_List(crc, FillEarliestTeamProbability);
+	Add_List(crc, MinimumAIDefensiveTeams);
+	Add_List(crc, MaximumAIDefensiveTeams);
+	Add_List(crc, TotalAITeamCap);
+	crc(UseMinDefenseRule);
+	crc(DissolveUnfilledTeamDelay);
+	Add_List(crc, MultiplayerAICreditMultipliers);
+	Add_List(crc, AIIonCannonConYardValue);
+	Add_List(crc, AIIonCannonWarFactoryValue);
+	Add_List(crc, AIIonCannonPowerValue);
+	Add_List(crc, AIIonCannonEngineerValue);
+	Add_List(crc, AIIonCannonThiefValue);
+	Add_List(crc, AIIonCannonHarvesterValue);
+	Add_List(crc, AIIonCannonMCVValue);
+	checkpoint("[General] through AIIonCannonMCVValue");
+	Add_List(crc, AIIonCannonAPCValue);
+	Add_List(crc, AIIonCannonBaseDefenseValue);
+	Add_List(crc, AIIonCannonPlugValue);
+	Add_List(crc, AIIonCannonHelipadValue);
+	Add_List(crc, AIIonCannonTempleValue);
+	crc(CloakDelay);
+	crc(GameSpeedBias);
+	crc(NervousBias);
+	crc(IsSeparate);
+	crc(BaseDefenseDelay);
+	crc(SuspendPriority);
+	crc(SuspendDelay);
+	crc(SurvivorFraction);
+	crc(SurvivorDivisor);
+	crc(ReloadRate);
+	crc(BuildupTime);
+	crc(HarvesterDumpRate);
+	crc(HarvesterLoadRate);
+	crc(BuildSpeedBias);
+	crc(DamageDelay);
+	crc(GrowthRate);
+	crc(RefundPercent);
+	crc(RepairPercent);
+	crc(RepairStep);
+	crc(IRepairStep);
+	crc(RepairRate);
+	crc(URepairRate);
+	crc(IRepairRate);
+	crc(SelfHealStep);
+	crc(SelfHealRate);
+	crc(SelfHealCap);
+	crc(StrayDistance);
+	crc(CloseEnoughDistance);
+	crc(IsBlendedFog);
+	checkpoint("[General] through IsBlendedFog");
+	crc(AttackingAircraftSightRange);
+	crc(LeptonsPerSightIncrease);
+	crc(LightningFrequency);
+	crc(LightningRandomness);
+	crc(LightningDamage);
+	crc(LightningDuration);
+	crc(LightningDeferment);
+	Add_Type(crc, IonStormWarhead);
+	crc(SpotlightMovementRadius);
+	crc(SpotlightLocationRadius);
+	crc(SpotlightSpeed);
+	crc(SpotlightAcceleration);
+	crc(SpotlightAngle);
+	crc(SpotlightRadius);
+	crc(RevealTriggerRadius);
+	crc(ChargeToDrainRatio);
+	crc(DamageToFirestormDamageCoefficient);
+	crc(WallBuildSpeedCoefficient);
+	crc(WorstLowPowerBuildRateCoefficient);
+	crc(BestLowPowerBuildRateCoefficient);
+	crc(ConditionYellowSparkingProbability);
+	crc(ConditionRedSparkingProbability);
+	crc(AITriggerSuccessWeightDelta);
+	crc(AITriggerFailureWeightDelta);
+	crc(AITriggerTrackRecordCoefficient);
+	crc(WeedCapacity);
+	crc(FlashFrameTime);
+	crc(RadarCombatFlashTime);
+	crc(RadarEventSpeed);
+	crc(RadarEventRotationSpeed);
+	Add_List(crc, RadarEventSuppressionDistances);
+	Add_List(crc, RadarEventVisibilityDurations);
+	Add_List(crc, RadarEventDurations);
+	crc(RadarEventMinRadius);
+	checkpoint("[General] through RadarEventMinRadius");
+	crc(RadarEventColorSpeed);
+	crc(HunterSeekerDetonateProximity);
+	crc(HunterSeekerDescendProximity);
+	crc(HunterSeekerDescentSpeed);
+	crc(HunterSeekerAscentSpeed);
+	crc(HunterSeekerEmergeSpeed);
+	crc(MyEffectivenessCoefficientDefault);
+	crc(TargetEffectivenessCoefficientDefault);
+	crc(TargetSpecialThreatCoefficientDefault);
+	crc(TargetStrengthCoefficientDefault);
+	crc(TargetDistanceCoefficientDefault);
+	crc(DumbMyEffectivenessCoefficient);
+	crc(DumbTargetEffectivenessCoefficient);
+	crc(DumbTargetSpecialThreatCoefficient);
+	crc(DumbTargetStrengthCoefficient);
+	crc(DumbTargetDistanceCoefficient);
+	crc(EnemyHouseThreatBonus);
+	crc(VeinholeMonsterStrength);
+	crc(MaxVeinholeGrowth);
+	crc(VeinholeGrowthRate);
+	crc(VeinholeShrinkRate);
+	crc(VeinDamage);
+	Add_Type(crc, VeinholeTypeClass);
+	crc(MaximumQueuedObjects);
+	crc(MaxWaypointPathLength);
+	crc(TreeStrength);
+	crc(DropPodInfantryMinimum);
+	crc(DropPodInfantryMaximum);
+	crc(EngineerCaptureLevel);
+	crc(EngineerDamage);
+	crc((int)TalkBubbleTime);
+	crc(ComesNearWaypointDistance);
+	checkpoint("[General]");
+	for (int i = 0; i < MISSION_COUNT; i++) {
+		Add_Mission_Control(crc, MissionControl[i]);
+	}
+	checkpoint("missions");
+	for (int i = 0; i < DIFF_COUNT; i++) {
+		Add_Difficulty(crc, Diff[i]);
+	}
+	checkpoint("difficulty levels");
+	crc(IsFreeMCV);
+	Add_Type(crc, WoodCrateImg);
+	Add_Type(crc, CrateImg);
+	crc(CrateMinimum);
+	crc(CrateMaximum);
+	crc(CrateRadius);
+	crc(CrateTime);
+	Add_Type(crc, UnitCrateType);
+	crc(SoloCrateMoney);
+	crc(CrateMoneyBonus);
+	crc(IsArmorCrateStacking);
+	crc(IsFirepowerCrateStacking);
+	crc(IsArmorCrateStackingAdditive);
+	crc(IsFirepowerCrateStackingAdditive);
+	crc((int)SilverCrate);
+	crc((int)WoodCrate);
+	checkpoint("[CrateRules]");
+	crc(AmmoCrateDamage);
+	crc(IonCannonDamage);
+	crc(RailgunDamageRadius);
+	crc(TiberiumExplosionDamage);
+	crc(TiberiumStrength);
+	Add_List(crc, Scorches);
+	Add_List(crc, Scorches1);
+	Add_List(crc, Scorches2);
+	Add_List(crc, Scorches3);
+	Add_List(crc, Scorches4);
+	Add_List(crc, Craters);
+	Add_List(crc, SplashList);
+	Add_Type(crc, FlameDamage);
+	Add_Type(crc, FlameDamage2);
+	Add_Type(crc, C4Warhead);
+	Add_Type(crc, IonCannonWarhead);
+	Add_Type(crc, FirestormWarhead);
+	Add_Type(crc, VeinholeWarhead);
+	Add_Type(crc, DefaultFirestormExplosionSystem);
+	Add_Type(crc, DefaultLargeGreySmokeSystem);
+	Add_Type(crc, DefaultSmallGreySmokeSystem);
+	Add_Type(crc, DefaultSparkSystem);
+	Add_Type(crc, DefaultLargeRedSmokeSystem);
+	Add_Type(crc, DefaultSmallRedSmokeSystem);
+	Add_Type(crc, DefaultDebrisSmokeSystem);
+	Add_Type(crc, DefaultFireStreamSystem);
+	Add_Type(crc, DefaultTestParticleSystem);
+	Add_Type(crc, DefaultRepairParticleSystem);
+	crc(IsBerzerkAllowed);
+	crc(TurboBoost);
+	crc(AtomDamage);
+	crc(BallisticScatter);
+	crc(BridgeStrength);
+	crc(C4Delay);
+	crc(CrushDistance);
+	crc(ExplosionSpread);
+	crc(SupressRadius);
+	crc(HomingScatter);
+	crc(MaxDamage);
+	crc(MinDamage);
+	crc(IsExplosiveHarvester);
+	crc(IsAutoCrush);
+	crc(IsSmartDefense);
+	crc(IsScatter);
+	crc(IsTreeTarget);
+	crc((int)Incoming);
+	crc(CollapseChance);
+	checkpoint("[CombatDamage]");
+	Add_Type(crc, UnloadingHarvester);
+	crc((int)PoseDir);
+	Add_Type(crc, DropPodPuff);
+	crc(WaypointAnimationSpeed);
+	Add_Type(crc, BarrelExplode);
+	Add_List(crc, BarrelDebris);
+	Add_Type(crc, BarrelParticle);
+	Add_Type(crc, Wake);
+	Add_Type(crc, FlamingInfantry);
+	Add_Type(crc, VeinAttack);
+	Add_List(crc, DropPod);
+	Add_Type(crc, Dig);
+	Add_Type(crc, IonBlast);
+	Add_Type(crc, IonBeam);
+	Add_Type(crc, InfantryExplode);
+	Add_Type(crc, AtmosphereEntry);
+	crc(IsShroudGrow);
+	crc(ScrollMultiplier);
+	crc(ShakeScreen);
+	Add_List(crc, TreeFire);
+	Add_List(crc, DeadBodies);
+	Add_List(crc, MetallicDebris);
+	Add_List(crc, BridgeExplosions);
+	Add_List(crc, OnFire);
+	Add_Type(crc, Smoke1);
+	Add_Type(crc, Smoke2);
+	Add_Type(crc, FirestormActiveAnim);
+	Add_Type(crc, FirestormIdleAnim);
+	Add_Type(crc, FirestormAirAnim);
+	Add_Type(crc, FirestormGroundAnim);
+	Add_Type(crc, MoveFlash);
+	Add_Type(crc, Parachute);
+	checkpoint("[AudioVisual] through Parachute");
+	Add_Type(crc, BombParachute);
+	Add_Type(crc, SmallFire);
+	Add_Type(crc, LargeFire);
+	crc(IsAllyReveal);
+	crc(ConditionGreen);
+	crc(ConditionRed);
+	crc(ConditionYellow);
+	crc(DropZoneRadius);
+	Add_Type(crc, FlareAnim);
+	crc(IsHealthBar);
+	crc(Gravity);
+	crc(RandomAnimateTime);
+	crc(MessageDelay);
+	crc(MovieTime);
+	crc(IsNamed);
+	crc(SavourDelay);
+	crc(ShroudRate);
+	crc(FogRate);
+	crc(VeinGrowthRate);
+	crc(IceGrowthRate);
+	crc(IceSolidifyDelay);
+	crc(AmbientLightChangeRate);
+	crc(AmbientLightChangeStep);
+	crc(SpeakDelay);
+	crc(TimerWarning);
+	crc(ExtraUnitLight);
+	crc(ExtraInfantryLight);
+	crc(ExtraAircraftLight);
+	Add_Type(crc, EMPulseSparkles);
+	Add_Type(crc, WebbedInfantry);
+	crc(VeteranFlashTimer);
+	crc(EliteFlashTimer);
+	checkpoint("[AudioVisual]");
+	Add_List(crc, HSBuilding);
+	Add_Type(crc, NukeWarhead);
+	Add_Type(crc, NukeProjectile);
+	Add_Type(crc, NukeDown);
+	Add_Type(crc, EMPulseWarhead);
+	Add_Type(crc, EMPulseProjectile);
+	checkpoint("[SpecialWeapons]");
+	// No rules key sets the values below.
+	crc(LZScanRadius);
+	crc(QuakeDamagePercent);
+	crc(QuakeChance);
+	crc(NukeTime);
+	crc(EMPulseTime);
+	crc(IonCannonTime);
+	crc(FirestormTime);
+	crc(IsMPAIPlayers);
+	checkpoint("values without a key");
+}
+
+
+namespace {
+	// A rules list may name the same type more than once.
+	template<class T>
+	void Delete_Every(TypeList<T const *> & list, AbstractClass const * target)
+	{
+		T const * const entry = static_cast<T const *>(target);
+		while (list.Delete(entry)) {
+		}
+	}
 }
 
 
@@ -2883,54 +3538,61 @@ void RulesClass::Detach(AbstractClass const * target, bool all)
 	if (target == WebbedInfantry) {
 		WebbedInfantry = NULL;
 	}
+	if (target == WoodCrateImg) {
+		WoodCrateImg = NULL;
+	}
+	if (target == CrateImg) {
+		CrateImg = NULL;
+	}
 
-	BarrelDebris.Delete((VoxelAnimTypeClass const *)target);
+	Delete_Every(BarrelDebris, target);
+	Delete_Every(ExplosiveVoxelDebris, target);
 
-	OnFire.Delete((AnimTypeClass const *)target);
+	Delete_Every(OnFire, target);
 
-	TreeFire.Delete((AnimTypeClass const *)target);
+	Delete_Every(TreeFire, target);
 
-	SplashList.Delete((AnimTypeClass const *)target);
+	Delete_Every(SplashList, target);
 
-	Scorches.Delete((SmudgeTypeClass const *)target);
-	Scorches1.Delete((SmudgeTypeClass const *)target);
-	Scorches2.Delete((SmudgeTypeClass const *)target);
-	Scorches3.Delete((SmudgeTypeClass const *)target);
-	Scorches4.Delete((SmudgeTypeClass const *)target);
+	Delete_Every(Scorches, target);
+	Delete_Every(Scorches1, target);
+	Delete_Every(Scorches2, target);
+	Delete_Every(Scorches3, target);
+	Delete_Every(Scorches4, target);
 
-	Craters.Delete((SmudgeTypeClass const *)target);
+	Delete_Every(Craters, target);
 
-	HarvesterUnit.Delete((UnitTypeClass const *)target);
-	BaseUnit.Delete((UnitTypeClass const *)target);
+	Delete_Every(HarvesterUnit, target);
+	Delete_Every(BaseUnit, target);
 
-	BuildConst.Delete((BuildingTypeClass const *)target);
-	BuildPower.Delete((BuildingTypeClass const *)target);
-	BuildRefinery.Delete((BuildingTypeClass const *)target);
-	BuildBarracks.Delete((BuildingTypeClass const *)target);
-	BuildTech.Delete((BuildingTypeClass const *)target);
-	BuildWeapons.Delete((BuildingTypeClass const *)target);
-	BuildDefense.Delete((BuildingTypeClass const *)target);
-	BuildPDefense.Delete((BuildingTypeClass const *)target);
-	BuildAA.Delete((BuildingTypeClass const *)target);
-	BuildHelipad.Delete((BuildingTypeClass const *)target);
-	BuildRadar.Delete((BuildingTypeClass const *)target);
+	Delete_Every(BuildConst, target);
+	Delete_Every(BuildPower, target);
+	Delete_Every(BuildRefinery, target);
+	Delete_Every(BuildBarracks, target);
+	Delete_Every(BuildTech, target);
+	Delete_Every(BuildWeapons, target);
+	Delete_Every(BuildDefense, target);
+	Delete_Every(BuildPDefense, target);
+	Delete_Every(BuildAA, target);
+	Delete_Every(BuildHelipad, target);
+	Delete_Every(BuildRadar, target);
 
-	ConcreteWalls.Delete((BuildingTypeClass const *)target);
+	Delete_Every(ConcreteWalls, target);
 
-	NSGates.Delete((BuildingTypeClass const *)target);
-	EWGates.Delete((BuildingTypeClass const *)target);
+	Delete_Every(NSGates, target);
+	Delete_Every(EWGates, target);
 
-	PadAircraft.Delete((AircraftTypeClass const *)target);
+	Delete_Every(PadAircraft, target);
 
-	DeadBodies.Delete((AnimTypeClass const *)target);
+	Delete_Every(DeadBodies, target);
 
-	DropPod.Delete((AnimTypeClass const *)target);
+	Delete_Every(DropPod, target);
 
-	MetallicDebris.Delete((AnimTypeClass const *)target);
+	Delete_Every(MetallicDebris, target);
 
-	BridgeExplosions.Delete((AnimTypeClass const *)target);
+	Delete_Every(BridgeExplosions, target);
 
-	HSBuilding.Delete((BuildingTypeClass const *)target);
+	Delete_Every(HSBuilding, target);
 }
 
 

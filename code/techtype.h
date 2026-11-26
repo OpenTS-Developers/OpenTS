@@ -54,9 +54,6 @@ class TechnoTypeClass : public ObjectTypeClass
 		 */
 		float CollateralDamageCoefficient;
 
-		/// Unused
-		float Unused1;
-
 		/*
 		 * This is the number of game frames that each step of this object's walk cycle holds
 		 * for. It is what paces the TotalFramesWalked counter the animations are indexed from.
@@ -172,9 +169,6 @@ class TechnoTypeClass : public ObjectTypeClass
 		 * judge what it is short of.
 		 */
 		CategoryType Category;
-
-		/// Unused
-		int Unused2;
 
 		/*
 		 * This is how long this object's door takes to swing fully open or shut, expressed in
@@ -749,6 +743,13 @@ class TechnoTypeClass : public ObjectTypeClass
 		 * Optional description for the sidebar tooltip.
 		 */
 		std::string Description;
+
+		/*
+		 * These are the sounds this type plays as it starts to cloak and to uncloak.
+		 * VOC_NONE plays the rules-wide CloakSound in either case.
+		 */
+		VocType CloakSound;
+		VocType UncloakSound;
 
 		//--------------------------------------------------------------------
 		TechnoTypeClass(char const * ininame, SpeedType speed);

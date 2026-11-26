@@ -33,6 +33,11 @@ DynamicVectorClass<LightSourceClass::PendingCellClass *> LightSourceClass::Pendi
 
 bool LightSourceClass::Recalc = true;
 
+// Where Process_Lighting is in the queue, kept between calls so the work can span frames.
+static int _pending_index = 0;
+static int _pending_remaining = 0;
+static bool _commit_ready = false;
+
 
 /// <summary>
 /// Creates a light source at the location specified.
@@ -89,7 +94,7 @@ LightSourceClass::~LightSourceClass(void)
 
 
 /// <summary>
-/// Destroys every light source in the game.
+/// Destroys every light source in the game and drops the cells still waiting to be relit.
 /// This routine is used when tearing a scenario down. Cell recalculation is held off
 /// while the lights go away, so the map is not rebuilt once for every light removed.
 /// </summary>
@@ -103,6 +108,14 @@ void LightSourceClass::Reset(void)
 		delete light;
 		LightSources.Delete_Index(0);
 	}
+
+	for (int index = 0; index < PendingCells.Count(); index++) {
+		delete PendingCells[index];
+	}
+	PendingCells.Clear();
+	_pending_index = 0;
+	_pending_remaining = 0;
+	_commit_ready = false;
 
 	Recalc = true;
 }
@@ -196,9 +209,6 @@ void LightSourceClass::Process_Lighting(int time_budget_ms, bool force)
 
 	static unsigned _update_interval = 50;
 	static unsigned _last_update_frame = 0;
-	static int _pending_index = 0;
-	static int _pending_remaining = 0;
-	static bool _commit_ready = false;
 
 	_update_frames++;
 

@@ -30,7 +30,11 @@ simple bug fixes are reviewed as time permits.
 
 Public contributions go through pull requests; maintainers may commit
 directly when appropriate. Pull requests are squash-merged, so keep each one
-focused and give it a summary suitable for project history. Keep mechanical
+focused and give it a summary suitable for project history. While a release
+candidate is being tested, open a fix for it against `release/<major>.<minor>`
+and everything else against `main`. Do not merge the release branch into your
+own branch; maintainers merge it into `main` with a merge commit, never a
+squash. Keep mechanical
 cleanup separate from behavior changes: formatting, renaming, or ownership
 work must not hide changes to gameplay, formats, persistence, or networking.
 
@@ -67,10 +71,11 @@ Before changing a boundary:
 5. Give practical migration steps for an incompatible change.
 
 Compatibility across versions exists only where documented. Saves and network
-sessions carry the project version, so different releases cannot exchange
-saves or play together. Development snapshots in one release cycle share that
-version stamp even when their saves, replays, network protocol, or simulation
-differ. Do not assume snapshots work together. Test the current snapshot,
+sessions carry the version's `major.minor.patch` core, so builds of different
+versions, including two patch releases, cannot exchange saves or play together.
+Development snapshots, release candidates and the final release of one version
+share that stamp even when their saves, replays, network protocol, or
+simulation differ. Do not assume such builds work together. Test the current snapshot,
 describe the release impact, and open a new development version only through
 the release process in
 [Maintaining](manual/MAINTAINING.md). [Build identity](docs/BUILDING.md#build-identity)

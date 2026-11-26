@@ -242,7 +242,6 @@ MapRegionClass::MapRegionClass(Cell cell) :
 	Position(cell),
 	Unsplittable(false),
 	HasConnections(true),
-	SplitCount(0),
 	Discardable(false),
 	Cells(),
 	RegionBounds(0,0,0,0)
@@ -1185,7 +1184,6 @@ bool MapRegionClass::Split_Region(void)
 		}
 	}
 
-	SplitCount++;
 	return(true);
 }
 
@@ -4779,11 +4777,7 @@ ScenarioState MapGeneratorClass::Init_Map(bool full_init, CCINIClass * scenario)
 			if (RMGCallback != NULL) RMGCallback();
 
 			TerrainTypeClass::Init(Scen->Theater);
-			if (Scen->Theater != LastTheater) {
-				IsometricTileTypeClass::Read_Control_File(Scen->Theater, true);
-			} else {
-				IsometricTileTypeClass::Clear_Use_Counts();
-			}
+			IsometricTileTypeClass::Read_Control_File(Scen->Theater, true);
 
 			OverlayTypeClass::Init(Scen->Theater);
 

@@ -191,6 +191,7 @@ class ObjectTypeClass : public AbstractTypeClass
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 		virtual void Post_Load(void) override;
+		virtual void Compute_CRC(CRCEngine & crc) const override;
 
 		static void One_Time(void);
 

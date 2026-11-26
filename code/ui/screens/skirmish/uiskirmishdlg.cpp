@@ -31,6 +31,7 @@
 #include "utf8.h"
 #include "win.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <utility>
@@ -206,7 +207,7 @@ void UI_Skirmish_State(UISkirmishState & state)
 	state.AIPlayersMax = 7;
 	state.AIPlayers = Session.Options.AIPlayers > 1 ? Session.Options.AIPlayers : 1;
 
-	state.GameSpeed = 6 - Session.Options.GameSpeed;
+	state.GameSpeed = 6 - std::clamp(Options.GameSpeed, 0, OptionsClass::MAX_SPEED_SETTING - 1);
 
 	state.Bases = Session.Options.Bases;
 	state.Crates = Session.Options.Goodies;

@@ -134,13 +134,19 @@ constexpr char32_t Windows_1257_High[128] = {
 /// sequence reports one byte, REPLACEMENT, and valid false.
 /// </summary>
 /// <param name="available">Readable bytes at text; the decoder never looks past them.</param>
-char32_t Decode_Sequence(char const * text, std::size_t available, int & length, bool & valid)
+/// <param name="subpart">When given, receives the bytes of the sequence, or of the maximal
+/// subpart of a malformed one: the bytes that one REPLACEMENT stands for.</param>
+char32_t Decode_Sequence(char const * text, std::size_t available, int & length, bool & valid,
+	int * subpart = nullptr)
 {
 	unsigned char const * bytes = (unsigned char const *)text;
 	unsigned char lead = bytes[0];
 
 	valid = true;
 	length = 1;
+	if (subpart != nullptr) {
+		*subpart = 1;
+	}
 	if (lead < 0x80) {
 		return(lead);
 	}
@@ -167,12 +173,11 @@ char32_t Decode_Sequence(char const * text, std::size_t available, int & length,
 		return(UTF8::REPLACEMENT);
 	}
 
-	if ((std::size_t)trailing >= available) {
-		valid = false;
-		return(UTF8::REPLACEMENT);
-	}
-
 	for (int index = 1; index <= trailing; index++) {
+		if ((std::size_t)index >= available) {
+			valid = false;
+			return(UTF8::REPLACEMENT);
+		}
 		unsigned char byte = bytes[index];
 		unsigned char min = (index == 1) ? low : 0x80;
 		unsigned char max = (index == 1) ? high : 0xBF;
@@ -181,6 +186,9 @@ char32_t Decode_Sequence(char const * text, std::size_t available, int & length,
 			return(UTF8::REPLACEMENT);
 		}
 		code = (code << 6) | (byte & 0x3F);
+		if (subpart != nullptr) {
+			*subpart = index + 1;
+		}
 	}
 
 	length = trailing + 1;
@@ -348,6 +356,25 @@ bool UTF8::Is_Valid(std::string_view text)
 		offset += length;
 	}
 	return(true);
+}
+
+
+/// <summary>
+/// Returns the bytes of the well-formed sequence that opens text, or 0 when it is malformed or
+/// truncated. subpart receives the bytes one REPLACEMENT stands for: the sequence, or the
+/// maximal subpart of a malformed one, as Unicode recommends. Both are 0 for empty text.
+/// </summary>
+int UTF8::Sequence_At(std::string_view text, int & subpart)
+{
+	subpart = 0;
+	if (text.empty()) {
+		return(0);
+	}
+
+	int length;
+	bool valid;
+	Decode_Sequence(text.data(), text.size(), length, valid, &subpart);
+	return(valid ? length : 0);
 }
 
 

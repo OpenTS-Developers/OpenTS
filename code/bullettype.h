@@ -231,7 +231,7 @@ class BulletTypeClass : public ObjectTypeClass
 		**	into the game frame when determining what shape number to use for the
 		**	imagery.
 		*/
-		int Tumble;
+		int Tumble = 0;
 
 		//---------------------------------------------------------------------
 		BulletTypeClass(char const * name = NULL);

@@ -15,15 +15,12 @@ The animation's shape file is named after its AnimType ID, with the extension se
 Theater=yes ; draws MYBLAST.TEM or MYBLAST.SNO
 ```
 
-When the theater's file is missing, the animation draws `<AnimType ID>.SHP` instead. That fallback applies when the scenario's theater differs from the previous scenario's, and after a saved game loads. The animation draws nothing in that theater in two cases:
-
-- The scenario repeats the previous scenario's theater.
-- The animation sets [`DemandLoad=yes`](/keys/demandload/#scope-animtype).
+When the theater's file is missing, the animation draws `<AnimType ID>.SHP` instead, and nothing when that file is missing too. A [`DemandLoad=yes`](/keys/demandload/#scope-animtype) animation has no fallback and draws nothing.
 
 The file is looked up again for every scenario and every loaded saved game, so its extension always matches the current theater.
 
 An animation that also sets [`NewTheater=yes`](/keys/newtheater/#scope-animtype) uses this flag and ignores that one.
 
-:::caution[Leave Image= unset on a theater animation]
-With an [`Image=`](/keys/image/#scope-animtype) that differs from the AnimType ID, the name the theater file is looked up under can depend on the previous scenario. When the theater differs from the previous scenario's, or a saved game is loaded, the lookup uses the AnimType ID. When the theater repeats, it uses the Image ID. A [`DemandLoad=yes`](/keys/demandload/#scope-animtype) animation always uses the AnimType ID.
-:::
+Put `Theater=yes` in the art section of the Image ID, which is the AnimType's own section when [`Image=`](/keys/image/#scope-animtype) is not set. When the Image ID refers to another section, the AnimType's own section is read for this key only if neither `<AnimType ID>.SHP` nor `<Image ID>.SHP` exists.
+
+The file names do not use `Image=`: a `Theater=yes` animation whose Image ID differs from its AnimType ID still draws the files named after the AnimType ID.

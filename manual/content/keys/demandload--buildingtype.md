@@ -8,14 +8,6 @@ when_omitted:
   value: "no"
 ---
 
-With `DemandLoad=yes`, a structure type's main shape is not loaded with the rules. The game records the [main-shape filename](/keys/image/#scope-buildingtype), resolved for the current theater, and loads the file the first time the shape is needed, usually to draw a structure of the type. A type nothing uses loads nothing, and a shape the game cannot find is not drawn.
-
-The loaded shape is released when any of these happens:
-
-- the type's rules are read again;
-- the type is destroyed;
-- a theater is set up and the type is [`Theater=yes`](/keys/theater/) or [`NewTheater=yes`](/keys/newtheater/).
-
-The next use loads it again.
+With `DemandLoad=yes`, a structure type's main shape is loaded when a scenario starts or a saved game is loaded, rather than with the rules, and stays loaded until the next scenario or saved game is loaded. The file is the [main-shape filename](/keys/image/#scope-buildingtype), resolved for the scenario theater, and can be loose or in any archive. A shape the game cannot find is not drawn.
 
 The flag covers only the main shape. The construction animation has its own setting, [`DemandLoadBuildup`](/keys/demandloadbuildup/). The deploying, door, under-door, bib and special Z overlay shapes are always loaded with the rules.

@@ -54,6 +54,7 @@
 #include <array>
 #include <optional>
 #include <string>
+#include <vector>
 
 //---------------------------------------------------------------------------
 // Forward declarations
@@ -306,6 +307,7 @@ struct GlobalPacketType {
 			int Color;							// color of sender of message
 			unsigned int NameCRC;				// CRC of sender's Game Name
 			ChatScopeType Scope;				// who the message is for
+			unsigned char Salt[16];				// reserved for the chat fingerprint; sent as zeros
 		} Message;
 		struct {
 			int OneWay;							// one-way response time
@@ -368,22 +370,6 @@ struct GlobalPacketType {
 };
 #pragma pack()
 
-//...........................................................................
-// For finding sync bugs; filled in by the engine when certain conditions
-// are met; the pointers allow examination of objects in the debugger.
-//...........................................................................
-struct TrapObjectType {
-	union {
-		AircraftClass *Aircraft;
-		AnimClass *Anim;
-		BuildingClass *Building;
-		BulletClass *Bullet;
-		InfantryClass *Infantry;
-		UnitClass *Unit;
-		void *All;
-	} Ptr;
-};
-
 /*
 **	This is the identifier for a multiplayer mission. This can be used to
 **	identify the filename of the mission as well as display the mission in a
@@ -426,7 +412,7 @@ struct GameOptionsType {
 	bool		BridgeDestruction;	/// Weapons fire can bring bridges down.
 	bool 		Goodies;
 	bool		ShortGame;			/// A player is beaten once he has no buildings and no MCV.
-	int			GameSpeed;			/// Host's speed setting (0 - 6), forced on every player.
+	int			GameSpeed;			// The speed the running game plays at, the same on every machine.
 	bool		CrapEngineers;		/// Engineers can only capture buildings at condition red.
 	bool 		Ghosts;
 	int 		UnitCount;
@@ -444,6 +430,7 @@ struct GameOptionsType {
 	bool		AttackNeutralUnits;	// A target scan considers a neutral house's objects.
 	bool		ScrapMetal;			// A wreck leaves the animations its type names in ScrapExplosion.
 	bool		SharedControl;		// A player may let an ally order their units.
+	bool		PlayMovies;			// A launch file asked for movies outside a campaign.
 	char		ScenarioDescription [DESCRIP_MAX];	//Used on client machines only
 
 	bool Save(SaveStreamClass & stream);
@@ -516,6 +503,7 @@ class SessionClass
 		bool Is_Player_Removed(HouseClass const * house) const {return(RemovedPlayers[house]);}
 		void Reset_Departures(void);
 		bool Is_Network_Game(void) const {return(Type == GAME_IPX || Type == GAME_INTERNET);}
+		int Pending_Game_Speed(void) const;
 		NetTiming::TimingCensus Network_Timing_Census(unsigned int frame);
 		NetTiming::TimingEvaluation Evaluate_Network_Timing(NetTiming::TimingCensus const & census, unsigned int target_fps, unsigned int frame);
 		NetTiming::TimingSettings Network_Timing_Target(void) const;
@@ -531,6 +519,7 @@ class SessionClass
 		int Color_Index_To_Scheme(int id) const;
 		std::string Shown_Name(int house, char const * name) const;
 		std::string Shown_Name(HouseClass const * house) const;
+		std::vector<NodeNameType *> Humans_In_House_Order(void) const;
 		std::string Shown_Seat_Name(NodeNameType const * node) const;
 
 		//.....................................................................
@@ -540,7 +529,6 @@ class SessionClass
 		//.....................................................................
 		// Debugging / Sync Bugs
 		//.....................................................................
-		void Trap_Object(void);
 		bool Log_To_File(FILE *out);
 
 		//---------------------------------------------------------------------
@@ -748,21 +736,14 @@ class SessionClass
 		static char const * GlobalPacketNames[];
 
 		//.....................................................................
-		// For Recording & Playing back a file
-		//.....................................................................
-		CCFileClass RecordFile;
-		unsigned Record				: 1;
-		unsigned Play				 	: 1;
-		unsigned Attract			 	: 1;
-
-		//.....................................................................
 		// Network-specific variables
 		//.....................................................................
 		bool NetStealth;                                // makes us invisible
 		bool NetOpen;                                   // 1 = game is open for joining
-		bool PlayMovies;                                // a launch file asked for movies outside a campaign
 		bool SkipScoreScreen;                           // a launch file asked that the score screen be passed over
 		bool QuickMatch;                                // a launch file asked that players be shown by number
+		int LocalPlayer;                                // the local player's position among the human players, in house order,
+		                                                // for a launch or a capture with listed seats; -1 for a menu match
 		char LoadScreen[_MAX_PATH];                     // the picture to show while the scenario loads, or empty
 		int LoadScreenX;                                // where in that picture the loading bars go, or zero for
 		int LoadScreenY;                                // the position the game picks for its own
@@ -778,7 +759,8 @@ class SessionClass
 		DynamicVectorClass <NodeNameType *> Players;    // list of players
 		DynamicVectorClass <NodeNameType *> Chat;       // list of chat nodes
 
-		// The computer players a launch file seated, after the humans; the menu leaves this empty.
+		// The computer players, in house order after the human players. For a match from the menu,
+		// Draw_Player_Choices makes an entry for each.
 		DynamicVectorClass <NodeNameType *> Computers;
 		int Suspended;
 
@@ -793,14 +775,7 @@ class SessionClass
 		//.....................................................................
 		// For finding Sync Bugs
 		//.....................................................................
-		int TrapFrame;             // frame # to start trapping 'TrapObject'
-		RTTIType TrapObjType;       // type of object to trap
-		TrapObjectType TrapObject;  // ptr to object to trap (watch)
-		Coord TrapCoord;            // coord of object, 0 = ignore
-		TargetClass TrapTarget;     // Target # of object, 0 = ignore
-		CellClass * TrapCell;       // Ptr to cell to trap (watch)
-		int TrapCheckHeap;          // true = check the heap as of TrapFrame
-		int TrapPrintCRC;          // Frame # to print CRC state file
+		int TrapCheckHeap;          // true = check the heap
 		int ForceDesyncFrame;       // Frame # to corrupt our own checksum at, -1 = never
 };
 

@@ -82,7 +82,7 @@ parser sites is compiled under `_DEBUG`; the extractor refuses any other
 combination. An adapter's title, description, audience and group are authored
 copy, so changing them is not an engine change.
 
-The branch check accepts an existing development-release addition record for later changes to a command, enum signature, or scripting index. The addition target must match the entity and scope in both the Git base and the current tree, and its release must still be the active development release in both snapshots. A current-only addition target does not satisfy a required `changed` target. Follow the [authoring rules](AUTHORING.md#lifecycle-records) when updating addition prose.
+The branch check accepts an existing unreleased addition record for later changes to a command, enum signature, or scripting index. The addition target must match the entity and scope in both the Git base and the current tree. Its version must be unreleased in the base, and must be the development version or a candidate whose release branch the checked range merges. A current-only addition target does not satisfy a required `changed` target. Follow the [authoring rules](AUTHORING.md#lifecycle-records) when updating addition prose.
 
 Enums are authored selections backed by explicit source adapters. Documenting
 an existing fixed domain is documentation work, not an engine change. Its
@@ -103,47 +103,209 @@ Other format routes default to `/formats/<filename-stem>/`.
 
 ## Releases and lifecycle
 
-`data/releases.yaml` uses complete SemVer 2.0 versions without build metadata.
-It has exactly one `development` version, which must be the highest entry; only
-`released` entries carry an ISO date. The development version's numeric core
-must match CMake's `project(OpenTS VERSION ...)` declaration. Its prerelease
-label must match CMake's `OPENTS_VERSION_PRERELEASE`, which is empty when there
-is no label. The private npm package version is tooling metadata, not the OpenTS
-release.
+### Release registry
 
-The engine stamps saves and network sessions with this version. Opening a cycle
-retires the previous cycle's saves. Snapshots from one active cycle share a
-stamp but have no interoperability promise, and several compatibility breaks
-may accumulate before release. See
-[Compatibility boundaries](../CONTRIBUTING.md).
+`data/releases.yaml` lists every version in complete SemVer 2.0 without build
+metadata. Each entry has one status:
 
-To publish a release:
+| Status | Meaning | Limit |
+|---|---|---|
+| `development` | The version this branch builds | Exactly one, the highest entry |
+| `candidate` | A version being stabilized on its release branch; only main lists it | At most one, higher than every released version |
+| `released` | A published version, with its ISO `date` | Status and date never change |
 
-1. Confirm that the development entry names the release and that the commit to
-   be tagged contains everything it ships.
-2. Create and publish the GitHub release from a `v<version>` tag on that
-   commit. The `Engine release` workflow builds the tag, attaches a packaged
-   zip per platform, and appends
-   `python manual/tools/manage.py release-notes <version>` output to the release
-   body.
-3. Tag before opening the next development cycle. The tagged commit's CMake
-   version must still name the release.
+The development version's numeric core must match CMake's
+`project(OpenTS VERSION ...)` declaration, and its prerelease label must match
+CMake's `OPENTS_VERSION_PRERELEASE`, which is empty when there is no label. The
+`Engine release` workflow publishes only versions without a registry label: a
+release candidate's label comes from its tag. The private npm package version is
+tooling metadata, not the OpenTS release.
 
-`release-notes` writes one release's change records as Markdown to standard
-output. Breaking changes and their migration steps come first, followed by the
-remaining records grouped by category. It reads the records validated by the
-lifecycle checks and refuses a version that no record targets.
+A version moves from `development` to `candidate` or `released`, and from
+`candidate` to `released`. Nothing returns to `development`. A candidate row may
+be added, as when a patch version is first merged into main, and may be removed
+while no record targets it.
 
-To open the next development cycle:
+### Save and network compatibility
 
-1. Mark the current development entry `released` and add its ISO release date.
-2. Add one higher development version.
-3. Update the CMake project version if the numeric core changed and the CMake
-   prerelease label if the label changed.
-4. Run `python manual/tools/manage.py check`.
+The engine stamps saves and network sessions with the version's numeric core,
+`major.minor.patch`. Every build of one version shares that stamp: development
+snapshots, release candidates, release branch builds and the final release.
+They accept each other's saves and games with no promise that they work
+together. Different cores never match, so 0.2.1 refuses 0.2.0 saves and games,
+and 0.3.0 development snapshots refuse both. See
+[Compatibility boundaries](../CONTRIBUTING.md#compatibility-boundaries).
 
-Do not move existing change records into the new cycle; release assignments are
-stable. Once released, a record's category, targets and breaking state are immutable. Prose and migration steps may receive editorial corrections. Released registry entries and dates are also immutable.
+### Release branches
+
+A minor version is stabilized on `release/<major>.<minor>`, cut from main. The
+branch's registry keeps the version as `development`. Main lists it as the
+`candidate` and opens the next minor version as `development`.
+
+- Fixes for the candidate land on the release branch, directly or through a
+  pull request into it, and reach main by merging the branch with a merge
+  commit. Never squash or rebase that merge.
+- The release branch owns the candidate's change records. On main they change
+  only through a merge of the branch.
+- New features wait for the next version on main.
+- Never merge main, or a branch based on main, into a release branch. The
+  release branch would take main's version, the check would not catch it, and
+  the next tag's preflight would refuse the release.
+- Only maintainers merge a release branch, and only into main. A pull request
+  that carries such a merge passes its own check but fails on main once
+  squash-merged.
+
+### Release checks
+
+`manage.py check` enforces the rules below. It reads the release tags and every
+local and remote copy of each `release/*` branch, so fetch them from the OpenTS
+repository first with `git fetch --tags <remote>`, where `<remote>` is `origin`
+in a clone of OpenTS and usually `upstream` in a fork. A missing tag or branch
+fails the check. Rules marked
+"base" compare with the check's base revision and treat a version as released
+only if the base already released it, so one push can merge the release branch
+and seal its version.
+
+| Rule | Fails when |
+|---|---|
+| New record (base) | a new change record targets a version that is neither the development version nor the candidate |
+| Moved record (base) | a record's `release` changes, unless the old and new versions are both development or candidate |
+| Released record (base) | a released record's category, targets or breaking state changes |
+| Stable ID (base) | a change record present in the base is removed or renamed |
+| Candidate mirror | the registry lists a candidate, and its records or their text differ from those at the newest commit of `release/<major>.<minor>` that HEAD or a merge in progress contains |
+| Released tag | tag `v<version>` of a released version is missing or not merged into HEAD, or its records differ from HEAD's in IDs or lifecycle fields; prose may differ |
+| Closed branch | HEAD descends from, and is not, the tag of its own development version |
+| Coverage (base) | a detected engine change has no matching target in a record of the current or base development version, or in a candidate record when the checked range merges the candidate's release branch |
+| RC note (base) | a new RC note targets a version that is neither the development version nor the candidate |
+
+A merge of the release branch lets candidate records cover every engine change
+in the push, so keep a merge push to the merge.
+
+### Release notes
+
+`python manual/tools/manage.py release-notes <version>` writes one release's
+change records as Markdown to standard output. Breaking records come first with
+their migration steps, then every record grouped by category, so a breaking
+record is listed twice. The command refuses a version that no record targets.
+
+With `--tag <tag>`, the records come from that tag, and the notes add the
+changes since the previous candidate. The previous candidate is the highest
+`v<version>-<label>` tag that the tag contains and that sorts below it. Labels
+compare digit runs as numbers, so `rc10` follows `rc9`, and a final sorts above
+all its candidates.
+
+| Tag | Generated notes |
+|---|---|
+| First candidate, or a final with no candidates | Every record |
+| Later candidate | Records added or edited since the previous candidate and RC notes added since it, then every record in a collapsed block |
+| Final after candidates | Every record, then the records added or edited since the last candidate |
+
+A later candidate or a final also links to the commits since the previous
+candidate when `GITHUB_SERVER_URL` and `GITHUB_REPOSITORY` are set, as they are
+in GitHub Actions.
+
+### Publishing workflow
+
+Publishing a GitHub release runs the `Engine release` workflow. Its preflight
+job stops the run before anything is built when:
+
+- the tag no longer points at the commit the run started for;
+- the tag is not `v<major>.<minor>.<patch>`, optionally followed by
+  `-<label>`;
+- the tag's numeric core differs from the CMake version at the tag;
+- the release's pre-release mark disagrees with the tag: a tag with a label
+  needs the mark, and a final must not have it;
+- a tag of a later minor version exists;
+- the tagged commit is not on `origin/release/<major>.<minor>`;
+- `release-notes --tag` fails.
+
+The build passes the tag's label to CMake and fails unless the built version is
+exactly `<core>-<label>`, or `<core>` for a final. The workflow then attaches one
+zip per platform and writes the generated notes into the release body between
+two marker comments. Write your own text above the markers; a rerun replaces
+only the text between them.
+
+If the release itself was wrong, such as its pre-release mark, correct it on
+GitHub and rerun the workflow from the Actions tab. Editing the release does not
+rerun it. If the tag was wrong, delete the release and the tag, tag the right
+commit, and publish a new release. Do not move a tag and rerun: a rerun builds
+the commit the tag named when the run started, and the preflight refuses it.
+
+### Cut a release and publish the first candidate
+
+1. Choose the main commit that contains everything the release ships, and
+   confirm that main's registry lists no candidate.
+2. Create `release/<major>.<minor>` at that commit and tag `v<version>-rc1` on
+   it. Push both.
+3. Publish a GitHub release from the tag with "Set as a pre-release" ticked.
+   Tell testers that every build of the version shares one save stamp, so they
+   should all use the same build.
+4. On main, set the version to `candidate` in `data/releases.yaml`, add the next
+   minor version as `development`, and set CMake to it. A record added or
+   amended on main after the cut commit fails the check here; move it to the
+   next version or restore the cut's copy. Run
+   `python manual/tools/manage.py check`, commit, and push.
+
+To release without candidates, tag the cut `v<version>`, publish a full release,
+and in step 4 set the version to `released` with today's date. Push step 4
+right after the tag: until then, the check fails on every main commit after the
+cut.
+
+### During the candidate period
+
+- **A bug in the candidate:** fix it on the release branch, and add or amend its
+  record there as [Lifecycle records](AUTHORING.md#lifecycle-records)
+  describes. Then merge the branch into main:
+  1. Run `git fetch origin` and
+     `git merge --no-ff --no-commit origin/release/<major>.<minor>`, so that
+     fixes merged through pull requests are included and the merge waits for
+     the regenerated catalogs. Resolve source conflicts so that both behaviors
+     survive. Add a development record only if main's result differs visibly
+     from the candidate's.
+  2. Run `python manual/tools/manage.py update` to regenerate
+     `data/ini-keys.yaml`, `data/scripting.yaml` and `data/commands.yaml`. Do
+     not resolve those files by picking one side.
+  3. Run `python manual/tools/manage.py check`, commit the merge, and push.
+- **A fix that landed on main first:** cherry-pick it onto the release branch
+  and set its record's `release` to the branch's version there. When the next
+  merge into main conflicts on that record, take the branch's copy of the
+  record.
+
+### Later candidates and the final
+
+Tag the release branch tip `v<version>-rc<n>` and publish a pre-release. For the
+final:
+
+1. Tag the release branch tip `v<version>` and publish a full release. Tag the
+   tip: a record committed to the branch after the tag falls outside the
+   release, and the seal in step 2 fails.
+2. On main, merge the release branch so that the tag is merged; Git reports
+   "Already up to date" when main already contains it. Set the version to
+   `released` with today's date. Both may go in one push.
+
+After the final, the check fails on every new commit on the release branch
+until a patch version is opened there.
+
+### Patch releases
+
+1. On the release branch, set the released version to `released` with the date
+   main gave it, add the next patch version as `development`, and set CMake to
+   it. Commit this before any fix.
+2. Fix on the branch. Records target the patch version, and a fix to behavior
+   the released version shipped needs a record of its own.
+3. Merge into main. The first merge conflicts on the version lines: keep main's
+   CMake version and development version, and list the patch version as
+   `candidate`.
+4. Tag `v<patch version>` on the branch tip and publish it, then merge into
+   main and seal it as for a final.
+
+A patch release has no candidates unless you tag one; RC notes then work as
+for a minor release. Patches for a minor version end when the next minor
+version is cut, because main lists one candidate at most and the preflight
+refuses a tag once a later minor tag exists. Release an open patch version
+before cutting, or remove its candidate row while no record targets it.
+
+### Baseline and removals
 
 The catalog from the start of structured lifecycle tracking is the baseline;
 its entities have no addition event. New engine entities and deliberate

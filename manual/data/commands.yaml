@@ -2283,6 +2283,18 @@ launch_options:
   _provenance:
     source: code/init.cpp
     guard: null
+- id: launch:launch
+  route_id: launch
+  kind: launch
+  title: Launch request
+  description: Plays the game or makes the map capture that the launch request file describes, in place
+    of the startup movies and the menu, and exits when it ends.
+  group: startup
+  availability: *id001
+  syntax: -LAUNCH=<file>
+  _provenance:
+    source: code/init.cpp
+    guard: null
 - id: launch:capture-map
   route_id: capture-map
   kind: launch
@@ -2349,18 +2361,6 @@ launch_options:
   group: multiplayer
   availability: *id001
   syntax: -STEALTH
-  _provenance:
-    source: code/init.cpp
-    guard: null
-- id: launch:attract
-  route_id: attract
-  kind: launch
-  title: Attract mode
-  description: Lets any key press end a `-XY` playback before the playback writes its report, and has
-    no other effect.
-  group: startup
-  availability: *id001
-  syntax: -ATTRACT
   _provenance:
     source: code/init.cpp
     guard: null
@@ -2464,29 +2464,6 @@ launch_options:
   group: debug-build
   availability: *id002
   syntax: -XH
-  _provenance:
-    source: code/init.cpp
-    guard: _DEBUG
-- id: launch:record
-  route_id: record
-  kind: launch
-  title: Game recording
-  description: Records each game to `RECORD.BIN`, campaign missions included.
-  group: debug-build
-  availability: *id002
-  syntax: -XX
-  _provenance:
-    source: code/init.cpp
-    guard: _DEBUG
-- id: launch:playback
-  route_id: playback
-  kind: launch
-  title: Recording playback
-  description: Plays back `RECORD.BIN` in place of the main menu, but the playback writes an out-of-sync
-    report and exits on its first frame.
-  group: debug-build
-  availability: *id002
-  syntax: -XY
   _provenance:
     source: code/init.cpp
     guard: _DEBUG

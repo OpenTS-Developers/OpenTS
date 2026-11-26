@@ -579,9 +579,9 @@ int OptionsClass::Normalize_Delay(int delay) const
 	};
 	if (delay) {
 		if (delay < 5) {
-			delay = _adjust[delay-1][GameSpeed];
+			delay = _adjust[delay-1][Session.Options.GameSpeed];
 		} else {
-			delay = ((delay * (MAX_SPEED_SETTING + 1)) / (GameSpeed+1));
+			delay = ((delay * (MAX_SPEED_SETTING + 1)) / (Session.Options.GameSpeed+1));
 		}
 	}
 	return(delay);

@@ -3,15 +3,9 @@ title: Developer mode and diagnostics
 summary: The diagnostic keys, displays, reports and codes each build configuration has, and how a Debug build arms its debug keys.
 category: tools-diagnostics
 keys:
-  - Cell
   - CheckHeap
-  - Coord
-  - Frame
   - Inert
   - MovieTime
-  - PrintCRC
-  - Target
-  - Type
 related:
   - type: using
     id: project-status
@@ -96,14 +90,9 @@ The file opens with the frame count, the average frame rate, the largest look-ah
 
 ## The sync dump
 
-A network game that goes out of sync writes an [out-of-sync report](/using/out-of-sync-reports/) into the `Debug` folder beside the executable, in either configuration. The [`PrintCRC`](/keys/printcrc/) playback trap writes the same report at a chosen frame and then exits. The report page describes what the report holds.
+A network game that goes out of sync writes an [out-of-sync report](/using/out-of-sync-reports/) into the `Debug` folder beside the debug log, in either configuration. The report page describes what the report contains.
 
-Seven `sun.ini` settings exist for tracking down a desynchronized game, and only `PrintCRC` has an effect:
-
-- [`Frame`](/keys/frame/), [`Type`](/keys/type/#scope-multiplayer-settings), [`Coord`](/keys/coord/), [`Target`](/keys/target/) and [`Cell`](/keys/cell/) describe an object to watch frame by frame. The code that would watch it is compiled into neither configuration.
-- [`CheckHeap`](/keys/checkheap/) raises a flag that nothing reads.
-
-`CheckHeap` belongs in `[MultiPlayer]` and the other six in `[SyncBug]`. Both sections are read only when a skirmish or network game is chosen from the main menu, and `[SyncBug]` only while recording playback is armed. A campaign reads none of the seven. [`PrintCRC`](/keys/printcrc/) describes the one launch in which its value takes effect.
+[`CheckHeap`](/keys/checkheap/) in the `[MultiPlayer]` section of `sun.ini` raises a flag that nothing reads.
 
 ## Crash reporting
 

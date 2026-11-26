@@ -181,13 +181,38 @@ TiberiumClass * TiberiumClass::Find_Or_Make(char const * name)
 void TiberiumClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
+	crc((int)HeapID);
 	crc(SpreadDelay);
+	crc(SpreadPercentage);
 	crc(GrowthDelay);
+	crc(GrowthPercentage);
 	crc(CreditValue);
 	crc(Power);
 	crc(Color);
+	crc(Debris.Count());
+	for (int i = 0; i < Debris.Count(); i++) {
+		if (Debris[i] != NULL) crc(Debris[i]->Fetch_ID());
+	}
+	if (Overlay != NULL) crc(Overlay->Fetch_ID());
 	crc(FrameCount);
 	crc(Variety);
+	crc(RampVariety);
+	crc(SpreadCount);
+	crc(SpreadQueue.Count());
+	if (SpreadState != NULL) {
+		for (int i = 0; i < Map_Cell_Count(); i++) {
+			crc(SpreadState[i]);
+		}
+	}
+	crc((int)SpreadTimer);
+	crc(GrowthCount);
+	crc(GrowthQueue.Count());
+	if (GrowthState != NULL) {
+		for (int i = 0; i < Map_Cell_Count(); i++) {
+			crc(GrowthState[i]);
+		}
+	}
+	crc((int)GrowthTimer);
 }
 
 

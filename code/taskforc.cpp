@@ -334,6 +334,10 @@ void TaskForceClass::Compute_CRC(CRCEngine & crc) const
 
 	crc(Group);
 	crc(ClassCount);
+
+	for (int index = 0; index < ClassCount; index++) {
+		Members[index].Compute_CRC(crc);
+	}
 }
 
 

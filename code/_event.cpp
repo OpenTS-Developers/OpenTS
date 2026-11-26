@@ -60,6 +60,8 @@ unsigned char EventClass::EventLength[EventClass::LAST_EVENT] = {
 	size_of(EventClass, Data.NetworkReport),         // NETWORK_REPORT
 	size_of(EventClass, Data.AbandonCount),          // ABANDON_COUNT
 	size_of(EventClass, Data.General),               // GRANT_CONTROL
+	size_of(EventClass, Data.ChatProof),             // CHAT_PROOF
+	size_of(EventClass, Data.Target),                // SELECTED
 };
 
 char const * EventClass::EventNames[EventClass::LAST_EVENT] = {
@@ -102,4 +104,6 @@ char const * EventClass::EventNames[EventClass::LAST_EVENT] = {
 	"NETWORK_REPORT",
 	"ABANDON_COUNT",
 	"GRANT_CONTROL",
+	"CHAT_PROOF",
+	"SELECTED",
 };

@@ -12,7 +12,7 @@ A reversed animation plays its frames backward. It opens on frame [`LoopEnd`](/k
 These frame numbers assume [`Start`](/keys/start/) is `0`, the usual case. A non-zero `Start` shifts both ends of a reversed pass, as that page explains.
 
 :::caution[Set LoopEnd to the last frame]
-By default `LoopEnd` is the shape's frame count, one past its last frame. A reversed animation then opens on a frame that draws nothing. Set `LoopEnd=` to the frame count minus one, the number of the last frame, as in the example below.
+When neither `LoopEnd` nor [`End`](/keys/end/) is set, `LoopEnd` is the shape's frame count, one past its last frame. A reversed animation then opens on a frame that draws nothing. Set `LoopEnd=` to the frame count minus one, the number of the last frame, as in the example below.
 :::
 
 ```ini title="art.ini"

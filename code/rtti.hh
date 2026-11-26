@@ -81,7 +81,7 @@ enum RTTIType {
 	RTTI_SUPERWEAPON,
 	RTTI_AITRIGGER,
 	RTTI_AITRIGGERTYPE,
-	RTTI_NEURON,
+	RTTI_NEURON,				// No class uses this value; it keeps the later values in place.
 	RTTI_FOGGEDOBJECT,
 	RTTI_ALPHASHAPE,
 	RTTI_VEINHOLEMONSTER,

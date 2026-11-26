@@ -378,13 +378,16 @@ void TerrainTypeClass::Compute_CRC(CRCEngine &crc) const
 {
 	BASECLASS::Compute_CRC(crc);
 	crc(HeapID);
+	crc(Foundation);
+	crc(AnimationRate);
+	crc(AnimationProbability);
+	crc(TiberiumToSpawn);
+	crc(TemperateOccupationBits);
+	crc(SnowOccupationBits);
 	crc(IsWaterBased);
 	crc(IsTiberiumSpawn);
 	crc(IsFlammable);
-	crc(Foundation);
 	crc(IsAnimated);
-	crc(AnimationRate);
-	crc(AnimationProbability);
 }
 
 

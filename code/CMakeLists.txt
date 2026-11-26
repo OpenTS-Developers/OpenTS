@@ -169,8 +169,11 @@ set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/ui/rml/rmlrender.cpp" APPEND PR
     INCLUDE_DIRECTORIES "${BGFX_ROOT}/examples/common/debugdraw"
 )
 
-# writepng.cpp takes miniz from bimg, which the link already carries.
-set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/writepng.cpp" PROPERTIES
+# These files take miniz from bimg, which the link already carries.
+set_source_files_properties(
+    "${CMAKE_CURRENT_SOURCE_DIR}/writepng.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/deflate.cpp"
+    PROPERTIES
     INCLUDE_DIRECTORIES
         "${CMAKE_SOURCE_DIR}/thirdparty/bgfx.cmake/bimg/3rdparty/tinyexr/deps"
 )

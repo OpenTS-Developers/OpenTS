@@ -20,4 +20,3 @@ A name that `[Animations]` does not list still creates an animation type, and th
 - The animation restarts at stage number `Start` of the new type, not at frame `Start`. Frames are drawn at `Start` plus the stage, so a new type whose [`Start`](/keys/start/) is not `0` opens on the frame numbered twice its `Start`.
 - The animation keeps the layer and height it was created with. The new type's [`Surface=`](/keys/surface/) is not applied.
 - The new type's [`Reverse=yes`](/keys/reverse/) does not change the direction, and the animation keeps stepping the way it already was. The new type's `Reverse` setting still decides where its passes end and restart, so chain only between types that both leave `Reverse` unset.
-- Demand-loaded artwork is released only for the type the animation has when it is removed, and only if that type sets [`FreeAfterPlaying=yes`](/keys/freeafterplaying/). Leaving a type through `Next` does not release its artwork.

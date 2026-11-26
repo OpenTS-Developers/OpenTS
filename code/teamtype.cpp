@@ -905,6 +905,10 @@ void TeamTypeClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
 	crc(Group);
+	crc(VeteranLevel);
+	crc(IsFull);
+	crc(IsAnnoyance);
+	crc(IsGuardSlower);
 	crc(IsRecruiter);
 	crc(IsAutocreate);
 	crc(IsPrebuilt);
@@ -914,33 +918,34 @@ void TeamTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsLooseRecruit);
 	crc(IsSuicide);
 	crc(IsDroppod);
+	crc(OnTransOnly);
 	crc(RecruitPriority);
 	crc(MaxAllowed);
 	crc(Fear);
-
 	if (House != NULL) {
 		crc((RTTIType)House->RTTI);
 	}
 	if (House != NULL) {
 		crc(House->Fetch_ID());
 	}
-
 	crc(TechLevel);
-
 	if (Tag != NULL) {
-		crc(Tag->Fetch_ID());
+		crc(Tag->HeapID);
 	}
-
 	crc(Origin);
 	crc(Number);
-
 	if (Script != NULL) {
-		crc(Script->Fetch_ID());
+		crc(Script->HeapID);
 	}
-
 	if (TaskForce != NULL) {
-		crc(TaskForce->Fetch_ID());
+		crc(TaskForces.ID(TaskForce));
 	}
+	crc(AvoidThreats);
+	crc(IsIonImmune);
+	crc(TransportsReturnOnUnload);
+	crc(AreTeamMembersRecruitable);
+	crc(IsBaseDefense);
+	crc(OnlyTargetHouseEnemy);
 }
 
 

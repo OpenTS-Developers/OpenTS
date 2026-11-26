@@ -17,6 +17,7 @@
 #include <cstring>
 #include <string>
 
+#include "dbgprint.h"
 #include "_deploymentconfig.h"
 #include "deploymentconfig.h"
 #include "rawfile.h"
@@ -123,6 +124,7 @@ TEST_CASE_FIXTURE(RootFixture, "with no file the INI, MIX and Maps folders are s
 
 TEST_CASE_FIXTURE(RootFixture, "a file beside the game is read, and the folders it names replace the default")
 {
+	Debug_Init(0, (const char **)NULL);
 	DeploymentConfigClass config;
 
 	Write_File(Root + "\\OPENTS.INI", "[Paths]\nSearchPaths=Data,More\n");
@@ -146,6 +148,7 @@ TEST_CASE_FIXTURE(RootFixture, "a file beside the game is read, and the folders 
 
 TEST_CASE_FIXTURE(RootFixture, "the file is looked for beside the game, then in INI, then in MIX")
 {
+	Debug_Init(0, (const char **)NULL);
 	DeploymentConfigClass config;
 
 	Write_File(Root + "\\MIX\\OPENTS.INI", "[Paths]\nSearchPaths=FromMix\n");
@@ -168,6 +171,7 @@ TEST_CASE_FIXTURE(RootFixture, "the file is looked for beside the game, then in 
 
 TEST_CASE_FIXTURE(RootFixture, "the file is read from the directory named, and what it names is taken from there")
 {
+	Debug_Init(0, (const char **)NULL);
 	DeploymentConfigClass config;
 	std::string const data = Root + "\\Data\\";
 
@@ -184,6 +188,7 @@ TEST_CASE_FIXTURE(RootFixture, "the file is read from the directory named, and w
 
 TEST_CASE_FIXTURE(RootFixture, "a read starts over, so with the file gone every setting returns to its default")
 {
+	Debug_Init(0, (const char **)NULL);
 	DeploymentConfigClass config;
 
 	Write_File(Root + "\\OPENTS.INI", "[Paths]\nSearchPaths=Data\n");
@@ -197,6 +202,7 @@ TEST_CASE_FIXTURE(RootFixture, "a read starts over, so with the file gone every 
 
 TEST_CASE_FIXTURE(RootFixture, "a save carries the scenario file only when the file asks for it")
 {
+	Debug_Init(0, (const char **)NULL);
 	DeploymentConfigClass config;
 
 	CHECK_MESSAGE(!config.CarryScenarioFile, "with no file a save carries no scenario file");
@@ -223,6 +229,7 @@ TEST_CASE_FIXTURE(RootFixture, "a save carries the scenario file only when the f
 
 TEST_CASE_FIXTURE(RootFixture, "with no file the rules, multiplayer rules and settings come from their shipped files")
 {
+	Debug_Init(0, (const char **)NULL);
 	DeploymentConfigClass config;
 
 	CHECK_MESSAGE(config.RulesFile == "RULES.INI", "with no file the rules come from RULES.INI");
@@ -261,6 +268,7 @@ TEST_CASE_FIXTURE(RootFixture, "with no file the rules, multiplayer rules and se
 
 TEST_CASE_FIXTURE(RootFixture, "the expansion rules have their shipped names, and a name the file writes is taken")
 {
+	Debug_Init(0, (const char **)NULL);
 	DeploymentConfigClass config;
 
 	CHECK_MESSAGE(config.RulesExpansionFile == "FIRESTRM.INI", "with no file the expansion rules are FIRESTRM.INI");
@@ -289,6 +297,7 @@ TEST_CASE_FIXTURE(RootFixture, "the expansion rules have their shipped names, an
 
 TEST_CASE_FIXTURE(RootFixture, "the scheme and starting palettes have their shipped names, and names the file writes are taken")
 {
+	Debug_Init(0, (const char **)NULL);
 	DeploymentConfigClass config;
 
 	CHECK_MESSAGE(config.SchemePaletteFile == "UNITSNO.PAL", "with no file the scheme palette is UNITSNO.PAL");

@@ -64,6 +64,7 @@ class CCFileClass : public CDFileClass
 		virtual int Size(void) override;
 		virtual int Write(void const * buffer, int size) override;
 		virtual void Close(void) override;
+		virtual bool Flush(void) override;
 		virtual unsigned int Get_Date_Time(void) override;
 		virtual bool Set_Date_Time(unsigned int datetime) override;
 		virtual void Error(int error, int canretry = false, char const * filename=NULL) override;

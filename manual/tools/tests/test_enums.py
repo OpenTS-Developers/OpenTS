@@ -98,15 +98,14 @@ class EnumContractTests(unittest.TestCase):
             "added": {"NewEnum"},
             "changed": {"ChangedEnum"},
             "removed": {"OldEnum"},
-            "route_changed": set(),
         }
         errors = []
         versioning.validate_branch_lifecycle(
             errors,
             empty_keys, empty_keys,
-            {}, {}, {}, {}, {}, [],
+            {}, {}, {}, [],
             empty_key_delta, empty_scripting,
-            enum_delta, {"OldEnum": {"slug": "old-enum"}},
+            enum_delta,
         )
         self.assertTrue(any("enum:ChangedEnum" in error and "effect: changed" in error for error in errors))
         self.assertFalse(any("enum:NewEnum" in error for error in errors))
@@ -124,9 +123,9 @@ class EnumContractTests(unittest.TestCase):
         versioning.validate_branch_lifecycle(
             errors,
             empty_keys, empty_keys,
-            {}, {}, {}, {}, changes, [],
+            {}, {}, changes, [],
             empty_key_delta, empty_scripting,
-            enum_delta, {"OldEnum": {"slug": "old-enum"}},
+            enum_delta,
         )
         self.assertFalse(errors)
 

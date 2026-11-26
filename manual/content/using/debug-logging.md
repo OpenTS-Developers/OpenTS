@@ -1,6 +1,6 @@
 ---
 title: Debug logs and console
-summary: Every run writes a timestamped log beside the executable, and the debug console can be opened to watch that output live.
+summary: Every run writes a timestamped log beside the executable or in the user directory, and the debug console can be opened to watch that output live.
 category: troubleshooting
 source_files:
   - code/dbgprint.cpp
@@ -15,7 +15,7 @@ related:
 
 ## Where the log is written
 
-Every run, in Release and Debug builds alike, writes a new log to a `Debug` folder in the directory that holds the executable. The file is named for the local time the process started:
+Every run, in Release and Debug builds alike, writes a new log to a `Debug` folder. With [`-USERDIR`](/using/command-line/#user-directory), that folder is in the user directory; a relative user directory is taken from the directory that holds the executable. Without it, the folder is in the directory that holds the executable. The file is named for the local time the process started:
 
 ```
 Debug/DEBUG_17-08-2026_06-00-35.LOG
@@ -23,7 +23,7 @@ Debug/DEBUG_17-08-2026_06-00-35.LOG
 
 Because each run gets its own file, the log from a run that crashed is still there after the next launch. When two processes start within the same second, the second adds its process id to the name.
 
-The log stays beside the executable when [`-USERDIR`](/using/command-line/#user-directory) names a user directory, so the game needs write access to the executable's directory to keep a log. If the folder or the file cannot be created, the game still runs, and its output still reaches the console and an attached debugger.
+If the game cannot write to the executable's directory, pass `-USERDIR` to keep a log. If the folder or the file cannot be created, the game still runs, and its output still reaches the console and an attached debugger.
 
 At startup, the game deletes logs last written more than 14 days ago. A single log stops growing at 64 MB, and its last line then says that the size limit was reached.
 

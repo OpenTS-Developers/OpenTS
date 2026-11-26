@@ -179,6 +179,7 @@
 #include "surface.h"
 #include "tactical.h"
 #include "tag.h"
+#include "tagtype.h"
 #include "taskforc.h"
 #include "team.h"
 #include "techtype.h"
@@ -336,7 +337,6 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	RatioTeamUnits(75),
 	BaseDefenseTeamCount(0),
 	CurrentDropship(0),
-	HasCloakGenerator(0),
 	RecalcPower(true),
 	RecalcRadar(true),
 	EMPDest(0,0),
@@ -353,8 +353,6 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	IniName(NULL),
 	Scheme(0),
 	BaseAreaMap(0),
-	field_10E20(0),
-	field_10E28(1.0),
 	DefenseCostMultiplier(1.0),
 	EnemyArmorForcePrediction(0.33f),
 	EnemyAirForcePrediction(0.33f),
@@ -413,23 +411,20 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	*/
 	int attack = Random_Pick(TICKS_PER_MINUTE/2, TICKS_PER_MINUTE*2);
 	attack = int(attack * Rule->AttackDelay);
-	Attack.Timer = attack;
-	Attack.InitialAttack = attack;
+	Attack = attack;
 
-	if (Session.Type == GAME_INTERNET) {
-		AircraftTotals = new UnitTrackerClass(AircraftTypes.Count());
-		InfantryTotals = new UnitTrackerClass(InfantryTypes.Count());
-		UnitTotals = new UnitTrackerClass(UnitTypes.Count());
-		BuildingTotals = new UnitTrackerClass(BuildingTypes.Count());
+	AircraftTotals = new UnitTrackerClass(AircraftTypes.Count());
+	InfantryTotals = new UnitTrackerClass(InfantryTypes.Count());
+	UnitTotals = new UnitTrackerClass(UnitTypes.Count());
+	BuildingTotals = new UnitTrackerClass(BuildingTypes.Count());
 
-		DestroyedAircraft = new UnitTrackerClass(AircraftTypes.Count());
-		DestroyedInfantry = new UnitTrackerClass(InfantryTypes.Count());
-		DestroyedUnits = new UnitTrackerClass(UnitTypes.Count());
-		DestroyedBuildings =new UnitTrackerClass(BuildingTypes.Count());
+	DestroyedAircraft = new UnitTrackerClass(AircraftTypes.Count());
+	DestroyedInfantry = new UnitTrackerClass(InfantryTypes.Count());
+	DestroyedUnits = new UnitTrackerClass(UnitTypes.Count());
+	DestroyedBuildings = new UnitTrackerClass(BuildingTypes.Count());
 
-		CapturedBuildings = new UnitTrackerClass (BuildingTypes.Count());
-		TotalCrates = new UnitTrackerClass (CRATE_COUNT);
-	}
+	CapturedBuildings = new UnitTrackerClass(BuildingTypes.Count());
+	TotalCrates = new UnitTrackerClass(CRATE_COUNT);
 
 	for (index = 0; index < ARRAY_SIZE(Paths); index++) {
 		Paths[index] = 0;
@@ -672,18 +667,16 @@ HouseClass::~HouseClass (void)
 		Paths[index] = NULL;
 	}
 
-	if (Session.Type == GAME_INTERNET) {
-		delete AircraftTotals;
-		delete InfantryTotals;
-		delete UnitTotals;
-		delete BuildingTotals;
-		delete DestroyedAircraft;
-		delete DestroyedInfantry;
-		delete DestroyedUnits;
-		delete DestroyedBuildings;
-		delete CapturedBuildings;
-		delete TotalCrates;
-	}
+	delete AircraftTotals;
+	delete InfantryTotals;
+	delete UnitTotals;
+	delete BuildingTotals;
+	delete DestroyedAircraft;
+	delete DestroyedInfantry;
+	delete DestroyedUnits;
+	delete DestroyedBuildings;
+	delete CapturedBuildings;
+	delete TotalCrates;
 
 	for (index = 0; index < SuperWeapon.Count(); index++) {
 		delete SuperWeapon[index];
@@ -706,10 +699,6 @@ HouseClass::~HouseClass (void)
 	WaypointPathPtrTracker.Delete(this);
 	TagPtrTracker.Delete(this);
 	ObjectPtrTracker.Delete(this);
-
-	if (UnusedHouse == this) {
-		UnusedHouse = NULL;
-	}
 
 	Houses.Delete(this);
 }
@@ -782,7 +771,7 @@ void HouseClass::Debug_Dump(MonoClass * mono) const
 	mono->Set_Cursor(27, 7);mono->Printf("%8d", Control.InitialCredits);
 	mono->Set_Cursor(38, 7);mono->Printf("%5d", UnitsLost);
 	mono->Set_Cursor(44, 7);mono->Printf("%08X", (unsigned)Allies.Raw());
-	mono->Set_Cursor(71, 7);mono->Printf("%5d", (int)Attack.Timer);
+	mono->Set_Cursor(71, 7);mono->Printf("%5d", (int)Attack);
 
 	mono->Set_Cursor(10, 9);mono->Printf("%8.8s", (BuildInfantry == INFANTRY_NONE) ? " " : InfantryTypes[BuildInfantry]->Graphic_Name());
 	mono->Set_Cursor(21, 9);mono->Printf("%3d", CurInfantry);
@@ -1798,6 +1787,8 @@ void HouseClass::Attacked(BuildingClass * source)
  *                                                                                             *
  * INPUT:   tiberium -- The number of Tiberium credits to add to the House's total.            *
  *                                                                                             *
+ *          income   -- What delivered the Tiberium.                                           *
+ *                                                                                             *
  * OUTPUT:  none                                                                               *
  *                                                                                             *
  * WARNINGS:   none                                                                            *
@@ -1805,7 +1796,7 @@ void HouseClass::Attacked(BuildingClass * source)
  * HISTORY:                                                                                    *
  *   01/25/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-void HouseClass::Harvested(int tiberium, TiberiumType slot)
+void HouseClass::Harvested(int tiberium, TiberiumType slot, [[maybe_unused]] IncomeType income)
 {
 	PointTotal += tiberium * 5;
 
@@ -1945,6 +1936,8 @@ void HouseClass::Spend_Money(int money)
  *                                                                                             *
  * INPUT:   money -- The number of credits to refund back to the house.                        *
  *                                                                                             *
+ *          income -- What paid the money.                                                     *
+ *                                                                                             *
  * OUTPUT:  none                                                                               *
  *                                                                                             *
  * WARNINGS:   none                                                                            *
@@ -1953,7 +1946,7 @@ void HouseClass::Spend_Money(int money)
  *   01/25/1995 JLB : Created.                                                                 *
  *   06/01/1995 JLB : Refunded money is never lost                                             *
  *=============================================================================================*/
-void HouseClass::Refund_Money(int money)
+void HouseClass::Refund_Money(int money, [[maybe_unused]] IncomeType income)
 {
 	Credits += money;
 }
@@ -3609,7 +3602,7 @@ bool HouseClass::Flag_To_Die(void)
 		IsToDie = true;
 		BorrowedTime = TICKS_PER_MINUTE * Rule->SavourDelay;
 		if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
-			int time = Frame + std::max((int)BorrowedTime, (int)Session.MaxAhead);
+			int time = Frame + (int)BorrowedTime;
 			BorrowedTime = 10 * ((time + 9) / 10) - Frame;
 		}
 		DebugString("Frame %d, BorrowedTime == %d\n", Frame, (int)BorrowedTime);
@@ -3640,7 +3633,7 @@ bool HouseClass::Flag_To_Win(bool silent)
 		if (!silent) {
 			BorrowedTime = int(TICKS_PER_MINUTE * Rule->SavourDelay);
 			if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
-				int time = Frame + std::max((int)BorrowedTime, (int)Session.MaxAhead);
+				int time = Frame + (int)BorrowedTime;
 				BorrowedTime = 10 * ((time + 9) / 10) - Frame;
 			}
 			DebugString("Frame %d, BorrowedTime == %d\n", Frame, (int)BorrowedTime);
@@ -3684,7 +3677,7 @@ bool HouseClass::Flag_To_Lose(bool silent)
 		if (!silent) {
 			BorrowedTime = int(TICKS_PER_MINUTE * Rule->SavourDelay);
 			if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
-				int time = Frame + std::max((int)BorrowedTime, (int)Session.MaxAhead);
+				int time = Frame + (int)BorrowedTime;
 				BorrowedTime = 10 * ((time + 9) / 10) - Frame;
 			}
 			DebugString("Frame %d, BorrowedTime == %d\n", Frame, (int)BorrowedTime);
@@ -4412,7 +4405,7 @@ bool HouseClass::AI_Raise_Money(UrgencyType urgency)
 			char level = bptr->UpgradeLevel;
 			if (level != 0) {
 				int cost = bptr->Upgrades[level - 1]->Cost_Of(this);
-				Credits += cost;
+				Refund_Money(cost, INCOME_SOLD_UPGRADE);
 				bptr->Remove_Upgrade();
 				RecalcPower = true;
 				RecalcRadar = true;
@@ -5069,36 +5062,28 @@ void HouseClass::Tracking_Add(TechnoClass const * techno)
 			}
 			building = (StructType)techno->TClass->Fetch_Heap_ID();
 			BQuantity.Increment(building);
-			if (Session.Type == GAME_INTERNET) {
-				BuildingTotals->Increment_Unit_Total(building);
-			}
+			BuildingTotals->Increment_Unit_Total(building);
 			break;
 
 		case RTTI_AIRCRAFT:
 			CurAircraft++;
 			aircraft = (AircraftType)techno->TClass->Fetch_Heap_ID();
 			AQuantity.Increment(aircraft);
-			if (Session.Type == GAME_INTERNET) {
-				AircraftTotals->Increment_Unit_Total(aircraft);
-			}
+			AircraftTotals->Increment_Unit_Total(aircraft);
 			break;
 
 		case RTTI_INFANTRY:
 			infantry = (InfantryType)techno->TClass->Fetch_Heap_ID();
 			CurInfantry++;
 			IQuantity.Increment(infantry);
-			if (Session.Type == GAME_INTERNET) {
-				InfantryTotals->Increment_Unit_Total(infantry);
-			}
+			InfantryTotals->Increment_Unit_Total(infantry);
 			break;
 
 		case RTTI_UNIT:
 			CurUnits++;
 			unit = (UnitType)techno->TClass->Fetch_Heap_ID();
 			UQuantity.Increment(unit);
-			if (Session.Type == GAME_INTERNET) {
-				UnitTotals->Increment_Unit_Total(unit);
-			}
+			UnitTotals->Increment_Unit_Total(unit);
 			break;
 
 		default:
@@ -6336,7 +6321,7 @@ void HouseClass::Tracking_Active_Remove(TechnoClass * techno, bool bycapture)
 					int i = storage->First_Used_Slot();
 					while (i != -1) {
 						int amount = storage->Decrease_Amount(0x7FFFFFFF, i);
-						Harvested(amount, TiberiumType(i));
+						Harvested(amount, TiberiumType(i), INCOME_NONE);
 						i = storage->First_Used_Slot();
 					}
 				} else {
@@ -6492,8 +6477,18 @@ bool House_Matches(HouseClass const * house, HousesType selector)
 void HouseClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
-	crc(Difficulty);
+	crc((int)HeapID);
 	crc(Class->House);
+	crc(HouseTags.Count());
+	// A tag is never given an ID, so its type's heap position is hashed, or -1 for none.
+	for (int i = 0; i < HouseTags.Count(); i++) {
+		crc(HouseTags[i] != NULL ? HouseTags[i]->Class->Fetch_Heap_ID() : -1);
+	}
+	crc(ConYards.Count());
+	for (int i = 0; i < ConYards.Count(); i++) {
+		if (ConYards[i] != NULL) crc(ConYards[i]->Fetch_ID());
+	}
+	crc(Difficulty);
 	crc(FirepowerBias);
 	crc(GroundspeedBias);
 	crc(AirspeedBias);
@@ -6503,22 +6498,52 @@ void HouseClass::Compute_CRC(CRCEngine & crc) const
 	crc(BuildSpeedBias);
 	crc(RepairDelay);
 	crc(BuildDelay);
+	crc(Control.TechLevel);
+	Control.Allies.Compute_CRC(crc);
+	crc((int)Control.Edge);
+	crc((int)ProductionMode);
+	crc((int)ActLike);
 	crc(IsHuman);
 	crc(IsStarted);
 	crc(IsAlerted);
 	crc(IsAITriggersOn);
+	crc(IsBaseBuilding);
+	crc(IsDiscovered);
 	crc(IsDefeated);
 	crc(IsObserver);
+	// IsToDie, IsToWin, IsToLose and BorrowedTime differ between machines, so they are left out.
+	crc(IsCivEvacuated);
+	crc(FirestormDefenseActivated);
+	crc(IsThreatRatingNodeActive);
+	crc(IsRecalcNeeded);
+	crc(IsVisionary);
+	crc(IsTiberiumShort);
+	crc(IsThieved);
+	crc(DidRepair);
+	crc(IsBuiltSomething);
+	crc(IsAllToHunt);
+	crc(IsToLook);
 	crc(IQ);
 	crc(State);
+	crc(SuperWeapon.Count());
+	for (int i = 0; i < SuperWeapon.Count(); i++) {
+		if (SuperWeapon[i] != NULL) crc(SuperWeapon[i]->Fetch_ID());
+	}
+	crc((int)JustBuiltStructure);
+	crc((int)JustBuiltInfantry);
+	crc((int)JustBuiltUnit);
+	crc((int)JustBuiltAircraft);
 	crc(Blockage);
 	crc((int)RepairTimer);
 	crc((int)AlertTime);
-	crc((int)BorrowedTime);
 	crc(CurUnits);
 	crc(CurBuildings);
 	crc(CurInfantry);
 	crc(CurAircraft);
+	for (int i = 0; i < 4; i++) {
+		crc(Tiberium.Get_Amount(i));
+		crc(Weed.Get_Amount(i));
+	}
 	crc((int)Credits);
 	crc((int)Capacity);
 	crc(AircraftFactories);
@@ -6527,11 +6552,89 @@ void HouseClass::Compute_CRC(CRCEngine & crc) const
 	crc(BuildingFactories);
 	crc(Power);
 	crc(Drain);
+	if (AircraftFactory != NULL) crc(AircraftFactory->Fetch_ID());
+	if (InfantryFactory != NULL) crc(InfantryFactory->Fetch_ID());
+	if (UnitFactory != NULL) crc(UnitFactory->Fetch_ID());
+	if (BuildingFactory != NULL) crc(BuildingFactory->Fetch_ID());
+	if (FlagLocation != NULL) crc(FlagLocation->Fetch_ID());
+	crc(FlagHome.X);
+	crc(FlagHome.Y);
+	crc(UnitsLost);
+	crc(BuildingsLost);
 	crc(WhoLastHurtMe);
+	crc(Center.X);
+	crc(Center.Y);
+	crc(Center.Z);
+	crc(SpawnWaypoint);
+	crc(Radius);
+	for (int i = 0; i < ZONE_COUNT; i++) {
+		crc(ZoneInfo[i].AirDefense);
+		crc(ZoneInfo[i].ArmorDefense);
+		crc(ZoneInfo[i].InfantryDefense);
+	}
+	crc(LATime);
+	crc((int)LAEnemy);
+	if (ToCapture != NULL) crc(ToCapture->Fetch_ID());
+	RadarSpied.Compute_CRC(crc);
+	for (int i = 0; i < BuildingTypes.Count(); i++) {
+		crc(BQuantity.Value(i));
+		crc(ABQuantity.Value(i));
+		crc(PBQuantity.Value(i));
+	}
+	for (int i = 0; i < UnitTypes.Count(); i++) {
+		crc(UQuantity.Value(i));
+		crc(AUQuantity.Value(i));
+		crc(PUQuantity.Value(i));
+	}
+	for (int i = 0; i < InfantryTypes.Count(); i++) {
+		crc(IQuantity.Value(i));
+		crc(AIQuantity.Value(i));
+		crc(PIQuantity.Value(i));
+	}
+	for (int i = 0; i < AircraftTypes.Count(); i++) {
+		crc(AQuantity.Value(i));
+		crc(AAQuantity.Value(i));
+		crc(PAQuantity.Value(i));
+	}
 	crc(Enemy);
+	crc(AngerNodes.Count());
+	for (int i = 0; i < AngerNodes.Count(); i++) {
+		if (AngerNodes[i].House != NULL) crc(AngerNodes[i].House->Fetch_ID());
+		crc(AngerNodes[i].Level);
+	}
+	crc(ScoutNodes.Count());
+	for (int i = 0; i < ScoutNodes.Count(); i++) {
+		if (ScoutNodes[i].House != NULL) crc(ScoutNodes[i].House->Fetch_ID());
+		crc(ScoutNodes[i].IsScouted);
+	}
+	crc((int)AITimer);
+	crc((int)PickEnemyTimer);
+	crc((int)BuildStructure);
+	crc((int)BuildUnit);
+	crc((int)BuildInfantry);
+	crc((int)BuildAircraft);
+	crc(RatioAITriggerTeam);
+	crc(BaseDefenseTeamCount);
+	crc(CurrentDropship);
+	Base.Compute_CRC(crc);
+	crc(RecalcPower);
+	crc(EMPDest.X);
+	crc(EMPDest.Y);
+	crc(NukeDest.X);
+	crc(NukeDest.Y);
 	Allies.Compute_CRC(crc);
 	ControlGrantees.Compute_CRC(crc);
-	Base.Compute_CRC(crc);
+	crc((int)DamageTime);
+	crc((int)TeamTime);
+	crc((int)TriggerTime);
+	for (int i = 0; i < MAP_TOTAL_REGIONS; i++) {
+		crc(Regions[i].Threat_Value());
+	}
+	crc(DefenseCostMultiplier);
+	crc(EnemyArmorForcePrediction);
+	crc(EnemyAirForcePrediction);
+	crc(EnemyInfantryForcePrediction);
+	crc(PowerSurplus);
 }
 
 
@@ -6632,27 +6735,17 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Credits);
 	stream.Serialize(Capacity);
 	stream.Serialize(Weed);
-	stream.Serialize(field_1BC);
 
-	// The constructor builds the tallies only in internet games, and a load restores the saved
-	// game type before any house, so a record with tallies loads only into a house with them.
-	bool tallies = AircraftTotals != NULL;
-	bool saved_tallies = tallies;
-	stream.Serialize(saved_tallies);
-	if (stream.Is_Loading() && saved_tallies != tallies) {
-		stream.Fail();
-	} else if (tallies) {
-		stream.Serialize(*AircraftTotals);
-		stream.Serialize(*InfantryTotals);
-		stream.Serialize(*UnitTotals);
-		stream.Serialize(*BuildingTotals);
-		stream.Serialize(*DestroyedAircraft);
-		stream.Serialize(*DestroyedInfantry);
-		stream.Serialize(*DestroyedUnits);
-		stream.Serialize(*DestroyedBuildings);
-		stream.Serialize(*CapturedBuildings);
-		stream.Serialize(*TotalCrates);
-	}
+	stream.Serialize(*AircraftTotals);
+	stream.Serialize(*InfantryTotals);
+	stream.Serialize(*UnitTotals);
+	stream.Serialize(*BuildingTotals);
+	stream.Serialize(*DestroyedAircraft);
+	stream.Serialize(*DestroyedInfantry);
+	stream.Serialize(*DestroyedUnits);
+	stream.Serialize(*DestroyedBuildings);
+	stream.Serialize(*CapturedBuildings);
+	stream.Serialize(*TotalCrates);
 
 	stream.Serialize(AircraftFactories);
 	stream.Serialize(InfantryFactories);
@@ -6709,7 +6802,6 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(BaseDefenseTeamCount);
 	stream.Serialize(DropshipLoadouts);
 	stream.Serialize(CurrentDropship);
-	stream.Serialize(HasCloakGenerator);
 	stream.Serialize(RemapColorRGB);
 	stream.Serialize(Base);
 	stream.Serialize(RecalcPower);
@@ -6732,10 +6824,7 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Scheme);
 	// BaseAreaMap -- points at a defense grid that only exists while a base defense is being
 	// placed.
-	stream.Serialize(field_10E20);
-	stream.Serialize(field_10E28);
 	stream.Serialize(DefenseCostMultiplier);
-	stream.Serialize(field_10E38);
 	stream.Serialize(EnemyArmorForcePrediction);
 	stream.Serialize(EnemyAirForcePrediction);
 	stream.Serialize(EnemyInfantryForcePrediction);

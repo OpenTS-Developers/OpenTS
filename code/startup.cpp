@@ -55,7 +55,6 @@
 #include "animtype.h"
 #include "audio/audioengine.h"
 #include "blight.h"
-#include "brain.h"
 #include "bsurface.h"
 #include "building.h"
 #include "builtype.h"
@@ -93,6 +92,7 @@
 #include "isotype.h"
 #include "jumpjet.h"
 #include "language/language.h"
+#include "launcher.h"
 #include "levitate.h"
 #include "light.h"
 #include "lightcon.h"
@@ -120,7 +120,6 @@
 #include "sidebar.h"
 #include "smudge.h"
 #include "smudtype.h"
-#include "spawner.h"
 #include "sun.h"
 #include "super.h"
 #include "suprtype.h"
@@ -163,9 +162,11 @@
 #include "zbuffer.h"
 
 #include <cfloat>
+#include <chrono>
 #include <lzo/lzoconf.h>
 #include <shellapi.h>
 #include <string>
+#include <thread>
 #include <vector>
 
 extern	HINSTANCE LanguageResources;
@@ -295,7 +296,6 @@ static void RegisterClasses(void)
 	REGISTER_CLASS(ParticleSystemClass, ClassID_ParticleSystemClass);
 	REGISTER_CLASS(ParticleSystemTypeClass, ClassID_ParticleSystemTypeClass);
 	REGISTER_CLASS(AITriggerTypeClass, ClassID_AITriggerTypeClass);
-	REGISTER_CLASS(NeuronClass, ClassID_NeuronClass);
 	REGISTER_CLASS(FoggedObjectClass, ClassID_FoggedObjectClass);
 	REGISTER_CLASS(AlphaShapeClass, ClassID_AlphaShapeClass);
 }
@@ -411,7 +411,7 @@ static bool Claim_Single_Instance(void)
 				if (GetLastError () == ERROR_ALREADY_EXISTS) {
 					CloseHandle (AutoPlayMutex);
 					AutoPlayMutex = NULL;
-					Sleep (2500);
+					std::this_thread::sleep_for(std::chrono::milliseconds(2500));
 				} else {
 					DebugString("Create AutoPlayMutex.\n");
 				}
@@ -458,7 +458,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 
 	// Handed over now because the exception path may not ask the logger for anything: the
 	// thread that crashed may be the one holding the logger's lock.
-	Exception_Register_Log_File(Debug_Log_File_Name());
+	Exception_Register_Log_File((const char *)Debug_Log_File_Path().u8string().c_str());
 
 	// LZO asks for this before any codec call. It validates rather than initializes, and a
 	// vendored static build cannot fail it, but thirdparty/lzo is upgraded in place and a
@@ -507,7 +507,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 #ifdef _DEBUG
 	// Debug builds show the console without -XC, except to a headless run, which shows nothing.
 	if (!Headless::Is_Active()) {
-		Debug_Init_Console();
+		Debug_Enable_Console();
 	}
 #endif
 
@@ -533,10 +533,6 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 		}
 		uidirectory += "ui\\";
 		CDFileClass::Add_Search_Drive(uidirectory.c_str());
-
-		// The recording's name was settled during static initialization, before there was
-		// anywhere for a player's files to go. Naming it again settles it where it belongs.
-		Session.RecordFile.Set_Name("RECORD.BIN");
 
 		CDFileClass *cfile = new CDFileClass(DeploymentConfig.SettingsFile.c_str());
 
@@ -652,7 +648,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 		**	Check for forced intro movie run disabling. If the conquer
 		**	configuration file says "no", then don't run the intro.
 		*/
-		if (!Special.IsFromInstall && !Spawner_Is_Requested() && !Headless::Is_Active()) {
+		if (!Special.IsFromInstall && !Launch::Replaces_Menu()) {
 			Special.IsFromInstall = ConfigINI.Get_Bool("Intro", "PlayIntro", true);
 		}
 
@@ -660,7 +656,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 		**	Regardless of whether we should run it or not, here we're
 		**	gonna change it to say "no" in the future.
 		*/
-		if (Special.IsFromInstall == true && !Spawner_Is_Requested() && !Headless::Is_Active()) {
+		if (Special.IsFromInstall == true && !Launch::Replaces_Menu()) {
 			ConfigINI.Put_Bool("Intro", "PlayIntro", false);
 
 			// Left closed, so that saving opens it for writing itself.
@@ -694,13 +690,18 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 		 */
 		if (*Game_Directory_Error() != '\0') {
 			Main_Window_Error_Box(Fetch_String(TXT_SHORT_TITLE), Game_Directory_Error());
+		} else if (Launch::Refusal() != NULL) {
+			Main_Window_Error_Box(Fetch_String(TXT_SHORT_TITLE), Launch::Refusal());
 		}
 
 		// The help and the invalid option message are of no use if the console closes with
-		// the process a moment later.
-		Debug_Console_Hold();
+		// the process a moment later. A launch with a result file does not wait for a key press.
+		if (!Launch::Has_Result_File()) {
+			Debug_Console_Hold();
+		}
 	}
 
+	Launch::Write_Result();
 
 	return(error_code);
 }
@@ -899,11 +900,6 @@ void __cdecl Prog_End(void)
 	if (SlopeZShapes[3] != NULL) {
 		delete (ShapeSet *)SlopeZShapes[3];
 		SlopeZShapes[3] = NULL;
-	}
-
-	if (PreviewSurface != NULL) {
-		delete PreviewSurface;
-		PreviewSurface = NULL;
 	}
 
 	if (MoviesMix != NULL) {

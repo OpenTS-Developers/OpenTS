@@ -380,6 +380,19 @@ void CCFileClass::Close(void)
 
 
 /// <summary>
+/// Returns true for a file inside a resident mixfile image, which cannot be written, and
+/// otherwise flushes as the base class does.
+/// </summary>
+bool CCFileClass::Flush(void)
+{
+	if (Is_Resident()) {
+		return(true);
+	}
+	return(BASECLASS::Flush());
+}
+
+
+/// <summary>
 /// Assigns a name to this file object and opens it in one operation.
 /// </summary>
 /// <param name="filename">The name of the file to open.</param>

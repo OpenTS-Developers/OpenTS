@@ -20,7 +20,7 @@ related:
     id: reconnect-dialog
 ---
 
-The [`Diplomacy`](/commands/diplomacy/) command opens the diplomacy panel in a skirmish or a game against other machines. It opens nothing in a campaign, while a recording plays back, or while another screen or menu is up.
+The [`Diplomacy`](/commands/diplomacy/) command opens the diplomacy panel in a skirmish or a game against other machines. It opens nothing in a campaign or while another screen or menu is up.
 
 The game keeps running while the panel is up. A click outside the panel goes to the map, and keys other than Tab and Escape go to the game as usual. While a chat line is being typed, every key goes to the line.
 

@@ -30,4 +30,5 @@ namespace Headless
 	void Run(void);
 	void Fail(_Printf_format_string_ char const * format, ...);
 	int Exit_Code(void);
+	char const * Failure(void);
 }

@@ -268,15 +268,12 @@ void WaypointPathClass::Clear(void)
 
 
 /// <summary>
-/// Adds the state of this waypoint path to the game checksum.
-/// This routine is used by the multiplayer sync check to prove that every machine agrees
-/// about this path.
+/// Adds this waypoint path's identity to a checksum. Its waypoints are left out, since only
+/// the local player's input creates and edits them.
 /// </summary>
 void WaypointPathClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
-	crc(CurrentWaypoint);
-	crc(Waypoints.Count());
 }
 
 

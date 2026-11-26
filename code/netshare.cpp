@@ -17,7 +17,6 @@
 #include "data.h"
 #include "dbgprint.h"
 #include "globals.h"
-#include "goptions.h"
 #include "ipxmgr.h"
 #include "language/language.h"
 #include "lzopipe.h"
@@ -460,10 +459,8 @@ bool DecodePubGameopt(char * options, char * name)
 		Seed = atol(token);
 	}
 
+	// The host's speed setting, which the match does not use; the match speed is a later field.
 	token = strtok(NULL, ",");
-	if (token != NULL) {
-		Options.GameSpeed = atol(token);
-	}
 
 	token = strtok(NULL, ",");
 	if (token != NULL) {
@@ -541,7 +538,6 @@ bool DecodePubGameopt(char * options, char * name)
 		}
 	}
 
-	Scen->Scenario = -1;
 	Frame = 0;
 	Session.CommProtocol = DEFAULT_COMM_PROTOCOL;
 
@@ -713,11 +709,9 @@ void Commit_Session_Specials(void)
 /// </summary>
 void PregameSetup(void)
 {
-	Scen->Scenario = Session.Options.ScenarioIndex;
 	Frame = 0;
 	Session.NumPlayers = Session.Players.Count();
 	DebugString("Pregame setup for %d players.\n", Session.NumPlayers);
-	Options.GameSpeed = Session.Options.GameSpeed;
 	Session.CommProtocol = DEFAULT_COMM_PROTOCOL;
 	Commit_Session_Specials();
 }

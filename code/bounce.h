@@ -29,8 +29,8 @@ class BounceClass
 			Elasticity(0),
 			Gravity(0),
 			MaxVelocity(0),
-			MyCoord(),
-			Velocity(),
+			MyCoord(0, 0, 0),
+			Velocity(0, 0, 0),
 			Rotation(0.0, 0.0, 0.0, 1.0),
 			AngularVelocity(0.0, 0.0, 0.0, 1.0)
 		{

@@ -652,9 +652,7 @@ bool AStarClass::Is_Visited(int, bool base_level, int index)
 /// map, so Update_Map_Dimensions and Reset supply them once a map exists.
 /// </summary>
 AStarClass::AStarClass(void) :
-	field_0(false),
 	IsAvoidBridges(false),
-	field_2(false),
 	IsAvoidPathCollision(true),
 	MovementCostMultiplier(1),
 	UseLocomotorEnterCheck(true),

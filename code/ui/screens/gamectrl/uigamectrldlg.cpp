@@ -13,7 +13,6 @@
 #include "_tooltip.h"
 #include "_ui.h"
 #include "audio/audioengine.h"
-#include "cctooltip.h"
 #include "data.h"
 #include "gamedlg.h"
 #include "globals.h"
@@ -25,23 +24,36 @@
 #include "ui/uienginehost.h"
 #include "ui/uishell.h"
 #include "ui/uiview.h"
+#include "uitooltip.h"
 
 
 namespace
 {
 
+bool Is_In_Scenario(void)
+{
+	return(GameActive && ScenarioActive && PlayerPtr != NULL);
+}
+
+
 class UIGameControlsEngineServiceClass : public UIGameControlsServiceClass
 {
 	public:
+		// During a scenario the speed is a simulation input, so it changes through the event
+		// in every session type; only in a game played alone is the pick also the setting.
 		virtual void Set_Game_Speed(int speed) override
 		{
-			if (Options.GameSpeed != speed) {
-				if (GameActive == true && Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
-					OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::GAMESPEED, speed));
-				} else {
-					Options.GameSpeed = speed;
-				}
+			if (!Is_In_Scenario()) {
+				Options.GameSpeed = speed;
+				return;
 			}
+
+			if (Session.Pending_Game_Speed() == speed) return;
+
+			if (!Session.Is_Network_Game()) {
+				Options.GameSpeed = speed;
+			}
+			OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::GAMESPEED, speed));
 		}
 
 		virtual void Set_Scroll_Rate(int rate) override
@@ -124,7 +136,7 @@ void UI_Game_Controls_State(UIGameControlsState & state)
 {
 	state = UIGameControlsState();
 
-	state.Speed = Options.GameSpeed;
+	state.Speed = Is_In_Scenario() ? Session.Pending_Game_Speed() : Options.GameSpeed;
 	state.Scroll = Options.ScrollRate;
 	state.Detail = Options.DetailLevel;
 	state.Difficulty = Options.Difficulty;

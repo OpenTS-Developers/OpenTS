@@ -34,13 +34,22 @@
 
 #include "ccini.h"
 #include "face.h"
+#include "mission.h"
 
+#include "anim.hh"
+#include "crate.hh"
 #include "diff.hh"
+#include "ground.hh"
+#include "land.hh"
+#include "mission.hh"
+
+#include <vector>
 
 class AircraftTypeClass;
 class AnimTypeClass;
 class BuildingTypeClass;
 class BulletTypeClass;
+class CRCEngine;
 class InfantryTypeClass;
 class OverlayTypeClass;
 class ParticleSystemTypeClass;
@@ -51,6 +60,11 @@ class VoxelAnimTypeClass;
 class WarheadTypeClass;
 class TerrainTypeClass;
 class WeaponTypeClass;
+
+namespace StateHash
+{
+	struct Checkpoint;
+}
 
 class DifficultyClass
 {
@@ -96,6 +110,7 @@ class RulesClass
 		~RulesClass(void);
 
 		void Initialize(CCINIClass const & ini);
+		void Set_Baseline(void) const;
 
 		bool Addition(CCINIClass const & ini);
 
@@ -143,6 +158,7 @@ class RulesClass
 		void Load(SaveStreamClass & stream);
 
 		void Serialize(SaveStreamClass & stream);
+		void Compute_CRC(CRCEngine & crc, std::vector<StateHash::Checkpoint> * checkpoints = nullptr) const;
 
 		void Detach(AbstractClass const * target, bool all = true);
 
@@ -1806,12 +1822,12 @@ class RulesClass
 		 * The time quake will do this percentage of damage to all units and buildings
 		 * in the game. The number is expressed as a floating point percentage.
 		 */
-		double QuakeDamagePercent;
+		double QuakeDamagePercent = 0.0;
 
 		/*
 		**	Percentage chance that a time quake will occur with each chronoshift use.
 		*/
-		double QuakeChance;
+		double QuakeChance = 0.0;
 
 		/*
 		**	Ore (Tiberium) growth rate. The value is the number of minutes between
@@ -1861,9 +1877,6 @@ class RulesClass
 		**	gets to this level or below, it will be displayed in red.
 		*/
 		double TimerWarning;
-
-		/// Unused
-		int TiberiumTransmogrify;
 
 		/*
 		**	This specifies the minutes of delay between recharges for these
@@ -2291,4 +2304,29 @@ class RulesClass
 		 */
 		int VeteranFlashTimer;
 		int EliteFlashTimer;
+
+		/*
+		 * Distance in leptons to consider "close enough" for TEVENT_NEAR_WAYPOINT.
+		 */
+		int ComesNearWaypointDistance;
+
+		/*
+		 * For each land type, the fraction of full speed each speed type moves at on it, and
+		 * whether it can be built on.
+		 */
+		GroundType Ground[LAND_COUNT];
+
+		/*
+		 * For each crate powerup, its relative odds, the animation played when a crate gives
+		 * it, and a value whose meaning depends on the powerup.
+		 */
+		int CrateShares[CRATE_COUNT];
+		AnimType CrateAnims[CRATE_COUNT];
+		double CrateData[CRATE_COUNT];
+
+		/*
+		 * For each mission, how an object on it responds to threats and how often its mission
+		 * handler runs.
+		 */
+		MissionControlClass MissionControl[MISSION_COUNT];
 };

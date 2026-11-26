@@ -211,6 +211,28 @@ TEST_CASE_FIXTURE(HouseFixture, "a house set feeds the checksum both halves, apa
 }
 
 
+TEST_CASE_FIXTURE(HouseFixture, "a house array adds each house that has a value to the checksum, with its slot")
+{
+	HouseArray<std::uint16_t> counts;
+	CRCRecorder empty;
+	counts.Compute_CRC(empty);
+	CHECK_MESSAGE(empty.Values.empty(), "an array with no values adds nothing");
+
+	counts[&House[2]] = 1;
+	counts[&House[40]] = 300;
+	CRCRecorder filled;
+	counts.Compute_CRC(filled);
+	CHECK_MESSAGE(filled.Values == std::vector<int>({2, 1, 40, 300}), "each value goes in after its slot, in slot order");
+
+	HouseArray<std::uint16_t> moved;
+	moved[&House[3]] = 1;
+	moved[&House[40]] = 300;
+	CRCRecorder other;
+	moved.Compute_CRC(other);
+	CHECK_MESSAGE(other.Values != filled.Values, "the same value under another house reaches the checksum apart");
+}
+
+
 TEST_CASE_FIXTURE(HouseFixture, "a house set is one 64-bit word and survives the raw copy cells are moved with")
 {
 	CHECK_MESSAGE(std::is_trivially_copyable_v<HouseSet>, "a set survives the raw copy cells are moved with");

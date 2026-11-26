@@ -27,6 +27,4 @@ Only the ground layer is sorted, so the value affects only an animation that has
 
 An animation that a structure runs in one of its animation slots uses the slot's value instead, which is `0` when the slot sets none. [Placement and draw order](/systems/building-animations/#placement-and-draw-order) covers that value and its range. The type's own value has no such range limit.
 
-:::caution[Multiplayer overrides the move flash animation's value]
-In a multiplayer game, each move order the player gives sets this value to `-5000` on the animation type named by [`MoveFlash=`](/keys/moveflash/). For the rest of that game, every animation of that type is created with `-5000`, whatever the type sets. Campaign and skirmish games leave the value alone.
-:::
+The marker of a move order, set by [`MoveFlash=`](/keys/moveflash/), is not sorted with the other objects, so the value does not move it. Other animations of the same type use the value as usual.

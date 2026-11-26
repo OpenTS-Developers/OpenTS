@@ -99,8 +99,6 @@ DynamicVectorClass<ShadowControlClass *> Tactical::ShadowControls;
 /// </summary>
 Tactical::Tactical(void) :
 	LastAIFrame(-1),
-	field_58(0),
-	field_59(0),
 	TacPixelX(0),
 	TacPixelY(0),
 	LastTacPixelX(0),
@@ -115,7 +113,6 @@ Tactical::Tactical(void) :
 	DesiredTacticalCoord(0,0),
 	IsFirstRender(true),
 	IsToRedraw(false),
-	UnusedBool(false),
 	VisibleCellRect(RECT_NONE),
 	RubberBandStart(0,0),
 	RubberBandEnd(0,0),
@@ -433,10 +430,6 @@ void Tactical::Setup_Trigger_Scroll(Coord const & coord, int speed)
 void Tactical::AI(void)
 {
 	bool coordchanged = false;
-
-	if (Session.Play) {
-		return;
-	}
 
 	if (LastAIFrame != Frame) {
 		if (ScenarioActive) {
@@ -2737,6 +2730,30 @@ void Tactical::Draw_Render_Hooks(ObjectClass * object, Rect const & cliprect)
 
 
 /// <summary>
+/// Draws the move flashes that belong in the display layer, in the order they started. A
+/// flash is not drawn while a delay between its loops pauses it, or while its type sets
+/// ShouldFogRemove and its cell is fogged.
+/// </summary>
+static void Render_Move_Flashes(LayerType layer)
+{
+	for (MoveFlashClass const & anim : MoveFlashClass::All()) {
+		if (anim.In_Which_Layer() != layer || anim.Is_Delayed()) {
+			continue;
+		}
+
+		if (MainWindow && !Debug_Map && Map.Is_Fogged(anim.Center_Coord()) && anim.Class_Of()->IsShouldFogRemove) {
+			continue;
+		}
+
+		Point2D point;
+		if (TacticalMap->Coord_To_Pixel(anim.Center_Coord(), point)) {
+			anim.Draw_It(point, TacticalRect);
+		}
+	}
+}
+
+
+/// <summary>
 /// Renders every object in each display layer (and, after the ground layer, the overlay sprites
 /// of placed buildings). Each object kind takes a slightly different path: buildings and static
 /// terrain draw only their selection brackets and decorations here (buildings additionally render
@@ -2747,6 +2764,12 @@ void Tactical::Draw_Render_Hooks(ObjectClass * object, Rect const & cliprect)
 void Tactical::Draw_Objects(bool forced)
 {
 	for (int layer = LAYER_FIRST; layer < LAYER_COUNT; layer++) {
+
+		// Move flashes are in no display layer; in the ground layer they go behind the objects.
+		if (layer == LAYER_GROUND) {
+			Render_Move_Flashes((LayerType)layer);
+		}
+
 		for (int index = 0; index < DisplayClass::Layer[layer].Count(); index++) {
 			ObjectClass * obj = DisplayClass::Layer[layer][index];
 			RTTIType rtti = obj->RTTI;
@@ -2821,6 +2844,10 @@ void Tactical::Draw_Objects(bool forced)
 					obj->Draw_Post_Render(pixel, TacticalRect);
 				}
 			}
+		}
+
+		if (layer != LAYER_GROUND) {
+			Render_Move_Flashes((LayerType)layer);
 		}
 
 		if (layer == LAYER_GROUND) {
@@ -3392,7 +3419,15 @@ void Tactical::Reset_Dirty_Rectangles(void)
 /// <param name="inshroud">Should the line be drawn through shrouded/unmapped cells?</param>
 void Tactical::Draw_Rally_Points(bool inshroud)
 {
-	static bool _pattern[8] = {
+	static bool _pattern[16] = {
+		true,
+		true,
+		true,
+		true,
+		true,
+		false,
+		false,
+		false,
 		true,
 		true,
 		true,
@@ -3477,7 +3512,15 @@ void Tactical::Draw_Rally_Points(bool inshroud)
 /*
  * Dash pattern for the animated "marching" line that joins the selected waypoint path.
  */
-static bool Draw_WaypointPoint_Line_Style[8] = {
+static bool Draw_WaypointPoint_Line_Style[16] = {
+	true,
+	true,
+	true,
+	true,
+	true,
+	false,
+	false,
+	false,
 	true,
 	true,
 	true,
@@ -3748,8 +3791,6 @@ void Tactical::Serialize(SaveStreamClass & stream)
 
 	stream.Serialize(ScreenText);
 	stream.Serialize(LastAIFrame);
-	stream.Serialize(field_58);
-	stream.Serialize(field_59);
 	stream.Serialize(TacPixelX);
 	stream.Serialize(TacPixelY);
 	stream.Serialize(LastTacPixelX);
@@ -3766,7 +3807,6 @@ void Tactical::Serialize(SaveStreamClass & stream)
 	stream.Serialize(DesiredTacticalCoord);
 	stream.Serialize(IsFirstRender);
 	stream.Serialize(IsToRedraw);
-	stream.Serialize(UnusedBool);
 	stream.Serialize(VisibleCellRect);
 	stream.Serialize(RubberBandStart);
 	stream.Serialize(RubberBandEnd);

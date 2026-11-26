@@ -5,6 +5,7 @@ workflow on a push.  It reads the working tree, not the pushed commits.
 """
 
 from pathlib import Path
+import os
 import re
 import subprocess
 import sys
@@ -27,6 +28,18 @@ def git(*arguments):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
+
+
+def check_environment():
+    """Return this process's environment without the variables that select a repository.
+
+    Git sets ``GIT_DIR`` for a hook run from a linked worktree.  A test that
+    inherits it runs git against this repository instead of its temporary one,
+    and its ``git init`` marks this repository bare.
+    """
+
+    names = set(git("rev-parse", "--local-env-vars").stdout.split())
+    return {name: value for name, value in os.environ.items() if name not in names}
 
 
 def workflow_paths(workflow=WORKFLOW):
@@ -115,7 +128,7 @@ def main(arguments, updates):
     command = [sys.executable, str(MANAGE), "check", "--skip-build"]
     if base:
         command += ["--base-ref", base]
-    return subprocess.run(command, cwd=ROOT).returncode
+    return subprocess.run(command, cwd=ROOT, env=check_environment()).returncode
 
 
 if __name__ == "__main__":

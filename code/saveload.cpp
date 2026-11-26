@@ -68,6 +68,7 @@
 #include "bullet.h"
 #include "bullettype.h"
 #include "classfactory.h"
+#include "ctrlgroup.h"
 #include "data.h"
 #include "dbgprint.h"
 #include "deploymentconfig.h"
@@ -84,6 +85,7 @@
 #include "init.h"
 #include "ion.h"
 #include "language/language.h"
+#include "launcher.h"
 #include "loaddlg.h"
 #include "light.h"
 #include "logic.h"
@@ -95,6 +97,7 @@
 #include "persist.h"
 #include "psystype.h"
 #include "ptype.h"
+#include "queue.h"
 #include "revent.h"
 #include "rules.h"
 #include "savefile.h"
@@ -107,6 +110,7 @@
 #include "side.h"
 #include "sidebar.h"
 #include "smudtype.h"
+#include "statehash.h"
 #include "stats.h"
 #include "stimer.h"
 #include "sun.h"
@@ -157,7 +161,13 @@
 /*
 ********************************** Defines **********************************
 */
-unsigned int ExpectedGameVersion = LoadOptionsClass::GAMEVER_OPENTS;
+// Separates development builds of one version whose saves or simulation differ. Raise it by one
+// for a change to the save layout or to what the simulation computes, and reset it to 0 in the
+// commit that changes the project version number, so that stamps of different versions differ.
+static constexpr unsigned int GameVersionSerial = 1;
+static_assert(GameVersionSerial <= 0xFF, "the serial takes the byte the packed version leaves free");
+
+unsigned int ExpectedGameVersion = (GameVersionSerial << 24) | LoadOptionsClass::GAMEVER_OPENTS;
 
 
 /// <summary>
@@ -340,52 +350,37 @@ CRCEngine Object_CRCs(void)
 
 #undef DO_OBJ_CRC
 
-	if (PlayerPtr != NULL) {
-		crc(PlayerPtr->HeapID);
-	}
 	crc((int)Frame);
-	crc(CurrentObject.Count());
 	return(crc);
 }
 
 
 /// <summary>
-/// Writes a per-heap checksum table to the out-of-sync report: one summary line per heap, then
-/// a row per live object keyed by its stable identifier. Unlike Object_CRCs this folds in no
-/// per-machine state, so two peers' tables are directly comparable.
+/// Writes the game state checksum table to the out-of-sync report: the table recorded at the
+/// start of the game, one line per part of the current state, then the rows of
+/// StateHash::Compute_Rows, the same rows a failed start check writes to the debug log.
+/// Comparing two peers' tables finds the first row whose checksum differs. It is not yet
+/// verified that every hashed member is the same on every machine, so a difference can also
+/// come from state that only one machine keeps.
 /// </summary>
 void Print_Heap_CRCs(FILE * fp)
 {
-	int i;
+	fprintf(fp, "\n----- Start state checksums -----\n");
+	StateHash::Print_Start(fp);
 
 	fprintf(fp, "\n----- Heap checksums -----\n");
 
-#define HEAP_SUMMARY(VECTOR) \
-	{ \
-		CRCEngine heap_crc; \
-		for (i = 0; i < VECTOR.Count(); i++) { \
-			VECTOR[i]->Compute_CRC(heap_crc); \
-		} \
-		fprintf(fp, "%-28s count=%-5d crc=%08x\n", #VECTOR, VECTOR.Count(), heap_crc()); \
+	std::vector<StateHash::Part> parts;
+	StateHash::Compute_Parts(parts);
+	for (StateHash::Part const & part : parts) {
+		fprintf(fp, "%s\n", StateHash::Format_Part(part).c_str());
 	}
 
-	OBJECT_HEAP_LIST(HEAP_SUMMARY)
-
-#undef HEAP_SUMMARY
-
-#define HEAP_ROWS(VECTOR) \
-	{ \
-		CRCEngine heap_crc; \
-		fprintf(fp, "\n--- %s ---\n", #VECTOR); \
-		for (i = 0; i < VECTOR.Count(); i++) { \
-			VECTOR[i]->Compute_CRC(heap_crc); \
-			fprintf(fp, "%05d  ID:%-8d  %08x\n", i, VECTOR[i]->Fetch_ID(), heap_crc()); \
-		} \
+	std::vector<std::string> lines;
+	StateHash::Compute_Rows(lines);
+	for (std::string const & line : lines) {
+		fprintf(fp, "%s\n", line.c_str());
 	}
-
-	OBJECT_HEAP_LIST_INSTANCES(HEAP_ROWS)
-
-#undef HEAP_ROWS
 }
 
 /***********************************************************************************************
@@ -1143,6 +1138,9 @@ bool Load_Game(const char *file_name)
 
 	Swizzler.Discard();
 
+	// Read before the save replaces the session options.
+	int const solo_speed = Launch::Is_Active() ? Session.Pending_Game_Speed() : Options.GameSpeed;
+
 	SaveStreamClass stream(file.Content, SaveStreamClass::MODE_LOAD);
 	bool res = false;
 	// The catch sits here rather than around the whole routine because what was already
@@ -1167,7 +1165,10 @@ bool Load_Game(const char *file_name)
 		DebugString("Save carries %u bytes past its last record\n", stream.Size() - stream.Offset());
 	}
 
-	Swizzler.Resolve();
+	if (!Swizzler.Resolve()) {
+		DebugString("\t***** FAILED! (pointers left unresolved)\n");
+		return(false);
+	}
 
 	/*
 	**	Fixup any expediency data that can be inferred from the physical
@@ -1185,6 +1186,17 @@ bool Load_Game(const char *file_name)
 	TiberiumClass::Init_Tiberium_Growth_System();
 	TiberiumClass::Init_Tiberium_Spread_System();
 	Map.Complete_Radar_Refresh();
+
+	// A network game runs at the speed its save recorded. A game played alone runs at the
+	// player's setting, or, when a client launched it, at the speed it ran at or last ordered
+	// before the load. The queued orders belong to the game the load replaced; the multiplayer
+	// loads clear their queues themselves.
+	if (!Session.Is_Network_Game()) {
+		Session.Options.GameSpeed = solo_speed;
+		DoList.clear();
+		OutList.clear();
+	}
+
 	ScenarioActive = true;
 	TacticalActive = true;
 	Sync_Recorder_Arm();
@@ -1217,16 +1229,12 @@ static void Serialize_Misc_Values(SaveStreamClass & stream)
 	stream.Serialize(PlayerPtr);
 	stream.Serialize(Frame);
 	stream.Serialize(CurrentObject);
-	stream.Serialize(Ground);
+	stream.Serialize(ControlGroups);
 
 	IonStormClass::Serialize(stream);
 
 	stream.Serialize(LogicTags);
 	stream.Serialize(MapTags);
-	stream.Serialize(CrateShares);
-	stream.Serialize(CrateAnims);
-	stream.Serialize(CrateData);
-	stream.Serialize(MissionControl);
 	stream.Serialize(Session.ObiWan);
 	stream.Serialize(Session.AIOnly);
 

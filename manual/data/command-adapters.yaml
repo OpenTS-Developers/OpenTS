@@ -524,6 +524,14 @@ launch_options:
     availability: *all
     sites:
       - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-SPAWN' }
+  - id: launch:launch
+    title: Launch request
+    syntax: -LAUNCH=<file>
+    description: Plays the game or makes the map capture that the launch request file describes, in place of the startup movies and the menu, and exits when it ends.
+    group: startup
+    availability: *all
+    sites:
+      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-LAUNCH=' }
   - id: launch:capture-map
     title: Map capture
     syntax: -CAPTUREMAP=<map>
@@ -572,14 +580,6 @@ launch_options:
     availability: *all
     sites:
       - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-STEALTH' }
-  - id: launch:attract
-    title: Attract mode
-    syntax: -ATTRACT
-    description: Lets any key press end a `-XY` playback before the playback writes its report, and has no other effect.
-    group: startup
-    availability: *all
-    sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-ATTRACT' }
   - id: launch:resolution
     title: Resolution
     syntax: -<width>X<height>
@@ -652,22 +652,6 @@ launch_options:
     availability: *debug
     sites:
       - { file: code/init.cpp, function: Parse_Command_Line, expression: 'compact:-XH', guard: _DEBUG }
-  - id: launch:record
-    title: Game recording
-    syntax: -XX
-    description: Records each game to `RECORD.BIN`, campaign missions included.
-    group: debug-build
-    availability: *debug
-    sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'compact:-XX', guard: _DEBUG }
-  - id: launch:playback
-    title: Recording playback
-    syntax: -XY
-    description: Plays back `RECORD.BIN` in place of the main menu, but the playback writes an out-of-sync report and exits on its first frame.
-    group: debug-build
-    availability: *debug
-    sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'compact:-XY', guard: _DEBUG }
   - id: launch:console-debug
     title: Console debug output
     syntax: -XC
@@ -698,3 +682,5 @@ launch_exclusions:
     reason: Supplies the comparison length for the -X branch and is not itself accepted.
   - site: { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-X' }
     reason: Container for the individually documented compact -X controls; it has no behavior without a following code.
+  - site: { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-SEED' }
+    reason: Noted in every build only so that -LAUNCH= can refuse the combination; the documented -SEED option is the Debug-only site.

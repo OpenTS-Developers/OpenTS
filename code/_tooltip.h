@@ -9,6 +9,6 @@
 
 #pragma once
 
-class CCToolTip;
+class UIToolTip;
 
-extern CCToolTip * ToolTips;
+extern UIToolTip * ToolTips;

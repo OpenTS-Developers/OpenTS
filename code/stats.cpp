@@ -48,7 +48,6 @@ int WestwoodOnline_PortNumber = 1234;
 #include "gamedirs.h"
 #include "getcpu.h"
 #include "globals.h"
-#include "goptions.h"
 #include "house.h"
 #include "infantry.h"
 #include "infatype.h"
@@ -463,7 +462,7 @@ void Send_Statistics_Packet(void)
 	/*
 	**	Game speed setting.
 	*/
-	stats.Add_Field (FIELD_SPEED_SETTING, (char)Options.GameSpeed);
+	stats.Add_Field (FIELD_SPEED_SETTING, (char)Session.Options.GameSpeed);
 
 	/*
 	 * Game version/build date

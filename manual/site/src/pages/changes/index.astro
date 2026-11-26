@@ -26,6 +26,7 @@ const labels = UI.changeCategories;
 			<h2>
 				{release.version}
 				{release.status === 'development' && <Badge text="In development" variant="caution" size="small" class="ots-release-badge" />}
+				{release.status === 'candidate' && <Badge text="Release candidate" variant="note" size="small" class="ots-release-badge" />}
 				<small class="ots-release-count">{items.length} {items.length === 1 ? 'change' : 'changes'}</small>
 			</h2>
 			{release.date && <p class="ots-release-date"><time datetime={release.date}>{release.date}</time></p>}

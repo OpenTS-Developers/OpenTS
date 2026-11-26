@@ -50,6 +50,7 @@
 #if defined(_WIN32)
 
 #include "misc.h"
+#include "proto/wire.h"
 #include "resource.h"
 #include "version.h"
 #include "win.h"
@@ -60,6 +61,7 @@
 #include <tlhelp32.h>
 
 #include <atomic>
+#include <chrono>
 #include <cmath>
 #include <csignal>
 #include <cstdarg>
@@ -68,6 +70,7 @@
 #include <cstring>
 #include <eh.h>
 #include <exception>
+#include <thread>
 
 #define MS_VC_THREAD_NAME_EXCEPTION			0x406D1388
 #define MS_CPP_EXCEPTION					0xE06D7363
@@ -82,6 +85,7 @@
 #define DUMPER_TIMEOUT_MS					60000
 #define LOG_TAIL_BYTES						(256 * 1024)
 #define EXCEPTION_FOLDER_DAYS				30
+#define RESULT_PREFIX_SIZE					(64 * 1024)
 
 #if defined(_M_X64)
 
@@ -274,6 +278,17 @@ static bool TestSectionFault = false;
 static bool TestDumperFault = false;
 
 static bool Unattended = false;
+
+// The launch result a crash writes, stored before the crash because the handler cannot
+// allocate. ResultBuffer has room for the registered prefix and the folder field.
+static std::atomic<bool> ResultRegistered { false };
+static char ResultPath[MAX_PATH];
+static char ResultTemporaryPath[MAX_PATH];
+static unsigned ResultPrefixLength = 0;
+static unsigned ResultFolderField = 0;
+static std::uint8_t ResultBuffer[RESULT_PREFIX_SIZE + 3 * MAX_PATH + 16];
+static wchar_t ResultWideFolder[MAX_PATH];
+static char ResultFolderText[3 * MAX_PATH];
 
 static bool Resolve_Symbol(DWORD_PTR address, char * name, unsigned name_size, DWORD_PTR * displacement);
 static bool Resolve_Line(DWORD_PTR address, char * file, unsigned file_size, unsigned * line);
@@ -1273,6 +1288,25 @@ static bool Write_Whole_File(char const * path, void const * data, DWORD length,
 
 
 /// <summary>
+/// Writes data to the file temporary and renames it over path, so a reader of path never sees a
+/// partly written file. The folder must exist. Does not allocate, so the crash handler can call
+/// it.
+/// </summary>
+/// <returns>True when path holds data. On false the temporary file is deleted, and path holds
+/// what it held before.</returns>
+bool Replace_File(char const * path, char const * temporary, void const * data, unsigned length)
+{
+	if (Write_Whole_File(temporary, data, DWORD(length), FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH)
+				&& MoveFileExA(temporary, path, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
+		return(true);
+	}
+
+	DeleteFileA(temporary);
+	return(false);
+}
+
+
+/// <summary>
 /// Writes a minidump of the crashed process.
 /// </summary>
 /// <param name="path">The file to write.</param>
@@ -1418,6 +1452,32 @@ static bool Create_Artifact_Folder(void)
 
 
 /// <summary>
+/// Writes the registered launch result with the crash report folder added. Does nothing when no
+/// result is registered.
+/// </summary>
+static void Write_Launch_Result(void)
+{
+	if (!ResultRegistered.load()) {
+		return;
+	}
+
+	// A protobuf string is UTF-8, and the folder is in the ANSI code page.
+	ResultFolderText[0] = '\0';
+	if (MultiByteToWideChar(CP_ACP, 0, ArtifactFolder, -1, ResultWideFolder, MAX_PATH) == 0
+				|| WideCharToMultiByte(CP_UTF8, 0, ResultWideFolder, -1, ResultFolderText, sizeof(ResultFolderText), NULL, NULL) == 0) {
+		ResultFolderText[0] = '\0';
+	}
+
+	std::size_t length = ResultPrefixLength;
+	if (ResultFolderText[0] != '\0') {
+		ProtoWire::Put_Text_Field(ResultBuffer, length, ResultFolderField, ResultFolderText);
+	}
+
+	Replace_File(ResultPath, ResultTemporaryPath, ResultBuffer, unsigned(length));
+}
+
+
+/// <summary>
 /// Writes every artifact for this crash into a folder of its own.
 /// </summary>
 /// <param name="e_info">The saved machine state of the crashing thread.</param>
@@ -1450,6 +1510,8 @@ static void Write_Crash_Artifacts(EXCEPTION_POINTERS * e_info, DWORD crashed_thr
 	// machine is lost before the file system catches up.
 	Write_Whole_File(report_path, ExceptionReport, ExceptionReportLength,
 				FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH);
+
+	Write_Launch_Result();
 }
 
 
@@ -1679,7 +1741,7 @@ static void Save_Machine_State(EXCEPTION_POINTERS * e_info, DWORD self)
 	// The artifacts are safe, and the dumper owns the dialog and the exit from here.
 	for (;;) {
 		SuspendThread(GetCurrentThread());
-		Sleep(1000);
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	}
 }
 
@@ -2077,6 +2139,37 @@ void Exception_Register_Log_File(char const * path)
 }
 
 
+/// <summary>
+/// Makes a crash write prefix, an encoded result, to path, followed by the crash report folder
+/// as text field folder_field. Replaces any earlier registration; a null path leaves none. The
+/// handler cannot allocate, so prefix is copied here; call this again whenever the result changes.
+/// </summary>
+/// <returns>bool; False when the prefix or the path is too long, and then nothing is
+/// registered.</returns>
+bool Exception_Register_Result(char const * path, void const * prefix, unsigned length, unsigned folder_field)
+{
+	ResultRegistered.store(false);
+
+	if (path == NULL) {
+		return(true);
+	}
+	if (length > RESULT_PREFIX_SIZE || strlen(path) + sizeof(".tmp") > MAX_PATH) {
+		return(false);
+	}
+
+	snprintf(ResultPath, sizeof(ResultPath), "%s", path);
+	snprintf(ResultTemporaryPath, sizeof(ResultTemporaryPath), "%s.tmp", path);
+	if (length != 0) {
+		memcpy(ResultBuffer, prefix, length);
+	}
+	ResultPrefixLength = length;
+	ResultFolderField = folder_field;
+
+	ResultRegistered.store(true);
+	return(true);
+}
+
+
 void Exception_Set_Unattended(bool unattended)
 {
 	Unattended = unattended;
@@ -2264,6 +2357,18 @@ bool Describe_Code_Address(void const *, char * buffer, unsigned size)
 		buffer[0] = '\0';
 	}
 
+	return(false);
+}
+
+
+bool Exception_Register_Result(char const *, void const *, unsigned, unsigned)
+{
+	return(true);
+}
+
+
+bool Replace_File(char const *, char const *, void const *, unsigned)
+{
 	return(false);
 }
 

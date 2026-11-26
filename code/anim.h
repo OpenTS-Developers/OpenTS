@@ -32,16 +32,103 @@
 
 #pragma once
 
+#include "animstage.h"
 #include "animtype.h"
 #include "bounce.h"
 #include "coord.h"
 #include "object.h"
 #include "stage.h"
+#include "sun.h"
 
 #include "draw.hh"
 #include "layer.hh"
 
+#include <vector>
+
 class ConvertClass;
+class CRCEngine;
+
+
+// What AnimDrawClass::Draw uses from the animation it draws.
+struct AnimDrawContext
+{
+	AnimTypeClass const * Class = nullptr;
+	int Stage = 0;
+	int StageCount = 0;
+	Coord RenderCoord;
+	int Height = 0;
+	int HeightAGL = 0;
+	bool IsBouncing = false;
+	bool IsAttachedToCell = false;
+	bool IsFalling = false;
+};
+
+
+// How a playing animation is drawn.
+struct AnimDrawClass
+{
+	/*
+	 * These are the shape drawing flags this animation was created with: how its artwork
+	 * is positioned and blended. The type's translucency is added to a copy each frame.
+	 */
+	ShapeFlags_Type ShapeFlags = ShapeFlags_Type(SHAPE_WIN_REL|SHAPE_CENTER);
+
+	/*
+	 * This value biases the depth the animation's shape is written at, expressed in pixels
+	 * of height. It lets the animation sort in front of or behind whatever it overlaps.
+	 */
+	int ZAdjust = 0;
+
+	/*
+	 * This is how transparently the animation is drawn (0 - 15), where zero is opaque and
+	 * 15 means it is not drawn at all. A building fading in or out of a cloaking field
+	 * passes its own level down to each of its animations so that they fade along with it.
+	 */
+	char TranslucencyLevel = 0;
+
+	/*
+	 * If this animation is to be drawn through a palette other than the standard animation
+	 * drawer, then this points to that converter. Tiberium debris and burning victims are
+	 * tinted this way. It cannot survive a save, so it is looked up again on loading.
+	 */
+	ConvertClass * AlternativeDrawer = nullptr;
+
+	/*
+	 * This is the lighting level used when the animation has an AlternativeDrawer, where
+	 * 1000 is normal brightness. A type flagged IsUseNormalLight ignores it entirely.
+	 */
+	unsigned AlternativeBrightness = NORMAL_LIGHT;
+
+	/*
+	**	If this animation is invisible, then this flag will be true. An invisible
+	**	animation is one that is created for the sole purpose of keeping all
+	**	machines synchronized. It will not be displayed.
+	*/
+	bool IsInvisible = false;
+
+	/*
+	 * Is this animation hidden under the fog of war? It is copied from the building the
+	 * animation belongs to as that building passes into and out of fog, and an animation
+	 * whose type is flagged IsShouldFogRemove stops being drawn while it is set.
+	 */
+	bool IsFogged = false;
+
+	void Draw(AnimDrawContext const & context, Point2D const & point, Rect const & cliprect) const;
+
+	void Compute_CRC(CRCEngine & crc) const;
+
+	template<typename S>
+	void Serialize(S & stream)
+	{
+		stream.Serialize(ShapeFlags);
+		stream.Serialize(ZAdjust);
+		stream.Serialize(TranslucencyLevel);
+		// AlternativeDrawer -- a palette converter of the running session.
+		stream.Serialize(AlternativeBrightness);
+		stream.Serialize(IsInvisible);
+		stream.Serialize(IsFogged);
+	}
+};
 
 
 /**********************************************************************************************
@@ -49,7 +136,7 @@ class ConvertClass;
 **	displayed over the top of the game map. Typically, they are used for explosion and fire
 **	effects.
 */
-class AnimClass : public ObjectClass, public StageClass
+class AnimClass : public ObjectClass
 {
 		typedef ObjectClass BASECLASS;
 
@@ -59,6 +146,9 @@ class AnimClass : public ObjectClass, public StageClass
 		**	This points to the type of animation object this is.
 		*/
 		AnimTypeClass * Class;
+
+		AnimStageClass Stage;
+		AnimDrawClass Draw;
 
 		AnimClass(AnimTypeClass const * type, Coord const & coord, int timedelay=0, int loop=1, ShapeFlags_Type flags=ShapeFlags_Type(SHAPE_WIN_REL|SHAPE_CENTER), int zadjust = 0);
 		AnimClass(void);
@@ -75,8 +165,6 @@ class AnimClass : public ObjectClass, public StageClass
 		static void Post_Load_Game(void);
 
 		void Attach_To(ObjectClass *obj);
-		void Make_Invisible(void) {IsInvisible = true;};
-		void Make_Visible(void) {IsInvisible = false;};
 		static void Do_Atom_Damage(HousesType ownerhouse, Cell const & cell);
 
 		virtual RTTIType Fetch_RTTI(void) const override;
@@ -99,7 +187,7 @@ class AnimClass : public ObjectClass, public StageClass
 		void Attach_To_Cell(int zadjust)
 		{
 			IsAttachedToCell = true;
-			ZAdjust = zadjust;
+			Draw.ZAdjust = zadjust;
 			IsToDeleteOnOverpass = true;
 		}
 
@@ -115,6 +203,11 @@ class AnimClass : public ObjectClass, public StageClass
 		virtual BounceResultType Bounce_AI(void);
 		virtual int Stage_Count(void) const;
 
+		int Fetch_Stage(void) const {return(Stage.Playback.Fetch_Stage());}
+		void Set_Stage(int stage) {Stage.Playback.Set_Stage(stage);}
+		void Set_Rate(int rate) {Stage.Playback.Set_Rate(rate);}
+		void Set_Step(int step) {Stage.Playback.Set_Step(step);}
+
 		/*
 		**	If this animation is attached to an object, then this points to that object. An
 		**	animation that is attached will follow that object as it moves. This is important
@@ -128,25 +221,6 @@ class AnimClass : public ObjectClass, public StageClass
 		**	animation.
 		*/
 		HousesType OwnerHouse;
-
-		/*
-		 * If this animation is to be drawn through a palette other than the standard animation
-		 * drawer, then this points to that converter. Tiberium debris and burning victims are
-		 * tinted this way. It cannot survive a save, so it is looked up again on loading.
-		 */
-		ConvertClass * AlternativeDrawer;
-
-		/*
-		 * This is the lighting level used when the animation has an AlternativeDrawer, where
-		 * 1000 is normal brightness. A type flagged IsUseNormalLight ignores it entirely.
-		 */
-		unsigned AlternativeBrightness;
-
-		/*
-		 * This value biases the depth the animation's shape is written at, expressed in pixels
-		 * of height. It lets the animation sort in front of or behind whatever it overlaps.
-		 */
-		int ZAdjust;
 
 		/*
 		 * This value is added to the animation's Y sorting position, biasing where it falls in
@@ -180,20 +254,6 @@ class AnimClass : public ObjectClass, public StageClass
 		BounceClass Bounce;
 
 		/*
-		 * This is how transparently the animation is drawn (0 - 15), where zero is opaque and
-		 * 15 means it is not drawn at all. A building fading in or out of a cloaking field
-		 * passes its own level down to each of its animations so that they fade along with it.
-		 */
-		char TranslucencyLevel;
-
-		/*
-		**	Is this animation in a temporary suspended state?  If so, then it won't
-		**	be rendered until this value is zero. The flag will be set to false
-		**	after the first countdown timer reaches 0.
-		*/
-		int Delay;
-
-		/*
 		**	If this is an animation that damages whatever it is attached to, then this
 		**	value holds the accumulation of fractional damage points. When the accumulated
 		**	fractions reach 256, then one damage point is applied to the attached object.
@@ -201,23 +261,11 @@ class AnimClass : public ObjectClass, public StageClass
 		double Accum;
 
 		/*
-		 * These are the shape drawing flags this animation was created with: how its artwork
-		 * is positioned and blended. The type's translucency is added to a copy each frame.
-		 */
-		ShapeFlags_Type ShapeFlags;
-
-		/*
 		 * If this animation travels under its own momentum -- a meteor or a piece of bouncing
 		 * debris -- then this flag will be true. It is never placed on the map: its Bounce
 		 * member carries it along, and it deletes itself once the bouncing has settled.
 		 */
 		bool IsBouncing;
-
-		/*
-		**	This counter tells how many more times the animation should loop before it
-		**	terminates.
-		*/
-		unsigned char Loops;
 
 	protected:
 		void Middle(void);
@@ -245,13 +293,6 @@ class AnimClass : public ObjectClass, public StageClass
 		bool IsInert;
 
 		/*
-		 * Is this animation hidden under the fog of war? It is copied from the building the
-		 * animation belongs to as that building passes into and out of fog, and an animation
-		 * whose type is flagged IsShouldFogRemove stops being drawn while it is set.
-		 */
-		bool IsFogged;
-
-		/*
 		 * Has the burning victim stopped running? It is set once he reaches the water he was
 		 * making for, exhausts his allowance of cells, or runs out of anywhere to go. From
 		 * that point he plays out his death sequence and is deleted when it finishes.
@@ -266,25 +307,46 @@ class AnimClass : public ObjectClass, public StageClass
 		bool IsToDelete;
 
 		/*
-		**	If the animation has just been created, then don't do any animation
-		**	processing until it has been through the render loop at least once.
-		*/
-		bool IsBrandNew;
-
-		/*
-		**	If this animation is invisible, then this flag will be true. An invisible
-		**	animation is one that is created for the sole purpose of keeping all
-		**	machines synchronized. It will not be displayed.
-		*/
-		bool IsInvisible;
-
-		/*
 		 * If this animation has been temporarily frozen, then this flag will be true. A
 		 * disabled animation is still drawn, but it no longer advances through its stages --
 		 * this is how a building holds its powered animations still while it has no power.
 		 */
 		bool IsDisabled;
 };
+
+
+// The flash at a move order's destination, which plays on this machine only. It is not a game
+// object, so saves, the game checksum and the other players never see it.
+class MoveFlashClass
+{
+	public:
+		static void Create(Coord const & coord);
+		static bool AI_All(void);
+		static void Clear_All(void);
+
+		// The live move flashes, in the order they started.
+		static std::vector<MoveFlashClass> const & All(void) {return(MoveFlashes);}
+
+		LayerType In_Which_Layer(void) const;
+		bool Is_Delayed(void) const {return(Stage.Delay != 0);}
+		Coord const & Center_Coord(void) const {return(Position);}
+		AnimTypeClass const * Class_Of(void) const {return(Class);}
+		void Draw_It(Point2D const & point, Rect const & cliprect) const;
+
+	private:
+		MoveFlashClass(AnimTypeClass const * type, Coord const & coord);
+
+		bool AI(void);
+		void Start(void) const;
+
+		AnimTypeClass const * Class;
+		Coord Position;
+		AnimStageClass Stage;
+		AnimDrawClass Draw;
+
+		static std::vector<MoveFlashClass> MoveFlashes;
+};
+
 
 void Shorten_Attached_Anims(ObjectClass * obj);
 AnimType Anim_From_Name(char const * name);

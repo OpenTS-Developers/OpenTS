@@ -62,6 +62,7 @@
 #include "globals.h"
 #include "ipxmgr.h"
 #include "language/language.h"
+#include "launcher.h"
 #include "msgloop.h"
 #include "netglobal.h"
 #include "progress.h"
@@ -71,15 +72,16 @@
 #include "savestream.h"
 #include "scenario.h"
 #include "scheme.h"
-#include "spawner.h"
 #include "spawnhouse.h"
 #include "special.h"
 #include "stats.h"
 #include "xstraw.h"
 
 #include <algorithm>
+#include <chrono>
 #include <ctime> // for station ID computation
 #include <dos.h> // for station ID computation
+#include <thread>
 #include <winsock.h> // for ntohl
 
 
@@ -179,6 +181,7 @@ SessionClass::SessionClass(void)
 	Options.AttackNeutralUnits = false;
 	Options.ScrapMetal = false;
 	Options.SharedControl = false;
+	Options.PlayMovies = false;
 	Options.AIDifficulty = DIFF_NORMAL;
 
 	UniqueID = 0;
@@ -227,16 +230,11 @@ SessionClass::SessionClass(void)
 	MessageTarget = -1;
 	LastMessage[0] = 0;
 
-	RecordFile.Set_Name("RECORD.BIN");  // always uses this name
-	Record= 0;                          // set via command line
-	Play = 0;                           // set via command line
-	Attract = 0;                        // set via command line
-
 	NetStealth = 0;
 	NetOpen = 0;
-	PlayMovies = false;
 	SkipScoreScreen = false;
 	QuickMatch = false;
+	LocalPlayer = -1;
 	LoadScreen[0] = '\0';
 	LoadScreenX = 0;
 	LoadScreenY = 0;
@@ -254,14 +252,7 @@ SessionClass::SessionClass(void)
 	memset(KickVoteCount, 0, sizeof(KickVoteCount));
 	memset(KickVoteWho, -1, sizeof(KickVoteWho));
 
-	TrapFrame = 0x7fffffff;     // frame to start trapping object values at
-	TrapObjType = RTTI_NONE;    // type of object to trap
-	TrapObject.Ptr.All = NULL;  // ptr to object being trapped
-	TrapCoord = COORD_NONE;     // COORDINATE of object to trap
-	TrapTarget.Invalidate();    // TARGET value of object to trap
-	TrapCell = NULL;            // for trapping a cell
 	TrapCheckHeap = 0;          // start checking the Heap
-	TrapPrintCRC = 0;           // output CRC file
 	ForceDesyncFrame = -1;      // deliberate checksum mismatch, disarmed
 }	// end of SessionClass
 
@@ -306,7 +297,7 @@ void SessionClass::One_Time(void)
 	//Read_MultiPlayer_Settings();
 
 	// A client-launched game names its scenario outright and never shows the map list.
-	if (!Spawner_Is_Requested()) {
+	if (!Launch::Is_Game_Requested()) {
 		Read_Scenario_Descriptions();
 	}
 
@@ -435,6 +426,29 @@ bool SessionClass::Am_I_Master(void)
 	return(PlayerPtr != NULL && PlayerPtr->HeapID == Master_Player_ID());
 
 }	// end of Am_I_Master
+
+
+/// <summary>
+/// Returns the speed this machine last ordered while that speed order still waits to execute,
+/// or the speed the game runs at when no such order waits.
+/// </summary>
+int SessionClass::Pending_Game_Speed(void) const
+{
+	int speed = Options.GameSpeed;
+	if (PlayerPtr != NULL) {
+		for (EventClass const & event : DoList) {
+			if (!event.IsExecuted && event.Type == EventClass::GAMESPEED && event.ID == PlayerPtr->HeapID) {
+				speed = event.Data.General.Value;
+			}
+		}
+	}
+	for (EventClass const & event : OutList) {
+		if (event.Type == EventClass::GAMESPEED) {
+			speed = event.Data.General.Value;
+		}
+	}
+	return(speed);
+}
 
 
 /// <summary>
@@ -774,8 +788,6 @@ bool SessionClass::Advance_Network_Timing(unsigned int frame)
  *=========================================================================*/
 void SessionClass::Read_MultiPlayer_Settings(void)
 {
-	char buf[128];          // buffer for parsing INI entry
-
 	Rule->Do_HouseTypes(*RuleINI);
 
 	// Get the player's last-used Handle
@@ -793,46 +805,6 @@ void SessionClass::Read_MultiPlayer_Settings(void)
 	}
 
 	TrapCheckHeap = ConfigINI.Get_Int("MultiPlayer", "CheckHeap", 0);
-
-	// Read special recording playback values, to help find sync bugs
-	if (Session.Play) {
-		TrapFrame = ConfigINI.Get_Int("SyncBug", "Frame", 0x7fffffff);
-
-		ConfigINI.Get_String("SyncBug", "Type", "NONE", buf, 80);
-
-		if (!stricmp(buf,"AIRCRAFT"))
-			TrapObjType = RTTI_AIRCRAFT;
-		else if (!stricmp(buf,"ANIM"))
-			TrapObjType = RTTI_ANIM;
-		else if (!stricmp(buf,"BUILDING"))
-			TrapObjType = RTTI_BUILDING;
-		else if (!stricmp(buf,"BULLET"))
-			TrapObjType = RTTI_BULLET;
-		else if (!stricmp(buf,"INFANTRY"))
-			TrapObjType = RTTI_INFANTRY;
-		else if (!stricmp(buf,"UNIT"))
-			TrapObjType = RTTI_UNIT;
-		else {
-			TrapObjType = RTTI_NONE;
-		}
-
-		ConfigINI.Get_String("SyncBug", "Coord", "0", buf, 80);
-		int x;
-		int y;
-		int z;
-		sscanf(buf,"%d,%d,%d", &x, &y, &z);
-		int target = ConfigINI.Get_Int("SyncBug", "Target", -1);
-		TrapTarget.Decode(target);
-
-		ConfigINI.Get_String("SyncBug", "Cell", "0,0", buf, 80);
-		sscanf(buf, "%d,%d", &x, &y);
-		Cell cell(x, y);
-		if (cell != CELL_NONE) {
-			TrapCell = &(Map[cell]);
-		}
-
-		TrapPrintCRC = ConfigINI.Get_Int("SyncBug", "PrintCRC", 0x7fffffff);
-	}
 }
 
 
@@ -1068,156 +1040,6 @@ void SessionClass::Free_Scenario_Descriptions(void)
 }	/* end of Free_Scenario_Descriptions */
 
 
-/***************************************************************************
- * SessionClass::Trap_Object -- searches for an object, for debugging      *
- *                                                                         *
- * INPUT:                                                                  *
- *      none.                                                              *
- *                                                                         *
- * OUTPUT:                                                                 *
- *      none.                                                              *
- *                                                                         *
- * WARNINGS:                                                               *
- *      none.                                                              *
- *                                                                         *
- * HISTORY:                                                                *
- *   06/02/1995 BRR : Created.                                             *
- *=========================================================================*/
-void SessionClass::Trap_Object(void)
-{
-#ifdef TRAP_OBJECTS
-	int i;
-
-	//------------------------------------------------------------------------
-	// Initialize
-	//------------------------------------------------------------------------
-	TrapObject.Ptr.All = NULL;
-
-	//------------------------------------------------------------------------
-	// Search for the object based upon its type, then its coordinate or
-	// 'this' pointer value.
-	//------------------------------------------------------------------------
-	switch (TrapObjType) {
-		case RTTI_AIRCRAFT:
-			for (i = 0; i < Aircraft.Count(); i++) {
-				if (Aircraft[i]->Coord == TrapCoord ||
-					Aircraft[i]->As_Target()==TrapTarget) {
-					TrapObject.Ptr.Aircraft = Aircraft[i];
-					break;
-				}
-			}
-			break;
-
-		case RTTI_ANIM:
-			for (i = 0; i < Anims.Count(); i++) {
-				if (Anims[i]->Coord == TrapCoord ||
-					Anims[i]->As_Target()==TrapTarget) {
-					TrapObject.Ptr.Anim = Anims[i];
-					break;
-				}
-			}
-			break;
-
-		case RTTI_BUILDING:
-			for (i = 0; i < Buildings.Count(); i++) {
-				if (Buildings[i]->Coord == TrapCoord ||
-					Buildings[i]->As_Target()==TrapTarget) {
-					TrapObject.Ptr.Building = Buildings[i];
-					break;
-				}
-			}
-			break;
-
-		case RTTI_BULLET:
-			for (i = 0; i < Bullets.Count(); i++) {
-				if (Bullets[i]->Coord == TrapCoord ||
-					Bullets[i]->As_Target()==TrapTarget) {
-					TrapObject.Ptr.Bullet = Bullets[i];
-					break;
-				}
-			}
-			break;
-
-		case RTTI_INFANTRY:
-			for (i = 0; i < Infantry.Count(); i++) {
-				if (Infantry[i]->Coord == TrapCoord ||
-					Infantry[i]->As_Target()==TrapTarget) {
-					TrapObject.Ptr.Infantry = Infantry[i];
-					break;
-				}
-			}
-			break;
-
-		case RTTI_UNIT:
-			for (i = 0; i < Units.Count(); i++) {
-				if (Units[i]->Coord == TrapCoord ||
-					Units[i]->As_Target()==TrapTarget) {
-					TrapObject.Ptr.Unit = Units[i];
-					break;
-				}
-			}
-			break;
-
-		//.....................................................................
-		// Last-ditch find-the-object-right-now-darnit loop
-		//.....................................................................
-		case RTTI_NONE:
-			for (i = 0; i < Aircraft.Count(); i++) {
-				if (Aircraft.Raw_Ptr(i)->Coord == TrapCoord ||
-					Aircraft.Raw_Ptr(i)->As_Target()==TrapTarget) {
-					TrapObject.Ptr.Aircraft = Aircraft.Raw_Ptr(i);
-					TrapObjType = RTTI_AIRCRAFT;
-					return;
-				}
-			}
-			for (i = 0; i < Anims.Count(); i++) {
-				if (Anims.Raw_Ptr(i)->Coord == TrapCoord ||
-					Anims.Raw_Ptr(i)->As_Target()==TrapTarget) {
-					TrapObject.Ptr.Anim = Anims.Raw_Ptr(i);
-					TrapObjType = RTTI_ANIM;
-					return;
-				}
-			}
-			for (i = 0; i < Buildings.Count(); i++) {
-				if (Buildings.Raw_Ptr(i)->Coord == TrapCoord ||
-					Buildings.Raw_Ptr(i)->As_Target()==TrapTarget) {
-					TrapObject.Ptr.Building = Buildings.Raw_Ptr(i);
-					TrapObjType = RTTI_BUILDING;
-					return;
-				}
-			}
-			for (i = 0; i < Bullets.Count(); i++) {
-				if (Bullets.Raw_Ptr(i)->Coord == TrapCoord ||
-					Bullets.Raw_Ptr(i)->As_Target()==TrapTarget) {
-					TrapObject.Ptr.Bullet = Bullets.Raw_Ptr(i);
-					TrapObjType = RTTI_BULLET;
-					return;
-				}
-			}
-			for (i = 0; i < Infantry.Count(); i++) {
-				if (Infantry.Raw_Ptr(i)->Coord == TrapCoord ||
-					Infantry.Raw_Ptr(i)->As_Target()==TrapTarget) {
-					TrapObject.Ptr.Infantry = Infantry.Raw_Ptr(i);
-					TrapObjType = RTTI_INFANTRY;
-					return;
-				}
-			}
-			for (i = 0; i < Units.Count(); i++) {
-				if (Units.Raw_Ptr(i)->Coord == TrapCoord ||
-					Units.Raw_Ptr(i)->As_Target()==TrapTarget) {
-					TrapObject.Ptr.Unit = Units.Raw_Ptr(i);
-					TrapObjType = RTTI_UNIT;
-					return;
-				}
-			}
-
-		default:
-			break;
-	}
-#endif
-}
-
-
 // The eight menu colors' positions in the rules' [Colors] list.
 static int const ColorChoiceEntries[MAX_MPLAYER_COLORS] = { 1, 10, 23, 36, 13, 27, 19, 16 };
 
@@ -1228,7 +1050,7 @@ static int const ColorChoiceEntries[MAX_MPLAYER_COLORS] = { 1, 10, 23, 36, 13, 2
 /// </summary>
 int SessionClass::Color_Count(void) const
 {
-	if (Spawner_Is_Active()) {
+	if (Launch::Is_Active()) {
 		return(ColorSchemes.Count() / 2);
 	}
 	return(MAX_MPLAYER_COLORS);
@@ -1242,7 +1064,7 @@ int SessionClass::Color_Count(void) const
 /// <param name="choice">One of the eight menu colors, 0 through 7.</param>
 int SessionClass::Color_Choice(int choice) const
 {
-	if (Spawner_Is_Active()) {
+	if (Launch::Is_Active()) {
 		return(ColorChoiceEntries[choice]);
 	}
 	return(choice);
@@ -1258,7 +1080,7 @@ int SessionClass::Color_Choice(int choice) const
 int SessionClass::Color_Index_To_Scheme(int id) const
 {
 	// The rules build each [Colors] entry twice, and the second copy is the lighting-aware one.
-	if (Spawner_Is_Active()) {
+	if (Launch::Is_Active()) {
 		return((2 * id) + 1);
 	}
 
@@ -1292,18 +1114,36 @@ std::string SessionClass::Shown_Name(HouseClass const * house) const
 
 
 /// <summary>
+/// Returns the human players in the order their houses are created, which is the same on every
+/// machine. A launch or a capture with listed seats numbers its players, and that number is the
+/// order; a game set up from the menu orders them by color, lowest first.
+/// </summary>
+std::vector<NodeNameType *> SessionClass::Humans_In_House_Order(void) const
+{
+	std::vector<NodeNameType *> humans;
+	int const local = LocalPlayer;
+	for (int seat = 0; seat < Players.Count(); seat++) {
+		int const index = (local == -1) ? seat : (seat == local ? 0 : (seat < local ? seat + 1 : seat));
+		humans.push_back(Players[index]);
+	}
+
+	if (local == -1) {
+		std::stable_sort(humans.begin(), humans.end(), [](NodeNameType const * a, NodeNameType const * b) {
+			return(a->Player.Color < b->Player.Color);
+		});
+	}
+	return(humans);
+}
+
+
+/// <summary>
 /// The name shown for a seat before the houses exist, matching its house's later name.
 /// </summary>
 std::string SessionClass::Shown_Seat_Name(NodeNameType const * node) const
 {
-	// Assign_Houses makes the human houses first, lowest color first, and no two share a color.
-	int house = 0;
-	for (int index = 0; index < Players.Count(); index++) {
-		if (Players[index]->Player.Color < node->Player.Color) {
-			house++;
-		}
-	}
-
+	// Assign_Houses creates the human houses first, in this order.
+	std::vector<NodeNameType *> const humans = Humans_In_House_Order();
+	int const house = int(std::find(humans.begin(), humans.end(), node) - humans.begin());
 	return(Shown_Name(house, node->Name));
 }
 
@@ -1559,7 +1399,7 @@ void SessionClass::Update_Progress(int percent)
 				Call_Back();
 
 				while (Ipx.Global_Num_Send() > 5 && timer > 0) {
-					Sleep(20);
+					std::this_thread::sleep_for(std::chrono::milliseconds(20));
 					Windows_Message_Handler();
 					Call_Back();
 				}
@@ -1720,6 +1560,7 @@ void GameOptionsType::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AttackNeutralUnits);
 	stream.Serialize(ScrapMetal);
 	stream.Serialize(SharedControl);
+	stream.Serialize(PlayMovies);
 	stream.Serialize(ScenarioDescription);
 }
 

@@ -17,17 +17,28 @@
 
 class INIClass;
 
+namespace Launch {
+	struct FaultSite;
+}
+
+namespace Launch::Message {
+	struct Request;
+	struct Network;
+	struct Session;
+}
+
+namespace Spawner {
+	class Config;
+}
+
 
 /*
  * What a client asked the game to launch. The file's spelling, defaults and shape belong to
  * the CnCNet client; reading cannot fail, and the result is judged at the launch.
  */
-class SpawnerConfigClass
+class Spawner::Config
 {
 	public:
-
-		// Bump when the game's reading of a launch file changes; it feeds the session identity.
-		static constexpr int SCHEMA_VERSION = 2;
 
 		// One seat per house a match may hold, and the fifty scenario flags the engine keeps.
 		static constexpr int SLOT_COUNT = 8;
@@ -68,12 +79,14 @@ class SpawnerConfigClass
 
 		void Read_INI(INIClass const & ini);
 		LaunchType Launch_Type(void) const;
-		int Session_Identity_CRC(void) const;
 
-		// The rules' tables are handed in, so a reading can be judged without the game running.
-		bool Is_Playable(int countries, int colors, std::string & fault) const;
+		bool Is_Launchable(std::string & fault) const;
+		std::string Describe_Fault(Launch::FaultSite const & site, std::string const & text) const;
 
 		static int Playable_Handicap(int asked);
+		std::string Computer_Name(SlotType const & slot) const;
+
+		void To_Request(Launch::Message::Request & request) const;
 
 		// What kind of game to start.
 		bool IsCampaign = false;
@@ -153,4 +166,6 @@ class SpawnerConfigClass
 	private:
 
 		void Read_Slots(INIClass const & ini);
+		void To_Session(Launch::Message::Session & session) const;
+		void To_Network(Launch::Message::Network & network) const;
 };

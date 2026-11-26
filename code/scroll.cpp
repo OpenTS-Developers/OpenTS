@@ -632,8 +632,7 @@ void ScrollClass::Handle_Window_Event(WindowEvent const & event)
 	bool			shadow;						// is the cell in shadow or not
 	Point2D			point;						/// click position relative to the tactical view
 
-	// The map does not act on the second press of a double click.
-	bool const press = (event.Type == WINDOW_EVENT_MOUSE_DOWN && event.Clicks == 1);
+	bool const press = (event.Type == WINDOW_EVENT_MOUSE_DOWN);
 	bool const release = (event.Type == WINDOW_EVENT_MOUSE_UP);
 
 	if (event.Type == WINDOW_EVENT_CAPTURE_LOST) {

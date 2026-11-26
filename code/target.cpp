@@ -114,6 +114,7 @@ TargetClass::TargetClass(Cell const & cell)
 {
 	if (cell == CELL_NONE) {
 		RTTI = RTTI_NONE;
+		ID = 0;
 	} else {
 		RTTI = RTTI_CELL;
 		ID = (cell.X + (1000 * cell.Y));

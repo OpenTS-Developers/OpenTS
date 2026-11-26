@@ -13,9 +13,9 @@
 #include <vector>
 
 /*
- * The scenario file as it was read, kept while the scenario is played and carried in its
- * save, so that a re-read of the same name is served from here rather than from a file
- * that may have been changed or replaced since.
+ * The scenario file as it was read, kept while the scenario is played and written into its
+ * saves when the deployment asks, so that a re-read of the same name reads this copy
+ * rather than a file that may have been changed or replaced since.
  */
 class ScenarioFileClass
 {

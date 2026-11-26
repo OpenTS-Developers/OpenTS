@@ -10,6 +10,7 @@
 // Reads music track sections shaped like the shipped THEME.INI and with the
 // keys OpenTS adds, and checks what each key becomes. Needs no game data.
 
+#include "dbgprint.h"
 #include "ini.h"
 #include "side.h"
 #include "theme.h"
@@ -161,6 +162,7 @@ TEST_CASE_FIXTURE(NewKeysFixture, "a Volume= above 1 is a percentage, and one th
 
 TEST_CASE_FIXTURE(SidesFixture, "Side= names one side or a list, skipping a side the rules do not declare")
 {
+	Debug_Init(0, (const char **)NULL);
 	ThemeControl one = Track(ini, "ONE");
 	CHECK(one.Allows_Side(SIDE_GDI));
 	CHECK_FALSE(one.Allows_Side(SIDE_NOD));
@@ -179,6 +181,7 @@ TEST_CASE_FIXTURE(SidesFixture, "Side= names one side or a list, skipping a side
 
 TEST_CASE_FIXTURE(SidesFixture, "a list naming no declared side keeps the sides before it")
 {
+	Debug_Init(0, (const char **)NULL);
 	ThemeControl bad;
 	std::strcpy(bad.Name, "BAD");
 	bad.Owners.push_back(SIDE_NOD);

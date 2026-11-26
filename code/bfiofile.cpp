@@ -349,8 +349,9 @@ void BufferIOFileClass::Free(void)
  *                                                                                             *
  * INPUT:   none                                                                               *
  *                                                                                             *
- * OUTPUT:  false, did not need to write the buffer.                                           *
- *          true, wrote the buffer.                                                            *
+ * OUTPUT:  true, the changed bytes are in the file or there were none.                        *
+ *          false, the file is not open or took fewer bytes than asked, and the changes are    *
+ *          lost.                                                                              *
  *                                                                                             *
  * WARNINGS:   none                                                                            *
  *                                                                                             *
@@ -359,34 +360,23 @@ void BufferIOFileClass::Free(void)
  *=============================================================================================*/
 bool BufferIOFileClass::Commit( void )
 {
-	int size;
-
-
-	if (UseBuffer) {
-		if (IsChanged) {
-			size = BufferChangeEnd - BufferChangeBeg;
-
-			if (IsDiskOpen) {
-				BASECLASS::Seek( TrueFileStart + BufferFilePos +
-										  BufferChangeBeg, SEEK_SET );
-				BASECLASS::Write( Buffer, size );
-				BASECLASS::Seek( TrueFileStart + FilePos, SEEK_SET );
-			} else {
-				BASECLASS::Open();
-				BASECLASS::Seek( TrueFileStart + BufferFilePos +
-										  BufferChangeBeg, SEEK_SET );
-				BASECLASS::Write( Buffer, size );
-				BASECLASS::Close();
-			}
-
-			IsChanged = false;
-			return( true );
-		} else {
-			return( false );
-		}
-	} else {
-		return( false );
+	if (!UseBuffer || !IsChanged) {
+		return( true );
 	}
+
+	int size = BufferChangeEnd - BufferChangeBeg;
+	int start = TrueFileStart + BufferFilePos + BufferChangeBeg;
+	bool written = false;
+
+	// A file opened before Cache() has its handle open without IsDiskOpen.
+	if (BASECLASS::Is_Open()) {
+		written = BASECLASS::Seek( start, SEEK_SET ) == start &&
+					 BASECLASS::Write( (char *)Buffer + BufferChangeBeg, size ) == size;
+		BASECLASS::Seek( TrueFileStart + FilePos, SEEK_SET );
+	}
+
+	IsChanged = false;
+	return( written );
 }
 
 
@@ -576,7 +566,9 @@ int BufferIOFileClass::Open(int rights)
  *                                                                                             *
  *          size     -- The number of bytes to write.                                          *
  *                                                                                             *
- * OUTPUT:  Returns the number of bytes actually written.                                      *
+ * OUTPUT:  Returns the number of bytes actually written. Bytes left in the cache count as      *
+ *          written. When a write of the cache to the file fails, the count covers only the    *
+ *          bytes of this call that earlier, complete writes of the cache put in the file.     *
  *                                                                                             *
  * WARNINGS:   none                                                                            *
  *                                                                                             *
@@ -597,6 +589,7 @@ int BufferIOFileClass::Write(void const * buffer, int size)
 
 	if (UseBuffer) {
 		int sizewritten = 0;
+		int sizecommitted = 0;
 
 		if (BufferRights != READ) {
 			while (size) {
@@ -671,12 +664,19 @@ int BufferIOFileClass::Write(void const * buffer, int size)
 				// end of buffer reached?
 				//
 				if (BufferPos == BufferSize) {
-					Commit();
+					bool committed = Commit();
 
 					BufferPos = 0;
 					BufferFilePos = FilePos;
 					BufferChangeBeg = -1;
 					BufferChangeEnd = -1;
+
+					if (!committed) {
+						IsCached = false;
+						sizewritten = sizecommitted;
+						break;
+					}
+					sizecommitted = sizewritten;
 
 					if (size && FileSize > FilePos) {
 						if (TrueFileStart) {
@@ -696,6 +696,11 @@ int BufferIOFileClass::Write(void const * buffer, int size)
 			}
 		} else {
 			Error(EACCES);
+		}
+
+		// Commit before the Close below, which cannot report a failed write.
+		if (opened && !Commit()) {
+			sizewritten = sizecommitted;
 		}
 
 		size = sizewritten;
@@ -981,4 +986,29 @@ void BufferIOFileClass::Close(void)
 	} else {
 		BASECLASS::Close();
 	}
+}
+
+
+/// <summary>
+/// Writes the changed part of the cache to the file and hands the file's bytes to the operating
+/// system. Returns false when the file is not open, the cache did not reach the file, or the
+/// operating system refused the bytes.
+/// </summary>
+bool BufferIOFileClass::Flush(void)
+{
+	if (!Is_Open()) {
+		return(false);
+	}
+	if (!UseBuffer) {
+		return(BASECLASS::Flush());
+	}
+
+	bool committed = Commit();
+
+	// A whole file cached for reading has no handle to flush.
+	if (!IsDiskOpen && !BASECLASS::Is_Open()) {
+		return(committed);
+	}
+	bool flushed = BASECLASS::Flush();
+	return(committed && flushed);
 }

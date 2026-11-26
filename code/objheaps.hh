@@ -10,7 +10,9 @@
 #pragma once
 
 // Each object and type heap that contributes to the game-state checksum; X is invoked once
-// per heap with its global name. The instance list is the subset holding identified objects.
+// per heap with its global name. The instance list is the subset of identified objects, and
+// the type list the subset of named types; Actions and Events are in neither.
+// WaypointPaths is not listed, since a path exists only on the machine whose player drew it.
 
 #define OBJECT_HEAP_LIST(X) \
 	X(HouseTypes) X(Houses) X(UnitTypes) X(Units) X(InfantryTypes) X(Infantry) \
@@ -18,7 +20,7 @@
 	X(Anims) X(AnimTypes) X(TaskForces) X(TeamTypes) X(Teams) X(ScriptTypes) X(Scripts) \
 	X(TagTypes) X(Tags) X(TriggerTypes) X(Triggers) X(Actions) X(Events) X(Factories) \
 	X(VoxelAnimTypes) X(VoxelAnims) X(Warheads) X(Weapons) X(ParticleTypes) X(Particles) \
-	X(ParticleSystems) X(ParticleSystemTypes) X(BulletTypes) X(Bullets) X(WaypointPaths) \
+	X(ParticleSystems) X(ParticleSystemTypes) X(BulletTypes) X(Bullets) \
 	X(SmudgeTypes) X(OverlayTypes) X(LightSources) X(BuildingLights) X(Tubes) X(Sides) \
 	X(Tiberiums) X(EMPulseClass::EMPulses) X(SuperWeaponTypes) X(SuperWeapons) \
 	X(TerrainTypes) X(Terrains)
@@ -26,5 +28,12 @@
 #define OBJECT_HEAP_LIST_INSTANCES(X) \
 	X(Houses) X(Units) X(Infantry) X(Buildings) X(Aircraft) X(Anims) X(Teams) X(Scripts) \
 	X(Tags) X(Triggers) X(Factories) X(VoxelAnims) X(Particles) X(ParticleSystems) \
-	X(Bullets) X(WaypointPaths) X(LightSources) X(BuildingLights) X(Tubes) \
+	X(Bullets) X(LightSources) X(BuildingLights) X(Tubes) \
 	X(EMPulseClass::EMPulses) X(SuperWeapons) X(Terrains)
+
+#define OBJECT_HEAP_LIST_TYPES(X) \
+	X(HouseTypes) X(UnitTypes) X(InfantryTypes) X(BuildingTypes) X(AircraftTypes) \
+	X(AITriggerTypes) X(AnimTypes) X(TaskForces) X(TeamTypes) X(ScriptTypes) X(TagTypes) \
+	X(TriggerTypes) X(VoxelAnimTypes) X(Warheads) X(Weapons) X(ParticleTypes) \
+	X(ParticleSystemTypes) X(BulletTypes) X(SmudgeTypes) X(OverlayTypes) X(Sides) \
+	X(Tiberiums) X(SuperWeaponTypes) X(TerrainTypes)

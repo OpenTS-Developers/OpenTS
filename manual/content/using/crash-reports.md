@@ -30,6 +30,8 @@ Exceptions/exception-20260817-061945-7420/
 
 Report a crash by attaching the whole folder. If the folder cannot be created, the files are written directly into the executable's directory instead.
 
+When the game runs a [launch request](/formats/launch-request/#the-result-file) that names a result file, a crash also writes that file once the report is written, giving the folder's path.
+
 The folder stays beside the executable when [`-USERDIR`](/using/command-line/#user-directory) names a user directory, so the game needs write access to the executable's directory to save a report.
 
 At startup, the game deletes crash folders last modified more than 30 days ago.

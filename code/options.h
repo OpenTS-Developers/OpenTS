@@ -69,10 +69,8 @@ class OptionsClass {
 
 		void Set(void);
 
-		/*
-		**	This is actually the delay between game frames expressed as 1/60 of
-		**	a second. The default value is 4 (1/15 second).
-		*/
+		// The player's speed setting from the settings file; the running game plays at
+		// Session.Options.GameSpeed instead.
 		int GameSpeed;
 
 		/*

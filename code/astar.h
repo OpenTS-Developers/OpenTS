@@ -171,17 +171,11 @@ class AStarClass
 		 * Regular pathfinding state.
 		 */
 
-		/// Unused
-		bool field_0;
-
 		/*
 		 * If bridges are to be shunned, then this flag will be true. A step onto one costs
 		 * several times the usual amount, so a longer route along the ground wins out.
 		 */
 		bool IsAvoidBridges;
-
-		/// Unused
-		bool field_2;
 
 		/*
 		 * If paths are to be kept from crossing one another, then this flag will be true. The

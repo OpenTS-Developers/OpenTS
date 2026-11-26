@@ -649,7 +649,6 @@ void MapClass::Free_Cells(void)
 		CellClass * cptr = Array[i];
 		if (cptr != NULL) {
 			cptr->BridgeDeckCell = NULL;
-			cptr->UnusedCell = 0;
 		}
 	}
 
@@ -759,7 +758,6 @@ void MapClass::Set_Map_Dimensions(Rect const & rect, bool reset_cells, int cell_
 		while (cptr != NULL) {
 			*cells = *cptr;
 			cells->BridgeDeckCell = NULL;
-			cells->UnusedCell = NULL;
 			cptr = Iterate();
 			cellcount++;
 			cells++;
@@ -1315,7 +1313,6 @@ int MapClass::Overpass(void)
 	iter = Iterate();
 	while (iter) {
 
-		iter->UnusedCell = NULL;
 		iter->Init_Drawer();
 		iter->IsAnimAttached = false;
 
@@ -7388,7 +7385,7 @@ bool MapClass::Crack_Ice(CellClass * cellptr, FootClass * object)
 					TacticalMap->Register_Dirty_Area(dirty);
 
 					if (Rule->IceCrackSounds.Count() > 0) {
-						Sound_Effect((VocType)Rule->IceCrackSounds.Pick(Scen->RandomNumber()));
+						Sound_Effect((VocType)Rule->IceCrackSounds.Pick(NonCriticalRandomNumber()));
 					}
 				}
 				return(false);

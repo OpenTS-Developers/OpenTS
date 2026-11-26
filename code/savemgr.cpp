@@ -22,6 +22,7 @@
 #include "globals.h"
 #include "ipxmgr.h"
 #include "language/language.h"
+#include "launcher.h"
 #include "loaddlg.h"
 #include "msgbox.h"
 #include "netdlg.h"
@@ -32,7 +33,6 @@
 #include "savever.h"
 #include "scenario.h"
 #include "session.h"
-#include "spawner.h"
 #include "stimer.h"
 #include "ui/screens/waitbox/uiwaitbox.h"
 #include "ui/uienginehost.h"
@@ -42,8 +42,10 @@
 #include "dialog.hh"
 
 #include <algorithm>
+#include <chrono>
 #include <cstdio>
 #include <string>
+#include <thread>
 #include <vector>
 
 
@@ -95,12 +97,20 @@ void SaveManagerClass::Post_Save_Notice(int text)
 /// Solo and skirmish games save immediately. A synchronized multiplayer request is held
 /// until the frame has finished retiring dead objects. A quiet request is written without
 /// the saving box; the first request of a frame settles that and what the save reports.
+/// A request while no scenario is active, such as after a refused load, is refused, since
+/// the game may be partly built.
 /// </summary>
 /// <returns>Returns true when the save completed or the multiplayer request was accepted.</returns>
 bool SaveManagerClass::Request_Save_Game(char const * file_name, char const * descr, bool quiet,
 	NoticeType notice)
 {
 	if (file_name == NULL || descr == NULL) return(false);
+
+	if (!ScenarioActive) {
+		DebugString("Ignoring save request because no scenario is active\n");
+		Record_Save_Outcome(notice, false);
+		return(false);
+	}
 
 	if (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) {
 		bool saved = Save_Game(file_name, descr);
@@ -194,7 +204,7 @@ void SaveManagerClass::Post_Pending_Notice(void)
 	OutcomeNotice = NoticeType::None;
 	OutcomeSaved = false;
 
-	if (!ScenarioActive || Session.Play || PlayerPtr == NULL) return;
+	if (!ScenarioActive || PlayerPtr == NULL) return;
 
 	if (notice == NoticeType::Requested) {
 		Post_Save_Notice(saved ? TXT_GAME_SAVED : TXT_SAVE_FAILED);
@@ -257,8 +267,6 @@ bool SaveManagerClass::Is_Multiplayer_Saving_Allowed(void) const
 /// </summary>
 void SaveManagerClass::Autosave_Service(void)
 {
-	if (Session.Play) return;
-
 	bool single = Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH;
 
 	if (!single && (!MultiplayerSavingAllowed || MultiplayerLoad.Is_Pending())) return;
@@ -281,7 +289,7 @@ void SaveManagerClass::Autosave_Service(void)
 	}
 
 	// Timed multiplayer saves require a shared launch-file interval.
-	if ((single || Spawner_Is_Active()) && Autosave.Is_Due(Frame)) {
+	if ((single || Launch::Is_Active()) && Autosave.Is_Due(Frame)) {
 		Autosave.Arm();
 		Add_Save_Message(SAVE_ANNOUNCEMENT_ID, TXT_AUTOSAVING);
 	}
@@ -306,7 +314,7 @@ void SaveManagerClass::Quick_Save_Service(void)
 	if (!QuickSaveRequested) return;
 	QuickSaveRequested = false;
 
-	if (!ScenarioActive || Session.Play) return;
+	if (!ScenarioActive) return;
 	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) return;
 
 	char description[512];
@@ -369,7 +377,7 @@ void SaveManagerClass::Multiplayer_Saves_Begin_Match(bool resumed)
 		DebugString("Removed the launch-file copy of a previous match\n");
 	}
 
-	SpawnCopyPending = Spawner_Is_Active();
+	SpawnCopyPending = Launch::Is_From_Spawn_File();
 }
 
 
@@ -408,12 +416,11 @@ void SaveManagerClass::Write_Spawn_Copy(void)
 
 /// <summary>
 /// May this machine ask every machine to load a multiplayer save now? Only the master of a
-/// network game may, while no load is pending and no recording plays.
+/// network game may, while no load is pending.
 /// </summary>
 bool SaveManagerClass::Multiplayer_Load_Is_Allowed(void) const
 {
-	return(Session.Is_Network_Game() && !Session.Play
-		&& Session.Am_I_Master() && !MultiplayerLoad.Is_Pending());
+	return(Session.Is_Network_Game() && Session.Am_I_Master() && !MultiplayerLoad.Is_Pending());
 }
 
 
@@ -562,7 +569,7 @@ bool SaveManagerClass::Perform_Multiplayer_Load(char const * file_name)
 		return(false);
 	}
 	Ipx.Set_Timing(std::max<unsigned>(TIMER_SECOND, Ipx.Global_Response_Time() + 2), (unsigned int)-1, 10 * TIMER_SECOND);
-	Spawner_Announce_Master();
+	Launch::Announce_Master();
 
 	Reset_Multiplayer_Save_State();
 	Map.Flag_To_Redraw(GS_REDRAW_ALL);
@@ -602,7 +609,7 @@ void SaveManagerClass::Process_Pending_Load_Game(void)
 		}
 		UI_Service_Game();
 		UIShell.Tick();
-		Sleep(10);
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}
 
 	box.Hide();
