@@ -2924,13 +2924,20 @@ const char * InfantryClass::Full_Name(void) const
 		return(Fetch_String(TXT_TECHNICIAN));
 	}
 
-	auto side = House->Acted_Side();
-	auto disguise = (side != NULL && side->Disguise != NULL) ? side->Disguise : Rule->Disguise;
-	if (Class->IsDisguised && !House->Is_Player_Control() && disguise != NULL) {
-		return(disguise->GivenName);
+	if (Class->IsDisguised && !House->Is_Player_Control()) {
+		if (auto disguise = Disguise_Type()) {
+			return(disguise->GivenName);
+		}
 	}
 
 	return(Class->GivenName);
+}
+
+
+InfantryTypeClass const * InfantryClass::Disguise_Type(void) const
+{
+	SideClass const * side = House->Acted_Side();
+	return((side != nullptr && side->Disguise != nullptr) ? side->Disguise : Rule->Disguise);
 }
 
 
@@ -3741,10 +3748,10 @@ void const * InfantryClass::Get_Image_Data(void) const
 		return(Rule->WebbedInfantry->Get_Image_Data());
 	}
 
-	auto side = House->Acted_Side();
-	auto disguise = (side != NULL && side->Disguise != NULL) ? side->Disguise : Rule->Disguise;
-	if (!IsOwnedByPlayer && Class->IsDisguised && disguise != NULL) {
-		return(disguise->ImageData);
+	if (!IsOwnedByPlayer && Class->IsDisguised) {
+		if (auto disguise = Disguise_Type()) {
+			return(disguise->ImageData);
+		}
 	}
 	return(BASECLASS::Get_Image_Data());
 }

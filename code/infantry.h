@@ -250,6 +250,7 @@ class InfantryClass : public FootClass
 		static int const HumanShape[32];
 
 	private:
+		InfantryTypeClass const * Disguise_Type(void) const;
 
 		static DoStruct const MasterDoControls[DO_COUNT];
 

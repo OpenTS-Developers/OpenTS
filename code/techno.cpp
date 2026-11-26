@@ -6586,17 +6586,11 @@ InfantryTypeClass const * TechnoClass::Crew_Type(void) const
 	**	minigunner. Certain buildings, especially neutral ones, tend to have
 	**	civilians exit them instead.
 	*/
-	auto side = House->Acted_Side();
-
-	InfantryTypeClass const * infantry = (side != NULL && side->Crew != NULL) ? side->Crew : Rule->Crew;
-	if (House->Class->Side != SIDE_NONE) {
-		if (Is_Weapon_Equipped() && Percent_Chance(15)) {
-			infantry = (side != NULL && side->Technician != NULL) ? side->Technician : Rule->Technician;
-		}
-	} else {
-		infantry = (side != NULL && side->Technician != NULL) ? side->Technician : Rule->Technician;
+	SideClass const * side = House->Acted_Side();
+	if (House->Class->Side == SIDE_NONE || (Is_Weapon_Equipped() && Percent_Chance(15))) {
+		return((side != nullptr && side->Technician != nullptr) ? side->Technician : Rule->Technician);
 	}
-	return(infantry);
+	return((side != nullptr && side->Crew != nullptr) ? side->Crew : Rule->Crew);
 }
 
 
