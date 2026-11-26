@@ -286,6 +286,7 @@ void ScenarioClass::Reset(void)
 	Percent = 0;
 	BridgeCount = 0;
 	IsFreeRadar = false;
+	IsFreeRadarOnLowPower = false;
 	IsTrainCargo = false;
 	IsTibGrowth = true;
 	IsVeinGrowth = true;
@@ -3463,6 +3464,7 @@ void ScenarioClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Views);
 	stream.Serialize(BridgeCount);
 	stream.Serialize(IsFreeRadar);
+	stream.Serialize(IsFreeRadarOnLowPower);
 	stream.Serialize(IsTrainCargo);
 	stream.Serialize(IsTibGrowth);
 	stream.Serialize(IsVeinGrowth);
@@ -3884,6 +3886,7 @@ bool ScenarioClass::Read_INI(CCINIClass const & ini)
 	IsMPAIBaseNodes = ini.Get_Bool(BASIC, "UseMPAIBaseNodes", IsMPAIBaseNodes);
 	IsTiberiumDeathToVisceroid = ini.Get_Bool(BASIC, "TiberiumDeathToVisceroid", IsTiberiumDeathToVisceroid);
 	IsFreeRadar = ini.Get_Bool(BASIC, "FreeRadar", IsFreeRadar);
+	IsFreeRadarOnLowPower = ini.Get_Bool(BASIC, "FreeRadarOnLowPower", IsFreeRadarOnLowPower);
 	Home = ini.Get_Int(BASIC, "HomeCell", Home);
 	AltHome = ini.Get_Int(BASIC, "AltHomeCell", AltHome);
 	RequiredAddOn = (AddonType)ini.Get_Int(BASIC, "RequiredAddOn", RequiredAddOn);
@@ -4017,6 +4020,7 @@ bool ScenarioClass::Write_INI(CCINIClass & ini, bool mplayer) const
 	ini.Put_Bool(BASIC, "UseMPAIBaseNodes", IsMPAIBaseNodes);
 	ini.Put_Bool(BASIC, "TiberiumDeathToVisceroid", IsTiberiumDeathToVisceroid);
 	ini.Put_Bool(BASIC, "FreeRadar", IsFreeRadar);
+	ini.Put_Bool(BASIC, "FreeRadarOnLowPower", IsFreeRadarOnLowPower);
 
 	ini.Put_Int(BASIC, "InitTime", InitTime);
 
@@ -4122,6 +4126,7 @@ void ScenarioClass::Compute_CRC(CRCEngine & crc, std::vector<StateHash::Checkpoi
 	crc(GroundLight);
 	crc(LevelLight);
 	crc(IsFreeRadar);
+	crc(IsFreeRadarOnLowPower);
 	crc(IonAmbientLight);
 	crc(IonRedTint);
 	crc(IonGreenTint);

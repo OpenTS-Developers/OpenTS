@@ -14,6 +14,7 @@ source_files:
   - code/themeini.cpp
   - code/vocini.cpp
   - code/spawnerconfig.cpp
+  - code/scenario.cpp
 related:
   - type: using
     id: configuration-files
@@ -41,6 +42,7 @@ The tables list features that OpenTS implements differently from Vinifera or wil
 
 | In the Vinifera file | Change for OpenTS |
 | --- | --- |
+| `FreeRadarOnLowPower=yes` under `[General]` | Set [`FreeRadarOnLowPower=yes`](/keys/freeradaronlowpower/) in `[Basic]` of each map that needs radar during low power. The map must also set `FreeRadar=yes`. |
 | A side whose section leaves out its power plants or hunter-seeker | Set [`RegularPowerPlant`](/keys/regularpowerplant/), [`AdvancedPowerPlant`](/keys/advancedpowerplant/), [`PowerTurbine`](/keys/powerturbine/) and [`HunterSeeker`](/keys/hunterseeker/#scope-side) in that side's section, unless it is the first side and its name contains `GDI` or the second side and its name does not. Vinifera gives a side whose name contains `GDI`, in capitals, the GDI plants and hunter-seeker from `[General]`, and every other side the Nod ones. OpenTS gives the GDI ones to the first side in `[Sides]`, the Nod ones to the second, and none to the rest. |
 | `BuildOffAlly` under `[MultiplayerDefaults]`, or `EligibleForAllyBuilding` on a structure type | Not read. Vinifera lets a player build next to an ally's construction yards, and next to other structure types only with `EligibleForAllyBuilding=yes`. OpenTS lets any of the ally's structures count. Set [`BuildOffAllyAnyStructure=no`](/keys/buildoffallyanystructure/) to keep construction yards only. The launch file's [`BuildOffAlly`](/formats/spawn-ini/#the-options-every-house-plays-under) turns the feature on. |
 | `AutoDeployMCV` under `[MultiplayerDefaults]` | Not read. Set `AutoDeployMCV=yes` in the launch file's [`[Settings]`](/formats/spawn-ini/#the-options-every-house-plays-under) instead. Unlike Vinifera's key, it also deploys the computer houses' base units, and it works in a match that starts with more than one unit. |
@@ -56,6 +58,7 @@ The tables list features that OpenTS implements differently from Vinifera or wil
 
 | In the Vinifera file | Change for OpenTS |
 | --- | --- |
+| `FreeRadarOnLowPower=` under `[General]` in a map | Move [`FreeRadarOnLowPower=`](/keys/freeradaronlowpower/) to `[Basic]` in the same map. |
 | `IntroMovie` in a campaign's section of `BATTLE.INI` | Not read. Name the movie `INTR<n>.VQA`, where `n` is the campaign's `CD=`. Every campaign whose `CD=` is below `2` plays an introduction, including one that played none in Vinifera because it was not an original campaign; see [The campaign level number](/systems/campaign-progression/#the-campaign-level-number). |
 | A `[Tutorial]` key in `TUTORIAL.INI` or a scenario that is not a whole number | OpenTS skips the line. Number it, and name that number in the Text Trigger action; see [TUTORIAL.INI](/formats/tutorial-ini/). |
 
