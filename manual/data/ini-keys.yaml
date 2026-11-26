@@ -6339,6 +6339,23 @@ DamageToFirestormDamageCoefficient:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+DamageToInfantry:
+  key: DamageToInfantry
+  scopes:
+  - applies_to: *id020
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '-1'
+      declared_in: TiberiumClass
+      member: DamageToInfantry
+      source: code/tiberium.cpp
+      guard: null
+    level: TiberiumClass
 DamagedDoor:
   key: DamagedDoor
   scopes:

@@ -1035,8 +1035,11 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 		if (!Class->IsTiberiumProof && !Has_Ability(ABILITY_TIBERIUM_PROOF) && Strength > 0) {
 			TiberiumType tiberium = Map[Get_Coord()].Tiberium_Type_Here();
 			if (tiberium != TIBERIUM_NONE) {
-				int damage = Tiberiums[tiberium]->Power / 10;
+				// Calculate damage. Falls back to Power / 10 for backwards compatibility if DamageToInfantry was not initialized
+				TiberiumClass* tiberium_class = Tiberiums[tiberium];
+				int damage = tiberium_class->DamageToInfantry != -1 ? tiberium_class->DamageToInfantry : (tiberium_class->Power / 10);
 				if (damage <= 1) damage = 1;
+
 				Coord coord = Get_Coord();
 				if (Take_Damage(damage, 0, Rule->C4Warhead, NULL, true) == RESULT_DESTROYED) {
 					if (Scen->IsTiberiumDeathToVisceroid) {

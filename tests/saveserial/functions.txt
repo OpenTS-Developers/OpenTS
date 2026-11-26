@@ -252,9 +252,9 @@ a93843f753bcc5a9 code/terrtype.cpp TerrainTypeClass::Compute_CRC(CRCEngine&crc)
 37dd4bb07aee8348 code/terrtype.cpp TerrainTypeClass::Serialize(SaveStreamClass&stream)
 f9751677ae94ff65 code/tevent.cpp TEventClass::Compute_CRC(CRCEngine&crc)
 c1d5bf996f653eac code/tevent.cpp TEventClass::Serialize(SaveStreamClass&stream)
-90c3dbcf1ce8a6c7 code/tiberium.cpp TiberiumClass::Compute_CRC(CRCEngine&crc)
+2f5ae30c36927526 code/tiberium.cpp TiberiumClass::Compute_CRC(CRCEngine&crc)
 3dfff624683b8e15 code/tiberium.cpp TiberiumClass::Load(SaveStreamClass&stream)
-33630c408bc05421 code/tiberium.cpp TiberiumClass::Serialize(SaveStreamClass&stream)
+1387c69c6ac92cae code/tiberium.cpp TiberiumClass::Serialize(SaveStreamClass&stream)
 716c2c1d740ca366 code/timer.h Serialize(S&stream)
 34ec43405b255050 code/timer.h Serialize(S&stream) #2
 381556509b585f4c code/timer.h Serialize(S&stream) #3
