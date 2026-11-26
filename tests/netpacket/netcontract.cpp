@@ -303,7 +303,8 @@ TEST_CASE("the inherited events keep their numbers, and the new ones append afte
 	CHECK(EventClass::GRANT_CONTROL == 38);
 	CHECK(EventClass::CHAT_PROOF == 39);
 	CHECK(EventClass::SELECTED == 40);
-	CHECK(EventClass::LAST_EVENT == 41);
+  	CHECK(EventClass::UNDEPLOY == 41);
+	CHECK(EventClass::LAST_EVENT == 42);
 }
 
 
