@@ -5007,20 +5007,23 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 						occupy++;
 					}
 
-					while (count) {
+					for (; count > 0; --count) {
 
 						/*
 						**	Ensure that the player only gets ONE engineer and not from a captured
 						**	construction yard.
 						*/
-						const InfantryTypeClass * typ = Crew_Type();
-						while (typ->IsEngineer && engineer) {
+						InfantryTypeClass const * typ = Crew_Type();
+						constexpr int MAX_ENGINEER_REROLLS = 64;
+						for (int retry = 0; retry < MAX_ENGINEER_REROLLS && engineer && typ != nullptr && typ->IsEngineer; ++retry) {
 							typ = Crew_Type();
+						}
+						if (typ == nullptr || (engineer && typ->IsEngineer)) {
+							continue;
 						}
 						if (typ->IsEngineer) engineer = true;
 
-						InfantryClass * infantry = NULL;
-						if (typ != NULL) infantry = new InfantryClass(typ, House);
+						InfantryClass * infantry = new InfantryClass(typ, House);
 						if (infantry != NULL) {
 							ScenarioInit++;
 
@@ -5042,7 +5045,6 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 							}
 							ScenarioInit--;
 						}
-						count--;
 					}
 				}
 

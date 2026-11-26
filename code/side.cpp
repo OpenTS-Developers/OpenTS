@@ -121,10 +121,10 @@ void SideClass::Compute_CRC(CRCEngine & crc) const
 	crc(AIBaseDefensePlaceholders);
 	crc(IsAIBaseDefensesWithWalls);
 
-	if (Crew != NULL) crc(Crew->Fetch_ID());
-	if (Engineer != NULL) crc(Engineer->Fetch_ID());
-	if (Technician != NULL) crc(Technician->Fetch_ID());
-	if (Disguise != NULL) crc(Disguise->Fetch_ID());
+	crc(Crew != nullptr ? Crew->Fetch_ID() : -1);
+	crc(Engineer != nullptr ? Engineer->Fetch_ID() : -1);
+	crc(Technician != nullptr ? Technician->Fetch_ID() : -1);
+	crc(Disguise != nullptr ? Disguise->Fetch_ID() : -1);
 	crc(SurvivorDivisor);
 }
 

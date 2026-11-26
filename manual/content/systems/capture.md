@@ -247,7 +247,7 @@ A type with no build-up animation cannot be sold. Its upgrades are still removed
 A captured structure keeps three effects for the rest of the match:
 
 - It produces fewer survivors when destroyed. The count is halved before the one-to-five limit, and each footprint cell has worse odds of producing one. [Survivors](#survivors) gives the numbers.
-- It never produces the [`Engineer`](/keys/engineer/) type as a survivor, whether it is destroyed or sold. An uncaptured structure that produces buildings can.
+- It loses the roll that can pick a survivor from [`Engineer`](/keys/engineer/), whether it is destroyed or sold.
 - It passes [the computer's last repair check](/systems/repair/#when-the-computer-repairs) without being marked for repair.
 
 Nothing clears the captured state, so capturing the structure back undoes none of these.
@@ -303,6 +303,8 @@ Two sides matter here. The type comes from the side the owner [acts as](/keys/ac
    - the owner's own country has a side, the object has a primary weapon, and a 15% roll succeeds.
 
 A type the acted side does not name comes from the `[General]` key of the same name. A house that acts as no country, such as one whose country sets [`MultiplayPassive=yes`](/keys/multiplaypassive/), has no acted side, so its survivors use the `[General]` types.
+
+A sale releases at most one survivor whose type sets `Engineer=yes`. Once it picks that type, it rerolls later engineer picks up to 64 times per survivor. The sale skips a survivor if the last pick is still an engineer after those rerolls. A pick that returns no type skips that survivor whether the structure is sold or destroyed.
 
 ## Stealing a vehicle
 

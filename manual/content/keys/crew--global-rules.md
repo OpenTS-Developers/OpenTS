@@ -14,6 +14,4 @@ The value does not have to be listed under `[InfantryTypes]`. A name the game do
 
 A side can name its own crew type for the objects of houses acting as its countries. [`Crew`](/keys/crew/#scope-side) covers that scope.
 
-:::danger[Set this before a `Crewed=yes` structure is sold]
-The value starts as no type. A sale crashes the game when one of its survivors would be of this type while neither this key nor the owner's side names one. A destroyed structure or vehicle produces no survivor for that pick instead.
-:::
+If neither this key nor the owner's side names a crew type, the object skips any survivor that would use it.

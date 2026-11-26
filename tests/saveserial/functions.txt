@@ -208,7 +208,7 @@ aa3816fe609a0b39 code/script.cpp ScriptTypeClass::Serialize(SaveStreamClass&stre
 70ff65cbd3f4b829 code/session.cpp GameOptionsType::Load(SaveStreamClass&stream)
 531ebc382c127ee2 code/session.cpp GameOptionsType::Save(SaveStreamClass&stream)
 a6468cc7e61fc829 code/session.cpp GameOptionsType::Serialize(SaveStreamClass&stream)
-8d843aa9f363edc1 code/side.cpp SideClass::Compute_CRC(CRCEngine&crc)
+c710e15ddeba7f57 code/side.cpp SideClass::Compute_CRC(CRCEngine&crc)
 26f7c5d44d6245dd code/side.cpp SideClass::Serialize(SaveStreamClass&stream)
 0755c94e74a49f98 code/sidebar.cpp SidebarClass::Serialize(SaveStreamClass&stream)
 0c59cbf811f57958 code/sidebar.cpp SidebarClass::StripClass::Serialize(SaveStreamClass&stream)
