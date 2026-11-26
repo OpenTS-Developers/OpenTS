@@ -451,10 +451,6 @@ MoveType HoverLocomotionClass::While_Moving(bool first_pass)
 
 		if (!LinkedTo->IsActive || LinkedTo->IsInLimbo || LinkedTo->IsFalling) return(MOVE_NO);
 
-		if (LinkedTo->IsOnBridge != (int)Map[Adjacent_Cell(LinkedTo->PositionCoord, nextface)].IsUnderBridge) {
-			LinkedTo->IsPlanningToLook = true;
-		}
-
 		Cell c = HeadToCoord;
 		MoveType ok = LinkedTo->Can_Enter_Cell(&Map[c], nextface, LinkedTo->Get_Cell_Height());
 

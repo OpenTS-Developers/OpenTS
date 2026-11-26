@@ -433,7 +433,6 @@ void UnitClass::Tunnel_AI(void)
 				Scatter(Coord(0, 0, 0), true, true);
 			}
 
-			IsPlanningToLook = true;
 			Per_Cell_Process(PCP_END);
 			Set_Speed(1);
 
@@ -2275,18 +2274,7 @@ void UnitClass::Per_Cell_Process(PCPType why)
 			return;
 		}
 
-		/*
-		**	The unit performs looking around at this time. If the
-		**	unit moved further than one square during the last track
-		**	move, don't do an incremental look. Do a full look around
-		**	instead.
-		*/
-		if (IsPlanningToLook) {
-			IsPlanningToLook = false;
-			Look(false);
-		} else {
-			Look(true);
-		}
+		Look();
 
 		bool broke_ice = false;
 		if (TheaterClass::As_Reference(Scen->Theater).IsIceGrowth) {

@@ -1530,12 +1530,6 @@ bool DriveLocomotionClass::Start_Of_Move(bool & stop_processing, bool retry, boo
 
 	int cell_height = Map[(Coord const &)LinkedTo->PositionCoord].Height + (LinkedTo->IsOnBridge ? BRIDGE_CELL_HEIGHT : 0);
 
-	/*
-	 * If this move crosses a bridge transition, force a full scan next process.
-	 */
-	if (LinkedTo->IsOnBridge ^ Map[Adjacent_Cell(LinkedTo->PositionCoord, facing)].IsUnderBridge) {
-		LinkedTo->IsPlanningToLook = true;
-	}
 	if (!LinkedTo->Is_Ready_To_Move()) {
 		return(true);
 	}
@@ -1918,7 +1912,6 @@ bool DriveLocomotionClass::Start_Of_Move(bool & stop_processing, bool retry, boo
 
 			} else {
 				LinkedTo->Advance_Path(2);
-				LinkedTo->IsPlanningToLook = true;
 			}
 		} else {
 			LinkedTo->Advance_Path(1);

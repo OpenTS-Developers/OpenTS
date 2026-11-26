@@ -314,10 +314,6 @@ void WalkLocomotionClass::Movement_AI(bool first_pass)
 			Coord coord = Adjacent_Cell(LinkedTo->Get_Coord(), dir);
 			Cell cell = coord;
 
-			if (LinkedTo->IsOnBridge ^ Map[Adjacent_Cell(LinkedTo->Get_Coord(), dir)].IsUnderBridge) {
-				LinkedTo->IsPlanningToLook = true;
-			}
-
 			MoveType move = LinkedTo->Can_Enter_Cell(&Map[cell], dir, LinkedTo->Get_Cell_Height(), NULL, true);
 			if (move != MOVE_OK) {
 				IsReallyMoving = false;

@@ -295,7 +295,7 @@ class ObjectClass : public AbstractClass
 		virtual void Draw_It(Point2D const & point, Rect const & cliprect) const { }
 		virtual void Editor_Draw_It(Point2D const & point, Rect const & cliprect) const;
 		virtual void Hidden(void);
-		virtual void Look(bool incremental=false, bool=false);
+		virtual void Look(bool dont_map=false);
 		virtual bool Mark(MarkType=MARK_CHANGE);
 
 		virtual Rect Get_Visual_Rect(void) const;

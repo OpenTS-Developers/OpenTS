@@ -167,7 +167,6 @@ FootClass::FootClass(HouseClass * house) :
 	IsScanLimited(false),
 	IsInitiated(false),
 	IsNewNavCom(false),
-	IsPlanningToLook(false),
 	IsDeploying(false),
 	IsFiring(false),
 	IsRotating(false),
@@ -245,7 +244,6 @@ FootClass::~FootClass(void)
 void FootClass::Debug_Dump(MonoClass * mono) const
 {
 	mono->Fill_Attrib(53, 13, 12, 1, IsInitiated ? MonoClass::INVERSE : MonoClass::NORMAL);
-	mono->Fill_Attrib(1, 18, 12, 1, IsPlanningToLook ? MonoClass::INVERSE : MonoClass::NORMAL);
 	mono->Fill_Attrib(53, 14, 12, 1, IsDeploying ? MonoClass::INVERSE : MonoClass::NORMAL);
 	mono->Fill_Attrib(53, 15, 12, 1, IsFiring ? MonoClass::INVERSE : MonoClass::NORMAL);
 	mono->Fill_Attrib(53, 16, 12, 1, IsRotating ? MonoClass::INVERSE : MonoClass::NORMAL);
@@ -3531,7 +3529,6 @@ void FootClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsScanLimited);
 	stream.Serialize(IsInitiated);
 	stream.Serialize(IsNewNavCom);
-	stream.Serialize(IsPlanningToLook);
 	stream.Serialize(IsDeploying);
 	stream.Serialize(IsFiring);
 	stream.Serialize(IsRotating);
@@ -3681,7 +3678,6 @@ void FootClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsScanLimited);
 	crc(IsInitiated);
 	crc(IsNewNavCom);
-	crc(IsPlanningToLook);
 	crc(IsDeploying);
 	crc(IsFiring);
 	crc(IsRotating);

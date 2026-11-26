@@ -648,10 +648,6 @@ void ObjectClass::Hidden(void)
  *    This routine is called when the object needs to look around the terrain. For player      *
  *    owned objects, the terrain is revealed. For non-player objects, not effect occurs.       *
  *                                                                                             *
- * INPUT:   incremental -- If true, then the looking algorithm will only examine the edges     *
- *                         of the sight range. This is more efficient and work well if the     *
- *                         object has only moved one cell since the last time it has performed *
- *                         the look operation.                                                 *
  *                                                                                             *
  * OUTPUT:  none                                                                               *
  *                                                                                             *
@@ -660,7 +656,7 @@ void ObjectClass::Hidden(void)
  * HISTORY:                                                                                    *
  *   09/21/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-void ObjectClass::Look(bool, bool)
+void ObjectClass::Look(bool)
 {
 	assert(this != NULL);
 }

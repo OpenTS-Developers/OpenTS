@@ -3506,14 +3506,14 @@ void DisplayClass::All_To_Look(bool units_only, bool is_fog, HouseClass const * 
 			// A campaign keeps the original sweep, which leaves an ally's vehicles and infantry out;
 			// elsewhere every object looks for its own house.
 			if (Session.Type != GAME_NORMAL) {
-				tech->Look(false, is_fog);
+				tech->Look(is_fog);
 			} else if (tech->House->Is_Player_Control()) {
 				if (tech->DiscoveredBy[PlayerPtr]) {
-					tech->Look(false, is_fog);
+					tech->Look(is_fog);
 				}
 			} else {
 				if (tech->RTTI == RTTI_BUILDING && Rule->IsAllyReveal && tech->House->Is_Ally(PlayerPtr)) {
-					tech->Look(is_fog, false);
+					tech->Look(false);
 				}
 			}
 		}

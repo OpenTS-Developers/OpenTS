@@ -110,53 +110,10 @@
 #include <utility>
 #include <vector>
 
-Cell const MapClass::RadiusOffset[] = {
-	/* 0  */	Cell(0,0),
-	/* 1  */	Cell(1,-1),Cell(0,-1),Cell(-1,-1),Cell(-1,0),Cell(1,0),Cell(-1,1),Cell(0,1),Cell(1,1),
-	/* 2  */	Cell(-1,-2),Cell(0,-2),Cell(1,-2),Cell(-2,-1),Cell(2,-1),Cell(-2,0),Cell(2,0),Cell(-2,1),Cell(2,1),Cell(-1,2),Cell(0,2),Cell(1,2),
-	/* 3  */	Cell(-1,-3),Cell(0,-3),Cell(1,-3),Cell(-2,-2),Cell(2,-2),Cell(-3,-1),Cell(3,-1),Cell(-3,0),Cell(3,0),Cell(-3,1),Cell(3,1),Cell(-2,2),Cell(2,2),Cell(-1,3),Cell(0,3),Cell(1,3),
-	/* 4  */	Cell(-1,-4),Cell(0,-4),Cell(1,-4),Cell(-3,-3),Cell(-2,-3),Cell(2,-3),Cell(3,-3),Cell(-3,-2),Cell(3,-2),Cell(-4,-1),Cell(4,-1),Cell(-4,0),Cell(4,0),Cell(-4,1),Cell(4,1),Cell(-3,2),Cell(3,2),Cell(-3,3),Cell(-2,3),Cell(2,3),Cell(3,3),Cell(-1,4),Cell(0,4),Cell(1,4),
-	/* 5  */	Cell(-1,-5),Cell(0,-5),Cell(1,-5),Cell(-3,-4),Cell(-2,-4),Cell(2,-4),Cell(3,-4),Cell(-4,-3),Cell(4,-3),Cell(-4,-2),Cell(4,-2),Cell(-5,-1),Cell(5,-1),Cell(-5,0),Cell(5,0),Cell(-5,1),Cell(5,1),Cell(-4,2),Cell(4,2),Cell(-4,3),Cell(4,3),Cell(-3,4),Cell(-2,4),Cell(2,4),Cell(3,4),Cell(-1,5),Cell(0,5),Cell(1,5),
-	/* 6  */	Cell(-1,-6),Cell(0,-6),Cell(1,-6),Cell(-3,-5),Cell(-2,-5),Cell(2,-5),Cell(3,-5),Cell(-4,-4),Cell(4,-4),Cell(-5,-3),Cell(5,-3),Cell(-5,-2),Cell(5,-2),Cell(-6,-1),Cell(6,-1),Cell(-6,0),Cell(6,0),Cell(-6,1),Cell(6,1),Cell(-5,2),Cell(5,2),Cell(-5,3),Cell(5,3),Cell(-4,4),Cell(4,4),Cell(-3,5),Cell(-2,5),Cell(2,5),Cell(3,5),Cell(-1,6),Cell(0,6),Cell(1,6),
-	/* 7  */	Cell(-1,-7),Cell(0,-7),Cell(1,-7),Cell(-3,-6),Cell(-2,-6),Cell(2,-6),Cell(3,-6),Cell(-5,-5),Cell(-4,-5),Cell(4,-5),Cell(5,-5),Cell(-5,-4),Cell(5,-4),Cell(-6,-3),Cell(6,-3),Cell(-6,-2),Cell(6,-2),Cell(-7,-1),Cell(7,-1),Cell(-7,0),Cell(7,0),Cell(-7,1),Cell(7,1),Cell(-6,2),Cell(6,2),Cell(-6,3),Cell(6,3),Cell(-5,4),Cell(5,4),Cell(-5,5),Cell(-4,5),Cell(4,5),Cell(5,5),Cell(-3,6),Cell(-2,6),Cell(2,6),Cell(3,6),Cell(-1,7),Cell(0,7),Cell(1,7),
-	/* 8  */	Cell(-1,-8),Cell(0,-8),Cell(1,-8),Cell(-3,-7),Cell(-2,-7),Cell(2,-7),Cell(3,-7),Cell(-5,-6),Cell(-4,-6),Cell(4,-6),Cell(5,-6),Cell(-6,-5),Cell(6,-5),Cell(-6,-4),Cell(6,-4),Cell(-7,-3),Cell(7,-3),Cell(-7,-2),Cell(7,-2),Cell(-8,-1),Cell(8,-1),Cell(-8,0),Cell(8,0),Cell(-8,1),Cell(8,1),Cell(-7,2),Cell(7,2),Cell(-7,3),Cell(7,3),Cell(-6,4),Cell(6,4),Cell(-6,5),Cell(6,5),Cell(-5,6),Cell(-4,6),Cell(4,6),Cell(5,6),Cell(-3,7),Cell(-2,7),Cell(2,7),Cell(3,7),Cell(-1,8),Cell(0,8),Cell(1,8),
-	/* 9  */	Cell(-1,-9),Cell(0,-9),Cell(1,-9),Cell(-3,-8),Cell(-2,-8),Cell(2,-8),Cell(3,-8),Cell(-5,-7),Cell(-4,-7),Cell(4,-7),Cell(5,-7),Cell(-6,-6),Cell(6,-6),Cell(-7,-5),Cell(7,-5),Cell(-7,-4),Cell(7,-4),Cell(-8,-3),Cell(8,-3),Cell(-8,-2),Cell(8,-2),Cell(-9,-1),Cell(9,-1),Cell(-9,0),Cell(9,0),Cell(-9,1),Cell(9,1),Cell(-8,2),Cell(8,2),Cell(-8,3),Cell(8,3),Cell(-7,4),Cell(7,4),Cell(-7,5),Cell(7,5),Cell(-6,6),Cell(6,6),Cell(-5,7),Cell(-4,7),Cell(4,7),Cell(5,7),Cell(-3,8),Cell(-2,8),Cell(2,8),Cell(3,8),Cell(-1,9),Cell(0,9),Cell(1,9),
-	/* 10 */	Cell(-1,-10),Cell(0,-10),Cell(1,-10),Cell(-3,-9),Cell(-2,-9),Cell(2,-9),Cell(3,-9),Cell(-5,-8),Cell(-4,-8),Cell(4,-8),Cell(5,-8),Cell(-7,-7),Cell(-6,-7),Cell(6,-7),Cell(7,-7),Cell(-7,-6),Cell(7,-6),Cell(-8,-5),Cell(8,-5),Cell(-8,-4),Cell(8,-4),Cell(-9,-3),Cell(9,-3),Cell(-9,-2),Cell(9,-2),Cell(-10,-1),Cell(10,-1),Cell(-10,0),Cell(10,0),Cell(-10,1),Cell(10,1),Cell(-9,2),Cell(9,2),Cell(-9,3),Cell(9,3),Cell(-8,4),Cell(8,4),Cell(-8,5),Cell(8,5),Cell(-7,6),Cell(7,6),Cell(-7,7),Cell(-6,7),Cell(6,7),Cell(7,7),Cell(-5,8),Cell(-4,8),Cell(4,8),Cell(5,8),Cell(-3,9),Cell(-2,9),Cell(2,9),Cell(3,9),Cell(-1,10),Cell(0,10),Cell(1,10)
-};
-
-Cell const MapClass::OcclusionOffset[] = {
-	/* 0  */	Cell(0,0),
-	/* 1  */	Cell(-1,1),Cell(0,1),Cell(1,1),Cell(1,0),Cell(-1,0),Cell(1,-1),Cell(0,-1),Cell(-1,-1),
-	/* 2  */	Cell(1,1),Cell(0,1),Cell(-1,1),Cell(1,1),Cell(-1,1),Cell(1,0),Cell(-1,0),Cell(1,-1),Cell(-1,-1),Cell(1,-1),Cell(0,-1),Cell(-1,-1),
-	/* 3  */	Cell(0,1),Cell(0,1),Cell(0,1),Cell(1,1),Cell(-1,1),Cell(1,0),Cell(-1,0),Cell(1,0),Cell(-1,0),Cell(1,0),Cell(-1,0),Cell(1,-1),Cell(-1,-1),Cell(0,-1),Cell(0,-1),Cell(0,-1),
-	/* 4  */	Cell(0,1),Cell(0,1),Cell(0,1),Cell(1,1),Cell(1,1),Cell(-1,1),Cell(-1,1),Cell(1,1),Cell(-1,1),Cell(1,0),Cell(-1,0),Cell(1,0),Cell(-1,0),Cell(1,0),Cell(-1,0),Cell(1,-1),Cell(-1,-1),Cell(1,-1),Cell(1,-1),Cell(-1,-1),Cell(-1,-1),Cell(0,-1),Cell(0,-1),Cell(0,-1),
-	/* 5  */	Cell(0,1),Cell(0,1),Cell(0,1),Cell(1,1),Cell(1,1),Cell(-1,1),Cell(-1,1),Cell(1,1),Cell(-1,1),Cell(1,1),Cell(-1,1),Cell(1,0),Cell(-1,0),Cell(1,0),Cell(-1,0),Cell(1,0),Cell(-1,0),Cell(1,-1),Cell(-1,-1),Cell(1,-1),Cell(-1,-1),Cell(1,-1),Cell(1,-1),Cell(-1,-1),Cell(-1,-1),Cell(0,-1),Cell(0,-1),Cell(0,-1),
-	/* 6  */	Cell(0,1),Cell(0,1),Cell(0,1),Cell(1,1),Cell(0,1),Cell(0,1),Cell(-1,1),Cell(1,1),Cell(-1,1),Cell(1,1),Cell(-1,1),Cell(1,0),Cell(1,0),Cell(1,0),Cell(-1,0),Cell(1,0),Cell(-1,0),Cell(1,0),Cell(-1,0),Cell(1,0),Cell(-1,0),Cell(1,-1),Cell(-1,-1),Cell(1,-1),Cell(-1,-1),Cell(1,-1),Cell(0,-1),Cell(0,-1),Cell(-1,-1),Cell(0,-1),Cell(0,-1),Cell(0,-1),
-	/* 7  */	Cell(0,1),Cell(0,1),Cell(0,1),Cell(1,1),Cell(0,1),Cell(0,1),Cell(-1,1),Cell(1,1),Cell(1,1),Cell(-1,1),Cell(-1,1),Cell(1,1),Cell(-1,1),Cell(1,1),Cell(-1,1),Cell(1,0),Cell(-1,0),Cell(1,0),Cell(-1,0),Cell(1,0),Cell(-1,0),Cell(1,0),Cell(-1,0),Cell(1,0),Cell(-1,0),Cell(1,-1),Cell(-1,-1),Cell(1,-1),Cell(-1,-1),Cell(1,-1),Cell(1,-1),Cell(-1,-1),Cell(-1,-1),Cell(1,-1),Cell(0,-1),Cell(0,-1),Cell(-1,-1),Cell(0,-1),Cell(0,-1),Cell(0,-1),
-	/* 8  */	Cell(0,1),Cell(0,1),Cell(0,1),Cell(0,1),Cell(0,1),Cell(0,1),Cell(0,1),Cell(1,1),Cell(1,1),Cell(-1,1),Cell(-1,1),Cell(1,1),Cell(-1,1),Cell(1,1),Cell(-1,1),Cell(1,0),Cell(-1,0),Cell(1,0),Cell(-1,0),Cell(1,0),Cell(-1,0),Cell(1,0),Cell(-1,0),Cell(1,0),Cell(-1,0),Cell(1,0),Cell(-1,0),Cell(1,0),Cell(-1,0),Cell(1,-1),Cell(-1,-1),Cell(1,-1),Cell(-1,-1),Cell(1,-1),Cell(1,-1),Cell(-1,-1),Cell(-1,-1),Cell(0,-1),Cell(0,-1),Cell(0,-1),Cell(0,-1),Cell(0,-1),Cell(0,-1),Cell(0,-1),
-	/* 9  */	Cell(0,1),Cell(0,1),Cell(0,1),Cell(0,1),Cell(0,1),Cell(0,1),Cell(0,1),Cell(1,1),Cell(1,1),Cell(-1,1),Cell(-1,1),Cell(1,1),Cell(-1,1),Cell(1,1),Cell(-1,1),Cell(1,1),Cell(-1,1),Cell(1,0),Cell(-1,0),Cell(1,0),Cell(-1,0),Cell(1,0),Cell(-1,0),Cell(1,0),Cell(-1,0),Cell(1,0),Cell(-1,0),Cell(1,0),Cell(-1,0),Cell(1,0),Cell(-1,0),Cell(1,-1),Cell(-1,-1),Cell(1,-1),Cell(-1,-1),Cell(1,-1),Cell(-1,-1),Cell(1,-1),Cell(1,-1),Cell(-1,-1),Cell(-1,-1),Cell(0,-1),Cell(0,-1),Cell(0,-1),Cell(0,-1),Cell(0,-1),Cell(0,-1),Cell(0,-1),
-	/* 10 */	Cell(0,1),Cell(0,1),Cell(0,1),Cell(0,1),Cell(0,1),Cell(0,1),Cell(0,1),Cell(1,1),Cell(1,1),Cell(-1,1),Cell(-1,1),Cell(1,1),Cell(1,1),Cell(-1,1),Cell(-1,1),Cell(1,1),Cell(-1,1),Cell(1,1),Cell(-1,1),Cell(1,1),Cell(-1,1),Cell(1,0),Cell(-1,0),Cell(1,0),Cell(-1,0),Cell(1,0),Cell(-1,0),Cell(1,0),Cell(-1,0),Cell(1,0),Cell(-1,0),Cell(1,0),Cell(-1,0),Cell(1,0),Cell(-1,0),Cell(1,-1),Cell(-1,-1),Cell(1,-1),Cell(-1,-1),Cell(1,-1),Cell(-1,-1),Cell(1,-1),Cell(1,-1),Cell(-1,-1),Cell(-1,-1),Cell(1,-1),Cell(1,-1),Cell(-1,-1),Cell(-1,-1),Cell(0,-1),Cell(0,-1),Cell(0,-1),Cell(0,-1),Cell(0,-1),Cell(0,-1),Cell(0,-1)
-};
-
-/*
- * This is a running total of the entries in the RadiusOffset table, so that entry N covers
- * every cell out to a radius of N. The sums are spelled out rather than folded together so
- * that the size of each ring (8, 12, 16, ...) stays visible.
- */
-int const MapClass::RadiusCount[] = {
-	/* 0  */	1,
-	/* 1  */	1 + 8,
-	/* 2  */	1 + 8 + 12,
-	/* 3  */	1 + 8 + 12 + 16,
-	/* 4  */	1 + 8 + 12 + 16 + 24,
-	/* 5  */	1 + 8 + 12 + 16 + 24 + 28,
-	/* 6  */	1 + 8 + 12 + 16 + 24 + 28 + 32,
-	/* 7  */	1 + 8 + 12 + 16 + 24 + 28 + 32 + 40,
-	/* 8  */	1 + 8 + 12 + 16 + 24 + 28 + 32 + 40 + 44,
-	/* 9  */	1 + 8 + 12 + 16 + 24 + 28 + 32 + 40 + 44 + 48,
-	/* 10 */	1 + 8 + 12 + 16 + 24 + 28 + 32 + 40 + 44 + 48 + 56,
-};
-
+// Initialize sight offsets vectors with the values for Radius 0
+std::vector<int> MapClass::RadiusCountTable = {1};
+std::vector<Cell> MapClass::RadiusOffsets = {Cell(0, 0)};
+std::vector<Cell> MapClass::OcclusionOffsets = {Cell(0, 0)};
 
 CellClass BlubCell;
 
@@ -1027,10 +984,6 @@ void MapClass::Set_Local_Dimensions(Rect const & size)
  *                                                                                             *
  *          sightrange-- The distance in cells that sighting extends.                          *
  *                                                                                             *
- *          incremental-- Is this an incremental sighting. In other                            *
- *                      words, has this function been called before where                      *
- *                      the center coordinate is no more than one cell                         *
- *                      distant from the last time?                                            *
  *                                                                                             *
  * OUTPUT:  none                                                                               *
  *                                                                                             *
@@ -1041,12 +994,9 @@ void MapClass::Set_Local_Dimensions(Rect const & size)
  *   03/08/1994 JLB : Updated to use sight table and incremental flag.                         *
  *   05/18/1994 JLB : Converted to member function.                                            *
  *=============================================================================================*/
-void MapClass::Sight_From(Coord const & xcoord, int sightrange, HouseClass * house, bool incremental, bool dont_map, bool unfog, bool byheight)
+void MapClass::Sight_From(Coord const & xcoord, int sightrange, HouseClass * house, bool dont_map, bool unfog, bool byheight)
 {
 	int xx;				// Center cell X coordinate (bounds checking).
-	Cell const * ptr;	// Offset pointer.
-	Cell const * ptr2;	// Offset pointer.
-	int count;			// Counter for number of offsets to process.
 
 	int cell_height = xcoord.Z / LEVEL_LEPTON_H;
 
@@ -1062,28 +1012,19 @@ void MapClass::Sight_From(Coord const & xcoord, int sightrange, HouseClass * hou
 	*/
 	if (!In_Radar(cell)) return;
 	if (sightrange <= 0) return;
-	sightrange = std::min(sightrange, 10);
 
 	/*
 	**	Determine logical cell coordinate for center scan point.
 	*/
 	xx = cell.X;
 
-	/*
-	**	Incremental scans only scan the outer rings. Full scans
-	**	scan all internal cells as well.
-	*/
-	count = RadiusCount[sightrange];
-	ptr = &RadiusOffset[0];
-	ptr2 = &OcclusionOffset[0];
-	if (!Rule->IsRevealByHeight && incremental) {
-		if (sightrange > 2) {
-			ptr += RadiusCount[sightrange-3];
-			ptr2 += RadiusCount[sightrange-3];
-			count -= RadiusCount[sightrange-3];
-		}
-	}
-	ptr2--;
+	Calculate_Sight_Radius_If_Needed(sightrange);
+
+	int cell_count = RadiusCountTable[sightrange]; // Counter for number of offsets to process
+	Cell const * radius_offsets_ptr = RadiusOffsets.data();
+	Cell const * occlusion_offsets_ptr = OcclusionOffsets.data();
+
+	occlusion_offsets_ptr--;
 
 	if (house == NULL) return;
 
@@ -1099,12 +1040,12 @@ void MapClass::Sight_From(Coord const & xcoord, int sightrange, HouseClass * hou
 	/*
 	**	Process all offsets required for the desired scan.
 	*/
-	while (count--) {
+	while (cell_count--) {
 		Cell newcell;		// New cell with offset.
 		int xdiff;			// New cell's X coordinate distance from center.
 
-		newcell = cell + *ptr++;
-		ptr2++;
+		newcell = cell + *radius_offsets_ptr++;
+		occlusion_offsets_ptr++;
 
 		/*
 		**	Determine if the map edge has been wrapped. If so,
@@ -1116,15 +1057,11 @@ void MapClass::Sight_From(Coord const & xcoord, int sightrange, HouseClass * hou
 		if (xdiff > sightrange) continue;
 		if (Distance(newcell, cell) > sightrange) continue;
 
-		/*
-		**	Map the cell. For incremental scans, then update
-		**	adjacent cells as well. For full scans, just update
-		**	the cell itself.
-		*/
+		// Map the cell if it is not already mapped.
 		bool ok = false;
 		CellClass * cellptr = &(*this)[newcell];
 		if (byheight && Rule->IsRevealByHeight) {
-			if (Map[newcell - hoffset + *ptr2].Height <= cell_height + 3) {
+			if (Map[newcell - hoffset + *occlusion_offsets_ptr].Height <= cell_height + 3) {
 				ok = true;
 			}
 		} else {
@@ -12420,5 +12357,61 @@ void MapClass::Place_Wall(Cell const & cell, HouseClass * owner, BuildingTypeCla
 				break;
 			}
 		}
+	}
+}
+
+
+/// <summary>
+/// Populates the radius and occlusion tables through the requested sight range.
+/// The generated results are retained so later requests for the same or a smaller
+/// range can reuse the cached tables.
+/// </summary>
+/// <param name="sight_range">The highest sight range that must be calculated.</param>
+void MapClass::Calculate_Sight_Radius_If_Needed(int sight_range)
+{
+	int current_max_radius = static_cast<int>(RadiusCountTable.size());
+
+	if (sight_range <= current_max_radius - 1) {
+		return;
+	}
+
+	for (int current_radius = current_max_radius; current_radius <= sight_range; ++current_radius) {
+		int search_bounds = current_radius + 2;
+
+		for (int cell_y = -search_bounds; cell_y <= search_bounds; ++cell_y) {
+			for (int cell_x = -search_bounds; cell_x <= search_bounds; ++cell_x) {
+
+				int absolute_x = std::abs(cell_x);
+				int absolute_y = std::abs(cell_y);
+
+				int octagonal_distance = std::max(absolute_x, absolute_y) + (std::min(absolute_x, absolute_y) / 2);
+
+				if (octagonal_distance == current_radius) {
+					RadiusOffsets.push_back(Cell(cell_x, cell_y));
+
+					short parent_direction_x = 0;
+					short parent_direction_y = 0;
+
+					if (absolute_x > absolute_y) {
+						parent_direction_x = (cell_x > 0) ? -1 : 1;
+						if (2 * absolute_y >= absolute_x) {
+							parent_direction_y = (cell_y > 0) ? -1 : 1;
+						}
+					} else if (absolute_y > absolute_x) {
+						parent_direction_y = (cell_y > 0) ? -1 : 1;
+						if (2 * absolute_x >= absolute_y) {
+							parent_direction_x = (cell_x > 0) ? -1 : 1;
+						}
+					} else {
+						parent_direction_x = (cell_x > 0) ? -1 : 1;
+						parent_direction_y = (cell_y > 0) ? -1 : 1;
+					}
+
+					OcclusionOffsets.push_back(Cell(parent_direction_x, parent_direction_y));
+				}
+			}
+		}
+
+		RadiusCountTable.push_back(static_cast<int>(RadiusOffsets.size()));
 	}
 }

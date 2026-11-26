@@ -8027,11 +8027,6 @@ int TechnoClass::Anti_Infantry(void) const
  *                                                                                             *
  *    This routine will reveal the map around this object.                                     *
  *                                                                                             *
- * INPUT:   incremental -- This parameter can enable a more efficient map reveal logic.        *
- *                         If it is absolutely known that the object has only moved one        *
- *                         cell from its previous location that it performed a Look() at,      *
- *                         then set this parameter to TRUE. It will only perform the look      *
- *                         check on the perimeter cells.                                       *
  *                                                                                             *
  * OUTPUT:  none                                                                               *
  *                                                                                             *
@@ -8040,7 +8035,7 @@ int TechnoClass::Anti_Infantry(void) const
  * HISTORY:                                                                                    *
  *   03/14/1996 JLB : Created.                                                                 *
  *=============================================================================================*/
-void TechnoClass::Look(bool incremental, bool dontmap)
+void TechnoClass::Look(bool dontmap)
 {
 	if (IsInLimbo) {
 		return;
@@ -8048,9 +8043,6 @@ void TechnoClass::Look(bool incremental, bool dontmap)
 
 	if (IsLocked && (!House->Class->IsMultiplayPassive || Session.Type == GAME_NORMAL)) {
 		int sight_increase = 10 * (Get_Coord().Z / Rule->LeptonsPerSightIncrease);
-		if (sight_increase > SightIncrease) {
-			incremental = false;
-		}
 		SightIncrease = sight_increase;
 
 		int sight_range = TClass->SightRange * (SightIncrease * 0.01 + 1.0);
@@ -8059,12 +8051,12 @@ void TechnoClass::Look(bool incremental, bool dontmap)
 		}
 
 		if (sight_range) {
-			Map.Sight_From(PositionCoord, sight_range, House, incremental, dontmap);
+			Map.Sight_From(PositionCoord, sight_range, House, dontmap);
 
 			for (int index = 0; index < Houses.Count(); index++) {
 				HouseClass * limpet_owner = Houses[index];
 				if (limpet_owner != House && LimpetType[limpet_owner]) {
-					Map.Sight_From(PositionCoord, sight_range, limpet_owner, incremental, dontmap);
+					Map.Sight_From(PositionCoord, sight_range, limpet_owner, dontmap);
 				}
 			}
 		}

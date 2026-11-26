@@ -1010,12 +1010,7 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 		}
 		Commence();
 
-		if (IsPlanningToLook) {
-			IsPlanningToLook = false;
-			Look(false);
-		} else {
-			Look(true);
-		}
+		Look();
 
 		/*
 		**	If after all is said and done, the unit finishes its move on an impassable cell, then
@@ -1356,7 +1351,6 @@ void InfantryClass::Tunnel_AI(void)
 				Set_Speed(1);
 			}
 			CurrentTube = TUBE_NONE;
-			IsPlanningToLook = true;
 			Per_Cell_Process(PCP_END);
 		}
 	}

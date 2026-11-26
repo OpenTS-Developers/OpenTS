@@ -129,10 +129,6 @@ For vehicles, infantry and structures, two bonuses raise the range, in this orde
 
 Each step rounds the range down to a whole number of cells. Aircraft get neither bonus.
 
-:::caution[Sight range is capped at ten cells]
-A look reaches at most ten cells, whatever `Sight=`, the height bonus and the veteran bonus produce. Any range above ten has no further effect.
-:::
-
 :::danger[Keep LeptonsPerSightIncrease above zero]
 `LeptonsPerSightIncrease=0` crashes the game with a division by zero on the next look by a vehicle, infantryman or structure.
 :::
@@ -144,8 +140,6 @@ A look is centered on the cell the looker is drawn over, not the cell it occupie
 With [`RevealByHeight=yes`](/keys/revealbyheight/), high ground can block a cell in the disc. For each cell, the game checks the ground height of one probe cell. The cell is revealed only if the probe's ground is no more than three height levels above the looker. To find the probe, take the cell's position relative to the cell the looker stands on, move two cells down the screen, then one cell toward the looker.
 
 Only that probe is checked. Ground between the looker and the cell is not examined, and no setting changes the three-level limit.
-
-With `RevealByHeight=no`, a vehicle or infantryman that has moved one cell rescans only the outer three rings of its disc. With `RevealByHeight=yes`, every look scans the whole disc.
 
 ### Who looks, and when
 
