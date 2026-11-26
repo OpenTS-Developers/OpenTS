@@ -3,6 +3,7 @@ title: Engineers, capture and sabotage
 summary: "Hands a structure or a vehicle to another house, restores it, spies on it, or arms it with a demolition charge, according to the soldier that walks in."
 category: combat-targeting
 keys:
+  - ActsLike
   - Agent
   - BridgeRepairHut
   - C4
@@ -10,6 +11,7 @@ keys:
   - C4Warhead
   - Capturable
   - ConditionRed
+  - Crew
   - Crewed
   - Engineer
   - EngineerCaptureLevel
@@ -20,6 +22,7 @@ keys:
   - Strength
   - SurvivorDivisor
   - SurvivorRate
+  - Technician
   - Thief
   - VehicleThief
 related:
@@ -244,7 +247,7 @@ A type with no build-up animation cannot be sold. Its upgrades are still removed
 A captured structure keeps three effects for the rest of the match:
 
 - It produces fewer survivors when destroyed. The count is halved before the one-to-five limit, and each footprint cell has worse odds of producing one. [Survivors](#survivors) gives the numbers.
-- It never produces the `[General]` [`Engineer`](/keys/engineer/#scope-global-rules) type as a survivor, whether it is destroyed or sold. An uncaptured structure that produces buildings can.
+- It loses the roll that can pick a survivor from [`Engineer`](/keys/engineer/), whether it is destroyed or sold.
 - It passes [the computer's last repair check](/systems/repair/#when-the-computer-repairs) without being marked for repair.
 
 Nothing clears the captured state, so capturing the structure back undoes none of these.
@@ -273,7 +276,7 @@ An armed charge blocks every sale except a player's sell order. A sale by a comp
 
 ### Survivors
 
-A destroyed structure produces up to `Cost × SurvivorRate / SurvivorDivisor` survivors, limited to between 1 and 5. The divisor is doubled for a captured structure. A type that is not [`Crewed=yes`](/keys/crewed/) produces none, and so does any structure when `SurvivorDivisor` is `0`.
+A destroyed structure produces up to `Cost × SurvivorRate / SurvivorDivisor` survivors, limited to between 1 and 5. `SurvivorDivisor` is the one the side the owner [acts as](/keys/actslike/) names, or the `[General]` value when that side names none. The divisor is doubled for a captured structure. A type that is not [`Crewed=yes`](/keys/crewed/) produces none, and so does any structure whose divisor is `0`.
 
 Each footprint cell then rolls once for one survivor until that count is reached. Two facts set the odds: whether the structure was ever captured, and whether a live saboteur is on record against it. Arming a charge puts the saboteur on record, and the saboteur's death removes it.
 
@@ -287,6 +290,21 @@ A captured structure with a saboteur on record still rolls worse (one in eight) 
 If the saboteur on record is not allied to the structure's owner, the survivors attack it. Otherwise a computer house's survivors go hunting, and a human house's survivors only scatter.
 
 A structure destroyed by its charge produces no survivors, because forced damage that destroys a structure leaves no survivors. The saboteur column therefore applies only when something else destroys the structure first, while the saboteur is still alive.
+
+### Survivor types
+
+Each survivor's type is chosen on its own, so one object can leave a mix of types.
+
+Two sides matter here. The type comes from the side the owner [acts as](/keys/actslike/), which this page calls the acted side. The decision to use the technician instead turns on whether the owner's own country has a [side](/keys/side/#scope-housetype).
+
+1. A structure that has never been captured and whose type builds structures produces the acted side's [`Engineer`](/keys/engineer/#scope-side) type on a one-in-four roll.
+2. Any other survivor is of the acted side's [`Crew`](/keys/crew/#scope-side) type. It is of the acted side's [`Technician`](/keys/technician/#scope-side) type instead when either of these holds:
+   - the owner's own country has no side;
+   - the owner's own country has a side, the object has a primary weapon, and a 15% roll succeeds.
+
+A type the acted side does not name comes from the `[General]` key of the same name. A house that acts as no country, such as one whose country sets [`MultiplayPassive=yes`](/keys/multiplaypassive/), has no acted side, so its survivors use the `[General]` types.
+
+A sale releases at most one survivor whose type sets `Engineer=yes`. Once it picks that type, it rerolls later engineer picks up to 64 times per survivor. The sale skips a survivor if the last pick is still an engineer after those rerolls. A pick that returns no type skips that survivor whether the structure is sold or destroyed.
 
 ## Stealing a vehicle
 

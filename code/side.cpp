@@ -16,6 +16,7 @@
 #include "crc.h"
 #include "findmake.h"
 #include "globals.h"
+#include "infatype.h"
 #include "savestream.h"
 #include "sun.h"
 #include "tracker.h"
@@ -41,7 +42,12 @@ SideClass::SideClass(char const * ininame) :
 	IsAIBuildsWalls(true),
 	AIBaseDefensePlaceholders(2),
 	IsAIBaseDefensesWithWalls(false),
-	ScreenTextColor(SCREEN_TEXT_DEFAULT_COLOR)
+	ScreenTextColor(SCREEN_TEXT_DEFAULT_COLOR),
+	Crew(NULL),
+	Engineer(NULL),
+	Technician(NULL),
+	Disguise(NULL),
+	SurvivorDivisor(-1)
 {
 	Create_ID();
 	Sides.Add(this);
@@ -114,6 +120,12 @@ void SideClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsAIBuildsWalls);
 	crc(AIBaseDefensePlaceholders);
 	crc(IsAIBaseDefensesWithWalls);
+
+	crc(Crew != nullptr ? Crew->Fetch_ID() : -1);
+	crc(Engineer != nullptr ? Engineer->Fetch_ID() : -1);
+	crc(Technician != nullptr ? Technician->Fetch_ID() : -1);
+	crc(Disguise != nullptr ? Disguise->Fetch_ID() : -1);
+	crc(SurvivorDivisor);
 }
 
 
@@ -139,6 +151,11 @@ bool SideClass::Read_INI(CCINIClass const & ini)
 	AIBaseDefensePlaceholders = ini.Get_Int(Name(), "AIBaseDefensePlaceholders", AIBaseDefensePlaceholders);
 	IsAIBaseDefensesWithWalls = ini.Get_Bool(Name(), "AIBaseDefensesWithWalls", IsAIBaseDefensesWithWalls);
 	ScreenTextColor = ini.Get_RGBClass(Name(), "ScreenTextColor", ScreenTextColor);
+	Crew = TGet_Class(ini, Name(), "Crew", Crew);
+	Engineer = TGet_Class(ini, Name(), "Engineer", Engineer);
+	Technician = TGet_Class(ini, Name(), "Technician", Technician);
+	Disguise = TGet_Class(ini, Name(), "Disguise", Disguise);
+	SurvivorDivisor = ini.Get_Int(Name(), "SurvivorDivisor", SurvivorDivisor);
 
 	return(true);
 }
@@ -171,4 +188,9 @@ void SideClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AIBaseDefensePlaceholders);
 	stream.Serialize(IsAIBaseDefensesWithWalls);
 	stream.Serialize(ScreenTextColor);
+	stream.Serialize(Crew);
+	stream.Serialize(Engineer);
+	stream.Serialize(Technician);
+	stream.Serialize(Disguise);
+	stream.Serialize(SurvivorDivisor);
 }
