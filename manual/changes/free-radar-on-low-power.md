@@ -1,12 +1,8 @@
 ---
 title: Keep a scenario's free radar through low power
 category: feature
-release: 0.2.0
+release: 0.3.0
 breaking: true
-migration:
-- Move `FreeRadarOnLowPower=` from `[General]` to `[Basic]` in each map file that sets it.
-- For a value set in `[General]` of `rules.ini`, add it to `[Basic]` of each map that needs it; a value there no longer applies.
-- Set `FreeRadar=yes` in `[Basic]` of each of those maps; without it the key does nothing.
 targets:
 - type: key
   id: FreeRadarOnLowPower

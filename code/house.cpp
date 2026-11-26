@@ -8320,17 +8320,12 @@ bool HouseClass::Can_Use_Radar(void) {
 		return false;
 	}
 
-	if (Scen->IsFreeRadar && Scen->IsFreeRadarOnLowPower) {
-		return true;
-	}
-
-	bool is_in_low_power = Drain > Power;
-	if (is_in_low_power) {
-		return false;
-	}
-
 	if (Scen->IsFreeRadar) {
-		return true;
+		return Scen->IsFreeRadarOnLowPower || Power >= Drain;
+	}
+
+	if (Power < Drain) {
+		return false;
 	}
 
 	// Check for a valid building that can provide a radar.

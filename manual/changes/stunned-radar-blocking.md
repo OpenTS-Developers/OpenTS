@@ -1,7 +1,7 @@
 ---
 title: Stop a stunned radar structure from blocking a working one
 category: fix
-release: 0.2.0
+release: 0.3.0
 targets:
 - type: key
   id: Radar
