@@ -269,7 +269,8 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 	GateFrame(-1),
 	ProduceCashTimer(0),
 	ProduceCashRemaining(0),
-	IsProduceCashStartupPaid(false)
+	IsProduceCashStartupPaid(false),
+	IsUndeploying(false)
 {
 	Create_ID();
 
@@ -2502,6 +2503,10 @@ void BuildingClass::Drop_Debris(AbstractClass * source)
 	Cell const * offset;
 	Cell cell;
 
+	// Prevents a structure being sold from producing a crew after it already released a crew from the sale.
+	// Does not count when the structure is undeploying.
+	if (Mission == MISSION_DECONSTRUCTION && !IsUndeploying) return;
+
 	/*
 	**	Generate random survivors from the destroyed building.
 	*/
@@ -2667,7 +2672,7 @@ bool BuildingClass::Active_Click_With(ActionType action, Cell const & cell, bool
 	if (action == ACTION_MOVE && Can_Redeploy()) {
 		if (Class->UndeploysInto != NULL) {
 			Assign_Rally_Point(cell);
-			OutList.push_back(EventClass(Owner(), EventClass::SELL, TargetClass(this)));
+			OutList.push_back(EventClass(Owner(), EventClass::UNDEPLOY, TargetClass(this)));
 		}
 		return(true);
 	}
@@ -2762,8 +2767,7 @@ void BuildingClass::Assign_Target(AbstractClass * target)
 			BASECLASS::Assign_Target(target);
 			if (Class->IsTickTank || Class->IsArtillary || Class->IsJuggernaut) {
 				if (!House->Is_Human_Player() && !Is_Immobilized() && Class->UndeploysInto != NULL) {
-					Assign_Mission(MISSION_DECONSTRUCTION);
-					Commence();
+					Undeploy();
 				}
 			}
 			return;
@@ -3851,8 +3855,6 @@ void BuildingClass::Repair(int control)
  *    This routine will initiate or stop the sell back process for a building. It is called    *
  *    when the player clicks on a building when the sell mode is active.                       *
  *                                                                                             *
- * INPUT:   control  -- The action to perform. 0 = turn deconstruction off, 1 = deconstruct,   *
- *                      -1 = toggle deconstruction state.                                      *
  *                                                                                             *
  * OUTPUT:  none                                                                               *
  *                                                                                             *
@@ -3861,50 +3863,24 @@ void BuildingClass::Repair(int control)
  * HISTORY:                                                                                    *
  *   06/25/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-void BuildingClass::Sell_Back(int control)
+void BuildingClass::Sell_Back()
 {
 	if (HasBuildupData) {
-		bool decon = false;
-		switch (control) {
-			case -1:
-				decon = (Mission != MISSION_DECONSTRUCTION);
-				break;
-
-			case 1:
-				if (Mission == MISSION_DECONSTRUCTION) return;
-				if (IsGoingToBlow) return;
-				decon = true;
-				break;
-
-			case 0:
-				if (Mission != MISSION_DECONSTRUCTION) return;
-				decon = false;
-				break;
-
-			default:
-				break;
-		}
+		if (Mission == MISSION_DECONSTRUCTION) return;
+		if (IsGoingToBlow) return;
 
 		/*
 		**	At this point, we know that the repair state has changed. Perform
 		**	appropriate action.
-		*/
-		if (decon) {
-			Assign_Mission(MISSION_DECONSTRUCTION);
-			Commence();
-			//if (House->Is_Player_Control()) {
-			//	Clicked_As_Target(PlayerPtr->Class->House);
-			//}
-		}
+		*/		
+		Assign_Mission(MISSION_DECONSTRUCTION);
+		Commence();
+		
 		if (House->Is_Player_Control()) {
 			Sound_Effect(Rule->GenericClick);
 		}
 	} else {
 		if (Class->IsFirestormWall) {
-			/// The results of these two calls are discarded.
-			Class->Cost_Of(House);
-			House->Is_Human_Player();
-			//
 			Limbo();
 			Delete_Me();
 		}
@@ -4934,7 +4910,7 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 				TechnoClass * tech = Contact_With_Whom();
 				Transmit_Message(RADIO_OVER_OUT);
 				if (IsOwnedByPlayer) Speak(VOX_UNIT_SOLD);
-				tech->Sell_Back(1);
+				tech->Sell_Back();
 				Assign_Mission(MISSION_GUARD);
 				return(1);
 			}
@@ -4994,7 +4970,7 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 				**	members leaving is equal to the unrecovered cost of the building
 				**	divided by 100 (the typical cost of a minigunner infantryman).
 				*/
-				if (ArchiveTarget == NULL && Class->UndeploysInto == NULL) {
+				if (!IsUndeploying) {
 					int count = How_Many_Survivors();
 					bool engineer = false;
 
@@ -5066,16 +5042,13 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 			if (IsReadyToCommence) {
 				House->IsRecalcNeeded = true;
 				Assign_Target(NULL);
-				if (IsOwnedByPlayer && Class->UndeploysInto == NULL) Speak(VOX_STRUCTURE_SOLD);
+				if (IsOwnedByPlayer && !IsUndeploying) Speak(VOX_STRUCTURE_SOLD);
 
 				/*
 				**	Construction yards that deconstruct, really just revert back
 				**	to an MCV.
 				*/
-				if (Class->UndeploysInto != NULL &&
-					(Class->Is_Mobile_Deployer() ||
-					Class->Can_Always_Undeploy() ||
-					(Session.Type != GAME_NORMAL && ArchiveTarget != NULL && House->Is_Human_Player() && (Session.Type == GAME_NORMAL || Session.Options.MCVRedeploy)))
+				if (IsUndeploying && (!Class->IsConstructionYard || (Session.Type != GAME_NORMAL && Session.Options.MCVRedeploy))
 				) {
 
 					if (Class->IsArtillary && (BarrelPitch.Current() != Class->StartPitch || PrimaryFacing.Current() != Class->StartFace)) {
@@ -5714,7 +5687,7 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 							**	sell it back to get some money.
 							*/
 							if (client->IsUseless && !client->House->Is_Human_Player()) {
-								client->Sell_Back(1);
+								client->Sell_Back();
 								Status = INITIAL;
 								IsReadyToCommence = true;
 							} else {
@@ -7504,7 +7477,7 @@ void BuildingClass::Repair_AI(void)
 					Class->ToBuild != RTTI_BUILDINGTYPE &&
 					HealthRatio < Rule->ConditionRed)
 				{
-					Sell_Back(1);
+					Sell_Back();
 				}
 			}
 		}
@@ -9039,6 +9012,7 @@ void BuildingClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ProduceCashTimer);
 	stream.Serialize(ProduceCashRemaining);
 	stream.Serialize(IsProduceCashStartupPaid);
+	stream.Serialize(IsUndeploying);
 }
 
 
@@ -9138,6 +9112,7 @@ void BuildingClass::Compute_CRC(CRCEngine & crc) const
 	crc((int)ProduceCashTimer);
 	crc(ProduceCashRemaining);
 	crc(IsProduceCashStartupPaid);
+	crc(IsUndeploying);
 }
 
 
@@ -10195,7 +10170,7 @@ void BuildingClass::Sell_All_Upgrades(void)
 		Adjust_House_Power(House);
 		level = UpgradeLevel;
 	}
-	Sell_Back(true);
+	Sell_Back();
 }
 
 
@@ -10559,4 +10534,22 @@ ObjectTypeClass const * BuildingClass::Class_Of(void) const
 Coord BuildingClass::Render_Coord(void) const
 {
 	return(PositionCoord - Coord(CELL_LEPTON/2,CELL_LEPTON/2,0));
+}
+
+
+/// <summary>
+/// Sets up a unit to undeploy.
+/// In practice, undeployment happens by using the deconstruction mission, which is the same as selling a structure via Sell_Back.
+/// However, the IsUndeploying flag is switched on during this flow to make it possible for the mission to differentiate between
+/// a sell order and an undeployment order.
+/// </summary>
+void BuildingClass::Undeploy() {
+	if (!Can_Be_Undeployed()) return;
+	if (!HasBuildupData) return;
+	if (Mission == MISSION_DECONSTRUCTION) return;
+	if (IsGoingToBlow) return;
+
+	IsUndeploying = true;
+	Assign_Mission(MISSION_DECONSTRUCTION);
+	Commence();
 }

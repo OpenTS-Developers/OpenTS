@@ -128,6 +128,7 @@ namespace {
 		"alliance the match does not allow",
 		"invalid grant house",
 		"control grant the match does not allow",
+		"building is not allowed to undeploy"
 	};
 
 	static_assert(ARRAY_SIZE(RejectReasonNames) == (int)Reason::Count);
@@ -795,6 +796,7 @@ void EventClass::Execute(void)
 		case NETWORK_REPORT: Execute_NETWORK_REPORT(); break;
 		case GRANT_CONTROL: Execute_GRANT_CONTROL(); break;
 		case SELECTED:      Execute_SELECTED(); break;
+		case UNDEPLOY:		Execute_UNDEPLOY(); break;
 		default:            break;
 	}
 }
@@ -868,6 +870,7 @@ TechnoClass * EventClass::Subject(SubjectRule & rule) const
 		case IDLE:
 		case DEPLOY:
 		case SCATTER:
+		case UNDEPLOY:
 			rule = SubjectRule::COMMANDER;
 			return(Data.Target.Whom.As_Techno());
 
@@ -979,20 +982,40 @@ void EventClass::Execute_SELL(void)
 	if (techno == NULL || !techno->IsActive || techno->House->HeapID != ID) {
 		return;
 	}
+
 	if (Session.Is_Network_Game()) {
-		BuildingClass const * building = techno->RTTI == RTTI_BUILDING ? (BuildingClass const *)techno : NULL;
-		// A move order to a building that packs up into a vehicle is sent as a sale.
-		bool const packs_up = building != NULL && building->Class->UndeploysInto != NULL && building->Can_Redeploy();
-		if (!techno->Can_Demolish() && !packs_up) {
+		if (!techno->Can_Demolish()) {
 			Reject(RejectReason::SaleNotAllowed, techno->RTTI);
 			return;
 		}
 	}
 	if (techno->RTTI == RTTI_BUILDING || ((techno->RTTI == RTTI_UNIT || techno->RTTI == RTTI_AIRCRAFT) && Map[techno->Center_Coord()].Cell_Building() != NULL)) {
-		techno->Sell_Back(-1);
+		techno->Sell_Back();
 	}
 }
 
+
+void EventClass::Execute_UNDEPLOY(void)
+{
+	TechnoClass * techno = Data.Target.Whom.As_Techno();
+	if (techno == NULL || !techno->IsActive || techno->House->HeapID != ID || techno->RTTI != RTTI_BUILDING) {
+		return;
+	}
+
+	BuildingClass * building = techno->As_BuildingClass();	
+	bool const packs_up = techno->TClass->UndeploysInto != NULL && building->Can_Redeploy();
+
+	if (Session.Is_Network_Game()) {
+		if (!packs_up) {
+			Reject(RejectReason::UndeployNotAllowed, techno->RTTI);
+			return;
+		}
+	}
+
+	if (packs_up) {
+		building->Undeploy();
+	}
+}
 
 void EventClass::Execute_SELLCELL(void)
 {

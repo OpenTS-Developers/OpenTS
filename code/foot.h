@@ -472,7 +472,7 @@ class FootClass : public TechnoClass
 		**	AI.
 		*/
 		virtual void AI(void) override;
-		virtual void Sell_Back(int control) override;
+		virtual void Sell_Back() override;
 		virtual void Set_Waypoint_Path(PathType path, char index) override;
 		void Execute_Waypoint_Path(WaypointClass * waypoint);
 		virtual int Offload_Tiberium_Bail(void);

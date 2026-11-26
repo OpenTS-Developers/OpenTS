@@ -1003,7 +1003,7 @@ bool TActionClass::TAction_SELL_ATTACHED(HouseClass * , ObjectClass * , TriggerC
 				building->Tag != NULL &&
 				building->Tag->Is_Trigger_Attached(trig)) {
 
-			building->Sell_Back(1);
+			building->Sell_Back();
 			success = true;
 		}
 	}

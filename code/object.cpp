@@ -958,7 +958,7 @@ void ObjectClass::Repair(int )
  * HISTORY:                                                                                    *
  *   07/19/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-void ObjectClass::Sell_Back(int )
+void ObjectClass::Sell_Back()
 {
 	assert(this != NULL);
 }

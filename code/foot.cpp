@@ -2867,18 +2867,16 @@ bool FootClass::Can_Demolish(void) const
  * HISTORY:                                                                                    *
  *   08/13/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-void FootClass::Sell_Back(int control)
-{
-	if (control != 0) {
-		if (House->Is_Player_Control()) {
-			Speak(VOX_UNIT_SOLD);
-			Sound_Effect(Rule->SellSound);
-		}
-		House->Refund_Money(Refund_Amount(), INCOME_SOLD_UNIT);
-		Stun();
-		Limbo();
-		Delete_Me();
+void FootClass::Sell_Back()
+{	
+	if (House->Is_Player_Control()) {
+		Speak(VOX_UNIT_SOLD);
+		Sound_Effect(Rule->SellSound);
 	}
+	House->Refund_Money(Refund_Amount(), INCOME_SOLD_UNIT);
+	Stun();
+	Limbo();
+	Delete_Me();	
 }
 
 
