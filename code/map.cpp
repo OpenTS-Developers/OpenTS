@@ -11138,44 +11138,6 @@ void MapClass::Register_Subzone_Connection(ZoneConnectionClass * connection)
 	}
 }
 
-/// <summary>
-/// Hands every wall on the map to a house.
-/// A wall overlay carries no owner of its own, so this routine gives each one to whichever
-/// house has the nearest building capable of owning walls. Walls that arrive as plain terrain
-/// end up belonging to somebody rather than to nobody at all.
-/// </summary>
-void MapClass::Initialize_Wall_Ownership(void)
-{
-	Reset_Iterator();
-	CellClass * cellptr = MapClass::Iterate();
-
-	while (cellptr != NULL) {
-		if (cellptr->Overlay != OVERLAY_NONE) {
-			if (OverlayTypes[cellptr->Overlay]->IsWall) {
-				int bestindex = -1;
-				int index = 0;
-				int bestdist = 0x7FFFFFFF;
-
-				for (index = 0; index < Buildings.Count(); index++) {
-					BuildingClass * bptr = Buildings[index];
-					int dist = bptr->Distance(cellptr);
-					if (bptr->IsActive && bptr->IsDown && bptr->House->Class->IsWallOwner) {
-						if (bestindex == -1 || dist < bestdist) {
-							bestdist = dist;
-							bestindex = index;
-						}
-					}
-				}
-
-				if (bestindex != -1) {
-					cellptr->Owner = Buildings[bestindex]->House->HeapID;
-				}
-			}
-		}
-		cellptr = Iterate();
-	}
-}
-
 
 /// <summary>
 /// Rebuilds the body of water around a cell and re-dresses its shores.

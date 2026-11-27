@@ -415,6 +415,10 @@ Wall:
   "OverlayTypeClass::IsWall": {verdict: distinct}
   "WarheadTypeClass::IsWallDestroyer": {verdict: distinct}
 
+WallOwner:
+  "BuildingTypeClass::IsWallOwner": {verdict: distinct}
+  "HouseTypeClass::IsWallOwner": {verdict: distinct}
+
 Warhead:
   "AnimTypeClass::Warhead": {verdict: distinct}
   "ParticleTypeClass::Warhead": {verdict: distinct}
