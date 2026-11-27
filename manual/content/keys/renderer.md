@@ -17,7 +17,7 @@ The number selects the graphics interface the game asks for when it starts. It e
 | `3` | Vulkan |
 | `4` | OpenGL |
 
-A value outside this range is treated as `0`.
+A value outside this range is treated as `0`. Direct3D 11 requires feature level 11.0 or higher. OpenGL requires version 4.3 or higher.
 
 The [debug log](/using/debug-logging/) names the interface that started. Check it to confirm that a requested interface is in use.
 

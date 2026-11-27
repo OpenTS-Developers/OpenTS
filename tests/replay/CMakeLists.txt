@@ -34,9 +34,7 @@ opents_add_test(ReplayTest
         replay/replaymessages.cpp
         replay/replayseal.cpp
         replay/replaywriter.cpp
-    INCLUDES
-        ${CMAKE_SOURCE_DIR}/thirdparty/bgfx.cmake/bimg/3rdparty/tinyexr/deps
-    LIBRARIES bimg
+    LIBRARIES opents_miniz
     DEFINITIONS WIN32 _WINDOWS _MBCS NOMINMAX
         REPLAY_PROTO_FILE="${CMAKE_SOURCE_DIR}/docs/replay/replay.proto"
         LAUNCH_PROTO_FILE="${CMAKE_SOURCE_DIR}/docs/launch/launch.proto"

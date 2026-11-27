@@ -292,14 +292,14 @@ bool Backend_Init(NativeWindow const & window, int drawablewidth, int drawablehe
 	_ResetFlags = BGFX_RESET_FLIP_AFTER_RENDER | (vsync ? BGFX_RESET_VSYNC : BGFX_RESET_NONE);
 
 	bgfx::Init init;
-	init.platformData.ndt = window.Display;
-	init.platformData.nwh = window.Handle;
 	init.platformData.type = window.Type == NATIVE_WINDOW_WAYLAND
 		? bgfx::NativeWindowHandleType::Wayland
 		: bgfx::NativeWindowHandleType::Default;
-	init.resolution.width = (uint32_t)drawablewidth;
-	init.resolution.height = (uint32_t)drawableheight;
-	init.resolution.reset = _ResetFlags;
+	init.swapChain.ndt = window.Display;
+	init.swapChain.nwh = window.Handle;
+	init.swapChain.width = (uint32_t)drawablewidth;
+	init.swapChain.height = (uint32_t)drawableheight;
+	init.reset = _ResetFlags;
 	init.callback = &_Callback;
 	init.allocator = &_Allocator;
 
@@ -456,7 +456,10 @@ void Backend_On_Resize(int drawablewidth, int drawableheight)
 
 	_DrawableWidth = drawablewidth;
 	_DrawableHeight = drawableheight;
-	bgfx::reset((uint32_t)drawablewidth, (uint32_t)drawableheight, _ResetFlags);
+	bgfx::SwapChain swapchain;
+	swapchain.width = (uint32_t)drawablewidth;
+	swapchain.height = (uint32_t)drawableheight;
+	bgfx::reset(_ResetFlags, &swapchain);
 }
 
 
