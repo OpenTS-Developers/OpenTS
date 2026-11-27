@@ -192,6 +192,7 @@ A row's link goes to the change record, or where there is none, to the manual pa
 | `briefing_screen_mission_start.asm` | Showed the difficulty when a campaign mission started. A launch file's `DifficultyName` named it. | Ported. [mission-difficulty-message] |
 | `briefing_screen_mission_start.asm` | Showed the written briefing at every campaign mission start. | Reworked: the written briefing appears when no briefing movie plays. [mission-start-briefing] |
 | `basic_theme_fix.asm` | Returned to the normal music after a map's `Theme` played. | Ported. [scenario-theme-rotation] |
+| Every product's `*_hacks.asm` | Turned `IsScoreShuffle` on by default. | Ported. [music-shuffle-default] |
 
 ## Multiplayer and launcher
 
@@ -451,6 +452,7 @@ yet.
 [multiplayer-weapon-overrides-from-rules]: ../manual/changes/multiplayer-weapon-overrides-from-rules.md
 [multiple-factory-bonus]: ../manual/changes/multiple-factory-bonus.md
 [multiple-instances-option]: ../manual/changes/multiple-instances-option.md
+[music-shuffle-default]: ../manual/changes/music-shuffle-default.md
 [mutual-refinery-docking]: ../manual/changes/mutual-refinery-docking.md
 [observer-seats-and-coach-mode]: ../manual/changes/observer-seats-and-coach-mode.md
 [optional-map-and-multiplayer-archives]: ../manual/changes/optional-map-and-multiplayer-archives.md
