@@ -92,6 +92,14 @@ Crater:
   "AnimTypeClass::IsCraterForming": {verdict: distinct}
   "SmudgeTypeClass::IsCrater": {verdict: distinct}
 
+Crew:
+  "RulesClass::Crew": {verdict: distinct}
+  "SideClass::Crew":
+    verdict: distinct
+    note: >-
+      a side names the survivor type for objects of houses acting as its
+      countries; a side that names none leaves the [General] type in force
+
 Damage:
   "AnimTypeClass::Damage": {verdict: distinct}
   "ParticleTypeClass::Damage": {verdict: distinct}
@@ -115,6 +123,14 @@ DetailLevel:
   "AnimTypeClass::DetailLevel": {verdict: distinct}
   "OptionsClass::DetailLevel": {verdict: distinct}
 
+Disguise:
+  "RulesClass::Disguise": {verdict: distinct}
+  "SideClass::Disguise":
+    verdict: distinct
+    note: >-
+      a side names the disguise type for objects of houses acting as its
+      countries; a side that names none leaves the [General] type in force
+
 Elasticity:
   "AnimTypeClass::Elasticity": {verdict: distinct}
   "BulletTypeClass::Elasticity": {verdict: distinct}
@@ -123,6 +139,11 @@ Elasticity:
 Engineer:
   "InfantryTypeClass::IsEngineer": {verdict: distinct}
   "RulesClass::Engineer": {verdict: distinct}
+  "SideClass::Engineer":
+    verdict: distinct
+    note: >-
+      a side names its own survivor engineer type; a side that names none
+      leaves the [General] type in force
 
 EngineerCaptureLevel:
   "RulesClass::EngineerCaptureLevel": {verdict: distinct}
@@ -314,6 +335,14 @@ Strength:
     verdict: distinct
     specializes: "ObjectTypeClass::MaxStrength"
 
+SurvivorDivisor:
+  "RulesClass::SurvivorDivisor": {verdict: distinct}
+  "SideClass::SurvivorDivisor":
+    verdict: distinct
+    note: >-
+      a side stores its own divisor and falls back to the [General] one when
+      the stored value is negative; zero is stored and yields no survivors
+
 TechLevel:
   "TechnoTypeClass::Level": {verdict: distinct}
   "TeamTypeClass::TechLevel": {verdict: distinct}
@@ -323,6 +352,14 @@ TechLevel:
     note: >-
       when the key is absent, the house's tech level defaults to the
       scenario's own number
+
+Technician:
+  "RulesClass::Technician": {verdict: distinct}
+  "SideClass::Technician":
+    verdict: distinct
+    note: >-
+      a side names the technician type for objects of houses acting as its
+      countries; a side that names none leaves the [General] type in force
 
 Theater:
   "ObjectTypeClass::IsTheater": {verdict: distinct}

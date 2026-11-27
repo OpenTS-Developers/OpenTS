@@ -75,4 +75,13 @@ class SideClass : public AbstractTypeClass
          * Color to be used for screen text for this side.
          */
 		RGBClass ScreenTextColor;
+
+		/*
+         * Crew per side override values
+         */
+		InfantryTypeClass const * Crew;
+		InfantryTypeClass const * Engineer;
+		InfantryTypeClass const * Technician;
+		InfantryTypeClass const * Disguise;
+		int SurvivorDivisor;
 };

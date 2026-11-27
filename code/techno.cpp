@@ -186,6 +186,7 @@
 #include "scheme.h"
 #include "session.h"
 #include "shapeset.h"
+#include "side.h"
 #include "stimer.h"
 #include "sun.h"
 #include "swizzle.h"
@@ -6585,15 +6586,11 @@ InfantryTypeClass const * TechnoClass::Crew_Type(void) const
 	**	minigunner. Certain buildings, especially neutral ones, tend to have
 	**	civilians exit them instead.
 	*/
-	InfantryTypeClass const * infantry = Rule->Crew;
-	if (House->Class->Side != SIDE_NONE) {
-		if (Is_Weapon_Equipped() && Percent_Chance(15)) {
-			infantry = Rule->Technician;
-		}
-	} else {
-		infantry = Rule->Technician;
+	SideClass const * side = House->Acted_Side();
+	if (House->Class->Side == SIDE_NONE || (Is_Weapon_Equipped() && Percent_Chance(15))) {
+		return((side != nullptr && side->Technician != nullptr) ? side->Technician : Rule->Technician);
 	}
-	return(infantry);
+	return((side != nullptr && side->Crew != nullptr) ? side->Crew : Rule->Crew);
 }
 
 

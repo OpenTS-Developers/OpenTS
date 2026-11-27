@@ -161,6 +161,7 @@
 #include "scheme.h"
 #include "session.h"
 #include "shapeset.h"
+#include "side.h"
 #include "smudtype.h"
 #include "stimer.h"
 #include "sun.h"
@@ -5006,20 +5007,23 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 						occupy++;
 					}
 
-					while (count) {
+					for (; count > 0; --count) {
 
 						/*
 						**	Ensure that the player only gets ONE engineer and not from a captured
 						**	construction yard.
 						*/
-						const InfantryTypeClass * typ = Crew_Type();
-						while (typ->IsEngineer && engineer) {
+						InfantryTypeClass const * typ = Crew_Type();
+						constexpr int MAX_ENGINEER_REROLLS = 64;
+						for (int retry = 0; retry < MAX_ENGINEER_REROLLS && engineer && typ != nullptr && typ->IsEngineer; ++retry) {
 							typ = Crew_Type();
+						}
+						if (typ == nullptr || (engineer && typ->IsEngineer)) {
+							continue;
 						}
 						if (typ->IsEngineer) engineer = true;
 
-						InfantryClass * infantry = NULL;
-						if (typ != NULL) infantry = new InfantryClass(typ, House);
+						InfantryClass * infantry = new InfantryClass(typ, House);
 						if (infantry != NULL) {
 							ScenarioInit++;
 
@@ -5041,7 +5045,6 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 							}
 							ScenarioInit--;
 						}
-						count--;
 					}
 				}
 
@@ -6671,7 +6674,9 @@ void BuildingClass::Detach(AbstractClass const * target, bool all)
 InfantryTypeClass const * BuildingClass::Crew_Type(void) const
 {
 	if (!IsCaptured && Percent_Chance(25) && Class->ToBuild == RTTI_BUILDINGTYPE) {
-		return(Rule->Engineer);
+		auto side = House->Acted_Side();
+		auto engineer = (side != NULL && side->Engineer != NULL) ? side->Engineer : Rule->Engineer;
+		return(engineer);
 	}
 	return(BASECLASS::Crew_Type());
 }
@@ -7776,7 +7781,8 @@ int BuildingClass::How_Many_Survivors(void) const
 {
 	if (IsSurvivorless || !Class->IsCrew) return(0);
 
-	int divisor = Rule->SurvivorDivisor;
+	auto side = House->Acted_Side();
+	int divisor = (side != NULL && side->SurvivorDivisor >= 0) ? side->SurvivorDivisor : Rule->SurvivorDivisor;
 	if (divisor == 0) return(0);
 	if (IsCaptured) divisor *= 2;
 	int count = (Class->Cost_Of(House) * Rule->SurvivorFraction) / divisor;

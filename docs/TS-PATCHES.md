@@ -192,6 +192,7 @@ A row's link goes to the change record, or where there is none, to the manual pa
 | `briefing_screen_mission_start.asm` | Showed the difficulty when a campaign mission started. A launch file's `DifficultyName` named it. | Ported. [mission-difficulty-message] |
 | `briefing_screen_mission_start.asm` | Showed the written briefing at every campaign mission start. | Reworked: the written briefing appears when no briefing movie plays. [mission-start-briefing] |
 | `basic_theme_fix.asm` | Returned to the normal music after a map's `Theme` played. | Ported. [scenario-theme-rotation] |
+| Every product's `*_hacks.asm` | Turned `IsScoreShuffle` on by default. | Ported. [music-shuffle-default] |
 
 ## Multiplayer and launcher
 
@@ -311,7 +312,6 @@ yet.
 
 | ts-patches file | What it did | In OpenTS |
 | --- | --- | --- |
-| Every product's `*_hacks.asm` | Turned `IsScoreShuffle` on by default. | Set `IsScoreShuffle=yes` in the settings file. |
 | `dta_hacks.asm`, `to_hacks.asm` | Turned sidebar cameo text and action lines off by default. | Set `SidebarCameoText=no` and `UnitActionLines=no` in the settings file. |
 | `dta_hacks.asm`, `ti_hacks.asm`, `to_hacks.asm` | Limited the tech level slider to 7 in the network and modem game dialogs. DTA also set a default of 7, which the rules replaced at startup. | `[MultiplayerDefaults] TechLevel=` in the rules sets the default. For the limit, a mod's own `netgame.rml` and `skirmish.rml` can give the slider a lower `max`. [UI files](../manual/content/systems/ui-files.md) |
 | Every product's `*_hacks.asm`, `res/` | Replaced the window title, the `Language.dll` error message, the icon, the cursor and the internal-error dialog text with the product's own. | A mod replaces `cursor.png` for the pointer over the screens. The window title, icon and error texts have no setting yet. [UI files](../manual/content/systems/ui-files.md) |
@@ -452,6 +452,7 @@ yet.
 [multiplayer-weapon-overrides-from-rules]: ../manual/changes/multiplayer-weapon-overrides-from-rules.md
 [multiple-factory-bonus]: ../manual/changes/multiple-factory-bonus.md
 [multiple-instances-option]: ../manual/changes/multiple-instances-option.md
+[music-shuffle-default]: ../manual/changes/music-shuffle-default.md
 [mutual-refinery-docking]: ../manual/changes/mutual-refinery-docking.md
 [observer-seats-and-coach-mode]: ../manual/changes/observer-seats-and-coach-mode.md
 [optional-map-and-multiplayer-archives]: ../manual/changes/optional-map-and-multiplayer-archives.md
