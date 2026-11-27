@@ -52,6 +52,8 @@
 #include "_mixfile.h"
 #include "_rules.h"
 #include "aircraft.h"
+#include "animtype.h"
+#include "ccfile.h"
 #include "findmake.h"
 #include "globals.h"
 #include "incdec.h"
@@ -80,21 +82,68 @@ void const * AircraftTypeClass::RRotorData = NULL;
  * HISTORY:                                                                                    *
  *   07/26/1994 JLB : Created.                                                                 *
  *=============================================================================================*/
-AircraftTypeClass::AircraftTypeClass(char const * ininame) :
+AircraftTypeClass::AircraftTypeClass(char const* ininame) :
 	BASECLASS(ininame, SPEED_WINGED),
-	IsLandable(false),
-	IsRotorEquipped(false),
-	IsRotorCustom(false),
+	HeapID(AIRCRAFT_NONE),
 	IsCarryall(false),
-	HeapID(AIRCRAFT_NONE)
+	IsRotorEquipped(false),
+	VoxelRotors(false),
+	RotorCount(1),
+	Rotor1Data(NULL),
+	Rotor2Data(NULL),
+	Rotor3Data(NULL),
+	Rotor4Data(NULL),
+	Rotor1TiltedData(NULL),
+	Rotor2TiltedData(NULL),
+	Rotor3TiltedData(NULL),
+	Rotor4TiltedData(NULL),
+	IsLandable(false)
 {
 	Create_ID();
+
+	Rotor1FLH = Point3D(0, 0, 0);
+	Rotor2FLH = Point3D(0, 0, 0);
+	Rotor3FLH = Point3D(0, 0, 0);
+	Rotor4FLH = Point3D(0, 0, 0);
+
+	for (int rotor = 0; rotor < 4; ++rotor) {
+		RotorIdleVoxelFiles[rotor][0] = '\0';
+		RotorMovingVoxelFiles[rotor][0] = '\0';
+		RotorIdleRate[rotor] = 32;
+		RotorMovingRate[rotor] = 16;
+	}
 
 	AircraftTypes.Add(this);
 	HeapID = AircraftType(AircraftTypes.ID(this));
 
 	IsMoveToShroud = false;
 	Rotation = 32;
+
+	Rotor1File[0] = '\0';
+	Rotor2File[0] = '\0';
+	Rotor3File[0] = '\0';
+	Rotor4File[0] = '\0';
+
+	char(*tiltedFiles[4])[15 + 1] = {
+		Rotor1TiltedFiles,
+		Rotor2TiltedFiles,
+		Rotor3TiltedFiles,
+		Rotor4TiltedFiles
+	};
+
+	void const** tiltedData[4] = {
+		Rotor1TiltedData,
+		Rotor2TiltedData,
+		Rotor3TiltedData,
+		Rotor4TiltedData
+	};
+
+	for (int rotor = 0; rotor < 4; ++rotor) {
+		for (int direction = 0; direction < 8; ++direction) {
+			tiltedFiles[rotor][direction][0] = '\0';
+			tiltedData[rotor][direction] = NULL;
+		}
+	}
 }
 
 
@@ -264,14 +313,131 @@ Point3D AircraftTypeClass::Lepton_Dimensions(void) const
  * HISTORY:                                                                                    *
  *   07/19/1996 JLB : Created.                                                                 *
  *=============================================================================================*/
-bool AircraftTypeClass::Read_INI(CCINIClass const & ini)
+bool AircraftTypeClass::Read_INI(CCINIClass const& ini)
 {
 	if (BASECLASS::Read_INI(ini)) {
 
 		IsLandable = ini.Get_Bool(Name(), "Landable", IsLandable);
 		IsCarryall = ini.Get_Bool(Name(), "Carryall", IsCarryall);
 		IsRotorEquipped = ArtINI.Get_Bool(Graphic_Name(), "Rotors", IsRotorEquipped);
-		IsRotorCustom = ArtINI.Get_Bool(Graphic_Name(), "CustomRotor", IsRotorCustom);
+		VoxelRotors = ArtINI.Get_Bool(Graphic_Name(), "VoxelRotors", VoxelRotors);
+		RotorCount = ArtINI.Get_Int(Graphic_Name(), "RotorCount", RotorCount);
+		Rotor1FLH = ArtINI.Get_Point(Graphic_Name(), "Rotor1FLH", Rotor1FLH);
+		Rotor2FLH = ArtINI.Get_Point(Graphic_Name(), "Rotor2FLH", Rotor2FLH);
+		Rotor3FLH = ArtINI.Get_Point(Graphic_Name(), "Rotor3FLH", Rotor3FLH);
+		Rotor4FLH = ArtINI.Get_Point(Graphic_Name(), "Rotor4FLH", Rotor4FLH);
+
+		ArtINI.Get_String(
+			Graphic_Name(), "Rotor1IdleVoxel", "", RotorIdleVoxelFiles[0], sizeof(RotorIdleVoxelFiles[0]));
+		ArtINI.Get_String(
+			Graphic_Name(), "Rotor2IdleVoxel", "", RotorIdleVoxelFiles[1], sizeof(RotorIdleVoxelFiles[1]));
+		ArtINI.Get_String(
+			Graphic_Name(), "Rotor3IdleVoxel", "", RotorIdleVoxelFiles[2], sizeof(RotorIdleVoxelFiles[2]));
+		ArtINI.Get_String(
+			Graphic_Name(), "Rotor4IdleVoxel", "", RotorIdleVoxelFiles[3], sizeof(RotorIdleVoxelFiles[3]));
+		ArtINI.Get_String(
+			Graphic_Name(), "Rotor1MovingVoxel", "", RotorMovingVoxelFiles[0], sizeof(RotorMovingVoxelFiles[0]));
+		ArtINI.Get_String(
+			Graphic_Name(), "Rotor2MovingVoxel", "", RotorMovingVoxelFiles[1], sizeof(RotorMovingVoxelFiles[1]));
+		ArtINI.Get_String(
+			Graphic_Name(), "Rotor3MovingVoxel", "", RotorMovingVoxelFiles[2], sizeof(RotorMovingVoxelFiles[2]));
+		ArtINI.Get_String(
+			Graphic_Name(), "Rotor4MovingVoxel", "", RotorMovingVoxelFiles[3], sizeof(RotorMovingVoxelFiles[3]));
+
+		RotorIdleRate[0] = ArtINI.Get_Int(Graphic_Name(), "Rotor1IdleRate", RotorIdleRate[0]);
+		RotorIdleRate[1] = ArtINI.Get_Int(Graphic_Name(), "Rotor2IdleRate", RotorIdleRate[1]);
+		RotorIdleRate[2] = ArtINI.Get_Int(Graphic_Name(), "Rotor3IdleRate", RotorIdleRate[2]);
+		RotorIdleRate[3] = ArtINI.Get_Int(Graphic_Name(), "Rotor4IdleRate", RotorIdleRate[3]);
+		RotorMovingRate[0] = ArtINI.Get_Int(Graphic_Name(), "Rotor1MovingRate", RotorMovingRate[0]);
+		RotorMovingRate[1] = ArtINI.Get_Int(Graphic_Name(), "Rotor2MovingRate", RotorMovingRate[1]);
+		RotorMovingRate[2] = ArtINI.Get_Int(Graphic_Name(), "Rotor3MovingRate", RotorMovingRate[2]);
+		RotorMovingRate[3] = ArtINI.Get_Int(Graphic_Name(), "Rotor4MovingRate", RotorMovingRate[3]);
+
+		for (int rotor = 0; rotor < 4; ++rotor) {
+			if (RotorIdleRate[rotor] < 0) {
+				RotorIdleRate[rotor] = 0;
+			}
+			if (RotorMovingRate[rotor] < 0) {
+				RotorMovingRate[rotor] = 0;
+			}
+		}
+
+		ArtINI.Get_String(Graphic_Name(), "Rotor1Anim", "", Rotor1File, sizeof(Rotor1File));
+		ArtINI.Get_String(Graphic_Name(), "Rotor2Anim", "", Rotor2File, sizeof(Rotor2File));
+		ArtINI.Get_String(Graphic_Name(), "Rotor3Anim", "", Rotor3File, sizeof(Rotor3File));
+		ArtINI.Get_String(Graphic_Name(), "Rotor4Anim", "", Rotor4File, sizeof(Rotor4File));
+
+		/*
+		** Read the directional rotor filenames for each rotor.
+		*/
+		{
+			const int ROTOR_COUNT = 4;				// Max number of rotors
+			const int ROTOR_DIRECTION_COUNT = 8;	// Number of directions expected in list
+			const int ROTOR_FILENAME_LENGTH = 15;
+
+			char(*tiltedFiles[ROTOR_COUNT])[ROTOR_FILENAME_LENGTH + 1] = {
+				Rotor1TiltedFiles,
+				Rotor2TiltedFiles,
+				Rotor3TiltedFiles,
+				Rotor4TiltedFiles
+			};
+
+			char tiltednames[
+				ROTOR_DIRECTION_COUNT * ROTOR_FILENAME_LENGTH + (ROTOR_DIRECTION_COUNT - 1) + 1
+			];
+
+			for (int rotor = 0; rotor < ROTOR_COUNT; ++rotor) {
+				for (int direction = 0; direction < ROTOR_DIRECTION_COUNT; ++direction) {
+					tiltedFiles[rotor][direction][0] = '\0';
+				}
+				tiltednames[0] = '\0';
+
+				int direction = 0;
+				switch (rotor) {
+					case 0:
+						ArtINI.Get_String(
+							Graphic_Name(), "Rotor1TiltedAnims", "", tiltednames, sizeof(tiltednames));
+						break;
+					case 1:
+						ArtINI.Get_String(
+							Graphic_Name(), "Rotor2TiltedAnims", "", tiltednames, sizeof(tiltednames));
+						break;
+					case 2:
+						ArtINI.Get_String(
+							Graphic_Name(), "Rotor3TiltedAnims", "", tiltednames, sizeof(tiltednames));
+						break;
+					case 3:
+						ArtINI.Get_String(
+							Graphic_Name(), "Rotor4TiltedAnims", "", tiltednames, sizeof(tiltednames));
+						break;
+				}
+
+				char* filename = tiltednames;
+
+				while (*filename != '\0' && direction < ROTOR_DIRECTION_COUNT) {
+					char* comma = strchr(filename, ',');
+
+					if (comma != NULL) {
+						*comma = '\0';
+					}
+
+					size_t length = strlen(filename);
+
+					if (length > 0 && length <= ROTOR_FILENAME_LENGTH) {
+						strcpy(tiltedFiles[rotor][direction], filename);
+					}
+
+					direction++;
+
+					if (comma == NULL) {
+						break;
+					}
+
+					filename = comma + 1;
+				}
+			}
+		}
+		Load_Rotor_Assets();
 		return(true);
 	}
 	return(false);
@@ -292,7 +458,12 @@ void AircraftTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(HeapID);
 	crc(IsCarryall);
 	crc(IsRotorEquipped);
-	crc(IsRotorCustom);
+	crc(VoxelRotors);
+	crc(RotorCount);
+	for (int rotor = 0; rotor < 4; ++rotor) {
+		crc(RotorIdleRate[rotor]);
+		crc(RotorMovingRate[rotor]);
+	}
 	crc(IsLandable);
 }
 
@@ -308,6 +479,7 @@ void AircraftTypeClass::Post_Load(void)
 
 	Fetch_Voxel_Image();
 	Fetch_Normal_Image();
+	Load_Rotor_Assets();
 }
 
 
@@ -322,8 +494,25 @@ void AircraftTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(HeapID);
 	stream.Serialize(IsCarryall);
 	stream.Serialize(IsRotorEquipped);
-	stream.Serialize(IsRotorCustom);
+	stream.Serialize(RotorCount);
+	stream.Serialize(Rotor1FLH);
+	stream.Serialize(Rotor2FLH);
+	stream.Serialize(Rotor3FLH);
+	stream.Serialize(Rotor4FLH);
+	stream.Serialize(Rotor1File);
+	stream.Serialize(Rotor2File);
+	stream.Serialize(Rotor3File);
+	stream.Serialize(Rotor4File);
+	stream.Serialize(Rotor1TiltedFiles);
+	stream.Serialize(Rotor2TiltedFiles);
+	stream.Serialize(Rotor3TiltedFiles);
+	stream.Serialize(Rotor4TiltedFiles);
 	stream.Serialize(IsLandable);
+	stream.Serialize(VoxelRotors);
+	stream.Serialize(RotorIdleVoxelFiles);
+	stream.Serialize(RotorMovingVoxelFiles);
+	stream.Serialize(RotorIdleRate);
+	stream.Serialize(RotorMovingRate);
 }
 
 
@@ -344,4 +533,111 @@ ClassID AircraftTypeClass::Class_ID(void) const
 AircraftTypeClass * AircraftTypeClass::Find_Or_Make(char const * name)
 {
 	return(TFind_Or_Make<AircraftTypeClass>(name, AircraftTypes));
+}
+
+
+/// <summary>
+/// Loads SHP rotor art when VoxelRotors is disabled, or landed and moving VXLs when enabled.
+/// Rotor artwork is not initialized through anims, so this function also reloads it after
+/// a savegame is loaded.
+/// </summary>
+void AircraftTypeClass::Load_Rotor_Assets(void)
+{
+	/*
+	** Load the ordinary custom rotor SHPs.
+	*/
+	char const* rotorFiles[] = {
+		Rotor1File,
+		Rotor2File,
+		Rotor3File,
+		Rotor4File
+	};
+
+	void const** rotorData[] = {
+		&Rotor1Data,
+		&Rotor2Data,
+		&Rotor3Data,
+		&Rotor4Data
+	};
+
+	for (int i = 0; i < 4; ++i) {
+		*rotorData[i] = NULL;
+
+		if (!VoxelRotors && rotorFiles[i][0] != '\0') {
+			char fullname[MAX_PATH];
+			_makepath(fullname, NULL, NULL, rotorFiles[i], ".SHP");
+			*rotorData[i] = MFCD::Retrieve(fullname);
+		}
+	}
+
+	/*
+	** Load the directional rotor SHPs from the stored filenames.
+	*/
+	char(*tiltedFiles[4])[15 + 1] = {
+		Rotor1TiltedFiles,
+		Rotor2TiltedFiles,
+		Rotor3TiltedFiles,
+		Rotor4TiltedFiles
+	};
+
+	void const** tiltedData[4] = {
+		Rotor1TiltedData,
+		Rotor2TiltedData,
+		Rotor3TiltedData,
+		Rotor4TiltedData
+	};
+
+	for (int rotor = 0; rotor < 4; ++rotor) {
+		for (int direction = 0; direction < 8; ++direction) {
+			tiltedData[rotor][direction] = NULL;
+
+			if (!VoxelRotors && tiltedFiles[rotor][direction][0] != '\0') {
+				char fullname[MAX_PATH];
+
+				_makepath(
+					fullname,
+					NULL,
+					NULL,
+					tiltedFiles[rotor][direction],
+					".SHP"
+				);
+
+				tiltedData[rotor][direction] = MFCD::Retrieve(fullname);
+			}
+		}
+	}
+
+	for (int rotor = 0; rotor < 4; ++rotor) {
+		VoxelDataStruct * voxelData[2] = {
+			&RotorIdleVoxels[rotor],
+			&RotorMovingVoxels[rotor]
+		};
+		char const * voxelFiles[2] = {
+			RotorIdleVoxelFiles[rotor],
+			RotorMovingVoxelFiles[rotor]
+		};
+
+		for (int state = 0; state < 2; ++state) {
+			delete voxelData[state]->VoxLib;
+			voxelData[state]->VoxLib = NULL;
+			delete voxelData[state]->MotLib;
+			voxelData[state]->MotLib = NULL;
+
+			if (!VoxelRotors || voxelFiles[state][0] == '\0') {
+				continue;
+			}
+
+			char fullname[MAX_PATH];
+			_makepath(fullname, NULL, NULL, voxelFiles[state], ".VXL");
+			CCFileClass file(fullname);
+
+			if (file.Is_Available()) {
+				voxelData[state]->VoxLib = new VoxelLibrary(file, false);
+				if (voxelData[state]->VoxLib->Load_Failed()) {
+					delete voxelData[state]->VoxLib;
+					voxelData[state]->VoxLib = NULL;
+				}
+			}
+		}
+	}
 }
