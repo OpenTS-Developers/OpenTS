@@ -5699,10 +5699,10 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 										mover->NearbyObject = NULL;
 										Transmit_Message(RADIO_OVER_OUT);
 									} else {
-										Cell exit = Find_Exit_Cell(Contact_With_Whom());
-										if (exit != CELL_NONE) {
+										Cell target_cell = ArchiveTarget != NULL ? ArchiveTarget->Center_Coord().As_Cell() : Find_Exit_Cell(Contact_With_Whom());
+										if (target_cell != CELL_NONE) {
 											mover->Assign_Mission(MISSION_MOVE);
-											mover->Assign_Destination(&Map[exit]);
+											mover->Assign_Destination(&Map[target_cell]);
 											mover->ArchiveTarget = NULL;
 											Transmit_Message(RADIO_OVER_OUT);
 											mover->NearbyObject = NULL;
@@ -5805,10 +5805,10 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 									Transmit_Message(RADIO_OVER_OUT);
 									foot->NearbyObject = NULL;
 								} else {
-									Cell exit = Find_Exit_Cell(Contact_With_Whom());
-									if (exit != CELL_NONE) {
+									Cell target_cell = ArchiveTarget != NULL ? ArchiveTarget->Center_Coord().As_Cell() : Find_Exit_Cell(Contact_With_Whom());
+									if (target_cell != CELL_NONE) {
 										foot->Assign_Mission(MISSION_MOVE);
-										foot->Assign_Destination(&Map[exit]);
+										foot->Assign_Destination(&Map[target_cell]);
 										Transmit_Message(RADIO_OVER_OUT);
 										foot->NearbyObject = NULL;
 										return(1);
@@ -9731,16 +9731,31 @@ void BuildingClass::Assign_Destination(AbstractClass * target, bool immediate)
 
 /// <summary>
 /// Can this building be given a movement order even though it cannot move?
-/// A factory accepts a move order as a rally point for whatever it produces, so the cursor
-/// logic must offer the move action for it in spite of the building being rooted in place.
+/// A factory or a building providing a service to a unit accepts a move order
+/// as a rally point for whatever it produces, so the cursor logic must offer
+/// the move action for it in spite of the building being rooted in place.
 /// </summary>
 /// <returns>bool; Does a movement order to this building mean a rally point?</returns>
 bool BuildingClass::Is_Move_Override(void) const
 {
-	if (Class->ToBuild != RTTI_UNITTYPE && Class->ToBuild != RTTI_INFANTRYTYPE && Class->ToBuild != RTTI_AIRCRAFTTYPE) {
-		return(false);
+	RTTIType tobuild = Class->ToBuild;
+	if (tobuild == RTTI_UNITTYPE || tobuild == RTTI_INFANTRYTYPE || tobuild == RTTI_AIRCRAFTTYPE) {
+		return true;
 	}
-	return(true);
+
+	if (Class->IsCanUnitRepair) {
+		return true;
+	}
+
+	if (Class->IsHospital) {
+		return true;
+	}
+
+	if (Class->IsArmory) {
+		return true;
+	}
+	
+	return false;
 }
 
 
