@@ -120,7 +120,7 @@ OptionsClass::OptionsClass(void) :
 	BitmapSystemFont(true),
 	AutoScroll(true),
 	IsScoreRepeat(false),
-	IsScoreShuffle(false),
+	IsScoreShuffle(true),
 	IsSidebarOnRight(true),
 	SidebarCameoText(true),
 	SidebarSorting(true),
