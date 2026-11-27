@@ -17,8 +17,11 @@ targets:
   effect: changed
 credit:
 - JoyfulShush
+- Rampastring
 ---
 
 A service depot, hospital or armory can now hold a rally point. Select the structure and click the ground, and the objects it releases head there instead of staying beside the building.
 
 With `AltToRally=yes` under `[Options]` in `sun.ini`, the force-move key sets the rally point instead, as it does for a factory.
+
+Credits to Rampastring for the original Vinifera implementation.
