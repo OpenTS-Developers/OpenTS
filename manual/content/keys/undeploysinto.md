@@ -20,7 +20,7 @@ The structure undeploys only if any of these holds:
 
 - It has one of these type flags: [`SensorArray=yes`](/keys/sensorarray/), [`TickTank=yes`](/keys/ticktank/), [`ICBMLauncher=yes`](/keys/icbmlauncher/), [`Artillary=yes`](/keys/artillary/), [`IsMobileStealth=yes`](/keys/ismobilestealth/), [`IsJuggernaut=yes`](/keys/isjuggernaut/), [`IsCoreDefender=yes`](/keys/iscoredefender/#scope-buildingtype) or [`IsLimpetMine=yes`](/keys/islimpetmine/).
 - It is an [`IsMobileWar=yes`](/keys/ismobilewar/) mobile war factory.
-- Outside a campaign, it belongs to a human player in a session with the MCV redeploy option on, and it has a destination. A move order gives it one, and so does a factory's [rally point](/systems/production/#rally-points).
+- Outside a campaign, it belongs to a human player in a session with the MCV redeploy option on, and it has a destination. A move order gives it one, and so does a structure's [rally point](/systems/production/#rally-points).
 
 A structure that meets none of these is sold for its refund. A move order therefore sells a structure outside the first two groups in a campaign, or in a session with the MCV redeploy option off. It also sells one other than a construction yard when the game finds no reachable cell near the clicked point and the structure has no earlier destination.
 
@@ -36,7 +36,7 @@ Except for a construction yard, a structure that names a type counts as a [deplo
 
 Except while an EM pulse has stunned it, the player can give the structure a move order. The move cursor appears over an empty cell that the structure's type could be built on, and over any cell of the playable area while Shift is held. A [`ConstructionYard=yes`](/keys/constructionyard/) structure takes a move order only outside a campaign, for a human player, in a session with the MCV redeploy option on.
 
-If the structure's [`Factory=`](/keys/factory/) is `UnitType`, `InfantryType` or `AircraftType`, a plain click on the ground sets its rally point, and a move order needs the force-move key. [`AltToRally=yes`](/keys/alttorally/) swaps the two. Any other structure, including a construction yard, takes the move order on a plain click.
+If the structure has a [rally point](/systems/production/#rally-points), a plain click on the ground sets it, and a move order needs the force-move key. [`AltToRally=yes`](/keys/alttorally/) swaps the two. Any other structure, including a construction yard, takes the move order on a plain click.
 
 A name that matches no registered UnitType registers a new, unconfigured vehicle type under that name. The values `none` and `<none>` clear the key, so the structure names no vehicle.
 

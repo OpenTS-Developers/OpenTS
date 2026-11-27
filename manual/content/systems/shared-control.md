@@ -36,7 +36,7 @@ A grant ends when either player breaks the alliance, and when either player is d
 
 An ally who holds a grant selects the owner's objects as they select their own: by clicking, by dragging a selection box, with Shift, with Select Same Type, with the veterancy and health filters, and in team groups. A selection can mix their own objects with the owner's. The ally sees the action lines of the owner's objects they select.
 
-The ally can give the owner's objects every order the cursors and keys offer for their own. This includes moving, attacking, guarding, deploying, scattering and stopping, entering transports, setting a factory's rally point, and infantry abilities such as capturing, healing, planting C4 and stealing vehicles.
+The ally can give the owner's objects every order the cursors and keys offer for their own. This includes moving, attacking, guarding, deploying, scattering and stopping, entering transports, setting a structure's rally point, and infantry abilities such as capturing, healing, planting C4 and stealing vehicles.
 
 These actions stay with the owner:
 

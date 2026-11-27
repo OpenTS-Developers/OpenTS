@@ -214,7 +214,7 @@ The depot acts on the object's answer to each request:
 
 - **Paid.** The strength is added and the cycle continues.
 - **Unaffordable.** The depot announces insufficient funds and stops the cycle. The object stays parked, and the depot asks again at each mission update as it does for the first step.
-- **Anything else.** This covers a step that finishes the repair, an object that needs nothing, and an object that has been given a destination. The depot announces that the unit is repaired and releases the object. A computer-owned object with a remembered position returns there, as a computer vehicle does after [reaching the pad](#reaching-the-pad) on its own. Every other object moves to an exit cell beside the depot.
+- **Anything else.** This covers a step that finishes the repair, an object that needs nothing, and an object that has been given a destination. The depot announces that the unit is repaired and releases the object. A computer-owned object with a remembered position returns there, as a computer vehicle does after [reaching the pad](#reaching-the-pad) on its own. Every other object moves to the depot's [rally point](/systems/production/#rally-points), or to an exit cell beside the depot when it has none.
 
 ### What a depot does for free
 
