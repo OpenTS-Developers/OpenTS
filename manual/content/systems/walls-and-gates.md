@@ -124,9 +124,13 @@ A wall's owner is stored in the cell, not in the overlay, so two adjacent segmen
 - whether the automatic gap fill treats it as an anchor;
 - whether a vehicle or infantryman blocked by it treats it as an allied or a hostile wall.
 
-Placing a wall records the placing house as the owner. Walls in a map's overlay data start unowned. After the map loads, each one goes to the owner of the nearest active, placed building whose country has [`WallOwner=yes`](/keys/wallowner/). If no such building exists anywhere on the map, the walls stay unowned.
+Placing a wall records the placing house as the owner. Walls in a map's overlay data start unowned. After the map loads, each one goes to the owner of the nearest active, placed building that may claim walls. The building's country must have [`WallOwner=yes`](/keys/wallowner/#scope-housetype), and its own structure type must not set [`WallOwner=no`](/keys/wallowner/#scope-buildingtype). A map wall keeps the owner it received at load when buildings are later placed, captured or lost.
 
-Skirmish, multiplayer and random-map setup rewrite `WallOwner` for every country in the game. It turns the flag off for a [`MultiplayPassive=yes`](/keys/multiplaypassive/) country and on for every other one. The rewrite runs only after the map walls have their owners and does not change them, so `WallOwner` applies as written in every game type. Players' starting units and bases are created after the walls are assigned, so on a skirmish or multiplayer map with no pre-placed buildings, the map's walls stay unowned.
+The search covers the whole map and has no radius limit. At equal distance, the building created first wins. If no building qualifies, the walls stay unowned. An unowned wall cannot be sold and is not an anchor for the [automatic gap fill](#filling-the-gap-to-the-next-wall).
+
+To override `WallOwner` for one scenario, set it in the corresponding country or structure type section of the map file.
+
+After assigning map walls, skirmish, multiplayer and random-map setup set the country-level [`WallOwner`](/keys/wallowner/#scope-housetype) to `no` for [`MultiplayPassive=yes`](/keys/multiplaypassive/) countries and to `yes` for the other countries in the game. Players' starting units and bases are created after the walls are assigned, so on a skirmish or multiplayer map with no pre-placed buildings, the map's walls stay unowned.
 
 ## Connection frames
 

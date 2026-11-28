@@ -20,6 +20,15 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 add_subdirectory(bgfx.cmake)
 
+foreach(dependency BGFX BX BIMG)
+    get_directory_property(OPENTS_${dependency}_DIR DIRECTORY bgfx.cmake DEFINITION ${dependency}_DIR)
+    set(OPENTS_${dependency}_DIR "${OPENTS_${dependency}_DIR}" PARENT_SCOPE)
+endforeach()
+
+set(MINIZ_ROOT "${OPENTS_BIMG_DIR}/3rdparty/tinyexr/deps")
+add_library(opents_miniz STATIC "${MINIZ_ROOT}/miniz/miniz.c")
+target_include_directories(opents_miniz PUBLIC "${MINIZ_ROOT}")
+
 # These libraries support the disabled texture tools and are not linked into OpenTS.
 set_target_properties(bimg_decode bimg_encode PROPERTIES EXCLUDE_FROM_ALL TRUE)
 

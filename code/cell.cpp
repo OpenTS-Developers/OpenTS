@@ -139,6 +139,7 @@
 #include "tube.hh"
 
 #include <algorithm>
+#include <climits>
 #include <cmath>
 
 
@@ -1182,25 +1183,30 @@ bool CellClass::Fixup_LAT(void)
 
 /// <summary>
 /// Assigns ownership of the wall in this cell.
-/// A wall answers to whichever wall owning house has the closest building to it. Use this
-/// routine when a wall section appears, or when the buildings around one have changed, so
-/// that the wall ends up crediting the right house. Cells without a wall are left alone.
+/// A wall answers to whichever wall owning house has the closest building to it that can claim walls.
+/// Use this routine when a wall section appears, or when the buildings around one have changed,
+/// so that the wall ends up crediting the right house. Cells without a wall are skipped.
 /// </summary>
 void CellClass::Set_Wall_Owner(void)
 {
 	if (Overlay != OVERLAY_NONE && OverlayTypes[Overlay]->IsWall) {
 		HousesType owner = HOUSE_NONE;
-		int dist = 0x7FFFFFFF;
+		int best_distance = INT_MAX;
 		for (int i = 0; i < Buildings.Count(); i++) {
-			BuildingClass * bld = Buildings[i];
-			if (bld->IsActive && bld->IsDown && bld->House->Class->IsWallOwner) {
-				int d = bld->Distance(this);
-				if (d < dist) {
-					dist = d;
-					owner = bld->Owner();
-				}
+			BuildingClass * building = Buildings[i];
+
+			if (!building->IsActive) continue;
+			if (!building->IsDown) continue;
+			if (!building->House->Class->IsWallOwner) continue;
+			if (!building->Class->IsWallOwner) continue;
+
+			int distance_from_building = building->Distance(this);
+			if (distance_from_building < best_distance) {
+				best_distance = distance_from_building;
+				owner = building->Owner();
 			}
 		}
+
 		Owner = owner;
 	}
 }

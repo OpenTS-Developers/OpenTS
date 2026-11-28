@@ -146,14 +146,13 @@ add_dependencies(OpenTS OpenTSBuildStamp)
 
 # bgfx's include paths and settings apply only to the two files that include it: the frame
 # renderer and the UI overlay renderer.
-set(BGFX_ROOT "${CMAKE_SOURCE_DIR}/thirdparty/bgfx.cmake/bgfx")
 set(OPENTS_BGFX_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/bgfxbackend.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/ui/rml/rmlrender.cpp"
 )
 set_source_files_properties(${OPENTS_BGFX_SOURCES} PROPERTIES
     INCLUDE_DIRECTORIES
-        "${BGFX_ROOT}/include;${CMAKE_SOURCE_DIR}/thirdparty/bgfx.cmake/bx/include"
+        "${OPENTS_BGFX_DIR}/include;${OPENTS_BX_DIR}/include"
     COMPILE_DEFINITIONS
         "BX_CONFIG_DEBUG=$<IF:$<CONFIG:Debug>,1,$<BOOL:${BX_CONFIG_DEBUG}>>"
     COMPILE_OPTIONS "/Zc:preprocessor"
@@ -163,19 +162,10 @@ set_source_files_properties(${OPENTS_BGFX_SOURCES} PROPERTIES
 # draw example. The imgui example directory also holds an imgui.h that would shadow Dear
 # ImGui's, so only the file that needs those shaders gets that path.
 set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/bgfxbackend.cpp" APPEND PROPERTY
-    INCLUDE_DIRECTORIES "${BGFX_ROOT}/examples/common/imgui"
+    INCLUDE_DIRECTORIES "${OPENTS_BGFX_DIR}/examples/common/imgui"
 )
 set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/ui/rml/rmlrender.cpp" APPEND PROPERTY
-    INCLUDE_DIRECTORIES "${BGFX_ROOT}/examples/common/debugdraw"
-)
-
-# These files take miniz from bimg, which the link already carries.
-set_source_files_properties(
-    "${CMAKE_CURRENT_SOURCE_DIR}/writepng.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/deflate.cpp"
-    PROPERTIES
-    INCLUDE_DIRECTORIES
-        "${CMAKE_SOURCE_DIR}/thirdparty/bgfx.cmake/bimg/3rdparty/tinyexr/deps"
+    INCLUDE_DIRECTORIES "${OPENTS_BGFX_DIR}/examples/common/debugdraw"
 )
 
 # bx rewrites __stdcall while its headers are being parsed by clang-cl.  Force the
@@ -189,7 +179,7 @@ endif()
 
 # The texture loader decodes images with the stb_image header from bimg; no other file needs it.
 set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/ui/rml/rmltexture.cpp" APPEND PROPERTY
-    INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/thirdparty/bgfx.cmake/bimg/3rdparty/stb"
+    INCLUDE_DIRECTORIES "${OPENTS_BIMG_DIR}/3rdparty/stb"
 )
 
 message(STATUS "${PROJECT_NAME}: Adding compilier definitions...")
@@ -222,6 +212,7 @@ target_link_libraries(OpenTS PRIVATE
     bgfx
     bx
     bimg
+    opents_miniz
     miniaudio
     lzo
     RmlUi::Core

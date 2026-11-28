@@ -27,8 +27,8 @@ The `/arch:SSE2` compiler option does not lower the requirement.
 
 Install Visual Studio 2022 with the **Desktop development with C++** workload,
 a Windows SDK, and CMake 3.23 or newer. Git for Windows is needed to clone the
-repository and initialize its dependencies, but not to compile a complete
-source tree.
+repository, initialize its submodules, and download the renderer dependencies
+during CMake configuration.
 
 ### Save and network compatibility between the platforms
 
@@ -46,18 +46,22 @@ game with peers running the same platform.
 
 ## Dependencies
 
-The renderer uses [bgfx](https://github.com/bkaradzic/bgfx), vendored through
-`thirdparty/bgfx.cmake` at a tested tag. That submodule contains bgfx, bx, and
-bimg as nested submodules, so initialize it recursively:
+The renderer uses [bgfx](https://github.com/bkaradzic/bgfx) through a pinned
+`thirdparty/bgfx.cmake` release. Initialize the project's submodules before
+configuring:
 
 ```powershell
 git submodule update --init --recursive
 ```
 
-Deflate compression comes from the copy of
-[miniz](https://github.com/richgel999/miniz) that bimg bundles under
-`3rdparty/tinyexr/deps/miniz`. bgfx.cmake compiles it into the `bimg` library,
-which the engine already links.
+By default, the first configure in a build directory downloads the pinned bgfx,
+bx, and bimg revisions from GitHub. To configure offline, provide their source
+directories with
+`-DBGFX_DIR=`, `-DBX_DIR=`, and `-DBIMG_DIR=`.
+
+The engine builds [miniz](https://github.com/richgel999/miniz) from the copy
+bundled in bimg under `3rdparty/tinyexr/deps/miniz`. The engine and its PNG and
+replay tests use the same library.
 
 The audio layer uses [miniaudio](https://github.com/mackron/miniaudio),
 vendored through `thirdparty/miniaudio` at a tested tag and compiled as one

@@ -344,7 +344,8 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	ProduceCashBudget(0),
 	IsProduceCashResetOnCapture(false),
 	GateUpSound(VOC_NONE),
-	GateDownSound(VOC_NONE)
+	GateDownSound(VOC_NONE),
+	IsWallOwner(true)
 {
 	Create_ID();
 	BuildingTypes.Add(this);
@@ -1329,6 +1330,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsProduceCashResetOnCapture = ini.Get_Bool(Name(), "ProduceCashResetOnCapture", IsProduceCashResetOnCapture);
 		GateUpSound = ini.Get_VocType(Name(), "GateUpSound", GateUpSound);
 		GateDownSound = ini.Get_VocType(Name(), "GateDownSound", GateDownSound);
+		IsWallOwner = ini.Get_Bool(Name(), "WallOwner", IsWallOwner);
 
 		Rotation = IsTurretEquipped ? 32 : 1;
 
@@ -1874,6 +1876,7 @@ void BuildingTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(ProduceCashDelay);
 	crc(ProduceCashBudget);
 	crc(IsProduceCashResetOnCapture);
+	crc(IsWallOwner);
 }
 
 
@@ -2040,6 +2043,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(TheaterImageFile);
 	stream.Serialize(GateUpSound);
 	stream.Serialize(GateDownSound);
+	stream.Serialize(IsWallOwner);
 }
 
 
