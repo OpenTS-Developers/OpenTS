@@ -10563,7 +10563,10 @@ void BuildingClass::Exit_Object_After_Repairs_Done()
 		return;
 	}
 
-	foot->Locomotion->Power_On();
+	if (!IonStormClass::Is_Ion_Storm_Active() || !foot->Locomotion->Is_Ion_Sensitive()) {
+		foot->Locomotion->Power_On();
+	}
+
 	if (foot->ArchiveTarget != NULL && !foot->House->Is_Human_Player()) {
 		foot->Assign_Mission(MISSION_MOVE);
 		foot->Assign_Destination(foot->ArchiveTarget);
