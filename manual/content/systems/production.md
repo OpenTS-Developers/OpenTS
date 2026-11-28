@@ -307,19 +307,19 @@ A [`HoverPad=yes`](/keys/hoverpad/) structure also receives the first [`PadAircr
 
 A structure whose [`Factory=`](/keys/factory/) is `UnitType`, `InfantryType` or `AircraftType`, or one that sets [`UnitRepair=yes`](/keys/unitrepair/), [`Hospital=yes`](/keys/hospital/) or [`Armory=yes`](/keys/armory/), can hold a rally point. Select it and click the ground to set one. Holding the force-move key instead gives the structure a move order, which packs up a structure that names an [`UndeploysInto`](/keys/undeploysinto/) type. [`AltToRally=yes`](/keys/alttorally/) swaps the two.
 
-The rally point is not always the clicked cell. The engine records the nearest cell to it where infantry could stand, or where an aircraft could fly for an aircraft factory, searched within the structure's movement zone. If there is no such cell, no rally point is set.
+The rally point is not always the clicked cell. A structure that produces aircraft, and a service depot, record the nearest cell an aircraft could fly to. Every other structure that can produce rally points records the nearest cell where a ground unit could stand, searched within the structure's zone. If there is no such cell, no rally point is set.
 
-The cursor refuses some cells outright: any cell outside the playable area and, except for an aircraft factory, a cell in another movement zone or on ground that is not passable land.
+The cursor refuses a cell outside the playable area. It also refuses a cell in another [movement zone](/glossary/#movement-zone), or on ground that is not passable land, except for an aircraft factory or a service depot.
 
 What the departing object does with the rally point depends on the structure:
 
 - An aircraft heads for it as soon as it appears, whether on its pad or at the edge of the playable area. During an ion storm the aircraft appears on a nearby cell and ignores the rally point.
 - A [`WeaponsFactory=yes`](/keys/weaponsfactory/) structure passes it to the vehicle, which heads for it once it has cleared the building. A harvester or weeder then starts harvesting from there.
 - A barracks, [`Hospital=yes`](/keys/hospital/) or [`Armory=yes`](/keys/armory/) structure passes it to the infantryman, who walks to the exit cell first and heads for the rally point the next time he is idle.
-- A [`UnitRepair=yes`](/keys/unitrepair/) service depot sends the vehicle or aircraft it releases to the rally point instead of an exit cell beside itself.
+- A [`UnitRepair=yes`](/keys/unitrepair/) service depot heads the vehicle or aircraft it releases for the rally point. A vehicle follows the point only when the point is in the same movement zone as the vehicle; otherwise it moves to an exit cell beside the depot. An aircraft follows the point in any zone.
 - Every other factory ignores it. A `Factory=UnitType` structure with [`WeaponsFactory=no`](/keys/weaponsfactory/) accepts a rally point, but the vehicles it releases stop on the exit cell.
 
-If a departing object belongs to a house a player controls and its type cannot be ordered into the shroud, the object ignores a rally point that is still shrouded for that player and leaves as if the structure had no rally point. That covers a type with [`MoveToShroud=no`](/keys/movetoshroud/), the default for aircraft types, and a subterranean type while [`AllowShroudedSubteranneanMoves=no`](/keys/allowshroudedsubteranneanmoves/). The check is made as each object leaves, so the rally point works again once the player uncovers that ground. A service depot's released object heads for the rally point even while the point is still shrouded for the player.
+If a departing object belongs to a house a player controls and its type cannot be ordered into the shroud, the object ignores a rally point that is still shrouded for that player and leaves as if the structure had no rally point. That covers a type with [`MoveToShroud=no`](/keys/movetoshroud/), the default for aircraft types, and a subterranean type while [`AllowShroudedSubteranneanMoves=no`](/keys/allowshroudedsubteranneanmoves/). The check is made as each object leaves, so the rally point works again once the player uncovers that ground.
 
 A structure stores its rally point as its move destination, so a structure that undeploys passes the rally point to the vehicle it becomes.
 

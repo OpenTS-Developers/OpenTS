@@ -4043,7 +4043,7 @@ ActionType BuildingClass::What_Action(Cell const & cell, bool check_fog, bool di
 	}
 
 	if (action == ACTION_RALLY_TO_POINT) {
-		// Since Service Depots can also serve aircraft, it should accept rally points even if they are normally unreachable
+		// A service depot also serves aircraft, so its rally point may be any cell an aircraft could reach.
 		if (Class->ToBuild != RTTI_AIRCRAFTTYPE && !Class->IsCanUnitRepair) {
 			if (!Is_In_Same_Zone(cell)) {
 				action = ACTION_NOMOVE;
@@ -5780,7 +5780,6 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 								Begin_Anim(BANIM_SPECIAL_THREE, false);
 								Begin_Anim(BANIM_ACTIVE_ONE, false);
 								Status = IDLE;
-								
 								Exit_Object_After_Repairs_Done();
 								return(1);
 							}
@@ -9722,7 +9721,7 @@ bool BuildingClass::Is_Move_Override(void) const
 	if (Class->IsArmory) {
 		return true;
 	}
-	
+
 	return false;
 }
 
@@ -10552,10 +10551,9 @@ Coord BuildingClass::Render_Coord(void) const
 
 
 /// <summary>
-/// Handles a unit that has just finished repairs on a CanUnitRepair structure (typically a Service Depot).
-/// This function determines where it should go and assigns the unit with the task to go there.
-/// A rally point that is unreachable for that unit is ignored. This is done to prevent
-/// an issue where the unit stays on the Service Depot because it cannot execute the move order.
+/// Releases the object this structure serviced and orders it away: to the place a computer house
+/// remembers it came from, to the structure's rally point, or to an exit cell when the rally point
+/// lies in another zone or is shrouded for it. When no destination is available, the object stays.
 /// </summary>
 void BuildingClass::Exit_Object_After_Repairs_Done()
 {
@@ -10579,7 +10577,7 @@ void BuildingClass::Exit_Object_After_Repairs_Done()
 		if (rally_point != NULL) {
 			Cell rally_point_cell = rally_point->Center_Coord().As_Cell();
 
-			if (foot->RTTI == RTTI_AIRCRAFT || Is_In_Same_Zone(rally_point_cell)) {
+			if (foot->RTTI == RTTI_AIRCRAFT || foot->Is_In_Same_Zone(rally_point_cell)) {
 				target_cell = rally_point_cell;
 			}
 		}
