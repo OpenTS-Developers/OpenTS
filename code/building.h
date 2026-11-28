@@ -586,6 +586,7 @@ class BuildingClass : public TechnoClass
 		void Update_Anim_Appearance(void);
 		void Set_Anim_Translucency(int translucency);
 		bool Anim_Active(BAnimType anim) { return(Anims[anim] != NULL); }
+		void Exit_Object_After_Repairs_Done();
 
 		/*
 		**	Scenario and debug support.
