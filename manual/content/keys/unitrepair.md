@@ -14,6 +14,7 @@ The flag also has these effects:
 - The player's selected vehicles and aircraft get the enter cursor over the depot. A helipad offers that cursor to aircraft without this flag.
 - A computer house sends its damaged vehicles to its nearest `UnitRepair` building, under the conditions in [Reaching the pad](/systems/repair/#reaching-the-pad).
 - A vehicle or aircraft parked on the depot can be sold where it stands.
+- The depot can hold a [rally point](/systems/production/#rally-points) for the objects it releases.
 
 The flag is independent of [`RepairBay`](/keys/repairbay/), which names the one building type that repair orders look for. A depot that `RepairBay` does not name still serves whatever reaches it. A `RepairBay` type without this flag refuses the vehicles sent to it.
 

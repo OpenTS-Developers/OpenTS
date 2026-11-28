@@ -2696,7 +2696,7 @@ void BuildingClass::Assign_Rally_Point(Cell const & cell)
 
 	bool underbridge = Map[cell].IsUnderBridge;
 
-	if (Class->ToBuild == RTTI_AIRCRAFTTYPE) {
+	if (Class->ToBuild == RTTI_AIRCRAFTTYPE || Class->IsCanUnitRepair) {
 		speed = SPEED_WINGED;
 		mzone = MZONE_FLYER;
 	}
@@ -4043,7 +4043,8 @@ ActionType BuildingClass::What_Action(Cell const & cell, bool check_fog, bool di
 	}
 
 	if (action == ACTION_RALLY_TO_POINT) {
-		if (Class->ToBuild != RTTI_AIRCRAFTTYPE) {
+		// A service depot also serves aircraft, so its rally point may be any cell an aircraft could reach.
+		if (Class->ToBuild != RTTI_AIRCRAFTTYPE && !Class->IsCanUnitRepair) {
 			if (!Is_In_Same_Zone(cell)) {
 				action = ACTION_NOMOVE;
 			}
@@ -5690,24 +5691,7 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 						if (!damaged && !manual_reload || !roger && !all_done) {
 							if (((FootClass *)client)->HealthRatio == Rule->ConditionGreen) {
 								if (!((FootClass *)client)->Locomotion->Is_Powered()) {
-									FootClass * mover = dynamic_cast<FootClass *>(Contact_With_Whom());
-									mover->Locomotion->Power_On();
-									if (mover->ArchiveTarget != NULL && !mover->House->Is_Human_Player()) {
-										mover->Assign_Mission(MISSION_MOVE);
-										mover->Assign_Destination(mover->ArchiveTarget);
-										mover->ArchiveTarget = NULL;
-										mover->NearbyObject = NULL;
-										Transmit_Message(RADIO_OVER_OUT);
-									} else {
-										Cell exit = Find_Exit_Cell(Contact_With_Whom());
-										if (exit != CELL_NONE) {
-											mover->Assign_Mission(MISSION_MOVE);
-											mover->Assign_Destination(&Map[exit]);
-											mover->ArchiveTarget = NULL;
-											Transmit_Message(RADIO_OVER_OUT);
-											mover->NearbyObject = NULL;
-										}
-									}
+									Exit_Object_After_Repairs_Done();
 								}
 							}
 						} else {
@@ -5796,24 +5780,7 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 								Begin_Anim(BANIM_SPECIAL_THREE, false);
 								Begin_Anim(BANIM_ACTIVE_ONE, false);
 								Status = IDLE;
-
-								FootClass * foot = dynamic_cast<FootClass *>(Contact_With_Whom());
-								if (foot->ArchiveTarget != NULL && !foot->House->Is_Human_Player()) {
-									foot->Assign_Mission(MISSION_MOVE);
-									foot->Assign_Destination(foot->ArchiveTarget);
-									foot->ArchiveTarget = NULL;
-									Transmit_Message(RADIO_OVER_OUT);
-									foot->NearbyObject = NULL;
-								} else {
-									Cell exit = Find_Exit_Cell(Contact_With_Whom());
-									if (exit != CELL_NONE) {
-										foot->Assign_Mission(MISSION_MOVE);
-										foot->Assign_Destination(&Map[exit]);
-										Transmit_Message(RADIO_OVER_OUT);
-										foot->NearbyObject = NULL;
-										return(1);
-									}
-								}
+								Exit_Object_After_Repairs_Done();
 								return(1);
 							}
 							break;
@@ -9731,16 +9698,31 @@ void BuildingClass::Assign_Destination(AbstractClass * target, bool immediate)
 
 /// <summary>
 /// Can this building be given a movement order even though it cannot move?
-/// A factory accepts a move order as a rally point for whatever it produces, so the cursor
-/// logic must offer the move action for it in spite of the building being rooted in place.
+/// A factory or a building providing a service to a unit accepts a move order
+/// as a rally point for whatever it produces, so the cursor logic must offer
+/// the move action for it in spite of the building being rooted in place.
 /// </summary>
 /// <returns>bool; Does a movement order to this building mean a rally point?</returns>
 bool BuildingClass::Is_Move_Override(void) const
 {
-	if (Class->ToBuild != RTTI_UNITTYPE && Class->ToBuild != RTTI_INFANTRYTYPE && Class->ToBuild != RTTI_AIRCRAFTTYPE) {
-		return(false);
+	RTTIType tobuild = Class->ToBuild;
+	if (tobuild == RTTI_UNITTYPE || tobuild == RTTI_INFANTRYTYPE || tobuild == RTTI_AIRCRAFTTYPE) {
+		return true;
 	}
-	return(true);
+
+	if (Class->IsCanUnitRepair) {
+		return true;
+	}
+
+	if (Class->IsHospital) {
+		return true;
+	}
+
+	if (Class->IsArmory) {
+		return true;
+	}
+
+	return false;
 }
 
 
@@ -10565,4 +10547,54 @@ ObjectTypeClass const * BuildingClass::Class_Of(void) const
 Coord BuildingClass::Render_Coord(void) const
 {
 	return(PositionCoord - Coord(CELL_LEPTON/2,CELL_LEPTON/2,0));
+}
+
+
+/// <summary>
+/// Releases the object this structure serviced and orders it away: to the place a computer house
+/// remembers it came from, to the structure's rally point, or to an exit cell when the rally point
+/// lies in another zone or is shrouded for it. When no destination is available, the object stays.
+/// </summary>
+void BuildingClass::Exit_Object_After_Repairs_Done()
+{
+	FootClass * foot = dynamic_cast<FootClass *>(Contact_With_Whom());
+
+	if (foot == nullptr) {
+		return;
+	}
+
+	if (!IonStormClass::Is_Ion_Storm_Active() || !foot->Locomotion->Is_Ion_Sensitive()) {
+		foot->Locomotion->Power_On();
+	}
+
+	if (foot->ArchiveTarget != NULL && !foot->House->Is_Human_Player()) {
+		foot->Assign_Mission(MISSION_MOVE);
+		foot->Assign_Destination(foot->ArchiveTarget);
+		foot->ArchiveTarget = NULL;
+		foot->NearbyObject = NULL;
+		Transmit_Message(RADIO_OVER_OUT);
+	} else {
+		Cell target_cell = CELL_NONE;
+
+		auto rally_point = Rally_Point_For(foot);
+		if (rally_point != NULL) {
+			Cell rally_point_cell = rally_point->Center_Coord().As_Cell();
+
+			if (foot->RTTI == RTTI_AIRCRAFT || foot->Is_In_Same_Zone(rally_point_cell)) {
+				target_cell = rally_point_cell;
+			}
+		}
+
+		if (target_cell == CELL_NONE) {
+			target_cell = Find_Exit_Cell(Contact_With_Whom());
+		}
+
+		if (target_cell != CELL_NONE) {
+			foot->Assign_Mission(MISSION_MOVE);
+			foot->Assign_Destination(&Map[target_cell]);
+			foot->ArchiveTarget = NULL;
+			Transmit_Message(RADIO_OVER_OUT);
+			foot->NearbyObject = NULL;
+		}
+	}
 }
